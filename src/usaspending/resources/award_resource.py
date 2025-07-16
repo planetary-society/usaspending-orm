@@ -17,7 +17,7 @@ class AwardResource(BaseResource):
     Provides access to award search and retrieval endpoints.
     """
     
-    def get(self, award_id: str) -> Award:
+    def get(self, award_id: str) -> "Award":
         """Retrieve a single award by ID.
         
         Args:
@@ -27,22 +27,11 @@ class AwardResource(BaseResource):
             Award model instance
             
         Raises:
-            ValidationError: If award_id is invalid
+            : If award_id is invalid
             APIError: If award not found
         """
-        if not award_id:
-            raise ValidationError("award_id is required")
-        
-        # Clean award ID
-        award_id = str(award_id).strip()
-        
-        # Make API request
-        endpoint = f"/api/v2/awards/{award_id}/"
-        response = self._client._make_request("GET", endpoint)
-        
-        # Create model instance
-        from ..models.award import Award
-        return Award(response, client=self._client)
+        from ..queries.award_query import AwardQuery
+        return AwardQuery(self._client).get_by_id(award_id)
     
     def search(self) -> AwardsSearch:
         """Create a new award search query builder.
