@@ -1,0 +1,26 @@
+[project]
+name = "usaspending"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Casey Dreier",email = "cdreier@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests (>=2.32.4,<3.0.0)",
+    "cachier (>=4.1.0,<5.0.0)",
+    "titlecase (>=2.4.1,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "usaspending", from = "src"}]
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.4.1"
+requests-mock = "^1.12.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

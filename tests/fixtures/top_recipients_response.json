@@ -1,0 +1,98 @@
+{
+  "category": "recipient",
+  "spending_level": "awards",
+  "limit": 10,
+  "page_metadata": {
+    "page": 1,
+    "next": 2,
+    "previous": null,
+    "hasNext": true,
+    "hasPrevious": false
+  },
+  "results": [
+    {
+      "amount": 149259293.35,
+      "recipient_id": "c4964b1d-7ff3-30f7-7a39-4c45c79df42f-['C']",
+      "name": "CHUGACH FEDERAL SOLUTIONS, INC.",
+      "code": "829030365",
+      "uei": "JW7MP65X8K11",
+      "total_outlays": 16860.81
+    },
+    {
+      "amount": 124136341.25,
+      "recipient_id": "0aa1a13d-c456-9962-9e41-747680c07fa0-['C']",
+      "name": "WOLF CREEK FEDERAL SERVICES INC",
+      "code": "830243197",
+      "uei": "GX34R4Y3RZ58",
+      "total_outlays": 61545591.02
+    },
+    {
+      "amount": 94062732.13,
+      "recipient_id": "78a7dce1-3fdc-da4e-50dd-9aa65a0c2314-['C']",
+      "name": "UNIVERSITY OF ALASKA FAIRBANKS",
+      "code": "809654254",
+      "uei": "G2WCRLHJHD47",
+      "total_outlays": 74952031.83
+    },
+    {
+      "amount": 93645139.27,
+      "recipient_id": "aad73148-e133-7cd9-996b-f8b9e61410a1-['C']",
+      "name": "ALUTIIQ FUSION JOINT VENTURE",
+      "code": "080515447",
+      "uei": "HAWRNJCDA5T7",
+      "total_outlays": 73406345.65
+    },
+    {
+      "amount": 73456257.64,
+      "recipient_id": "ee25538d-40cd-b226-53fe-167f85eb3325-['C']",
+      "name": "ALUTIIQ ADVANCED SECURITY SOLUTIONS LLC",
+      "code": "078776091",
+      "uei": "KE2XM24AMAG8",
+      "total_outlays": 56576725.54
+    },
+    {
+      "amount": 67584260.79,
+      "recipient_id": "7d704833-f840-d99a-2026-a53ae43d0e17-['C']",
+      "name": "ALUTIIQ PACIFIC, LLC",
+      "code": "809841898",
+      "uei": "CKB4JDLXQ9M3",
+      "total_outlays": 0.0
+    },
+    {
+      "amount": 42901933.64,
+      "recipient_id": "569c2448-3ce6-f2a2-0e2b-5d95a748f551-['C', 'R']",
+      "name": "UNIVERSITY OF ALASKA FAIRBANKS",
+      "code": "615245164",
+      "uei": "FDLEQSJ8FF63",
+      "total_outlays": 26626260.82
+    },
+    {
+      "amount": 27386061.77,
+      "recipient_id": "cfa659e4-14b3-731a-b7b9-8d63b9444180-['C']",
+      "name": "ALUTIIQ ESSENTIAL SERVICES LLC",
+      "code": "079262215",
+      "uei": "GNBCWPZ4DFG7",
+      "total_outlays": 25540295.39
+    },
+    {
+      "amount": 9302862.41,
+      "recipient_id": "446c43d6-96c1-bad1-848c-29e240e33aa4-['C']",
+      "name": "ALUTIIQ COMMERCIAL ENTERPRISES LLC",
+      "code": "078352461",
+      "uei": "QMJEKNF3JN15",
+      "total_outlays": 6304232.64
+    },
+    {
+      "amount": 6196340.1,
+      "recipient_id": "b532b615-2968-5fe6-e434-f14cb5f41c8b-['C']",
+      "name": "TUNISTA LOGISTICS SOLUTIONS, LLC",
+      "code": "080434461",
+      "uei": "GXL8H2H5H3E5",
+      "total_outlays": 3793755.52
+    }
+  ],
+  "messages": [
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+    "'subawards' will be deprecated in the future. Set ‘spending_level’ to ‘subawards’ instead. See documentation for more information. "
+  ]
+}

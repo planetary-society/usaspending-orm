@@ -1,0 +1,26 @@
+{
+  "limit": 10,
+  "page": 1,
+  "spending_level": "awards",
+  "category": "recipient",
+  "filters": {
+    "treasury_account_components": [
+      {
+        "aid": "080",
+        "main": "0120"
+      }
+    ],
+    "time_period": [
+      {
+        "start_date": "2021-10-01",
+        "end_date": "2024-09-30"
+      }
+    ],
+    "recipient_locations": [
+      {
+        "country": "USA",
+        "state": "AK"
+      }
+    ]
+  }
+}
