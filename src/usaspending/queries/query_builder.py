@@ -1,6 +1,16 @@
 from abc import ABC, abstractmethod
 from typing import Iterator, List, Dict, Any, Optional, TypeVar, Generic, TYPE_CHECKING
 
+# Import exceptions for use by all query builders
+from ..exceptions import (
+    USASpendingError,
+    APIError,
+    HTTPError,
+    ValidationError,
+    RateLimitError,
+    ConfigurationError,
+)
+
 T = TypeVar("T")
 
 if TYPE_CHECKING:
@@ -82,7 +92,7 @@ class QueryBuilder(ABC, Generic[T]):
         self._limit = original_limit
         return total
     
-    @abstractmethod
+    @property
     def _endpoint(self) -> str:
         """API endpoint for this query."""
         pass
