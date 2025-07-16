@@ -1,228 +1,509 @@
-"""Award search query builder."""
-
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
-from .query_builder import QueryBuilder
-from ..exceptions import ValidationError
+import datetime
+from typing import Any, Optional
 
-if TYPE_CHECKING:
-    from ..models.award import Award
-    from ..plugins.base import AgencyPlugin
+from usaspending.client import USASpending
+from usaspending.exceptions import ValidationError
+from usaspending.models import Award
+from usaspending.queries.query_builder import QueryBuilder
+from usaspending.queries.filters import (
+    AgencyFilter,
+    AgencyTier,
+    AgencyType,
+    AwardAmount,
+    AwardAmountFilter,
+    AwardDateType,
+    BaseFilter,
+    KeywordsFilter,
+    Location,
+    LocationFilter,
+    LocationScope,
+    LocationScopeFilter,
+    SimpleListFilter,
+    TieredCodeFilter,
+    TimePeriodFilter,
+    TreasuryAccountComponentsFilter,
+)
+
 
 class AwardsSearch(QueryBuilder["Award"]):
-    """Query builder for award searches."""
-    
-    @property
+    """
+    Builds and executes a spending_by_award search query, allowing for complex
+    filtering on award data. This class follows a fluent interface pattern.
+    """
+
+    def __init__(self, client: USASpending):
+        """
+        Initializes the AwardsSearch query builder.
+
+        Args:
+            client: The USASpending client instance.
+        """
+        super().__init__(client)
+        self._filter_objects: list[BaseFilter] = []
+
     def _endpoint(self) -> str:
-        return "/search/spending_by_award/"
-    
-    def _build_payload(self, page: int) -> Dict[str, Any]:
-        """Build API payload for award search."""
+        """The API endpoint for this query."""
+        return "/api/v2/search/spending_by_award/"
+
+    def _clone(self) -> AwardsSearch:
+        """Creates an immutable copy of the query builder."""
+        clone = super()._clone()
+        clone._filter_objects = self._filter_objects.copy()
+        return clone
+
+    def _build_payload(self, page: int) -> dict[str, Any]:
+        """Constructs the final API request payload from the filter objects."""
+        final_filters: dict[str, Any] = {}
+
+        # Aggregate filters
+        for f in self._filter_objects:
+            f_dict = f.to_dict()
+            for key, value in f_dict.items():
+                if key in final_filters and isinstance(final_filters[key], list):
+                    final_filters[key].extend(value)
+                # Skip keys with empty values to keep payload clean
+                elif value:
+                    final_filters[key] = value
+
+        # The 'award_type_codes' filter is required by the API.
+        if "award_type_codes" not in final_filters:
+            raise ValidationError(
+                "A filter for 'award_type_codes' is required. "
+                "Use the .with_award_types() method."
+            )
+
         payload = {
-            "filters": self._filters,
+            "filters": final_filters,
+            "fields": self._get_fields(),
             "limit": self._limit,
             "page": page,
-            "fields": [
-                "Award ID",
-                "Recipient Name", 
-                "Start Date",
-                "End Date",
-                "Award Amount",
-                "Description",
-                "generated_unique_award_id",
-                "recipient_id",
-            ],
         }
-        
-        if self._order_by:
-            payload["sort"] = self._order_by
-            payload["order"] = self._order_direction
-            
         return payload
-    
-    def _transform_result(self, data: Dict[str, Any]) -> "Award":
-        """Transform result to Award model."""
-        from ..models.award import Award
-        return Award(data, client=self._client)
-    
-    def for_agency(self, agency: str, account: Optional[str] = None) -> "AwardsSearch":
-        """Filter by funding agency with optional account.
-        
+
+    def _transform_result(self, result: dict[str, Any]) -> Award:
+        """Transforms a single API result item into an Award model."""
+        return Award(result, self._client)
+
+    def _get_fields(self) -> list[str]:
+        """
+        Determines the list of fields to request based on filters.
+        """
+
+        return [
+            "Award ID",
+            "Recipient Name",
+            "Recipent DUNS Number",
+            "recipient_id",
+            "Awarding Agency",
+            "Awarding Agency Code",
+            "Awarding Sub Agency",
+            "Awarding Sub Agency Code",
+            "Funding Agency",
+            "Funding Agency Code",
+            "Funding Sub Agency",
+            "Funding Sub Agency Code",
+            "Description",
+            "Last Modified Date",
+            "Base Obligation Date",
+            "prime_award_recipient_id",
+            "generated_internal_id",
+            "def_codes",
+            "COVID-19 Obligations",
+            "COVID-19 Outlays",
+            "Infrastructure Obligations",
+            "Infrastructure Outlays",
+            "Recipient UEI",
+            "Recipient Location",
+            "Primary Place of Performance"
+        ]
+
+    # ==========================================================================
+    # Filter Methods
+    # ==========================================================================
+
+    def with_keywords(self, *keywords: str) -> AwardsSearch:
+        """
+        Filter by a list of keywords.
+
         Args:
-            agency: Agency name, abbreviation, or TAS code
-            account: Optional account name (e.g., "Science", "Exploration")
-            
+            *keywords: One or more keywords to search for.
+
         Returns:
-            New query builder with agency filter
-            
-        Example:
-            >>> # Using plugin data
-            >>> awards = client.awards.search().for_agency("NASA", account="Science")
-            >>> 
-            >>> # Or directly with codes
-            >>> awards = client.awards.search().for_agency("080")
+            A new `AwardsSearch` instance with the filter applied.
         """
         clone = self._clone()
-        
-        # Try to get agency info from plugins
-        agency_code = agency
-        agency_name = agency
-        account_code = None
-        
-        # Check all registered agency plugins
-        from ..plugins.base import AgencyPlugin
-        agency_plugins = self._client.plugins.get_by_type(AgencyPlugin)
-        
-        for plugin in agency_plugins.values():
-            # Match by name, abbreviation, or code
-            if agency.upper() in (
-                plugin.agency_name.upper(),
-                plugin.abbreviation.upper(),
-                plugin.agency_code
-            ):
-                agency_code = plugin.agency_code
-                agency_name = plugin.agency_name
-                
-                # Get account code if specified
-                if account:
-                    account_code = plugin.get_account_code(account)
-                    if not account_code:
-                        raise ValidationError(
-                            f"Unknown account '{account}' for {plugin.abbreviation}"
-                        )
-                break
-        
-        # Add agency filter
-        clone._filters.setdefault("agencies", []).append({
-            "type": "funding",
-            "tier": "toptier",
-            "toptier_code": agency_code,
-            "name": agency_name,
-        })
-        
-        # Add account filter if specified
-        if account_code:
-            clone._filters.setdefault("tas_codes", []).append({
-                "aid": agency_code,
-                "main": account_code
-            })
-        
+        clone._filter_objects.append(KeywordsFilter(values=list(keywords)))
         return clone
-    
-    def in_state(self, state: str) -> "AwardsSearch":
-        """Filter by state.
-        
+
+    def in_time_period(
+        self,
+        start_date: datetime.date,
+        end_date: datetime.date,
+        date_type: Optional[AwardDateType] = None,
+    ) -> AwardsSearch:
+        """
+        Filter by a specific date range.
+
         Args:
-            state: Two-letter state code
-            
+            start_date: The start date of the period.
+            end_date: The end date of the period.
+            date_type: The type of date to filter on (e.g., action_date).
+
         Returns:
-            New query builder with state filter
+            A new `AwardsSearch` instance with the filter applied.
         """
         clone = self._clone()
-        clone._filters.setdefault("place_of_performance_locations", []).append({
-            "country": "USA",
-            "state": state.upper(),
-        })
-        return clone
-    
-    def in_district(self, district: str) -> "AwardsSearch":
-        """Add congressional district to state filter.
-        
-        Args:
-            district: Two-digit district code
-            
-        Returns:
-            New query builder with district filter
-            
-        Note:
-            Must be called after in_state()
-        """
-        clone = self._clone()
-        locations = clone._filters.get("place_of_performance_locations", [])
-        
-        if not locations:
-            raise ValidationError("Must call in_state() before in_district()")
-        
-        # Add district to the last location filter
-        locations[-1]["congressional_code"] = district
-        return clone
-    
-    def near_nasa_center(self, center_code: str) -> "AwardsSearch":
-        """Filter by proximity to a NASA center.
-        
-        Args:
-            center_code: NASA center code (e.g., "JSC", "KSC", "JPL")
-            
-        Returns:
-            New query builder filtered by center's state
-        """
-        clone = self._clone()
-        
-        # Get NASA plugin
-        nasa_plugin = self._client.get_plugin("nasa")
-        if not nasa_plugin:
-            raise ValidationError("NASA plugin not registered")
-        
-        # Find center
-        centers = nasa_plugin.get_major_centers()
-        center = next(
-            (c for c in centers if c["code"].upper() == center_code.upper()),
-            None
+        clone._filter_objects.append(
+            TimePeriodFilter(start_date=start_date, end_date=end_date, date_type=date_type)
         )
-        
-        if not center:
-            raise ValidationError(f"Unknown NASA center: {center_code}")
-        
-        # Filter by center's state
-        return clone.in_state(center["state"])
-    
-    def fiscal_years(self, *years: int) -> "AwardsSearch":
-        """Filter by fiscal years.
-        
-        Args:
-            *years: One or more fiscal years
-            
-        Returns:
-            New query builder with fiscal year filter
-        """
-        clone = self._clone()
-        time_periods = []
-        
-        for year in years:
-            time_periods.append({
-                "start_date": f"{year-1}-10-01",
-                "end_date": f"{year}-09-30",
-            })
-        
-        clone._filters["time_period"] = time_periods
         return clone
-    
-    def award_type(self, *types: str) -> "AwardsSearch":
-        """Filter by award type.
-        
+
+    def for_fiscal_year(self, year: int) -> AwardsSearch:
+        """
+        Adds a time period filter for a single US government fiscal year
+        (October 1 to September 30).
+
         Args:
-            *types: Award types ("contracts", "grants", "loans", etc.)
-            
+            year: The fiscal year to filter by.
+
         Returns:
-            New query builder with award type filter
+            A new `AwardsSearch` instance with the fiscal year filter applied.
+        """
+        start_date = datetime.date(year - 1, 10, 1)
+        end_date = datetime.date(year, 9, 30)
+        return self.in_time_period(start_date, end_date)
+
+    def with_place_of_performance_scope(self, scope: LocationScope) -> AwardsSearch:
+        """
+        Filter awards by domestic or foreign place of performance.
+
+        Args:
+            scope: The scope, either DOMESTIC or FOREIGN.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
         """
         clone = self._clone()
-        
-        # Map friendly names to codes
-        type_mapping = {
-            "contracts": ["A", "B", "C", "D"],
-            "grants": ["02", "03", "04", "05"],
-            "loans": ["07", "08"],
-            "direct_payments": ["06", "10"],
-        }
-        
-        codes = []
-        for t in types:
-            if t in type_mapping:
-                codes.extend(type_mapping[t])
-            else:
-                codes.append(t)  # Assume it's already a code
-        
-        clone._filters["award_type_codes"] = codes
+        clone._filter_objects.append(
+            LocationScopeFilter(key="place_of_performance_scope", scope=scope)
+        )
+        return clone
+
+    def with_place_of_performance_locations(self, *locations: Location) -> AwardsSearch:
+        """
+        Filter by one or more specific geographic places of performance.
+
+        Args:
+            *locations: One or more `Location` objects.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            LocationFilter(key="place_of_performance_locations", locations=list(locations))
+        )
+        return clone
+
+    def for_agency(
+        self,
+        name: str,
+        agency_type: AgencyType = AgencyType.AWARDING,
+        tier: AgencyTier = AgencyTier.TOPTIER,
+    ) -> AwardsSearch:
+        """
+        Filter by a specific awarding or funding agency.
+
+        Args:
+            name: The name of the agency.
+            agency_type: The type of agency (AWARDING or FUNDING).
+            tier: The agency tier (TOPTIER or SUBTIER).
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            AgencyFilter(agency_type=agency_type, tier=tier, name=name)
+        )
+        return clone
+
+    def with_recipient_search_text(self, *search_terms: str) -> AwardsSearch:
+        """
+        Filter by recipient name, UEI, or DUNS.
+
+        Args:
+            *search_terms: Text to search for across recipient identifiers.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="recipient_search_text", values=list(search_terms))
+        )
+        return clone
+
+    def with_recipient_scope(self, scope: LocationScope) -> AwardsSearch:
+        """
+        Filter recipients by domestic or foreign scope.
+
+        Args:
+            scope: The scope, either DOMESTIC or FOREIGN.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(LocationScopeFilter(key="recipient_scope", scope=scope))
+        return clone
+
+    def with_recipient_locations(self, *locations: Location) -> AwardsSearch:
+        """
+        Filter by one or more specific recipient locations.
+
+        Args:
+            *locations: One or more `Location` objects.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            LocationFilter(key="recipient_locations", locations=list(locations))
+        )
+        return clone
+
+    def with_recipient_types(self, *type_names: str) -> AwardsSearch:
+        """
+        Filter by one or more recipient or business types.
+
+        Args:
+            *type_names: The names of the recipient types (e.g., "small_business").
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="recipient_type_names", values=list(type_names))
+        )
+        return clone
+
+    def with_award_types(self, *award_codes: str) -> AwardsSearch:
+        """
+        Filter by one or more award type codes. This filter is **required**.
+
+        Args:
+            *award_codes: A sequence of award type codes (e.g., "A", "B", "02").
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="award_type_codes", values=list(award_codes))
+        )
+        return clone
+
+    def with_award_ids(self, *award_ids: str) -> AwardsSearch:
+        """
+        Filter by specific award IDs (FAIN, PIID, URI).
+
+        Args:
+            *award_ids: The exact award IDs to search for.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(SimpleListFilter(key="award_ids", values=list(award_ids)))
+        return clone
+
+    def with_award_amounts(self, *amounts: AwardAmount) -> AwardsSearch:
+        """
+        Filter by one or more award amount ranges.
+
+        Args:
+            *amounts: One or more `AwardAmount` objects defining the ranges.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(AwardAmountFilter(amounts=list(amounts)))
+        return clone
+
+    def with_cfda_numbers(self, *program_numbers: str) -> AwardsSearch:
+        """
+        Filter by one or more CFDA program numbers.
+
+        Args:
+            *program_numbers: The CFDA numbers to filter by.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="program_numbers", values=list(program_numbers))
+        )
+        return clone
+
+    def with_naics_codes(
+        self,
+        require: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
+    ) -> AwardsSearch:
+        """
+        Filter by NAICS codes, including or excluding specific codes.
+
+        Args:
+            require: A list of NAICS codes to require.
+            exclude: A list of NAICS codes to exclude.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        # The API expects a list of lists, but for NAICS, each list contains one element.
+        require_list = [[code] for code in require] if require else []
+        exclude_list = [[code] for code in exclude] if exclude else []
+        clone._filter_objects.append(
+            TieredCodeFilter(key="naics_codes", require=require_list, exclude=exclude_list)
+        )
+        return clone
+
+    def with_psc_codes(
+        self,
+        require: Optional[list[list[str]]] = None,
+        exclude: Optional[list[list[str]]] = None,
+    ) -> AwardsSearch:
+        """
+        Filter by Product and Service Codes (PSC), including or excluding codes.
+
+        Args:
+            require: A list of PSC code paths to require.
+            exclude: A list of PSC code paths to exclude.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            TieredCodeFilter(
+                key="psc_codes",
+                require=require or [],
+                exclude=exclude or [],
+            )
+        )
+        return clone
+
+    def with_contract_pricing_types(self, *type_codes: str) -> AwardsSearch:
+        """
+        Filter by one or more contract pricing type codes.
+
+        Args:
+            *type_codes: The contract pricing type codes.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="contract_pricing_type_codes", values=list(type_codes))
+        )
+        return clone
+
+    def with_set_aside_types(self, *type_codes: str) -> AwardsSearch:
+        """
+        Filter by one or more set-aside type codes.
+
+        Args:
+            *type_codes: The set-aside type codes.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="set_aside_type_codes", values=list(type_codes))
+        )
+        return clone
+
+    def with_extent_competed_types(self, *type_codes: str) -> AwardsSearch:
+        """
+        Filter by one or more extent competed type codes.
+
+        Args:
+            *type_codes: The extent competed type codes.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="extent_competed_type_codes", values=list(type_codes))
+        )
+        return clone
+
+    def with_tas_codes(
+        self,
+        require: Optional[list[list[str]]] = None,
+        exclude: Optional[list[list[str]]] = None,
+    ) -> AwardsSearch:
+        """
+        Filter by Treasury Account Symbols (TAS), including or excluding codes.
+
+        Args:
+            require: A list of TAS code paths to require.
+            exclude: A list of TAS code paths to exclude.
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            TieredCodeFilter(
+                key="tas_codes",
+                require=require or [],
+                exclude=exclude or [],
+            )
+        )
+        return clone
+
+    def with_treasury_account_components(
+        self, *components: dict[str, str]
+    ) -> AwardsSearch:
+        """
+        Filter by specific components of a Treasury Account.
+
+        Args:
+            *components: Dictionaries representing TAS components (aid, main, etc.).
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            TreasuryAccountComponentsFilter(components=list(components))
+        )
+        return clone
+
+    def with_def_codes(self, *def_codes: str) -> AwardsSearch:
+        """
+        Filter by one or more Disaster Emergency Fund (DEF) codes.
+
+        Args:
+            *def_codes: The DEF codes (e.g., "L", "M", "N").
+
+        Returns:
+            A new `AwardsSearch` instance with the filter applied.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="def_codes", values=list(def_codes))
+        )
         return clone
