@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 class AwardsSearch(QueryBuilder["Award"]):
     """Query builder for award searches."""
     
+    @property
     def _endpoint(self) -> str:
         return "/search/spending_by_award/"
     
@@ -109,22 +110,6 @@ class AwardsSearch(QueryBuilder["Award"]):
         
         return clone
     
-    def for_nasa_science(self) -> "AwardsSearch":
-        """Shortcut filter for NASA Science Mission Directorate.
-        
-        Returns:
-            New query builder filtered for NASA Science
-        """
-        return self.for_agency("NASA", account="Science")
-    
-    def for_nasa_exploration(self) -> "AwardsSearch":
-        """Shortcut filter for NASA Exploration Systems.
-        
-        Returns:
-            New query builder filtered for NASA Exploration
-        """
-        return self.for_agency("NASA", account="Exploration")
-    
     def in_state(self, state: str) -> "AwardsSearch":
         """Filter by state.
         
@@ -211,21 +196,6 @@ class AwardsSearch(QueryBuilder["Award"]):
             })
         
         clone._filters["time_period"] = time_periods
-        return clone
-    
-    def min_amount(self, amount: float) -> "AwardsSearch":
-        """Filter by minimum award amount.
-        
-        Args:
-            amount: Minimum award amount in dollars
-            
-        Returns:
-            New query builder with amount filter
-        """
-        clone = self._clone()
-        clone._filters["award_amount_range"] = [{
-            "min": amount
-        }]
         return clone
     
     def award_type(self, *types: str) -> "AwardsSearch":
