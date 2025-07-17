@@ -1,0 +1,141 @@
+{
+  "spending_level": "awards",
+  "limit": 2,
+  "results": [
+    {
+      "internal_id": 120116972,
+      "Award ID": "GSFC0200211DNAS502200",
+      "Recipient Name": "NORTHROP GRUMMAN SYSTEMS CORPORATION",
+      "Award Amount": 4345585999.01,
+      "Total Outlays": 519112956.52,
+      "Description": "THE JAMES WEBB SPACE TELESCOPE (JWST) PHASE 2 OBSERVATORY CONTRACTOR SHALL BE RESPONSIBLE FOR PROVIDING THE SPACECRAFT, THE OPTICAL TELESCOPE ELEMENT (OTE), PORTIONS OF THE INTEGRATED SCIENCE INSTRUMENT MODULE (ISIM), OBSERVATORY AND SYSTEM INTEGRATION AND TEST (I&T), OBSERVATORY VERIFICATION, OBSERVATORY COMMISSIONING, ASSOCIATED SYSTEMS ENGINEERING, AND THE GROUND AND LAUNCH SUPPORT EQUIPMENT NECESSARY TO DEVELOP AND LAUNCH THE JWST OBSERVATORY.",
+      "Contract Award Type": "DEFINITIVE CONTRACT",
+      "Recipient UEI": "VSBAFMDKTWL4",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "CA",
+        "state_name": "California",
+        "city_name": "REDONDO BEACH",
+        "county_code": "037",
+        "county_name": "LOS ANGELES",
+        "address_line1": "1 SPACE PARK BLVD",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "36",
+        "zip4": "1001",
+        "zip5": "90278",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "CA",
+        "state_name": "California",
+        "city_name": "REDONDO BEACH",
+        "county_code": "037",
+        "county_name": "LOS ANGELES",
+        "congressional_code": "36",
+        "zip4": "902781078",
+        "zip5": "90278"
+      },
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Start Date": "2003-10-01",
+      "End Date": "2022-12-25",
+      "NAICS": {
+        "code": "336414",
+        "description": "GUIDED MISSILE AND SPACE VEHICLE MANUFACTURING"
+      },
+      "PSC": {
+        "code": "AR34",
+        "description": "R&D- SPACE: FLIGHT (ENGINEERING DEVELOPMENT)"
+      },
+      "recipient_id": "c1d87c0c-1b5f-f2c8-c447-e001bb4cc08c-C",
+      "prime_award_recipient_id": null,
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration",
+      "generated_internal_id": "CONT_AWD_GSFC0200211DNAS502200_8000_-NONE-_-NONE-"
+    },
+    {
+      "internal_id": 111963182,
+      "Award ID": "80NM0018F0615",
+      "Recipient Name": "CALIFORNIA INSTITUTE OF TECHNOLOGY",
+      "Award Amount": 2856157775.98,
+      "Total Outlays": 2361314245.28,
+      "Description": "EUROPA CLIPPER PROJECT  THE CONTRACT IS THE SPONSORING AGREEMENT BETWEEN THE NATIONAL AERONAUTICS AND SPACE ADMINISTRATION NASA AND THE CALIFORNIA INSTITUTE OF TECHNOLOGY-CONTRACTOR, A PRIVATE NONPROFIT EDUCATIONAL INSTITUTION, WHICH ESTABLISHES THE RELATIONSHIP FOR THE OPERATION OF THE FEDERALLY FUNDED RESEARCH AND DEVELOPMENT CENTER-FFRDC KNOWN AS THE JET PROPULSION LABORATORY. THE CONTRACTOR, JPL, IS REQUIRED TO PERFORM WORK THAT IS DESIGNATED IN TASK ORDERS ISSUED BY THE NASA MANAGEMENT OFFICE-NMO CONTRACTING OFFICERS. NASA-SPONSORED WORK: JPLS PRIMARY MISSION IS TO SUPPORT THE NASA SCIENCE MISSION DIRECTORATE-SMD IN CARRYING OUT THE SPECIFIC OBJECTIVES IDENTIFIED IN THE SMD SCIENCE PLAN.  THE FOUR BROAD SCIENTIFIC AREAS ARE: EARTH SCIENCE, PLANETARY SCIENCE, HELIOPHYSICS, AND ASTROPHYSICS.  IN PERFORMANCE OF THIS CONTRACT, JPL SHALL: 1. SUPPLY A BROAD BASE OF SCIENTIFIC AND TECHNICAL CAPABILITIES RELEVANT TO NASA PROGRAM AND PROJECT RESPONSIBILITIES AND ASSIGNMENTS. 2. FOSTER ITS UNIQUE RELATIONSHIP WITH A TOP-TIER UNIVERSITY TO FACILITATE THE INVOLVEMENT OF SCIENTISTS, ENGINEERS, AND STUDENTS FROM THE UNIVERSITY AND RESEARCH COMMUNITIES IN NASA MISSION AND IN SUPPORTING OTHER GOVERNMENT AGENCIES. 3. SUPPORT NASA IN ENABLING PROGRAM AND INSTITUTIONAL CAPABILITIES. 4. DEVELOP SPACECRAFT AND INSTRUMENTS THAT ARE SENT TO VARIOUS DESTINATIONS WITH OUR SOLAR SYSTEM, INCLUDING EARTH ORBIT, PLANETS, PLANETARY SATELLITES, ASTEROIDS, AND COMETS.  THESE MISSIONS MAY BE ORBITERS, LANDERS, OR ROVERS, AND TYPICALLY INCLUDE CUTTING-EDGE TECHNOLOGIES REQUIRED TO MEET SCIENTIFIC REQUIREMENTS. 5. PERFORM PROJECT TASKS INVOLVING: I-AUTONOMOUS DEEP-SPACE, INNER-SPACE AND EARTH-ORBITING SPACECRAFT OR MAJOR SUBSYSTEMS, II-EXPERIMENTS, INSTRUMENTS, OR OTHER DEVICES WHICH MAY BE CARRIED AS PAYLOAD ON SPACECRAFTS IN MISSIONS MANAGED BY OTHERS, AND-OR III-GROUND-BASED SYSTEMS. 6. BEYOND ITS PRIMARY MISSION, JPL MAY PERFORM WORK FOR OTHER NASA MISSION DIRECTORATES OR OFFICES. 7. JPL IS ALSO RESPONSIBLE FOR THE OPERATION, RESEARCH, TECHNOLOGY INSERTION, AND MANAGEMENT OF NASAS DEEP SPACE NETWORK TO PROVIDE TELECOMMUNICATION AND OPERATION SERVICES, INCLUDING DATA ACQUISITION AND DATA DELIVERY REQUIRED TO MEET ESTABLISHED AGENCY OBJECTIVES. 8. JPL IS ALSO REQUIRED TO MAINTAIN AND CONDUCT AN EDUCATION PROGRAM IN CLOSE COORDINATION WITH THE NASA HEADQUARTERS EDUCATION OFFICE, THE ACADEMIC COMMUNITY AT LARGE, AND IN SUPPORT TO NASA STRATEGIC OBJECTIVES TO IMPROVE STUDENT RETENTION IN THE SCIENCE, TECHNOLOGY, ENGINEERING, AND MATHEMATICS-STEM DISCIPLINES. WORK FOR NON-NASA SPONSORS:  JPL MAY PERFORM WORK FOR NON-NASA SPONSORS.  THIS WORK WILL BE DESIGNATED IN TASK ORDERS ISSUED BY NMO CONTRACTING OFFICERS BASED ON TASK PLANS INITIATED BY THE CONTRACTOR.",
+      "Contract Award Type": "DELIVERY ORDER",
+      "Recipient UEI": "YC1YP79BFD19",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "CA",
+        "state_name": "California",
+        "city_name": "PASADENA",
+        "county_code": "037",
+        "county_name": "LOS ANGELES",
+        "address_line1": "4800 OAK GROVE DR",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "28",
+        "zip4": "8001",
+        "zip5": "91109",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "CA",
+        "state_name": "California",
+        "city_name": "PASADENA",
+        "county_code": "037",
+        "county_name": "LOS ANGELES",
+        "congressional_code": "28",
+        "zip4": "911098099",
+        "zip5": "91109"
+      },
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Start Date": "2018-10-01",
+      "End Date": "2025-09-30",
+      "NAICS": {
+        "code": "541715",
+        "description": "RESEARCH AND DEVELOPMENT IN THE PHYSICAL, ENGINEERING, AND LIFE SCIENCES (EXCEPT NANOTECHNOLOGY AND BIOTECHNOLOGY)"
+      },
+      "PSC": {
+        "code": "AR22",
+        "description": "R&D- SPACE: SCIENCE/APPLICATIONS (APPLIED RESEARCH/EXPLORATORY DEVELOPMENT)"
+      },
+      "recipient_id": "6e76fa33-2d96-c636-941c-bca1997db076-C",
+      "prime_award_recipient_id": null,
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration",
+      "generated_internal_id": "CONT_AWD_80NM0018F0615_8000_80NM0018D0004_8000"
+    }
+  ],
+  "page_metadata": {
+    "page": 1,
+    "hasNext": true,
+    "last_record_unique_id": 111963182,
+    "last_record_sort_value": "2856157775.98"
+  },
+  "messages": [
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. "
+  ]
+}
