@@ -37,7 +37,7 @@ class Award(LazyRecord):
 
     def _fetch_details(self, client: 'USASpending') -> Optional[Dict[str, Any]]:
         """Fetch full award details."""
-        award_id = self._data.get_value('generated_unique_award_id')
+        award_id = self.get_value(['generated_unique_award_id'])
         if not award_id:
             return None
         return client._raw_client.get_award(award_id)
@@ -46,59 +46,57 @@ class Award(LazyRecord):
     @property
     def prime_award_id(self) -> str:
         """Primary award identifier (PIID, FAIN, URI, etc.)."""
-        return str(self._get("Award ID", "piid", "fain", "uri", default=""))
+        return str(self.get_value(["Award ID", "piid", "fain", "uri"], default=""))
 
     @property
     def generated_unique_award_id(self) -> Optional[str]:
         """USASpending-generated unique award identifier."""
-        return self._get("generated_unique_award_id", "generated_internal_id")
+        return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
     @property
     def description(self) -> str:
         """Award description with smart sentence casing."""
-        return smart_sentence_case(self._get("description", "Description", default=""))
+        return smart_sentence_case(self.get_value(["description", "Description"], default=""))
 
     # Financial properties
     @property
     def total_obligations(self) -> float:
         """Total obligated amount for this award."""
-        return to_float(self._get("total_obligation", "Award Amount")) or 0.0
+        return to_float(self.get_value(["total_obligation", "Award Amount"])) or 0.0
 
     @property
     def total_outlay(self) -> float:
         """Total amount paid out for this award."""
-        return to_float(self._get("total_account_outlay", "Total Outlays")) or 0.0
+        return to_float(self.get_value(["total_account_outlay", "Total Outlays"])) or 0.0
 
     @property
     def potential_value(self) -> float:
         """Potential total value of the award."""
         return to_float(
-            self._get("Award Amount", "Loan Amount", default=self.total_obligations)
+            self.get_value(["Award Amount", "Loan Amount"], default=self.total_obligations)
         ) or 0.0
 
     @property
     def award_amount(self) -> float:
         """Base award amount."""
-        return to_float(self._get("Award Amount", "Loan Amount")) or 0.0
+        return to_float(self.get_value(["Award Amount", "Loan Amount"])) or 0.0
 
     @cached_property
     def period_of_performance(self) -> Optional[PeriodOfPerformance]:
         """Award period of performance dates."""
-        if isinstance(self.get_value("period_of_performance"), dict):
+        if isinstance(self.get_value(["period_of_performance"]), dict):
             return PeriodOfPerformance(self._data["period_of_performance"])
 
-        date_keys = ("Start Date", "End Date", "Period of Performance Start Date")
-        if any(self.get_value(k) for k in date_keys):
+        date_keys = ["Start Date", "End Date", "Period of Performance Start Date"]
+        if any(self.get_value([k]) for k in date_keys):
             return PeriodOfPerformance({
-                "start_date": (
-                    self.get_value("Start Date") or
-                    self.get_value("Period of Performance Start Date")
-                ),
-                "end_date": (
-                    self.get_value("End Date") or
-                    self.get_value("Period of Performance Current End Date")
-                ),
-                "last_modified_date": self.get_value("Last Modified Date"),
+                "start_date": self.get_value([
+                    "Start Date", "Period of Performance Start Date"
+                ]),
+                "end_date": self.get_value([
+                    "End Date", "Period of Performance Current End Date"
+                ]),
+                "last_modified_date": self.get_value(["Last Modified Date"]),
             })
         return None
 
@@ -111,20 +109,20 @@ class Award(LazyRecord):
     def recipient(self) -> Optional[Recipient]:
         """Award recipient with lazy loading."""
         # First check if we already have recipient data
-        if isinstance(self.get_value("recipient"), dict):
+        if isinstance(self.get_value(["recipient"]), dict):
             return self._get_or_create_related('recipient', Recipient)
         
         # Check if we have fallback fields before calling API
-        recipient_keys = ("Recipient Name", "Recipient DUNS Number", "recipient_id")
-        if any(self.get_value(k) for k in recipient_keys):
+        recipient_keys = ["Recipient Name", "Recipient DUNS Number", "recipient_id"]
+        if any(self.get_value([k]) for k in recipient_keys):
             recipient = Recipient({
-                "recipient_name": self.get_value("Recipient Name"),
-                "recipient_unique_id": self.get_value("Recipient DUNS Number"),
-                "recipient_id": self.get_value("recipient_id"),
+                "recipient_name": self.get_value(["Recipient Name"]),
+                "recipient_unique_id": self.get_value(["Recipient DUNS Number"]),
+                "recipient_id": self.get_value(["recipient_id"]),
             }, client=self._client)
             
             # Add location if available to avoid separate API call
-            if isinstance(self.get_value("Recipient Location"), dict):
+            if isinstance(self.get_value(["Recipient Location"]), dict):
                 recipient_location = self._get_or_create_related(
                     "Recipient Location", Location
                 )
@@ -134,7 +132,7 @@ class Award(LazyRecord):
         
         # Only call API if we don't have enough info in the Award entry itself
         self._ensure_details()  # loads the full Award detail
-        if isinstance(self.get_value("recipient"), dict):
+        if isinstance(self.get_value(["recipient"]), dict):
             return self._get_or_create_related("recipient", Recipient)
         
         return None
@@ -143,8 +141,8 @@ class Award(LazyRecord):
     def transactions(self) -> List[Transaction]:
         """Award transactions with pagination."""
         client = get_usaspending_client()
-        award_id = self._get(
-            "generated_internal_id", "generated_unique_award_id", 
+        award_id = self.get_value(
+            ["generated_internal_id", "generated_unique_award_id"], 
             default=self.prime_award_id
         )
         if client is None or not award_id:
@@ -169,7 +167,7 @@ class Award(LazyRecord):
     # Helper methods
     def get(self, key: str, default: Any = None) -> Any:
         """Get value from award data."""
-        return self._get(key, default=default)
+        return self.get_value([key], default=default)
 
     @property
     def raw(self) -> Dict[str, Any]:
