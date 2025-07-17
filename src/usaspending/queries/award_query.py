@@ -20,7 +20,7 @@ class AwardQuery:
         award_id = str(award_id).strip()
         
         # Construct valid endpoint
-        endpoint = f"/api/v2/awards/{award_id}/"
+        endpoint = f"/v2/awards/{award_id}/"
         
         # Make API request
         response = self._client._make_request("GET", endpoint)

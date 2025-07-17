@@ -45,7 +45,7 @@ class AwardsSearch(QueryBuilder["Award"]):
 
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
-        return "/api/v2/search/spending_by_award/"
+        return "/v2/search/spending_by_award/"
 
     def _clone(self) -> AwardsSearch:
         """Creates an immutable copy of the query builder."""
