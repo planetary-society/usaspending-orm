@@ -22,7 +22,7 @@ class RecipientSearch(QueryBuilder["Recipient"]):
         """Build API payload for recipient search."""
         payload = {
             "filters": self._filters,
-            "limit": self._limit,
+            "limit": self._get_effective_page_size(),
             "page": page,
             "category": "recipient",
             "subawards": False,
@@ -106,4 +106,4 @@ class RecipientSearch(QueryBuilder["Recipient"]):
         Returns:
             New query builder configured for top recipients
         """
-        return self.limit(num).order_by("amount", "desc")
+        return self.page_size(min(num, 100)).limit(num).order_by("amount", "desc")

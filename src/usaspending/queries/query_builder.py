@@ -20,20 +20,33 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 class QueryBuilder(ABC, Generic[T]):
-    """Base query builder with automatic pagination support."""
+    """Base query builder with automatic pagination support.
+    
+    Provides transparent pagination handling for USASpending API queries.
+    - Use limit() to set the total number of items to retrieve across all pages
+    - Use page_size() to control how many items are fetched per API request
+    - Use max_pages() to limit the number of API requests made
+    """
     
     def __init__(self, client: "USASpending"):
         self._client = client
         self._filters: Dict[str, Any] = {}
-        self._limit = 100  # Per page
+        self._page_size = 100  # Items per page (max 100 per USASpending API)
+        self._total_limit = None  # Total items to return (across all pages)
         self._max_pages = None  # Limit total pages fetched
         self._order_by = None
         self._order_direction = "desc"
     
     def limit(self, num: int) -> "QueryBuilder[T]":
+        """Set the total number of items to return across all pages."""
+        clone = self._clone()
+        clone._total_limit = num
+        return clone
+    
+    def page_size(self, num: int) -> "QueryBuilder[T]":
         """Set page size (max 100 per USASpending API)."""
         clone = self._clone()
-        clone._limit = min(num, 100)
+        clone._page_size = min(num, 100)
         return clone
     
     def max_pages(self, num: int) -> "QueryBuilder[T]":
@@ -50,51 +63,52 @@ class QueryBuilder(ABC, Generic[T]):
         return clone
     
     def __iter__(self) -> Iterator[T]:
-        """Iterate over all results, respecting the user's limit and handling pagination."""
+        """Iterate over all results, handling pagination automatically."""
         page = 1
         pages_fetched = 0
-        items_yielded = 0  # Track the total number of items yielded
+        items_yielded = 0
 
         query_type = self.__class__.__name__
+        effective_page_size = self._get_effective_page_size()
         logger.info(
-            f"Starting {query_type} iteration with total limit={self._limit}, "
-            f"max_pages={self._max_pages}"
+            f"Starting {query_type} iteration with page_size={effective_page_size}, "
+            f"total_limit={self._total_limit}, max_pages={self._max_pages}"
         )
 
         while True:
-            # Primary exit condition: Stop if we've yielded the number of items the user wants.
-            if self._limit is not None and items_yielded >= self._limit:
-                logger.debug(f"User-defined limit of {self._limit} items reached. Halting.")
+            # Check if we've reached the total limit
+            if self._total_limit is not None and items_yielded >= self._total_limit:
+                logger.debug(f"Total limit of {self._total_limit} items reached")
                 break
 
-            # Secondary exit condition for safety
+            # Check if we've reached the max pages limit
             if self._max_pages and pages_fetched >= self._max_pages:
-                logger.debug(f"Reached max_pages limit ({self._max_pages}). Halting.")
+                logger.debug(f"Max pages limit ({self._max_pages}) reached")
                 break
 
             response = self._execute_query(page)
             results = response.get("results", [])
             has_next = response.get("page_metadata", {}).get("hasNext", False)
 
-            logger.debug(f"Fetched page {page} with {len(results)} results. hasNext: {has_next}")
+            logger.debug(f"Page {page}: {len(results)} results, hasNext={has_next}")
 
-            # If a page comes back empty, there's no more data.
+            # Empty page means no more data
             if not results:
-                logger.debug("Fetched an empty page. Halting.")
+                logger.debug("Empty page returned")
                 break
 
             for item in results:
-                # Check the limit again before each yield. This handles the case
-                # where the limit is reached mid-page.
-                if self._limit is not None and items_yielded >= self._limit:
-                    break
+                # Check limit before each yield to handle mid-page limits
+                if self._total_limit is not None and items_yielded >= self._total_limit:
+                    logger.debug(f"Stopping mid-page at item {items_yielded}")
+                    return
                 
                 yield self._transform_result(item)
                 items_yielded += 1
 
-            # If the API says there's no next page, we are done.
+            # API indicates no more pages
             if not has_next:
-                logger.debug("Last page reached (hasNext is false). Halting.")
+                logger.debug("Last page reached (hasNext=false)")
                 break
 
             page += 1
@@ -117,14 +131,17 @@ class QueryBuilder(ABC, Generic[T]):
     def count(self) -> int:
         """Get total count without fetching all results."""
         logger.debug(f"{self.__class__.__name__}.count() called")
-        # Make a request with limit=1 to get total count
-        original_limit = self._limit
-        self._limit = 1
+        # Make a request with page_size=1 to get total count
+        original_page_size = self._page_size
+        original_total_limit = self._total_limit
+        self._page_size = 1
+        self._total_limit = None  # Temporarily clear to get true count
         
         response = self._execute_query(page=1)
         total = response.get("page_metadata", {}).get("total", 0)
         
-        self._limit = original_limit
+        self._page_size = original_page_size
+        self._total_limit = original_total_limit
         logger.info(f"{self.__class__.__name__}.count() = {total}")
         return total
     
@@ -137,6 +154,12 @@ class QueryBuilder(ABC, Generic[T]):
     def _build_payload(self, page: int) -> Dict[str, Any]:
         """Build request payload."""
         pass
+    
+    def _get_effective_page_size(self) -> int:
+        """Get the effective page size based on limit and configured page size."""
+        if self._total_limit is not None:
+            return min(self._page_size, self._total_limit)
+        return self._page_size
     
     @abstractmethod
     def _transform_result(self, data: Dict[str, Any]) -> T:
@@ -172,7 +195,8 @@ class QueryBuilder(ABC, Generic[T]):
         """Create a copy for method chaining."""
         clone = self.__class__(self._client)
         clone._filters = self._filters.copy()
-        clone._limit = self._limit
+        clone._page_size = self._page_size
+        clone._total_limit = self._total_limit
         clone._max_pages = self._max_pages
         clone._order_by = self._order_by
         clone._order_direction = self._order_direction

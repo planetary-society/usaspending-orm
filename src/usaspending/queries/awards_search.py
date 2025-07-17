@@ -87,7 +87,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         payload = {
             "filters": final_filters,
             "fields": self._get_fields(),
-            "limit": self._limit,
+            "limit": self._get_effective_page_size(),
             "page": page,
         }
         return payload

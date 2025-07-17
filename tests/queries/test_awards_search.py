@@ -52,7 +52,7 @@ class TestAwardsSearchInitialization:
         search = AwardsSearch(mock_client)
         assert search._client == mock_client
         assert search._filter_objects == []
-        assert search._limit == 100
+        assert search._page_size == 100
         assert search._max_pages is None
 
     def test_endpoint(self, awards_search):
@@ -63,7 +63,7 @@ class TestAwardsSearchInitialization:
         """Test that _clone creates a new instance with copied attributes."""
         # Add some filters first
         awards_search._filter_objects.append(Mock())
-        awards_search._limit = 50
+        awards_search._page_size = 50
         
         # Clone the search
         cloned = awards_search._clone()
@@ -74,7 +74,7 @@ class TestAwardsSearchInitialization:
         
         # But has same content
         assert len(cloned._filter_objects) == len(awards_search._filter_objects)
-        assert cloned._limit == awards_search._limit
+        assert cloned._page_size == awards_search._page_size
 
 
 class TestFilterMethods:
@@ -420,9 +420,9 @@ class TestPayloadBuilding:
         assert payload["filters"]["agencies"][0]["name"] == "NASA"
         assert payload["filters"]["agencies"][1]["name"] == "DOD"
 
-    def test_build_payload_custom_limit(self, awards_search):
-        """Test payload with custom limit."""
-        search = awards_search.with_award_types("A").limit(50)
+    def test_build_payload_custom_page_size(self, awards_search):
+        """Test payload with custom page size."""
+        search = awards_search.with_award_types("A").page_size(50)
         
         payload = search._build_payload(page=1)
         
