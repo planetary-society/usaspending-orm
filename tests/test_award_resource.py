@@ -43,7 +43,7 @@ class TestAwardResource:
         # Verify API call
         mock_client._make_request.assert_called_once_with(
             "GET", 
-            "/api/v2/awards/CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-/"
+            "/v2/awards/CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-/"
         )
         
         # Verify return value
@@ -59,7 +59,7 @@ class TestAwardResource:
         
         mock_client._make_request.assert_called_once_with(
             "GET", 
-            "/api/v2/awards/CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-/"
+            "/v2/awards/CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-/"
         )
 
     def test_get_award_empty_id_raises_validation_error(self, award_resource):
