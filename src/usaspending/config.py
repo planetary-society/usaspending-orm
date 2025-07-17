@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 
+
 @dataclass
 class Config:
     """Configuration for USASpending client.
@@ -43,3 +44,58 @@ class Config:
             raise ValueError("rate_limit_calls must be positive")
         if self.cache_backend not in ("file", "memory"):
             raise ValueError("cache_backend must be 'file' or 'memory'")
+
+# In src/usaspendingapi/config.py
+
+AWARD_TYPE_GROUPS = {
+    "contracts": {
+        "A": "BPA Call",
+        "B": "Purchase Order",
+        "C": "Delivery Order",
+        "D": "Definitive Contract"
+    },
+    "loans": {
+        "07": "Direct Loan",
+        "08": "Guaranteed/Insured Loan"
+    },
+    "idvs": {
+        "IDV_A": "GWAC Government Wide Acquisition Contract",
+        "IDV_B": "IDC Multi-Agency Contract, Other Indefinite Delivery Contract",
+        "IDV_B_A": "IDC Indefinite Delivery Contract / Requirements",
+        "IDV_B_B": "IDC Indefinite Delivery Contract / Indefinite Quantity",
+        "IDV_B_C": "IDC Indefinite Delivery Contract / Definite Quantity",
+        "IDV_C": "FSS Federal Supply Schedule",
+        "IDV_D": "BOA Basic Ordering Agreement",
+        "IDV_E": "BPA Blanket Purchase Agreement"
+    },
+    "grants": {
+        "02": "Block Grant",
+        "03": "Formula Grant",
+        "04": "Project Grant",
+        "05": "Cooperative Agreement"
+    },
+    "direct_payments": {
+        "06": "Direct Payment for Specified Use",
+        "10": "Direct Payment with Unrestricted Use"
+    },
+    "other_assistance": {
+        "09": "Insurance",
+        "11": "Other Financial Assistance",
+        "-1": "Not Specified"
+    }
+}
+
+# Create a flattened map for easy description lookups
+AWARD_TYPE_DESCRIPTIONS = {
+    code: description
+    for group in AWARD_TYPE_GROUPS.values()
+    for code, description in group.items()
+}
+
+# Regenerate frozensets from this single source of truth
+CONTRACT_CODES = frozenset(AWARD_TYPE_GROUPS["contracts"].keys())
+IDV_CODES = frozenset(AWARD_TYPE_GROUPS["idvs"].keys())
+LOAN_CODES = frozenset(AWARD_TYPE_GROUPS["loans"].keys())
+GRANT_CODES = frozenset(AWARD_TYPE_GROUPS["grants"].keys())
+DIRECT_PAYMENT_CODES = frozenset(AWARD_TYPE_GROUPS["direct_payments"].keys())
+OTHER_CODES = frozenset(AWARD_TYPE_GROUPS["other_assistance"].keys())

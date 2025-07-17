@@ -12,6 +12,9 @@ from .location import Location
 from .transaction import Transaction
 from .period_of_performance import PeriodOfPerformance
 
+from ..config import AWARD_TYPE_DESCRIPTIONS
+
+
 from ..helpers import smart_sentence_case, to_float
 
 if TYPE_CHECKING:
