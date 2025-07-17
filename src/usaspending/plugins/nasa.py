@@ -14,12 +14,12 @@ class NASAPlugin(AgencyPlugin):
     """
     
     @property
-    def agency_name(self) -> str:
+    def name(self) -> str:
         """Full agency name."""
         return "National Aeronautics and Space Administration"
     
     @property
-    def agency_code(self) -> str:
+    def tas_code(self) -> str:
         """Treasury Account Symbol (TAS) code."""
         return "080"
     
