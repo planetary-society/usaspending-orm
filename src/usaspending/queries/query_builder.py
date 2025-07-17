@@ -50,32 +50,53 @@ class QueryBuilder(ABC, Generic[T]):
         return clone
     
     def __iter__(self) -> Iterator[T]:
-        """Iterate over all results with automatic pagination."""
+        """Iterate over all results, respecting the user's limit and handling pagination."""
         page = 1
         pages_fetched = 0
-        
+        items_yielded = 0  # Track the total number of items yielded
+
         query_type = self.__class__.__name__
-        logger.info(f"Starting {query_type} iteration with limit={self._limit}, max_pages={self._max_pages}")
-        
+        logger.info(
+            f"Starting {query_type} iteration with total limit={self._limit}, "
+            f"max_pages={self._max_pages}"
+        )
+
         while True:
-            # Check max pages limit
-            if self._max_pages and pages_fetched >= self._max_pages:
-                logger.debug(f"Reached max_pages limit ({self._max_pages})")
+            # Primary exit condition: Stop if we've yielded the number of items the user wants.
+            if self._limit is not None and items_yielded >= self._limit:
+                logger.debug(f"User-defined limit of {self._limit} items reached. Halting.")
                 break
-            
-            # Fetch page
-            results = self._fetch_page(page)
-            logger.debug(f"Fetched page {page} with {len(results)} results")
-            
-            # Yield results
+
+            # Secondary exit condition for safety
+            if self._max_pages and pages_fetched >= self._max_pages:
+                logger.debug(f"Reached max_pages limit ({self._max_pages}). Halting.")
+                break
+
+            response = self._execute_query(page)
+            results = response.get("results", [])
+            has_next = response.get("page_metadata", {}).get("hasNext", False)
+
+            logger.debug(f"Fetched page {page} with {len(results)} results. hasNext: {has_next}")
+
+            # If a page comes back empty, there's no more data.
+            if not results:
+                logger.debug("Fetched an empty page. Halting.")
+                break
+
             for item in results:
+                # Check the limit again before each yield. This handles the case
+                # where the limit is reached mid-page.
+                if self._limit is not None and items_yielded >= self._limit:
+                    break
+                
                 yield self._transform_result(item)
-            
-            # Check if more pages
-            if len(results) < self._limit:
-                logger.debug(f"Last page reached (got {len(results)} results, limit was {self._limit})")
-                break  # Last page
-            
+                items_yielded += 1
+
+            # If the API says there's no next page, we are done.
+            if not has_next:
+                logger.debug("Last page reached (hasNext is false). Halting.")
+                break
+
             page += 1
             pages_fetched += 1
     
