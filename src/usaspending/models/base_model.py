@@ -23,16 +23,17 @@ class BaseModel:
         return self._data
 
     def get_value(self, keys: List[str], default: Any = None) -> Any:
-        """ Return the first non-None value from the given keys."""
+        """ Return the first truthy value from the given keys."""
         if not isinstance(keys, list):
             keys = [keys]
         
         if not isinstance(self._data, dict):
             raise TypeError("Empty object data")
         for key in keys:
-            value = self._data.get(key, default)
-            if value is not None:
-                return value
+            if key in self._data:
+                value = self._data[key]
+                if value:  # Check for truthiness instead of just non-None
+                    return value
         return default
         
 
