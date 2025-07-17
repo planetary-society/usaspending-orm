@@ -19,6 +19,10 @@ from usaspending.queries.filters import (
     AwardDateType,
     Location,
     LocationScope,
+    CONTRACT_CODES,
+    IDV_CODES,
+    LOAN_CODES,
+    GRANT_CODES,
 )
 
 
@@ -53,7 +57,7 @@ class TestAwardsSearchInitialization:
 
     def test_endpoint(self, awards_search):
         """Test that the correct endpoint is returned."""
-        assert awards_search._endpoint() == "/api/v2/search/spending_by_award/"
+        assert awards_search._endpoint() == "/v2/search/spending_by_award/"
 
     def test_clone_immutability(self, awards_search):
         """Test that _clone creates a new instance with copied attributes."""
@@ -372,11 +376,11 @@ class TestPayloadBuilding:
         payload = search._build_payload(page=1)
         
         assert payload["filters"] == {"award_type_codes": ["A", "B"]}
-        # Verify fields are included (checking just a few key ones)
+        # Verify base fields are included
         assert "Award ID" in payload["fields"]
         assert "Recipient Name" in payload["fields"]
         assert "Awarding Agency" in payload["fields"]
-        assert len(payload["fields"]) > 6  # More fields than before
+        assert len(payload["fields"]) > 20  # Should have many base fields
         assert payload["limit"] == 100
         assert payload["page"] == 1
 
@@ -423,6 +427,225 @@ class TestPayloadBuilding:
         payload = search._build_payload(page=1)
         
         assert payload["limit"] == 50
+
+    def test_contract_fields_included(self, awards_search):
+        """Test that contract-specific fields are included for contract types."""
+        search = awards_search.with_award_types("A", "B")
+        
+        fields = search._get_fields()
+        
+        # Check contract-specific fields are present
+        assert "Start Date" in fields
+        assert "End Date" in fields
+        assert "Award Amount" in fields
+        assert "Total Outlays" in fields
+        assert "Contract Award Type" in fields
+        assert "NAICS" in fields
+        assert "PSC" in fields
+    
+    def test_idv_fields_included(self, awards_search):
+        """Test that IDV-specific fields are included for IDV types."""
+        search = awards_search.with_award_types("IDV_A", "IDV_B")
+        
+        fields = search._get_fields()
+        
+        # Check IDV-specific fields are present
+        assert "Start Date" in fields
+        assert "Award Amount" in fields
+        assert "Total Outlays" in fields
+        assert "Contract Award Type" in fields
+        assert "Last Date to Order" in fields
+        assert "NAICS" in fields
+        assert "PSC" in fields
+        # Should not have End Date (IDV-specific difference)
+    
+    def test_loan_fields_included(self, awards_search):
+        """Test that loan-specific fields are included for loan types."""
+        search = awards_search.with_award_types("07", "08")
+        
+        fields = search._get_fields()
+        
+        # Check loan-specific fields are present
+        assert "Issued Date" in fields
+        assert "Loan Value" in fields
+        assert "Subsidy Cost" in fields
+        assert "SAI Number" in fields
+        assert "CFDA Number" in fields
+        assert "Assistance Listings" in fields
+        assert "primary_assistance_listing" in fields
+    
+    def test_assistance_fields_included(self, awards_search):
+        """Test that assistance-specific fields are included for assistance types."""
+        search = awards_search.with_award_types("02", "03", "04")
+        
+        fields = search._get_fields()
+        
+        # Check assistance-specific fields are present
+        assert "Start Date" in fields
+        assert "End Date" in fields
+        assert "Award Amount" in fields
+        assert "Total Outlays" in fields
+        assert "Award Type" in fields
+        assert "SAI Number" in fields
+        assert "CFDA Number" in fields
+        assert "Assistance Listings" in fields
+        assert "primary_assistance_listing" in fields
+    
+    def test_mixed_award_types_fields_now_forbidden(self, awards_search):
+        """Test that mixing award types from different categories is now forbidden."""
+        # This should raise a ValidationError due to our new validation
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
+            awards_search.with_award_types("A", "07")  # Contract + Loan
+    
+    def test_no_award_types_base_fields_only(self, awards_search):
+        """Test that only base fields are returned when no award types specified."""
+        # Don't set award types, but access fields directly
+        fields = awards_search._get_fields()
+        
+        # Should only have base fields
+        assert "Award ID" in fields
+        assert "Recipient Name" in fields
+        assert "Awarding Agency" in fields
+        
+        # Should not have type-specific fields
+        assert "Contract Award Type" not in fields
+        assert "Loan Value" not in fields
+        assert "Last Date to Order" not in fields
+
+
+class TestAwardTypeHelperMethods:
+    """Test the helper methods for award types."""
+    
+    def test_contracts_helper(self, awards_search):
+        """Test the contracts() helper method."""
+        search = awards_search.contracts()
+        
+        award_types = search._get_award_type_codes()
+        assert award_types == CONTRACT_CODES
+        
+        # Should include contract-specific fields
+        fields = search._get_fields()
+        assert "Contract Award Type" in fields
+        assert "NAICS" in fields
+        assert "PSC" in fields
+    
+    def test_idvs_helper(self, awards_search):
+        """Test the idvs() helper method."""
+        search = awards_search.idvs()
+        
+        award_types = search._get_award_type_codes()
+        assert award_types == IDV_CODES
+        
+        # Should include IDV-specific fields
+        fields = search._get_fields()
+        assert "Last Date to Order" in fields
+        assert "Contract Award Type" in fields
+        assert "NAICS" in fields
+    
+    def test_loans_helper(self, awards_search):
+        """Test the loans() helper method."""
+        search = awards_search.loans()
+        
+        award_types = search._get_award_type_codes()
+        assert award_types == LOAN_CODES
+        
+        # Should include loan-specific fields
+        fields = search._get_fields()
+        assert "Loan Value" in fields
+        assert "Subsidy Cost" in fields
+        assert "CFDA Number" in fields
+    
+    def test_grants_helper(self, awards_search):
+        """Test the grants() helper method."""
+        search = awards_search.grants()
+        
+        award_types = search._get_award_type_codes()
+        assert award_types == GRANT_CODES
+        
+        # Should include grant-specific fields
+        fields = search._get_fields()
+        assert "Award Type" in fields
+        assert "CFDA Number" in fields
+        assert "Assistance Listings" in fields
+
+
+class TestAwardTypeValidation:
+    """Test validation of award type categories."""
+    
+    def test_single_category_contracts_allowed(self, awards_search):
+        """Test that multiple codes within contract category are allowed."""
+        search = awards_search.with_award_types("A", "B", "C")
+        
+        # Should not raise an error
+        award_types = search._get_award_type_codes()
+        assert award_types == {"A", "B", "C"}
+    
+    def test_single_category_grants_allowed(self, awards_search):
+        """Test that multiple codes within grant category are allowed."""
+        search = awards_search.with_award_types("02", "03", "04")
+        
+        # Should not raise an error
+        award_types = search._get_award_type_codes()
+        assert award_types == {"02", "03", "04"}
+    
+    def test_mixing_contracts_and_loans_forbidden(self, awards_search):
+        """Test that mixing contracts and loans raises ValidationError."""
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
+            awards_search.with_award_types("A", "07")
+    
+    def test_mixing_idvs_and_grants_forbidden(self, awards_search):
+        """Test that mixing IDVs and grants raises ValidationError."""
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
+            awards_search.with_award_types("IDV_A", "02")
+    
+    def test_chaining_different_categories_forbidden(self, awards_search):
+        """Test that chaining different categories is forbidden."""
+        # First set contracts
+        search = awards_search.contracts()
+        
+        # Then try to add loans - should fail
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
+            search.with_award_types("07")
+    
+    def test_helper_methods_cannot_be_mixed(self, awards_search):
+        """Test that helper methods cannot be chained with different types."""
+        # First use contracts
+        search = awards_search.contracts()
+        
+        # Then try to add loans via helper - should fail
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
+            search.loans()
+    
+    def test_adding_same_category_allowed(self, awards_search):
+        """Test that adding more codes from the same category is allowed."""
+        # Start with some contracts
+        search = awards_search.with_award_types("A", "B")
+        
+        # Add more contracts - should be allowed (validation should pass)
+        search2 = search.with_award_types("C", "D")
+        
+        # The search should have two separate award_type_codes filters
+        # When building the payload, they should be combined
+        payload = search2._build_payload(page=1)
+        combined_types = set(payload["filters"]["award_type_codes"])
+        
+        # Should have all four types combined
+        assert combined_types == {"A", "B", "C", "D"}
+    
+    def test_contracts_helper_after_contracts_allowed(self, awards_search):
+        """Test that using contracts() after setting contract codes is allowed."""
+        # Start with some contract codes
+        search = awards_search.with_award_types("A", "B")
+        
+        # Use contracts() helper - should work since same category
+        search2 = search.contracts()
+        
+        # Should combine the original codes with all contract codes
+        payload = search2._build_payload(page=1)
+        combined_types = set(payload["filters"]["award_type_codes"])
+        
+        # Should have all contract codes (original A,B plus all from CONTRACT_CODES)
+        assert combined_types == CONTRACT_CODES
 
 
 class TestTransformResult:

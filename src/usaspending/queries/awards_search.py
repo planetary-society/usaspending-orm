@@ -15,6 +15,11 @@ from usaspending.queries.filters import (
     AwardAmountFilter,
     AwardDateType,
     BaseFilter,
+    CONTRACT_CODES,
+    IDV_CODES,
+    LOAN_CODES,
+    GRANT_CODES,
+    ALL_AWARD_CODES,
     KeywordsFilter,
     Location,
     LocationFilter,
@@ -86,19 +91,66 @@ class AwardsSearch(QueryBuilder["Award"]):
         """Transforms a single API result item into an Award model."""
         return Award(result, self._client)
 
+    def _get_award_type_codes(self) -> set[str]:
+        """Extract award type codes from current filters."""
+        for filter_obj in self._filter_objects:
+            filter_dict = filter_obj.to_dict()
+            if "award_type_codes" in filter_dict:
+                return set(filter_dict["award_type_codes"])
+        return set()
+
+    def _validate_single_award_type_category(self, new_codes: set[str]) -> None:
+        """
+        Validate that only one category of award types is present.
+        
+        Args:
+            new_codes: New award type codes being added
+            
+        Raises:
+            ValidationError: If mixing award type categories
+        """
+        existing_codes = self._get_award_type_codes()
+        all_codes = existing_codes | new_codes
+        
+        if not all_codes:
+            return
+        
+        # Check how many categories are represented
+        categories_present = 0
+        if all_codes & CONTRACT_CODES:
+            categories_present += 1
+        if all_codes & IDV_CODES:
+            categories_present += 1
+        if all_codes & LOAN_CODES:
+            categories_present += 1
+        if all_codes & GRANT_CODES:
+            categories_present += 1
+        
+        if categories_present > 1:
+            raise ValidationError(
+                "Cannot mix different award type categories. "
+                "Use separate queries for contracts, IDVs, loans, and grants."
+            )
+
     def _get_fields(self) -> list[str]:
         """
-        Determines the list of fields to request based on filters.
+        Determines the list of fields to request based on award type filters.
+        
+        Returns different field sets depending on the award type codes:
+        - Contracts (A, B, C, D): Include contract-specific fields
+        - IDV (IDV_A, IDV_B, etc.): Include IDV-specific fields  
+        - Loans (07, 08): Include loan-specific fields
+        - Non-Loan Assistance (02, 03, 04, 05, 06, 09, 10, 11, -1): Include assistance fields
         """
-
-        return [
+        # Base fields common to all award types
+        base_fields = [
             "Award ID",
-            "Recipient Name",
+            "Recipient Name", 
             "Recipent DUNS Number",
             "recipient_id",
             "Awarding Agency",
             "Awarding Agency Code",
-            "Awarding Sub Agency",
+            "Awarding Sub Agency", 
             "Awarding Sub Agency Code",
             "Funding Agency",
             "Funding Agency Code",
@@ -111,13 +163,71 @@ class AwardsSearch(QueryBuilder["Award"]):
             "generated_internal_id",
             "def_codes",
             "COVID-19 Obligations",
-            "COVID-19 Outlays",
+            "COVID-19 Outlays", 
             "Infrastructure Obligations",
             "Infrastructure Outlays",
             "Recipient UEI",
             "Recipient Location",
             "Primary Place of Performance"
         ]
+        
+        # Get award type codes from filters
+        award_types = self._get_award_type_codes()
+        additional_fields = []
+        
+        # Contract fields
+        if award_types & CONTRACT_CODES:
+            additional_fields.extend([
+                "Start Date",
+                "End Date", 
+                "Award Amount",
+                "Total Outlays",
+                "Contract Award Type",
+                "NAICS",
+                "PSC"
+            ])
+        
+        # IDV fields
+        if award_types & IDV_CODES:
+            additional_fields.extend([
+                "Start Date",
+                "Award Amount", 
+                "Total Outlays",
+                "Contract Award Type",
+                "Last Date to Order",
+                "NAICS",
+                "PSC"
+            ])
+        
+        # Loan fields
+        if award_types & LOAN_CODES:
+            additional_fields.extend([
+                "Issued Date",
+                "Loan Value",
+                "Subsidy Cost", 
+                "SAI Number",
+                "CFDA Number",
+                "Assistance Listings",
+                "primary_assistance_listing"
+            ])
+        
+        # Grant/Assistance fields
+        if award_types & GRANT_CODES:
+            additional_fields.extend([
+                "Start Date",
+                "End Date",
+                "Award Amount",
+                "Total Outlays",
+                "Award Type",
+                "SAI Number", 
+                "CFDA Number",
+                "Assistance Listings",
+                "primary_assistance_listing"
+            ])
+        
+        # Combine base fields with additional fields, removing duplicates
+        all_fields = base_fields + additional_fields
+        return list(dict.fromkeys(all_fields))  # Remove duplicates while preserving order
 
     # ==========================================================================
     # Filter Methods
@@ -301,12 +411,54 @@ class AwardsSearch(QueryBuilder["Award"]):
 
         Returns:
             A new `AwardsSearch` instance with the filter applied.
+            
+        Raises:
+            ValidationError: If mixing different award type categories.
         """
+        new_codes = set(award_codes)
+        self._validate_single_award_type_category(new_codes)
+        
         clone = self._clone()
         clone._filter_objects.append(
             SimpleListFilter(key="award_type_codes", values=list(award_codes))
         )
         return clone
+
+    def contracts(self) -> AwardsSearch:
+        """
+        Filter to search for contract awards only (types A, B, C, D).
+        
+        Returns:
+            A new `AwardsSearch` instance configured for contract awards.
+        """
+        return self.with_award_types(*CONTRACT_CODES)
+
+    def idvs(self) -> AwardsSearch:
+        """
+        Filter to search for IDV awards only (types IDV_A, IDV_B, etc.).
+        
+        Returns:
+            A new `AwardsSearch` instance configured for IDV awards.
+        """
+        return self.with_award_types(*IDV_CODES)
+
+    def loans(self) -> AwardsSearch:
+        """
+        Filter to search for loan awards only (types 07, 08).
+        
+        Returns:
+            A new `AwardsSearch` instance configured for loan awards.
+        """
+        return self.with_award_types(*LOAN_CODES)
+
+    def grants(self) -> AwardsSearch:
+        """
+        Filter to search for grant and assistance awards only (types 02, 03, 04, 05, 06, 09, 10, 11, -1).
+        
+        Returns:
+            A new `AwardsSearch` instance configured for grant/assistance awards.
+        """
+        return self.with_award_types(*GRANT_CODES)
 
     def with_award_ids(self, *award_ids: str) -> AwardsSearch:
         """
