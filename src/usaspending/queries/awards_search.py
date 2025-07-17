@@ -15,12 +15,6 @@ from usaspending.queries.filters import (
     AwardAmount,
     AwardAmountFilter,
     AwardDateType,
-    BaseFilter,
-    CONTRACT_CODES,
-    IDV_CODES,
-    LOAN_CODES,
-    GRANT_CODES,
-    ALL_AWARD_CODES,
     KeywordsFilter,
     Location,
     LocationFilter,
@@ -34,6 +28,18 @@ from usaspending.queries.filters import (
 
 logger = USASpendingLogger.get_logger(__name__)
 
+# Import award type codes from config
+# These are defined by USASpending.gov and represent different categories of awards
+
+from ..config import (
+    CONTRACT_CODES,
+    IDV_CODES,
+    LOAN_CODES,
+    GRANT_CODES,
+    DIRECT_PAYMENT_CODES,
+    OTHER_CODES,
+    AWARD_TYPE_GROUPS
+)
 
 class AwardsSearch(QueryBuilder["Award"]):
     """
@@ -49,7 +55,6 @@ class AwardsSearch(QueryBuilder["Award"]):
             client: The USASpending client instance.
         """
         super().__init__(client)
-        self._filter_objects: list[BaseFilter] = []
 
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
@@ -63,19 +68,8 @@ class AwardsSearch(QueryBuilder["Award"]):
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload from the filter objects."""
-        final_filters: dict[str, Any] = {}
-
-        # Aggregate filters
-        for f in self._filter_objects:
-            f_dict = f.to_dict()
-            for key, value in f_dict.items():
-                if key in final_filters and isinstance(final_filters[key], list):
-                    final_filters[key].extend(value)
-                # Skip keys with empty values to keep payload clean
-                elif value:
-                    final_filters[key] = value
-
-        logger.debug(f"Applied {len(self._filter_objects)} filters to query")
+        
+        final_filters = self._aggregate_filters()
 
         # The 'award_type_codes' filter is required by the API.
         if "award_type_codes" not in final_filters:
@@ -120,22 +114,91 @@ class AwardsSearch(QueryBuilder["Award"]):
         if not all_codes:
             return
         
-        # Check how many categories are represented
+        # Check how many categories are represented using the config mapping
         categories_present = 0
-        if all_codes & CONTRACT_CODES:
-            categories_present += 1
-        if all_codes & IDV_CODES:
-            categories_present += 1
-        if all_codes & LOAN_CODES:
-            categories_present += 1
-        if all_codes & GRANT_CODES:
-            categories_present += 1
+        category_names = []
+        
+        for category_name, codes in AWARD_TYPE_GROUPS.items():
+            if all_codes & frozenset(codes.keys()):
+                categories_present += 1
+                category_names.append(category_name)
         
         if categories_present > 1:
             raise ValidationError(
-                "Cannot mix different award type categories. "
-                "Use separate queries for contracts, IDVs, loans, and grants."
+                f"Cannot mix different award type categories: {', '.join(category_names)}. "
+                "Use separate queries for each award type category."
             )
+
+    def count(self) -> int:
+        """
+        Get the total count of results without fetching all items.
+        
+        Returns:
+            The total number of matching awards for the selected award type category.
+        """
+        logger.debug(f"{self.__class__.__name__}.count() called")
+        
+        endpoint = '/v2/search/spending_by_award_count/'
+        final_filters = self._aggregate_filters()
+        
+        # The 'award_type_codes' filter is required by the API.
+        if "award_type_codes" not in final_filters:
+            raise ValidationError(
+                "A filter for 'award_type_codes' is required. "
+                "Use the .with_award_types() method."
+            )
+
+        payload = {
+            "filters": final_filters,
+        }
+        
+        from ..logging_config import log_query_execution
+        log_query_execution(logger, 'AwardsSearch.count', len(self._filter_objects), endpoint)
+        
+        # Send the request to the count endpoint
+        response = self._client._make_request("POST", endpoint, json=payload)
+        
+        # Get the award type codes to determine which category to count
+        award_type_codes = self._get_award_type_codes()
+        
+        # Determine the category based on award type codes
+        category = self._get_award_type_category(award_type_codes)
+        
+        # Extract count from the appropriate category
+        results = response.get("results", {})
+        total = results.get(category, 0)
+        
+        logger.info(f"{self.__class__.__name__}.count() = {total} ({category})")
+        return total
+    
+    def _get_award_type_category(self, award_type_codes: set[str]) -> str:
+        """
+        Determine the award type category based on the award type codes.
+        
+        Args:
+            award_type_codes: Set of award type codes
+            
+        Returns:
+            The category name as used in the count endpoint response
+        """
+        # Map config category names to API response names
+        category_mapping = {
+            "contracts": "contracts",
+            "idvs": "idvs", 
+            "loans": "loans",
+            "grants": "grants",
+            "direct_payments": "direct_payments",
+            "other_assistance": "other"
+        }
+        
+        for category_name, codes in AWARD_TYPE_GROUPS.items():
+            if award_type_codes & frozenset(codes.keys()):
+                return category_mapping[category_name]
+        
+        # Fail hard if no valid award type category is found
+        raise ValidationError(
+            "No valid award type category found. "
+        )
 
     def _get_fields(self) -> list[str]:
         """
@@ -145,7 +208,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         - Contracts (A, B, C, D): Include contract-specific fields
         - IDV (IDV_A, IDV_B, etc.): Include IDV-specific fields  
         - Loans (07, 08): Include loan-specific fields
-        - Non-Loan Assistance (02, 03, 04, 05, 06, 09, 10, 11, -1): Include assistance fields
+        - Grants/Assistance (02, 03, 04, 05, 06, 09, 10, 11, -1): Include assistance fields
         """
         # Base fields common to all award types
         base_fields = [
@@ -180,9 +243,9 @@ class AwardsSearch(QueryBuilder["Award"]):
         award_types = self._get_award_type_codes()
         additional_fields = []
         
-        # Contract fields
-        if award_types & CONTRACT_CODES:
-            additional_fields.extend([
+        # Define field sets for each category using the config mapping
+        field_sets = {
+            "contracts": [
                 "Start Date",
                 "End Date", 
                 "Award Amount",
@@ -190,11 +253,8 @@ class AwardsSearch(QueryBuilder["Award"]):
                 "Contract Award Type",
                 "NAICS",
                 "PSC"
-            ])
-        
-        # IDV fields
-        if award_types & IDV_CODES:
-            additional_fields.extend([
+            ],
+            "idvs": [
                 "Start Date",
                 "Award Amount", 
                 "Total Outlays",
@@ -202,11 +262,8 @@ class AwardsSearch(QueryBuilder["Award"]):
                 "Last Date to Order",
                 "NAICS",
                 "PSC"
-            ])
-        
-        # Loan fields
-        if award_types & LOAN_CODES:
-            additional_fields.extend([
+            ],
+            "loans": [
                 "Issued Date",
                 "Loan Value",
                 "Subsidy Cost", 
@@ -214,11 +271,9 @@ class AwardsSearch(QueryBuilder["Award"]):
                 "CFDA Number",
                 "Assistance Listings",
                 "primary_assistance_listing"
-            ])
-        
-        # Grant/Assistance fields
-        if award_types & GRANT_CODES:
-            additional_fields.extend([
+            ],
+            # All assistance types share the same fields
+            "grants": [
                 "Start Date",
                 "End Date",
                 "Award Amount",
@@ -228,7 +283,35 @@ class AwardsSearch(QueryBuilder["Award"]):
                 "CFDA Number",
                 "Assistance Listings",
                 "primary_assistance_listing"
-            ])
+            ],
+            "direct_payments": [
+                "Start Date",
+                "End Date",
+                "Award Amount",
+                "Total Outlays",
+                "Award Type",
+                "SAI Number", 
+                "CFDA Number",
+                "Assistance Listings",
+                "primary_assistance_listing"
+            ],
+            "other_assistance": [
+                "Start Date",
+                "End Date",
+                "Award Amount",
+                "Total Outlays",
+                "Award Type",
+                "SAI Number", 
+                "CFDA Number",
+                "Assistance Listings",
+                "primary_assistance_listing"
+            ]
+        }
+        
+        # Check each category and add appropriate fields
+        for category_name, codes in AWARD_TYPE_GROUPS.items():
+            if award_types & frozenset(codes.keys()):
+                additional_fields.extend(field_sets[category_name])
         
         # Combine base fields with additional fields, removing duplicates
         all_fields = base_fields + additional_fields
@@ -458,12 +541,30 @@ class AwardsSearch(QueryBuilder["Award"]):
 
     def grants(self) -> AwardsSearch:
         """
-        Filter to search for grant and assistance awards only (types 02, 03, 04, 05, 06, 09, 10, 11, -1).
+        Filter to search for grant and assistance awards only (types 02, 03, 04, 05).
         
         Returns:
             A new `AwardsSearch` instance configured for grant/assistance awards.
         """
         return self.with_award_types(*GRANT_CODES)
+
+    def direct_payments(self) -> AwardsSearch:
+        """
+        Filter to search for direct payment awards only (types 06, 10).
+        
+        Returns:
+            A new `AwardsSearch` instance configured for direct payment awards.
+        """
+        return self.with_award_types(*DIRECT_PAYMENT_CODES)
+
+    def other(self) -> AwardsSearch:
+        """
+        Filter to search for other assistance awards only (types 09, 11, -1).
+        
+        Returns:
+            A new `AwardsSearch` instance configured for other assistance awards.
+        """
+        return self.with_award_types(*OTHER_CODES)
 
     def with_award_ids(self, *award_ids: str) -> AwardsSearch:
         """

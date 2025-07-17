@@ -10,6 +10,9 @@ from ..exceptions import (
     RateLimitError,
     ConfigurationError,
 )
+
+from .filters import BaseFilter
+
 from ..logging_config import USASpendingLogger, log_query_execution
 
 T = TypeVar("T")
@@ -31,6 +34,7 @@ class QueryBuilder(ABC, Generic[T]):
     def __init__(self, client: "USASpending"):
         self._client = client
         self._filters: Dict[str, Any] = {}
+        self._filter_objects: list[BaseFilter] = []
         self._page_size = 100  # Items per page (max 100 per USASpending API)
         self._total_limit = None  # Total items to return (across all pages)
         self._max_pages = None  # Limit total pages fetched
@@ -128,22 +132,10 @@ class QueryBuilder(ABC, Generic[T]):
         logger.info(f"{self.__class__.__name__}.all() returned {len(results)} results")
         return results
     
+    @abstractmethod
     def count(self) -> int:
         """Get total count without fetching all results."""
-        logger.debug(f"{self.__class__.__name__}.count() called")
-        # Make a request with page_size=1 to get total count
-        original_page_size = self._page_size
-        original_total_limit = self._total_limit
-        self._page_size = 1
-        self._total_limit = None  # Temporarily clear to get true count
-        
-        response = self._execute_query(page=1)
-        total = response.get("page_metadata", {}).get("total", 0)
-        
-        self._page_size = original_page_size
-        self._total_limit = original_total_limit
-        logger.info(f"{self.__class__.__name__}.count() = {total}")
-        return total
+        pass
     
     @property
     def _endpoint(self) -> str:
@@ -165,6 +157,25 @@ class QueryBuilder(ABC, Generic[T]):
     def _transform_result(self, data: Dict[str, Any]) -> T:
         """Transform raw result to model instance."""
         pass
+    
+    def _aggregate_filters(self) -> dict[str, Any]:
+        """Aggregates all filter objects into a single dictionary payload."""
+        final_filters: dict[str, Any] = {}
+
+        # Aggregate filters
+        for f in self._filter_objects:
+            f_dict = f.to_dict()
+            for key, value in f_dict.items():
+                if key in final_filters and isinstance(final_filters[key], list):
+                    final_filters[key].extend(value)
+                # Skip keys with empty values to keep payload clean
+                elif value:
+                    final_filters[key] = value
+        
+        logger.debug(f"Applied {len(self._filter_objects)} filters to query")
+        
+        return final_filters
+    
     
     def _fetch_page(self, page: int) -> List[Dict[str, Any]]:
         """Fetch a single page of results."""

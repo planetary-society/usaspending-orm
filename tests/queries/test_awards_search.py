@@ -782,18 +782,186 @@ class TestPaginationAndIteration:
         assert len(results) == 3
         assert all(isinstance(r, Award) for r in results)
 
-    def test_count_method(self, awards_search, mock_client):
-        """Test the count() method."""
-        # Mock response with total count in metadata
+    def test_count_method_contracts(self, awards_search, mock_client):
+        """Test the count() method for contract awards."""
+        # Mock response with structured count format
         mock_client._make_request.return_value = {
-            "results": [{"Award ID": "1"}],
-            "page_metadata": {"hasNext": False, "total": 150}
+            "results": {
+                "contracts": 3287,
+                "direct_payments": 0,
+                "grants": 7821,
+                "idvs": 105,
+                "loans": 0,
+                "other": 0
+            },
+            "spending_level": "awards",
+            "messages": []
         }
         
         search = awards_search.with_award_types("A")
         count = search.count()
         
-        assert count == 150
+        assert count == 3287
+        
+        # Verify the correct endpoint was called
+        mock_client._make_request.assert_called_once()
+        call_args = mock_client._make_request.call_args
+        assert call_args[0][1] == '/v2/search/spending_by_award_count/'
+    
+    def test_count_method_grants(self, awards_search, mock_client):
+        """Test the count() method for grant awards."""
+        mock_client._make_request.return_value = {
+            "results": {
+                "contracts": 3287,
+                "direct_payments": 0,
+                "grants": 7821,
+                "idvs": 105,
+                "loans": 0,
+                "other": 0
+            },
+            "spending_level": "awards",
+            "messages": []
+        }
+        
+        search = awards_search.with_award_types("02", "03")
+        count = search.count()
+        
+        assert count == 7821
+    
+    def test_count_method_idvs(self, awards_search, mock_client):
+        """Test the count() method for IDV awards."""
+        mock_client._make_request.return_value = {
+            "results": {
+                "contracts": 3287,
+                "direct_payments": 0,
+                "grants": 7821,
+                "idvs": 105,
+                "loans": 0,
+                "other": 0
+            },
+            "spending_level": "awards",
+            "messages": []
+        }
+        
+        search = awards_search.with_award_types("IDV_A")
+        count = search.count()
+        
+        assert count == 105
+    
+    def test_count_method_loans(self, awards_search, mock_client):
+        """Test the count() method for loan awards."""
+        mock_client._make_request.return_value = {
+            "results": {
+                "contracts": 3287,
+                "direct_payments": 0,
+                "grants": 7821,
+                "idvs": 105,
+                "loans": 42,
+                "other": 0
+            },
+            "spending_level": "awards",
+            "messages": []
+        }
+        
+        search = awards_search.with_award_types("07")
+        count = search.count()
+        
+        assert count == 42
+    
+    def test_count_method_direct_payments(self, awards_search, mock_client):
+        """Test the count() method for direct payment awards."""
+        mock_client._make_request.return_value = {
+            "results": {
+                "contracts": 3287,
+                "direct_payments": 123,
+                "grants": 7821,
+                "idvs": 105,
+                "loans": 0,
+                "other": 0
+            },
+            "spending_level": "awards",
+            "messages": []
+        }
+        
+        search = awards_search.with_award_types("06")
+        count = search.count()
+        
+        assert count == 123
+    
+    def test_count_method_other(self, awards_search, mock_client):
+        """Test the count() method for other assistance awards."""
+        mock_client._make_request.return_value = {
+            "results": {
+                "contracts": 3287,
+                "direct_payments": 0,
+                "grants": 7821,
+                "idvs": 105,
+                "loans": 0,
+                "other": 89
+            },
+            "spending_level": "awards",
+            "messages": []
+        }
+        
+        search = awards_search.with_award_types("09")
+        count = search.count()
+        
+        assert count == 89
+    
+    def test_count_method_convenience_methods(self, awards_search, mock_client):
+        """Test the count() method with convenience methods."""
+        mock_client._make_request.return_value = {
+            "results": {
+                "contracts": 3287,
+                "direct_payments": 123,
+                "grants": 7821,
+                "idvs": 105,
+                "loans": 42,
+                "other": 89
+            },
+            "spending_level": "awards",
+            "messages": []
+        }
+        
+        # Test each convenience method
+        assert awards_search.contracts().count() == 3287
+        assert awards_search.grants().count() == 7821
+        assert awards_search.idvs().count() == 105
+        assert awards_search.loans().count() == 42
+        assert awards_search.direct_payments().count() == 123
+        assert awards_search.other().count() == 89
+        
+        # Verify 6 calls were made (one for each convenience method)
+        assert mock_client._make_request.call_count == 6
+    
+    def test_count_method_missing_category(self, awards_search, mock_client):
+        """Test count() method when category is missing from response."""
+        mock_client._make_request.return_value = {
+            "results": {
+                "contracts": 3287,
+                "grants": 7821,
+                # Missing other categories
+            },
+            "spending_level": "awards",
+            "messages": []
+        }
+        
+        search = awards_search.with_award_types("07")  # loans
+        count = search.count()
+        
+        # Should return 0 when category is missing
+        assert count == 0
+    
+    def test_count_method_requires_award_types(self, awards_search, mock_client):
+        """Test that count() method requires award types to be set."""
+        from usaspending.exceptions import ValidationError
+        
+        # Try to call count() without setting award types
+        with pytest.raises(ValidationError) as exc_info:
+            awards_search.count()
+        
+        assert "award_type_codes" in str(exc_info.value)
+        assert "required" in str(exc_info.value)
 
 
 class TestErrorHandling:
