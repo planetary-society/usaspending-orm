@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from ..config import Config
 
 from ..exceptions import APIError, HTTPError, RateLimitError
+from ..logging_config import USASpendingLogger
+
+logger = USASpendingLogger.get_logger(__name__)
 
 
 class RetryHandler:
@@ -55,6 +58,9 @@ class RetryHandler:
         self.base_delay = config.retry_delay
         self.backoff_factor = config.retry_backoff
         
+        logger.debug(f"Initialized RetryHandler: max_retries={self.max_retries}, "
+                    f"base_delay={self.base_delay}s, backoff_factor={self.backoff_factor}")
+        
     def execute(self, func: Callable, *args, **kwargs) -> Any:
         """
         Execute a function with retry logic.
@@ -87,15 +93,19 @@ class RetryHandler:
                 
                 # Don't retry on the last attempt
                 if attempt == self.max_retries:
+                    logger.warning(f"Max retries ({self.max_retries}) exhausted. Final error: {e}")
                     break
                 
                 # Check if this exception should be retried
                 if not self._should_retry_exception(e):
+                    logger.debug(f"Exception {type(e).__name__} is not retryable")
                     break
                 
                 # Calculate delay and wait before retrying
                 delay = self._calculate_delay(attempt, e)
                 if delay > 0:
+                    logger.info(f"Retry attempt {attempt + 1}/{self.max_retries} after {delay:.2f}s "
+                               f"due to {type(e).__name__}: {e}")
                     time.sleep(delay)
         
         # If we get here, all retries were exhausted
@@ -116,12 +126,14 @@ class RetryHandler:
             if response.status_code == 429:
                 # Rate limit exceeded
                 retry_after = self._get_retry_after_header(response)
+                logger.warning(f"Rate limit hit (HTTP 429). Retry-After: {retry_after}s")
                 raise RateLimitError(
                     "Rate limit exceeded",
                     retry_after=retry_after
                 )
             elif response.status_code >= 500:
                 # Server error
+                logger.warning(f"Server error (HTTP {response.status_code})")
                 raise HTTPError(
                     f"Server error: HTTP {response.status_code}",
                     status_code=response.status_code
@@ -176,6 +188,7 @@ class RetryHandler:
         jitter = delay * 0.25 * random.random()
         delay += jitter
         
+        logger.debug(f"Calculated retry delay: {delay:.3f}s (attempt {attempt})")
         return delay
     
     def _get_retry_after_header(self, response: requests.Response) -> Optional[int]:

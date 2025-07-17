@@ -7,6 +7,10 @@ import time
 from collections import deque
 from typing import Deque, Optional
 
+from ..logging_config import USASpendingLogger
+
+logger = USASpendingLogger.get_logger(__name__)
+
 
 class RateLimiter:
     """
@@ -35,6 +39,8 @@ class RateLimiter:
         self.period = period
         self._call_times: Deque[float] = deque()
         self._lock = threading.Lock()
+        
+        logger.debug(f"Initialized RateLimiter: {max_calls} calls per {period}s")
     
     def wait_if_needed(self) -> None:
         """
@@ -58,6 +64,7 @@ class RateLimiter:
                 wait_time = (oldest_call + self.period) - now
                 
                 if wait_time > 0:
+                    logger.info(f"Rate limit reached. Waiting {wait_time:.2f}s before next request")
                     # Release lock while sleeping to allow other threads
                     self._lock.release()
                     try:
@@ -73,11 +80,15 @@ class RateLimiter:
             
             # Record this call
             self._call_times.append(now)
+            
+            logger.debug(f"Recorded API call at {now:.3f}. "
+                        f"Current window has {len(self._call_times)} calls")
     
     def reset(self) -> None:
         """Reset the rate limiter, clearing all recorded calls."""
         with self._lock:
             self._call_times.clear()
+            logger.debug("Rate limiter reset")
     
     @property
     def available_calls(self) -> int:

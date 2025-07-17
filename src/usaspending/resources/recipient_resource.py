@@ -5,10 +5,13 @@ from typing import Optional, TYPE_CHECKING
 
 from .base_resource import BaseResource
 from ..exceptions import ValidationError
+from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
     from ..queries.recipient import RecipientSearch
     from ..models.recipient import Recipient
+
+logger = USASpendingLogger.get_logger(__name__)
 
 
 class RecipientResource(BaseResource):
@@ -34,7 +37,13 @@ class RecipientResource(BaseResource):
             raise ValidationError("recipient_id is required")
         
         # Clean recipient ID (handle potential list suffixes)
+        original_id = recipient_id
         recipient_id = self._clean_recipient_id(str(recipient_id).strip())
+        
+        if original_id != recipient_id:
+            logger.debug(f"Cleaned recipient ID: {original_id} -> {recipient_id}")
+        
+        logger.debug(f"Retrieving recipient by ID: {recipient_id}")
         
         # Make API request
         endpoint = f"/recipient/{recipient_id}/"
@@ -50,6 +59,7 @@ class RecipientResource(BaseResource):
         Returns:
             RecipientSearch query builder for chaining filters
         """
+        logger.debug("Creating new RecipientSearch query builder")
         from ..queries.recipient import RecipientSearch
         return RecipientSearch(self._client)
     

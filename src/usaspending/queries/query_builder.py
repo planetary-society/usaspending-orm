@@ -10,11 +10,14 @@ from ..exceptions import (
     RateLimitError,
     ConfigurationError,
 )
+from ..logging_config import USASpendingLogger, log_query_execution
 
 T = TypeVar("T")
 
 if TYPE_CHECKING:
     from ..client import USASpending
+
+logger = USASpendingLogger.get_logger(__name__)
 
 class QueryBuilder(ABC, Generic[T]):
     """Base query builder with automatic pagination support."""
@@ -51,13 +54,18 @@ class QueryBuilder(ABC, Generic[T]):
         page = 1
         pages_fetched = 0
         
+        query_type = self.__class__.__name__
+        logger.info(f"Starting {query_type} iteration with limit={self._limit}, max_pages={self._max_pages}")
+        
         while True:
             # Check max pages limit
             if self._max_pages and pages_fetched >= self._max_pages:
+                logger.debug(f"Reached max_pages limit ({self._max_pages})")
                 break
             
             # Fetch page
             results = self._fetch_page(page)
+            logger.debug(f"Fetched page {page} with {len(results)} results")
             
             # Yield results
             for item in results:
@@ -65,6 +73,7 @@ class QueryBuilder(ABC, Generic[T]):
             
             # Check if more pages
             if len(results) < self._limit:
+                logger.debug(f"Last page reached (got {len(results)} results, limit was {self._limit})")
                 break  # Last page
             
             page += 1
@@ -72,16 +81,21 @@ class QueryBuilder(ABC, Generic[T]):
     
     def first(self) -> Optional[T]:
         """Get first result only."""
+        logger.debug(f"{self.__class__.__name__}.first() called")
         for result in self.limit(1):
             return result
         return None
     
     def all(self) -> List[T]:
         """Get all results as a list."""
-        return list(self)
+        logger.debug(f"{self.__class__.__name__}.all() called")
+        results = list(self)
+        logger.info(f"{self.__class__.__name__}.all() returned {len(results)} results")
+        return results
     
     def count(self) -> int:
         """Get total count without fetching all results."""
+        logger.debug(f"{self.__class__.__name__}.count() called")
         # Make a request with limit=1 to get total count
         original_limit = self._limit
         self._limit = 1
@@ -90,6 +104,7 @@ class QueryBuilder(ABC, Generic[T]):
         total = response.get("page_metadata", {}).get("total", 0)
         
         self._limit = original_limit
+        logger.info(f"{self.__class__.__name__}.count() = {total}")
         return total
     
     @property
@@ -114,8 +129,23 @@ class QueryBuilder(ABC, Generic[T]):
     
     def _execute_query(self, page: int) -> Dict[str, Any]:
         """Execute the query and return raw response."""
+        query_type = self.__class__.__name__
+        filters_count = len(self._filters)
+        endpoint = self._endpoint()
+        
+        log_query_execution(logger, query_type, filters_count, endpoint, page)
+        
         payload = self._build_payload(page)
-        return self._client._make_request("POST", self._endpoint(), json=payload)
+        logger.debug(f"Query payload: {payload}")
+        
+        response = self._client._make_request("POST", endpoint, json=payload)
+        
+        if "page_metadata" in response:
+            metadata = response["page_metadata"]
+            logger.debug(f"Page metadata: page={metadata.get('page')}, "
+                       f"total={metadata.get('total')}, hasNext={metadata.get('hasNext')}")
+        
+        return response
     
     def _clone(self) -> "QueryBuilder[T]":
         """Create a copy for method chaining."""

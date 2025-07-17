@@ -4,9 +4,12 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
 from .query_builder import QueryBuilder
+from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
     from ..models.recipient import Recipient
+
+logger = USASpendingLogger.get_logger(__name__)
 
 
 class RecipientSearch(QueryBuilder["Recipient"]):

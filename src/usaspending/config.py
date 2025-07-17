@@ -20,6 +20,9 @@ class Config:
         cache_dir: Directory for file-based cache
         cache_ttl: Cache time-to-live in seconds
         user_agent: User agent string for requests
+        logging_level: Logging level (DEBUG, INFO, WARNING, ERROR)
+        debug_mode: Enable verbose debug logging
+        log_file: Optional file path for log output
     """
     
     base_url: str = "https://api.usaspending.gov/api/v2"
@@ -33,6 +36,9 @@ class Config:
     cache_dir: str = ".usaspending_cache"
     cache_ttl: int = 3600  # 1 hour
     user_agent: str = "usaspendingapi-python/0.1.0"
+    logging_level: str = "INFO"
+    debug_mode: bool = False
+    log_file: Optional[str] = None
     
     def __post_init__(self):
         """Validate configuration."""
@@ -44,6 +50,8 @@ class Config:
             raise ValueError("rate_limit_calls must be positive")
         if self.cache_backend not in ("file", "memory"):
             raise ValueError("cache_backend must be 'file' or 'memory'")
+        if self.logging_level.upper() not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+            raise ValueError("logging_level must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL")
 
 # In src/usaspendingapi/config.py
 

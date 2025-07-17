@@ -5,10 +5,13 @@ from typing import Optional, Dict, Any, TYPE_CHECKING
 
 from .base_resource import BaseResource
 from ..exceptions import ValidationError
+from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
     from ..queries.awards_search import AwardsSearch
     from ..models.award import Award
+
+logger = USASpendingLogger.get_logger(__name__)
 
 
 class AwardResource(BaseResource):
@@ -30,6 +33,7 @@ class AwardResource(BaseResource):
             : If award_id is invalid
             APIError: If award not found
         """
+        logger.debug(f"Retrieving award by ID: {award_id}")
         from ..queries.award_query import AwardQuery
         return AwardQuery(self._client).get_by_id(award_id)
     
@@ -46,5 +50,6 @@ class AwardResource(BaseResource):
             ...     .fiscal_years(2023, 2024)
             ...     .limit(10)
         """
+        logger.debug("Creating new AwardsSearch query builder")
         from ..queries.awards_search import AwardsSearch
         return AwardsSearch(self._client)

@@ -1,8 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from ..logging_config import USASpendingLogger
+
 if TYPE_CHECKING:
     from ..client import USASpending
+
+logger = USASpendingLogger.get_logger(__name__)
 
 
 class BaseResource:
@@ -19,6 +23,7 @@ class BaseResource:
             client: USASpending client instance
         """
         self._client :USASpending = client
+        logger.debug(f"Initialized {self.__class__.__name__} resource")
     
     @property
     def client(self) -> USASpending:

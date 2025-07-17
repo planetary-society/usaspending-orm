@@ -1,7 +1,7 @@
 """Main USASpending client."""
 
 from __future__ import annotations
-import logging
+import time
 from typing import Optional, Dict, Any, TYPE_CHECKING
 from urllib.parse import urljoin
 
@@ -9,6 +9,7 @@ import requests
 
 from .config import Config
 from .exceptions import HTTPError, APIError, ConfigurationError
+from .logging_config import USASpendingLogger, log_api_request, log_api_response
 
 if TYPE_CHECKING:
     from .resources.base_resource import BaseResource
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
-logger = logging.getLogger(__name__)
+logger = USASpendingLogger.get_logger(__name__)
 
 
 class USASpending:
@@ -41,6 +42,16 @@ class USASpending:
         self.config = config or Config()
         self._validate_config()
         
+        # Configure logging if specified
+        if hasattr(self.config, 'logging_level') or hasattr(self.config, 'debug_mode'):
+            USASpendingLogger.configure(
+                level=getattr(self.config, 'logging_level', 'INFO'),
+                debug_mode=getattr(self.config, 'debug_mode', False),
+                log_file=getattr(self.config, 'log_file', None)
+            )
+        
+        logger.info(f"Initializing USASpending client with base URL: {self.config.base_url}")
+        
         # Initialize HTTP session
         self._session = self._create_session()
         
@@ -50,6 +61,8 @@ class USASpending:
         
         # Resource cache
         self._resources: Dict[str, BaseResource] = {}
+        
+        logger.debug("USASpending client initialized successfully")
     
     def _validate_config(self) -> None:
         """Validate client configuration."""
@@ -137,12 +150,15 @@ class USASpending:
         
         # Check cache for GET requests
         cache_key = None
-        if method.upper() == "GET" and params:
+        if method.upper() == "GET" and params and hasattr(self, 'cache'):
             cache_key = self.cache.make_key(url, params)
             cached = self.cache.get(cache_key)
             if cached is not None:
                 logger.debug(f"Cache hit for {url}")
                 return cached
+        
+        # Log API request
+        log_api_request(logger, method, url, params, json)
         
         # Prepare request
         request_kwargs = {
@@ -154,38 +170,68 @@ class USASpending:
             **kwargs
         }
         
-        # Make request with retry
-        response = self.retry_handler.execute(
-            self._session.request,
-            **request_kwargs
-        )
+        # Track request timing
+        start_time = time.time()
         
-        # Handle response
         try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            raise HTTPError(
-                f"HTTP {response.status_code}: {e}",
-                status_code=response.status_code
+            # Make request with retry
+            response = self.retry_handler.execute(
+                self._session.request,
+                **request_kwargs
             )
-        
-        # Parse JSON response
-        try:
-            data = response.json()
-        except ValueError as e:
-            raise APIError(f"Invalid JSON response: {e}")
-        
-        # Check for API errors
-        if "error" in data or "message" in data:
-            error_msg = data.get("error") or data.get("message")
-            raise APIError(error_msg, response_body=data)
-        
-        # Cache successful GET responses
-        if cache_key:
-            self.cache.set(cache_key, data, ttl=self.config.cache_ttl)
-            logger.debug(f"Cached response for {url}")
-        
-        return data
+            
+            # Calculate duration
+            duration = time.time() - start_time
+            
+            # Handle response
+            try:
+                response.raise_for_status()
+            except requests.HTTPError as e:
+                log_api_response(logger, response.status_code, 
+                               len(response.content) if response.content else None,
+                               duration, str(e))
+                raise HTTPError(
+                    f"HTTP {response.status_code}: {e}",
+                    status_code=response.status_code
+                )
+            
+            # Parse JSON response
+            try:
+                data = response.json()
+            except ValueError as e:
+                log_api_response(logger, response.status_code, 
+                               len(response.content) if response.content else None,
+                               duration, f"Invalid JSON: {e}")
+                raise APIError(f"Invalid JSON response: {e}")
+            
+            # Check for API errors
+            if "error" in data or "message" in data:
+                error_msg = data.get("error") or data.get("message")
+                log_api_response(logger, response.status_code, 
+                               len(response.content) if response.content else None,
+                               duration, error_msg)
+                raise APIError(error_msg, response_body=data)
+            
+            # Log successful response
+            log_api_response(logger, response.status_code,
+                           len(response.content) if response.content else None,
+                           duration)
+            
+            # Cache successful GET responses
+            if cache_key and hasattr(self, 'cache'):
+                self.cache.set(cache_key, data, ttl=self.config.cache_ttl)
+                logger.debug(f"Cached response for {url}")
+            
+            return data
+            
+        except Exception as e:
+            # Log any unexpected errors
+            if 'response' in locals():
+                log_api_response(logger, getattr(response, 'status_code', 0), 
+                               None, time.time() - start_time, str(e))
+            else:
+                logger.error(f"Request failed before response: {e}")
+            raise
     
     def close(self) -> None:
         """Close client and cleanup resources."""

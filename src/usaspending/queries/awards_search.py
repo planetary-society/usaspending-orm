@@ -7,6 +7,7 @@ from usaspending.client import USASpending
 from usaspending.exceptions import ValidationError
 from usaspending.models import Award
 from usaspending.queries.query_builder import QueryBuilder
+from usaspending.logging_config import USASpendingLogger
 from usaspending.queries.filters import (
     AgencyFilter,
     AgencyTier,
@@ -30,6 +31,8 @@ from usaspending.queries.filters import (
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
 )
+
+logger = USASpendingLogger.get_logger(__name__)
 
 
 class AwardsSearch(QueryBuilder["Award"]):
@@ -71,6 +74,8 @@ class AwardsSearch(QueryBuilder["Award"]):
                 # Skip keys with empty values to keep payload clean
                 elif value:
                     final_filters[key] = value
+
+        logger.debug(f"Applied {len(self._filter_objects)} filters to query")
 
         # The 'award_type_codes' filter is required by the API.
         if "award_type_codes" not in final_filters:

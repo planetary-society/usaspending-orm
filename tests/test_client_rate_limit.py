@@ -41,6 +41,7 @@ class TestClientRateLimitIntegration:
         # Set up mock response
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.content = b'{"results": []}'
         mock_response.json.return_value = {"results": []}
         mock_request.return_value = mock_response
         
@@ -65,6 +66,7 @@ class TestClientRateLimitIntegration:
         # Set up mock response
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.content = b'{"results": []}'
         mock_response.json.return_value = {"results": []}
         mock_request.return_value = mock_response
         
