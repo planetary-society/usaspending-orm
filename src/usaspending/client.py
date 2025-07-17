@@ -183,7 +183,25 @@ class USASpending:
             # Calculate duration
             duration = time.time() - start_time
             
-            # Handle response
+            # Handle specific 400 Bad Request responses first
+            if response.status_code == 400:
+                try:
+                    data = response.json()
+                    # Use "detail" property if available, otherwise fall back to generic message
+                    error_msg = data.get("detail") or data.get("error") or data.get("message") or "Bad Request"
+                    log_api_response(logger, response.status_code,
+                                   len(response.content) if response.content else None,
+                                   duration, error_msg)
+                    raise APIError(error_msg, status_code=400, response_body=data)
+                except ValueError:
+                    # If JSON parsing fails, use generic 400 error
+                    error_msg = "Bad Request - Invalid JSON response"
+                    log_api_response(logger, response.status_code,
+                                   len(response.content) if response.content else None,
+                                   duration, error_msg)
+                    raise APIError(error_msg, status_code=400)
+            
+            # Handle other HTTP errors
             try:
                 response.raise_for_status()
             except requests.HTTPError as e:
@@ -204,13 +222,22 @@ class USASpending:
                                duration, f"Invalid JSON: {e}")
                 raise APIError(f"Invalid JSON response: {e}")
             
-            # Check for API errors
+            # Check for API errors (fallback for other error patterns)
             if "error" in data or "message" in data:
                 error_msg = data.get("error") or data.get("message")
                 log_api_response(logger, response.status_code, 
                                len(response.content) if response.content else None,
                                duration, error_msg)
-                raise APIError(error_msg, response_body=data)
+                raise APIError(error_msg, status_code=response.status_code, response_body=data)
+            
+            # Log messages from successful responses (200 status code)
+            if response.status_code == 200 and "messages" in data:
+                messages = data["messages"]
+                if isinstance(messages, list):
+                    for msg in messages:
+                        logger.info(f"API Message: {msg}")
+                else:
+                    logger.info(f"API Message: {messages}")
             
             # Log successful response
             log_api_response(logger, response.status_code,
