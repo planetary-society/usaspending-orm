@@ -45,6 +45,7 @@ from .query_builder import QueryBuilder
 from .award_query import AwardQuery
 from .awards_search import AwardsSearch
 from .recipient_search import RecipientSearch
+from .transactions_search import TransactionsSearch
 
 __all__ = [
     # Core query classes
@@ -52,6 +53,7 @@ __all__ = [
     "AwardQuery", 
     "AwardsSearch",
     "RecipientSearch",
+    "TransactionsSearch",
     "USASpendingError",
     "APIError",
     "HTTPError", 

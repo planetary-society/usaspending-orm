@@ -14,6 +14,7 @@ from .logging_config import USASpendingLogger, log_api_request, log_api_response
 if TYPE_CHECKING:
     from .resources.base_resource import BaseResource
     from .resources.award_resource import AwardResource
+    from .resources.transactions_resource import TransactionsResource
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
@@ -116,6 +117,14 @@ class USASpending:
             from .resources.recipient_resource import RecipientResource
             self._resources["recipients"] = RecipientResource(self)
         return self._resources["recipients"]
+    
+    @property
+    def transactions(self) -> "TransactionsResource":
+        """Access transaction endpoints."""
+        if "transactions" not in self._resources:
+            from .resources.transactions_resource import TransactionsResource
+            self._resources["transactions"] = TransactionsResource(self)
+        return self._resources["transactions"]
     
     def _make_request(
         self,

@@ -149,24 +149,14 @@ class Award(LazyRecord):
 
     @cached_property
     def transactions(self) -> List[Transaction]:
-        """Award transactions with pagination."""
-        try:
-            client = self._ensure_client()
-        except RuntimeError:
-            return []
-            
-        award_id = self.get_value(
-            ["generated_internal_id", "generated_unique_award_id"], 
-            default=self.prime_award_id
-        )
-        if not award_id:
-            return []
-
-        # TODO: Implement transactions query using the client's transaction resource
-        # This would require a transactions resource and query builder
-        # For now, return empty list to avoid breaking the application
-        return []
-
+        return self._client.transactions.for_award(self.generated_unique_award_id).all()
+    
+    @cached_property
+    def transactions_count(self) -> int:
+        """Get all transactions associated with this award."""        
+        # Use the transactions search to get all transactions for this award
+        return self._client.transactions.for_award(self.generated_unique_award_id).count()
+    
     # Helper methods
     def get(self, key: str, default: Any = None) -> Any:
         """Get value from award data."""

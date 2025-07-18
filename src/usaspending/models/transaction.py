@@ -1,19 +1,56 @@
 from .common import *
-from ..utils.formatter import to_float
+from .base_model import BaseModel
+from ..utils.formatter import to_float, smart_sentence_case
+from datetime import datetime
 
 @dataclass
-class Transaction:
+class Transaction():
     _raw: Dict[str, Any] = field(repr=False, default_factory=dict)
 
-    @property  # fmt: off
-    def id(self)                       -> Optional[str]:  return self._raw.get("id")
-    def type(self)                     -> Optional[str]:  return self._raw.get("type")
-    def type_description(self)         -> Optional[str]:  return self._raw.get("type_description")
-    def action_date(self)              -> Optional[str]:  return self._raw.get("action_date")
-    def action_type(self)              -> Optional[str]:  return self._raw.get("action_type")
-    def action_type_description(self)  -> Optional[str]:  return self._raw.get("action_type_description")
-    def modification_number(self)      -> Optional[str]:  return self._raw.get("modification_number")
-    def description(self)              -> Optional[str]:  return self._raw.get("description")
+    @property
+    def amt(self) -> Optional[float]:
+        """Get the transaction amount."""
+        amt = self.federal_action_obligation or \
+                self.face_value_loan_guarantee or \
+                self.original_loan_subsidy_cost or None
+
+        return to_float(amt)
+
+    @property
+    def id(self) -> Optional[str]:
+        return self._raw.get("id")
+
+    @property
+    def type(self) -> Optional[str]:
+        return self._raw.get("type")
+
+    @property
+    def type_description(self) -> Optional[str]:
+        return self._raw.get("type_description")
+
+    @property
+    def action_date(self) -> Optional[str]:
+        action_date = self._raw.get("action_date")
+        try:
+            return datetime.strptime(action_date, "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            return action_date
+
+    @property
+    def action_type(self) -> Optional[str]:
+        return self._raw.get("action_type")
+
+    @property
+    def action_type_description(self) -> Optional[str]:
+        return self._raw.get("action_type_description")
+
+    @property
+    def modification_number(self) -> Optional[str]:
+        return self._raw.get("modification_number")
+
+    @property
+    def award_description(self) -> Optional[str]:
+        return self._raw.get("description")
 
     @property
     def federal_action_obligation(self) -> Optional[float]:
@@ -28,17 +65,11 @@ class Transaction:
         return to_float(self._raw.get("original_loan_subsidy_cost"))
 
     @property
-    def cfda_number(self) -> Optional[str]:    return self._raw.get("cfda_number")
+    def cfda_number(self) -> Optional[str]:
+        return self._raw.get("cfda_number")
 
-    def get(self, key: str, default: Any = None) -> Any:  return self._raw.get(key, default)
-    @property
-    def raw(self):                             return self._raw
-
-    def to_dict(self) -> dict:
+    def to_dict(self):
         return self._raw
 
     def __repr__(self) -> str:
-        amt = (self.federal_action_obligation or
-               self.face_value_loan_guarantee or
-               self.original_loan_subsidy_cost or "?")
-        return f"<Txn {self.modification_number or 'Base'} {self.action_date or '?'} {amt}>"
+        return f"<Txn {self.id} {str(self.action_date) or '?'} {self.amt}>"
