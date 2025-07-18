@@ -1,0 +1,50 @@
+{
+  "page_metadata": {
+    "page": 1,
+    "next": 2,
+    "previous": null,
+    "hasNext": true,
+    "hasPrevious": false
+  },
+  "results": [
+    {
+      "id": "CONT_TX_8000_-NONE-_80GSFC18C0008_P00065_-NONE-_0",
+      "type": "D",
+      "type_description": "DEFINITIVE CONTRACT",
+      "action_date": "2025-06-23",
+      "action_type": "C",
+      "action_type_description": "FUNDING ONLY ACTION",
+      "modification_number": "P00065",
+      "description": "THE TANDEM RECONNECTION....",
+      "federal_action_obligation": 1600000.0,
+      "face_value_loan_guarantee": 0.0,
+      "original_loan_subsidy_cost": 0.0
+    },
+    {
+      "id": "CONT_TX_8000_-NONE-_80GSFC18C0008_P00064_-NONE-_0",
+      "type": "D",
+      "type_description": "DEFINITIVE CONTRACT",
+      "action_date": "2025-06-13",
+      "action_type": "B",
+      "action_type_description": "SUPPLEMENTAL AGREEMENT FOR WORK WITHIN SCOPE",
+      "modification_number": "P00064",
+      "description": "THE TANDEM RECONNECTION....",
+      "federal_action_obligation": 1200000.0,
+      "face_value_loan_guarantee": 0.0,
+      "original_loan_subsidy_cost": 0.0
+    },
+    {
+      "id": "CONT_TX_8000_-NONE-_80GSFC18C0008_P00063_-NONE-_0",
+      "type": "D",
+      "type_description": "DEFINITIVE CONTRACT",
+      "action_date": "2025-06-05",
+      "action_type": "C",
+      "action_type_description": "FUNDING ONLY ACTION",
+      "modification_number": "P00063",
+      "description": "THE TANDEM RECONNECTION....",
+      "federal_action_obligation": 282046.29,
+      "face_value_loan_guarantee": 0.0,
+      "original_loan_subsidy_cost": 0.0
+    }
+  ]
+}

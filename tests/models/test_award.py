@@ -241,13 +241,55 @@ class TestAwardTransactions:
     """Test Award transactions property (current implementation)."""
     
     def test_transactions_current_implementation_with_real_data(self, mock_client, award_fixture_data):
-        """Test current transactions implementation returns empty list with real data."""
+        """Test current transactions implementation returns transactions from fixture data."""
+        import json
+        from pathlib import Path
+        from unittest.mock import Mock
+        
+        # Load transactions fixture data
+        fixture_path = Path(__file__).parent.parent / "fixtures" / "transactions.json"
+        with open(fixture_path) as f:
+            transactions_response = json.load(f)
+        
+        # Mock the API response
+        mock_client._make_request.return_value = transactions_response
+        
+        # Mock the transactions resource to return a mock query builder
+        mock_transactions_resource = Mock()
+        mock_query = Mock()
+        
+        # Make the query builder's for_award method return itself for chaining
+        mock_query.for_award = Mock(return_value=mock_query)
+        
+        # Mock the all() method to return Transaction objects from the fixture data
+        from usaspending.models.transaction import Transaction
+        mock_transactions = [
+            Transaction(result) for result in transactions_response["results"]
+        ]
+        mock_query.all = Mock(return_value=mock_transactions)
+        
+        # Set up the mock resource to return the mock query
+        mock_transactions_resource.for_award = Mock(return_value=mock_query)
+        mock_client._resources["transactions"] = mock_transactions_resource
+        
         award = Award(award_fixture_data, mock_client)
         
-        # Current implementation should return empty list with TODO note
+        # Get transactions
         transactions = award.transactions
-        assert transactions == []
+        
+        # Verify the result
         assert isinstance(transactions, list)
+        assert len(transactions) == 3
+        
+        # Verify the correct methods were called
+        mock_transactions_resource.for_award.assert_called_once_with("CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-")
+        mock_query.all.assert_called_once()
+        
+        # Verify transaction data
+        assert transactions[0].id == "CONT_TX_8000_-NONE-_80GSFC18C0008_P00065_-NONE-_0"
+        assert transactions[0].federal_action_obligation == 1600000.0
+        assert transactions[1].id == "CONT_TX_8000_-NONE-_80GSFC18C0008_P00064_-NONE-_0"
+        assert transactions[2].id == "CONT_TX_8000_-NONE-_80GSFC18C0008_P00063_-NONE-_0"
 
 
 class TestAwardTypeInformation:
