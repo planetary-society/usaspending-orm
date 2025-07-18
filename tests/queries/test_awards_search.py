@@ -9,7 +9,7 @@ import pytest
 
 from usaspending.client import USASpending
 from usaspending.config import Config
-from usaspending.exceptions import ValidationError
+from usaspending.exceptions import ValidationError, APIError
 from usaspending.models import Award
 from usaspending.queries.awards_search import AwardsSearch
 from usaspending.queries.filters import (
@@ -28,7 +28,11 @@ from usaspending.queries.filters import (
 
 @pytest.fixture
 def mock_client():
-    """Create a mock USASpending client for testing."""
+    """Create a mock USASpending client for testing.
+    
+    This fixture is kept for backward compatibility with tests that
+    only need simple mocking of _make_request.
+    """
     config = Config(
         cache_backend="memory",
         rate_limit_calls=1000,
@@ -651,314 +655,250 @@ class TestAwardTypeValidation:
 class TestTransformResult:
     """Test result transformation."""
 
-    def test_transform_result(self, awards_search, mock_client):
+    def test_transform_result(self, mock_usa_client):
         """Test that _transform_result creates Award instances."""
-        result_data = {"Award ID": "123", "Recipient Name": "Test Corp"}
+        # Set up a single award
+        award_data = {"Award ID": "123", "Recipient Name": "Test Corp"}
+        mock_usa_client.mock_award_search([award_data])
         
-        award = awards_search._transform_result(result_data)
+        # Get the award through the query
+        search = mock_usa_client.awards.search().with_award_types("A")
+        award = search.first()
         
         assert isinstance(award, Award)
-        # Award stores data internally, we can't directly access _data
+        assert award._data["Award ID"] == "123"
+        assert award._data["Recipient Name"] == "Test Corp"
 
 
 class TestPaginationAndIteration:
     """Test pagination functionality."""
 
-    def test_iteration_single_page(self, awards_search, mock_client):
+    def test_iteration_single_page(self, mock_usa_client):
         """Test iteration with a single page of results."""
         # Set up mock response
-        mock_response = {
-            "results": [
-                {"Award ID": "1", "Recipient Name": "Corp 1"},
-                {"Award ID": "2", "Recipient Name": "Corp 2"}
-            ],
-            "page_metadata": {"hasNext": False}
-        }
-        mock_client._make_request.return_value = mock_response
+        awards = [
+            {"Award ID": "1", "Recipient Name": "Corp 1"},
+            {"Award ID": "2", "Recipient Name": "Corp 2"}
+        ]
+        mock_usa_client.mock_award_search(awards)
         
-        search = awards_search.with_award_types("A")
+        search = mock_usa_client.awards.search().with_award_types("A")
         results = list(search)
         
         assert len(results) == 2
         assert all(isinstance(r, Award) for r in results)
-        assert mock_client._make_request.call_count == 1
+        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
 
-    def test_iteration_multiple_pages(self, awards_search, mock_client):
+    def test_iteration_multiple_pages(self, mock_usa_client):
         """Test iteration with multiple pages."""
-        # Set up mock responses for 3 pages
-        mock_client._make_request.side_effect = [
-            {
-                "results": [{"Award ID": f"{i}"} for i in range(1, 101)],
-                "page_metadata": {"hasNext": True}
-            },
-            {
-                "results": [{"Award ID": f"{i}"} for i in range(101, 201)],
-                "page_metadata": {"hasNext": True}
-            },
-            {
-                "results": [{"Award ID": f"{i}"} for i in range(201, 251)],
-                "page_metadata": {"hasNext": False}
-            }
-        ]
+        # Create 250 awards that will be automatically paginated
+        awards = [{"Award ID": f"{i}"} for i in range(1, 251)]
+        mock_usa_client.mock_award_search(awards, page_size=100)
         
-        search = awards_search.with_award_types("A")
+        search = mock_usa_client.awards.search().with_award_types("A")
         results = list(search)
         
         assert len(results) == 250
-        assert mock_client._make_request.call_count == 3
+        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 3
 
-    def test_iteration_with_max_pages(self, awards_search, mock_client):
+    def test_iteration_with_max_pages(self, mock_usa_client):
         """Test iteration respects max_pages limit."""
-        # Set up responses that would return 3 pages
-        mock_client._make_request.side_effect = [
-            {
-                "results": [{"Award ID": f"{i}"} for i in range(100)],
-                "page_metadata": {"hasNext": True}
-            },
-            {
-                "results": [{"Award ID": f"{i}"} for i in range(100)],
-                "page_metadata": {"hasNext": True}
-            },
-            # This page should not be fetched
-            {
-                "results": [{"Award ID": f"{i}"} for i in range(100)],
-                "page_metadata": {"hasNext": False}
-            }
-        ]
+        # Create 300 awards but limit to 2 pages
+        awards = [{"Award ID": f"{i}"} for i in range(300)]
+        mock_usa_client.mock_award_search(awards, page_size=100)
         
-        search = awards_search.with_award_types("A").max_pages(2)
+        search = mock_usa_client.awards.search().with_award_types("A").max_pages(2)
         results = list(search)
         
         assert len(results) == 200
-        assert mock_client._make_request.call_count == 2
+        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 2
 
-    def test_first_method(self, awards_search, mock_client):
+    def test_first_method(self, mock_usa_client):
         """Test the first() method returns only the first result."""
-        mock_response = {
-            "results": [
-                {"Award ID": "1", "Recipient Name": "Corp 1"},
-                {"Award ID": "2", "Recipient Name": "Corp 2"}
-            ],
-            "page_metadata": {"hasNext": False}
-        }
-        mock_client._make_request.return_value = mock_response
+        awards = [
+            {"Award ID": "1", "Recipient Name": "Corp 1"},
+            {"Award ID": "2", "Recipient Name": "Corp 2"}
+        ]
+        mock_usa_client.mock_award_search(awards)
         
-        search = awards_search.with_award_types("A")
+        search = mock_usa_client.awards.search().with_award_types("A")
         result = search.first()
         
         assert isinstance(result, Award)
         assert result._data["Award ID"] == "1"
         # Verify the request was made correctly
-        assert mock_client._make_request.called
+        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
 
-    def test_first_method_no_results(self, awards_search, mock_client):
+    def test_first_method_no_results(self, mock_usa_client):
         """Test first() returns None when no results."""
-        mock_client._make_request.return_value = {
-            "results": [],
-            "page_metadata": {"hasNext": False}
-        }
+        mock_usa_client.mock_award_search([])  # Empty results
         
-        search = awards_search.with_award_types("A")
+        search = mock_usa_client.awards.search().with_award_types("A")
         result = search.first()
         
         assert result is None
 
-    def test_all_method(self, awards_search, mock_client):
+    def test_all_method(self, mock_usa_client):
         """Test the all() method returns all results as a list."""
-        mock_response = {
-            "results": [
-                {"Award ID": "1"},
-                {"Award ID": "2"},
-                {"Award ID": "3"}
-            ],
-            "page_metadata": {"hasNext": False}
-        }
-        mock_client._make_request.return_value = mock_response
+        awards = [
+            {"Award ID": "1"},
+            {"Award ID": "2"},
+            {"Award ID": "3"}
+        ]
+        mock_usa_client.mock_award_search(awards)
         
-        search = awards_search.with_award_types("A")
+        search = mock_usa_client.awards.search().with_award_types("A")
         results = search.all()
         
         assert isinstance(results, list)
         assert len(results) == 3
         assert all(isinstance(r, Award) for r in results)
 
-    def test_count_method_contracts(self, awards_search, mock_client):
+    def test_count_method_contracts(self, mock_usa_client):
         """Test the count() method for contract awards."""
         # Mock response with structured count format
-        mock_client._make_request.return_value = {
-            "results": {
-                "contracts": 3287,
-                "direct_payments": 0,
-                "grants": 7821,
-                "idvs": 105,
-                "loans": 0,
-                "other": 0
-            },
-            "spending_level": "awards",
-            "messages": []
-        }
+        mock_usa_client.mock_award_count(
+            contracts=3287,
+            direct_payments=0,
+            grants=7821,
+            idvs=105,
+            loans=0,
+            other=0
+        )
         
-        search = awards_search.with_award_types("A")
+        search = mock_usa_client.awards.search().with_award_types("A")
         count = search.count()
         
         assert count == 3287
         
         # Verify the correct endpoint was called
-        mock_client._make_request.assert_called_once()
-        call_args = mock_client._make_request.call_args
-        assert call_args[0][1] == '/v2/search/spending_by_award_count/'
+        mock_usa_client.assert_called_with(
+            endpoint="/v2/search/spending_by_award_count/",
+            method="POST"
+        )
     
-    def test_count_method_grants(self, awards_search, mock_client):
+    def test_count_method_grants(self, mock_usa_client):
         """Test the count() method for grant awards."""
-        mock_client._make_request.return_value = {
-            "results": {
-                "contracts": 3287,
-                "direct_payments": 0,
-                "grants": 7821,
-                "idvs": 105,
-                "loans": 0,
-                "other": 0
-            },
-            "spending_level": "awards",
-            "messages": []
-        }
+        mock_usa_client.mock_award_count(
+            contracts=3287,
+            direct_payments=0,
+            grants=7821,
+            idvs=105,
+            loans=0,
+            other=0
+        )
         
-        search = awards_search.with_award_types("02", "03")
+        search = mock_usa_client.awards.search().with_award_types("02", "03")
         count = search.count()
         
         assert count == 7821
     
-    def test_count_method_idvs(self, awards_search, mock_client):
+    def test_count_method_idvs(self, mock_usa_client):
         """Test the count() method for IDV awards."""
-        mock_client._make_request.return_value = {
-            "results": {
-                "contracts": 3287,
-                "direct_payments": 0,
-                "grants": 7821,
-                "idvs": 105,
-                "loans": 0,
-                "other": 0
-            },
-            "spending_level": "awards",
-            "messages": []
-        }
+        mock_usa_client.mock_award_count(
+            contracts=3287,
+            direct_payments=0,
+            grants=7821,
+            idvs=105,
+            loans=0,
+            other=0
+        )
         
-        search = awards_search.with_award_types("IDV_A")
+        search = mock_usa_client.awards.search().with_award_types("IDV_A")
         count = search.count()
         
         assert count == 105
     
-    def test_count_method_loans(self, awards_search, mock_client):
+    def test_count_method_loans(self, mock_usa_client):
         """Test the count() method for loan awards."""
-        mock_client._make_request.return_value = {
-            "results": {
-                "contracts": 3287,
-                "direct_payments": 0,
-                "grants": 7821,
-                "idvs": 105,
-                "loans": 42,
-                "other": 0
-            },
-            "spending_level": "awards",
-            "messages": []
-        }
+        mock_usa_client.mock_award_count(
+            contracts=3287,
+            direct_payments=0,
+            grants=7821,
+            idvs=105,
+            loans=42,
+            other=0
+        )
         
-        search = awards_search.with_award_types("07")
+        search = mock_usa_client.awards.search().with_award_types("07")
         count = search.count()
         
         assert count == 42
     
-    def test_count_method_direct_payments(self, awards_search, mock_client):
+    def test_count_method_direct_payments(self, mock_usa_client):
         """Test the count() method for direct payment awards."""
-        mock_client._make_request.return_value = {
-            "results": {
-                "contracts": 3287,
-                "direct_payments": 123,
-                "grants": 7821,
-                "idvs": 105,
-                "loans": 0,
-                "other": 0
-            },
-            "spending_level": "awards",
-            "messages": []
-        }
+        mock_usa_client.mock_award_count(
+            contracts=3287,
+            direct_payments=123,
+            grants=7821,
+            idvs=105,
+            loans=0,
+            other=0
+        )
         
-        search = awards_search.with_award_types("06")
+        search = mock_usa_client.awards.search().with_award_types("06")
         count = search.count()
         
         assert count == 123
     
-    def test_count_method_other(self, awards_search, mock_client):
+    def test_count_method_other(self, mock_usa_client):
         """Test the count() method for other assistance awards."""
-        mock_client._make_request.return_value = {
-            "results": {
-                "contracts": 3287,
-                "direct_payments": 0,
-                "grants": 7821,
-                "idvs": 105,
-                "loans": 0,
-                "other": 89
-            },
-            "spending_level": "awards",
-            "messages": []
-        }
+        mock_usa_client.mock_award_count(
+            contracts=3287,
+            direct_payments=0,
+            grants=7821,
+            idvs=105,
+            loans=0,
+            other=89
+        )
         
-        search = awards_search.with_award_types("09")
+        search = mock_usa_client.awards.search().with_award_types("09")
         count = search.count()
         
         assert count == 89
     
-    def test_count_method_convenience_methods(self, awards_search, mock_client):
+    def test_count_method_convenience_methods(self, mock_usa_client):
         """Test the count() method with convenience methods."""
-        mock_client._make_request.return_value = {
-            "results": {
-                "contracts": 3287,
-                "direct_payments": 123,
-                "grants": 7821,
-                "idvs": 105,
-                "loans": 42,
-                "other": 89
-            },
-            "spending_level": "awards",
-            "messages": []
-        }
+        mock_usa_client.mock_award_count(
+            contracts=3287,
+            direct_payments=123,
+            grants=7821,
+            idvs=105,
+            loans=42,
+            other=89
+        )
         
         # Test each convenience method
-        assert awards_search.contracts().count() == 3287
-        assert awards_search.grants().count() == 7821
-        assert awards_search.idvs().count() == 105
-        assert awards_search.loans().count() == 42
-        assert awards_search.direct_payments().count() == 123
-        assert awards_search.other().count() == 89
+        assert mock_usa_client.awards.search().contracts().count() == 3287
+        assert mock_usa_client.awards.search().grants().count() == 7821
+        assert mock_usa_client.awards.search().idvs().count() == 105
+        assert mock_usa_client.awards.search().loans().count() == 42
+        assert mock_usa_client.awards.search().direct_payments().count() == 123
+        assert mock_usa_client.awards.search().other().count() == 89
         
         # Verify 6 calls were made (one for each convenience method)
-        assert mock_client._make_request.call_count == 6
+        assert mock_usa_client.get_request_count("/v2/search/spending_by_award_count/") == 6
     
-    def test_count_method_missing_category(self, awards_search, mock_client):
+    def test_count_method_missing_category(self, mock_usa_client):
         """Test count() method when category is missing from response."""
-        mock_client._make_request.return_value = {
-            "results": {
-                "contracts": 3287,
-                "grants": 7821,
-                # Missing other categories
-            },
-            "spending_level": "awards",
-            "messages": []
-        }
+        # Only provide some categories
+        mock_usa_client.mock_award_count(
+            contracts=3287,
+            grants=7821
+            # Missing other categories
+        )
         
-        search = awards_search.with_award_types("07")  # loans
+        search = mock_usa_client.awards.search().with_award_types("07")  # loans
         count = search.count()
         
         # Should return 0 when category is missing
         assert count == 0
     
-    def test_count_method_requires_award_types(self, awards_search, mock_client):
+    def test_count_method_requires_award_types(self, mock_usa_client):
         """Test that count() method requires award types to be set."""
-        from usaspending.exceptions import ValidationError
-        
         # Try to call count() without setting award types
         with pytest.raises(ValidationError) as exc_info:
-            awards_search.count()
+            mock_usa_client.awards.search().count()
         
         assert "award_type_codes" in str(exc_info.value)
         assert "required" in str(exc_info.value)
@@ -967,13 +907,16 @@ class TestPaginationAndIteration:
 class TestErrorHandling:
     """Test error handling scenarios."""
 
-    def test_api_error_propagation(self, awards_search, mock_client):
+    def test_api_error_propagation(self, mock_usa_client):
         """Test that API errors are propagated correctly."""
-        from usaspending.exceptions import APIError
+        # Set up error response
+        mock_usa_client.set_error_response(
+            "/v2/search/spending_by_award/",
+            error_code=400,
+            detail="Bad request"
+        )
         
-        mock_client._make_request.side_effect = APIError("Bad request")
-        
-        search = awards_search.with_award_types("A")
+        search = mock_usa_client.awards.search().with_award_types("A")
         
         with pytest.raises(APIError):
             list(search)
@@ -994,22 +937,17 @@ class TestErrorHandling:
 class TestIntegrationScenarios:
     """Test realistic usage scenarios."""
 
-    def test_nasa_contracts_fy2024(self, awards_search, mock_client):
+    def test_nasa_contracts_fy2024(self, mock_usa_client):
         """Test a realistic query for NASA contracts in FY2024."""
-        mock_response = {
-            "results": [
-                {
-                    "Award ID": "80NSSC24CA001",
-                    "Recipient Name": "SpaceX",
-                    "Award Amount": 2500000000,
-                    "Awarding Agency": "NASA"
-                }
-            ],
-            "page_metadata": {"hasNext": False}
-        }
-        mock_client._make_request.return_value = mock_response
+        awards = [{
+            "Award ID": "80NSSC24CA001",
+            "Recipient Name": "SpaceX",
+            "Award Amount": 2500000000,
+            "Awarding Agency": "NASA"
+        }]
+        mock_usa_client.mock_award_search(awards)
         
-        search = (awards_search
+        search = (mock_usa_client.awards.search()
             .with_award_types("A", "B", "C", "D")
             .for_agency("NASA", AgencyType.AWARDING)
             .for_fiscal_year(2024)
@@ -1017,9 +955,9 @@ class TestIntegrationScenarios:
         
         results = list(search)
         
-        # Verify the payload sent
-        call_args = mock_client._make_request.call_args
-        payload = call_args[1]["json"]
+        # Verify the request was made with correct filters
+        last_request = mock_usa_client.get_last_request("/v2/search/spending_by_award/")
+        payload = last_request["json"]
         
         assert "award_type_codes" in payload["filters"]
         assert "agencies" in payload["filters"]
@@ -1027,20 +965,15 @@ class TestIntegrationScenarios:
         assert "keywords" in payload["filters"]
         
         assert len(results) == 1
-        assert len(results) == 1
         assert isinstance(results[0], Award)
 
-    def test_small_business_grants(self, awards_search, mock_client):
+    def test_small_business_grants(self, mock_usa_client):
         """Test query for small business grants with location filters."""
-        mock_response = {
-            "results": [],
-            "page_metadata": {"hasNext": False}
-        }
-        mock_client._make_request.return_value = mock_response
+        mock_usa_client.mock_award_search([])  # Empty results
         
         ca_location = Location(country_code="USA", state_code="CA")
         
-        search = (awards_search
+        search = (mock_usa_client.awards.search()
             .with_award_types("02", "03", "04", "05")  # Grant types
             .with_recipient_types("small_business")
             .with_recipient_locations(ca_location)
@@ -1050,8 +983,9 @@ class TestIntegrationScenarios:
         
         _ = search.all()
         
-        # Verify filters were applied
-        payload = mock_client._make_request.call_args[1]["json"]
+        # Verify filters were applied using request tracking
+        last_request = mock_usa_client.get_last_request("/v2/search/spending_by_award/")
+        payload = last_request["json"]
         assert payload["filters"]["recipient_type_names"] == ["small_business"]
         assert payload["filters"]["recipient_locations"] == [{"country": "USA", "state": "CA"}]
         assert len(payload["filters"]["award_amounts"]) == 1

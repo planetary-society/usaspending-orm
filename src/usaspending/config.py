@@ -36,8 +36,8 @@ class Config:
     cache_dir: str = ".usaspending_cache"
     cache_ttl: int = 3600  # 1 hour
     user_agent: str = "usaspendingapi-python/0.1.0"
-    logging_level: str = "INFO"
-    debug_mode: bool = False
+    logging_level: str = "DEBUG"
+    debug_mode: bool = True
     log_file: Optional[str] = None
     
     def __post_init__(self):
