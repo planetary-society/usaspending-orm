@@ -11,6 +11,7 @@ from .recipient import Recipient
 from .location import Location
 from .transaction import Transaction
 from .period_of_performance import PeriodOfPerformance
+from ..exceptions import ValidationError
 
 from ..config import AWARD_TYPE_DESCRIPTIONS
 
@@ -35,14 +36,14 @@ class Award(LazyRecord):
         elif isinstance(data_or_id, str):
             raw = {"generated_unique_award_id": data_or_id}
         else:
-            raise TypeError("Award expects a dict or an award_id string")
+            raise ValidationError("Award expects a dict or an award_id string")
         super().__init__(raw, client)
 
     def _fetch_details(self, client: 'USASpending') -> Optional[Dict[str, Any]]:
         """Fetch full award details from the awards resource."""
         award_id = self.get_value(['generated_unique_award_id'])
         if not award_id:
-            return None
+            raise ValidationError("Cannot lazy-load Award data. Property `generated_unique_award_id` is required to fetch details.")
         
         try:
             # Use the awards resource to get full award data

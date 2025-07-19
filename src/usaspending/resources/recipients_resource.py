@@ -20,38 +20,22 @@ class RecipientsResource(BaseResource):
     Provides access to recipient search and retrieval endpoints.
     """
     
-    def get(self, recipient_id: str) -> Recipient:
-        """Retrieve a single recipient by ID.
+    def get(self, recipient_id: str) -> "Recipient":
+        """Retrieve a single award by ID.
         
         Args:
-            recipient_id: Unique recipient identifier (with hash suffix)
+            recipient_id: Unique award identifier
             
         Returns:
-            Recipient model instance
+            Award model instance
             
         Raises:
-            ValidationError: If recipient_id is invalid
-            APIError: If recipient not found
+            : If recipient_id is invalid
+            APIError: If award not found
         """
-        if not recipient_id:
-            raise ValidationError("recipient_id is required")
-        
-        # Clean recipient ID (handle potential list suffixes)
-        original_id = recipient_id
-        recipient_id = self._clean_recipient_id(str(recipient_id).strip())
-        
-        if original_id != recipient_id:
-            logger.debug(f"Cleaned recipient ID: {original_id} -> {recipient_id}")
-        
         logger.debug(f"Retrieving recipient by ID: {recipient_id}")
-        
-        # Make API request
-        endpoint = f"/recipient/{recipient_id}/"
-        response = self._client._make_request("GET", endpoint)
-        
-        # Create model instance
-        from ..models.recipient import Recipient
-        return Recipient(response, client=self._client)
+        from ..queries.recipient_query import RecipientQuery
+        return RecipientQuery(self._client).get_by_id(recipient_id)
     
     def search(self) -> SpendingByRecipientsSearch:
         """Create a new recipient search query builder.
@@ -62,32 +46,3 @@ class RecipientsResource(BaseResource):
         logger.debug("Creating new SpendingByRecipientsSearch query builder")
         from ..queries import SpendingByRecipientsSearch
         return SpendingByRecipientsSearch(self._client)
-    
-    def _clean_recipient_id(self, recipient_id: str) -> str:
-        """Clean recipient ID format.
-        
-        Handles cases like "abc123-['C','R']" -> "abc123-R"
-        """
-        import re
-        
-        # Pattern for list suffix: -[...]
-        pattern = r"^(.+?)-\[\s*([^\]]+)\]$"
-        match = re.match(pattern, recipient_id)
-        
-        if not match:
-            return recipient_id
-        
-        base = match.group(1)
-        tokens = match.group(2)
-        
-        # Extract and clean tokens
-        clean_tokens = []
-        for token in tokens.split(","):
-            clean_token = token.strip().strip("'\"").upper()
-            if clean_token:
-                clean_tokens.append(clean_token)
-        
-        # Prefer 'R' if present, otherwise first token
-        suffix = "R" if "R" in clean_tokens else (clean_tokens[0] if clean_tokens else "")
-        
-        return f"{base}-{suffix}" if suffix else base

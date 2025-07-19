@@ -6,6 +6,10 @@ import pytest
 from unittest.mock import Mock
 
 from usaspending.models.award import Award
+from usaspending.models.recipient import Recipient
+from usaspending.models.location import Location
+
+from usaspending.exceptions import ValidationError
 
 
 class TestAwardInitialization:
@@ -29,8 +33,8 @@ class TestAwardInitialization:
         assert award._client is not None
     
     def test_init_with_invalid_type_raises_error(self, mock_client):
-        """Test that Award initialization with invalid type raises TypeError."""
-        with pytest.raises(TypeError, match="Award expects a dict or an award_id string"):
+        """Test that Award initialization with invalid type raises ValidationError."""
+        with pytest.raises(ValidationError):
             Award(123, mock_client)
     
     def test_init_copies_data_dict(self, mock_client):
@@ -77,9 +81,9 @@ class TestAwardFetchDetails:
         mock_awards_resource.get = Mock()
         mock_client._resources["awards"] = mock_awards_resource
         
-        result = award._fetch_details(mock_client)
+        with pytest.raises(ValidationError):
+            result = award._fetch_details(mock_client)
         
-        assert result is None
         mock_awards_resource.get.assert_not_called()
     
     def test_fetch_details_api_exception(self, mock_client):
@@ -356,3 +360,167 @@ class TestAwardEdgeCases:
         assert award.award_amount == 1000000.50
         # potential_value should use "Award Amount" over fallback
         assert award.potential_value == 1000000.50
+
+
+class TestAwardPropertyCaching:
+    """Test that Award properties are properly cached using @cached_property."""
+    
+    def test_recipient_property_is_cached(self, mock_client):
+        """Test that recipient property is only created once per Award instance."""
+        # Create award with recipient data
+        award_data = {
+            "generated_unique_award_id": "CONT_AWD_123",
+            "recipient": {
+                "recipient_id": "REC123",
+                "recipient_name": "Test Company",
+                "location": {
+                    "country_name": "UNITED STATES",
+                    "state_code": "CA"
+                }
+            }
+        }
+        
+        award = Award(award_data, mock_client)
+        
+        # Access recipient property multiple times
+        recipient1 = award.recipient
+        recipient2 = award.recipient
+        recipient3 = award.recipient
+        
+        # Should be the exact same object instance (cached)
+        assert recipient1 is recipient2
+        assert recipient2 is recipient3
+        assert isinstance(recipient1, Recipient)
+        assert recipient1.name == "Test Company"
+    
+    def test_place_of_performance_property_is_cached(self, mock_client):
+        """Test that place_of_performance property is only created once."""
+        award_data = {
+            "generated_unique_award_id": "CONT_AWD_123",
+            "place_of_performance": {
+                "country_name": "UNITED STATES",
+                "state_code": "TX",
+                "city_name": "Houston"
+            }
+        }
+        
+        award = Award(award_data, mock_client)
+        
+        # Access property multiple times
+        location1 = award.place_of_performance
+        location2 = award.place_of_performance
+        
+        # Should be the same instance
+        assert location1 is location2
+        assert isinstance(location1, Location)
+        assert location1._data["state_code"] == "TX"
+    
+    def test_recipient_with_lazy_loading_only_calls_api_once(self, mock_client):
+        """Test that recipient property uses fallback fields efficiently without API calls."""
+        # Award with minimal data that includes fallback recipient fields
+        award_data = {
+            "generated_unique_award_id": "CONT_AWD_123",
+            "Recipient Name": "Test Recipient",  # Has name but no full recipient object
+            "recipient_id": "0b441d38-e3c0-de89-ee08-69fc9e6ee58a-C"
+        }
+        
+        # Mock the awards.get method (should NOT be called in this case)
+        mock_award_resource = Mock()
+        mock_client._resources["awards"] = mock_award_resource
+        
+        award = Award(award_data, mock_client)
+        
+        # Access recipient multiple times
+        recipient1 = award.recipient
+        recipient2 = award.recipient
+        recipient3 = award.recipient
+        
+        # Should NOT call get() since we have fallback fields
+        mock_award_resource.get.assert_not_called()
+        
+        # All references should be to the same recipient instance (cached)
+        assert recipient1 is recipient2
+        assert recipient2 is recipient3
+        assert recipient1.name == "Test Recipient"  # Uses the fallback data
+        assert recipient1.recipient_id == "0b441d38-e3c0-de89-ee08-69fc9e6ee58a-C"
+    
+    def test_period_of_performance_property_is_cached(self, mock_client):
+        """Test that period_of_performance property is cached."""
+        award_data = {
+            "generated_unique_award_id": "CONT_AWD_123",
+            "period_of_performance": {
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31"
+            }
+        }
+        
+        award = Award(award_data, mock_client)
+        
+        # Access property multiple times
+        period1 = award.period_of_performance
+        period2 = award.period_of_performance
+        
+        # Should be the same instance
+        assert period1 is period2
+        assert period1._raw["start_date"] == "2023-01-01"
+    
+    def test_transactions_property_only_queries_once(self, mock_client):
+        """Test that transactions property only makes one query."""
+        award_data = {
+            "generated_unique_award_id": "CONT_AWD_123"
+        }
+        
+        # Mock the transactions resource
+        mock_transactions = Mock()
+        mock_client._resources["transactions"] = mock_transactions
+        
+        # Mock the query chain
+        mock_query = Mock()
+        mock_transactions.for_award.return_value = mock_query
+        mock_query.all.return_value = [
+            {"transaction_id": "1"},
+            {"transaction_id": "2"}
+        ]
+        
+        award = Award(award_data, mock_client)
+        
+        # Access transactions multiple times
+        trans1 = award.transactions
+        trans2 = award.transactions
+        trans3 = award.transactions
+        
+        # Should only call for_award once
+        mock_transactions.for_award.assert_called_once_with("CONT_AWD_123")
+        mock_query.all.assert_called_once()
+        
+        # Should return the same list instance
+        assert trans1 is trans2
+        assert trans2 is trans3
+        assert len(trans1) == 2
+    
+    def test_multiple_awards_have_separate_caches(self, mock_client):
+        """Test that different Award instances maintain separate caches."""
+        award1_data = {
+            "generated_unique_award_id": "AWARD1",
+            "recipient": {"recipient_name": "Company A"}
+        }
+        award2_data = {
+            "generated_unique_award_id": "AWARD2", 
+            "recipient": {"recipient_name": "Company B"}
+        }
+        
+        award1 = Award(award1_data, mock_client)
+        award2 = Award(award2_data, mock_client)
+        
+        # Access recipients
+        recipient1 = award1.recipient
+        recipient2 = award2.recipient
+        
+        # Should be different instances with different data
+        assert recipient1 is not recipient2
+        assert recipient1.name == "Company A"
+        assert recipient2.name == "Company B"
+        
+        # But repeated access to same award should return cached instance
+        assert award1.recipient is recipient1
+        assert award2.recipient is recipient2
