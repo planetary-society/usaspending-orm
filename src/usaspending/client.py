@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .resources.base_resource import BaseResource
     from .resources.award_resource import AwardResource
     from .resources.transactions_resource import TransactionsResource
+    from .resources.recipients_resource import RecipientsResource
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
@@ -111,7 +112,7 @@ class USASpending:
         return self._resources["awards"]
     
     @property
-    def recipients(self) -> "RecipientResource":
+    def recipients(self) -> "RecipientsResource":
         """Access recipient endpoints."""
         if "recipients" not in self._resources:
             from .resources.recipients_resource import RecipientResource
