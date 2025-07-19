@@ -5,8 +5,8 @@ import pytest
 from unittest.mock import Mock
 from pathlib import Path
 
-from usaspending.resources.award_resource import AwardResource
-from usaspending.models.award import Award
+from usaspending.resources import AwardResource
+from usaspending.models import Award, Recipient
 from usaspending.exceptions import ValidationError
 
 
