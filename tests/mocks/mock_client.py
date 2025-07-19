@@ -192,15 +192,14 @@ class MockUSASpendingClient(USASpending):
             response = ResponseBuilder.paginated_response(
                 results=page_items,
                 page=page_num,
-                has_next=has_next,
-                total=len(items)
+                has_next=has_next
             )
             self._responses[endpoint].append(response)
         
         # If no items, add single empty response
         if not items:
             self._responses[endpoint].append(
-                ResponseBuilder.paginated_response([], has_next=False, total=0)
+                ResponseBuilder.paginated_response([], has_next=False)
             )
     
     def set_fixture_response(

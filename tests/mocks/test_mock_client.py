@@ -33,7 +33,7 @@ class TestMockUSASpendingClient:
         """Test setting a single response."""
         client = MockUSASpendingClient()
         
-        test_response = {"results": [{"id": 1}], "total": 1}
+        test_response = {"results": [{"id": 1}], "page_metadata": {"hasNext": False}}
         client.set_response("/test/endpoint", test_response)
         
         # Should return the response every time
@@ -82,7 +82,7 @@ class TestMockUSASpendingClient:
         page1 = client._make_request("POST", "/test/paginated", json={"page": 1})
         assert len(page1["results"]) == 100
         assert page1["page_metadata"]["hasNext"] is True
-        assert page1["page_metadata"]["total"] == 250
+        assert page1["page_metadata"]["page"] == 1
         
         page2 = client._make_request("POST", "/test/paginated", json={"page": 2})
         assert len(page2["results"]) == 100
@@ -185,15 +185,13 @@ class TestResponseBuilder:
         response = ResponseBuilder.paginated_response(
             results=[{"id": 1}, {"id": 2}],
             page=2,
-            has_next=True,
-            total=100
+            has_next=True
         )
         
         assert response["results"] == [{"id": 1}, {"id": 2}]
         assert response["page_metadata"]["page"] == 2
         assert response["page_metadata"]["hasNext"] is True
-        assert response["page_metadata"]["hasPrevious"] is True
-        assert response["page_metadata"]["total"] == 100
+        assert response["page_metadata"]["hasNext"] is True
     
     def test_award_search_response(self):
         """Test building award search responses."""

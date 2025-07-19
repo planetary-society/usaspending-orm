@@ -13,8 +13,8 @@ class ResponseBuilder:
         results: List[Dict[str, Any]],
         page: int = 1,
         has_next: bool = False,
-        total: Optional[int] = None,
-        messages: Optional[List[str]] = None
+        messages: Optional[List[str]] = None,
+        page_size: int = 20,
     ) -> Dict[str, Any]:
         """Build a paginated response with metadata.
         
@@ -22,26 +22,23 @@ class ResponseBuilder:
             results: List of result items
             page: Current page number
             has_next: Whether there are more pages
-            total: Total count of results (optional)
             messages: API messages (optional)
             
         Returns:
             Complete API response dict
         """
         response = {
+            "limit": page_size,
             "results": results,
             "page_metadata": {
                 "page": page,
                 "hasNext": has_next,
-                "hasPrevious": page > 1,
-            }
+                # the following values would vary based on actual data
+                "last_record_unique_id": 131519463, 
+                "last_record_sort_value": "NNX17CD03C"
+            },
+            "messages": messages or []
         }
-        
-        if total is not None:
-            response["page_metadata"]["total"] = total
-            
-        if messages:
-            response["messages"] = messages
             
         return response
     
