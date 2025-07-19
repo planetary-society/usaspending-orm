@@ -17,7 +17,6 @@ class LazyRecord(ClientAwareModel):
         if self._details_fetched:
             return
         
-        client = self._client
         new_data = self._fetch_details()
         if new_data:
             self._data.update(new_data)
@@ -27,17 +26,33 @@ class LazyRecord(ClientAwareModel):
         """Override in subclasses."""
         raise NotImplementedError
     
-    def _get(self, *keys: str, default: Any = None) -> Any:
+    def _lazy_get(self, *keys: str, default: Any = None) -> Any:
         """Get value, triggering lazy load if needed."""
-        for key in keys:
-            if key in self._data:
-                return self._data[key]
         
-        # Trigger lazy load
-        if not self._details_fetched:
-            self._ensure_details()
+        keys = list(keys)
+        
+        # If we've already lazy-loaded details, return whatever
+        # values are present in the data
+        
+        if self._details_fetched:
+            return self.get_value(keys, default=default)
+        else:
+            # Try loading the value directly
+            # If returned value is None, than try fetching
+            # the source data
+            value = None
+            
             for key in keys:
                 if key in self._data:
-                    return self._data[key]
-        
-        return default
+                    value = self._data[key]
+                    
+            if value is None:
+                # Load full resource data from source
+                self._ensure_details()
+                
+                # Set flag
+                self._details_fetched = True
+                
+                # Attempt to return the value again
+                value = self.get_value(keys, default=default)
+            return value
