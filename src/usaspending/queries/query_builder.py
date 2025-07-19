@@ -186,7 +186,7 @@ class QueryBuilder(ABC, Generic[T]):
         """Execute the query and return raw response."""
         query_type = self.__class__.__name__
         filters_count = len(self._filters)
-        endpoint = self._endpoint()
+        endpoint = self._endpoint
         
         log_query_execution(logger, query_type, filters_count, endpoint, page)
         

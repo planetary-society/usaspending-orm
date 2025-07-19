@@ -61,7 +61,7 @@ class TestAwardsSearchInitialization:
 
     def test_endpoint(self, awards_search):
         """Test that the correct endpoint is returned."""
-        assert awards_search._endpoint() == "/v2/search/spending_by_award/"
+        assert awards_search._endpoint == "/v2/search/spending_by_award/"
 
     def test_clone_immutability(self, awards_search):
         """Test that _clone creates a new instance with copied attributes."""
