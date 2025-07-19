@@ -17,7 +17,7 @@ class LazyRecord(ClientAwareModel):
         if self._details_fetched:
             return
         
-        client = self._ensure_client()
+        client = self._client
         new_data = self._fetch_details(client)
         if new_data:
             self._data.update(new_data)

@@ -113,14 +113,16 @@ class Award(LazyRecord):
     @cached_property
     def place_of_performance(self) -> Optional[Location]:
         """Award place of performance location."""
-        return self._get_or_create_related('place_of_performance', Location)
+        data = self._data.get('place_of_performance')
+        return Location(data, self._client) if data else None
 
     @cached_property
     def recipient(self) -> Optional[Recipient]:
         """Award recipient with lazy loading."""
         # First check if we already have recipient data
         if isinstance(self.get_value(["recipient"]), dict):
-            return self._get_or_create_related('recipient', Recipient)
+            data = self._data.get('recipient')
+            return Recipient(data, self._client) if data else None
         
         # Check if we have fallback fields before calling API
         recipient_keys = ["Recipient Name", "Recipient DUNS Number", "recipient_id"]
@@ -133,9 +135,8 @@ class Award(LazyRecord):
             
             # Add location if available to avoid separate API call
             if isinstance(self.get_value(["Recipient Location"]), dict):
-                recipient_location = self._get_or_create_related(
-                    "Recipient Location", Location
-                )
+                location_data = self._data.get("Recipient Location")
+                recipient_location = Location(location_data, self._client) if location_data else None
                 recipient.location = recipient_location
             
             return recipient
@@ -143,7 +144,8 @@ class Award(LazyRecord):
         # Only call API if we don't have enough info in the Award entry itself
         self._ensure_details()  # loads the full Award detail
         if isinstance(self.get_value(["recipient"]), dict):
-            return self._get_or_create_related("recipient", Recipient)
+            data = self._data.get("recipient")
+            return Recipient(data, self._client) if data else None
         
         return None
 

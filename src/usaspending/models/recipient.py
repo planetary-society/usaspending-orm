@@ -151,7 +151,8 @@ class Recipient(LazyRecord):
     @cached_property
     def location(self) -> Optional[Location]:
         """Get recipient location - shares same client."""
-        return self._get_or_create_related('location', Location)
+        data = self._data.get('location')
+        return Location(data, self._client) if data else None
 
 
     @property

@@ -43,30 +43,9 @@ class ClientAwareModel(BaseModel):
     def __init__(self, data: Dict[str, Any], client: 'USASpending'):
         super().__init__(data)
         self._client_ref = ref(client)  # Weak reference prevents circular refs
-        self._related_cache = {}
     
     @property
     def _client(self) -> Optional['USASpending']:
         """Get client instance if still alive."""
         return self._client_ref() if self._client_ref else None
     
-    def _ensure_client(self) -> 'USASpending':
-        """Get client or raise error."""
-        client = self._client
-        if not client:
-            raise RuntimeError("Client reference has been garbage collected")
-        return client
-    
-    def _get_or_create_related(self, 
-                              key: str, 
-                              model_class: Type[T], 
-                              data_key: Optional[str] = None) -> Optional[T]:
-        """Get or create a related model instance."""
-        if key not in self._related_cache:
-            data = self._data.get(data_key or key)
-            if data:
-                # Pass the same client reference
-                self._related_cache[key] = model_class(data, self._ensure_client())
-            else:
-                self._related_cache[key] = None
-        return self._related_cache[key]
