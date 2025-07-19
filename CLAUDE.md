@@ -75,16 +75,15 @@ src/usaspendingapi/
 tests/
 ├── conftest.py           # Shared fixtures
 ├── test_client.py        # Client tests
-├── test_queries/         # Query builder tests
-├── test_models/          # Model tests
-├── test_resources/       # Resource tests
+├── queries/         # Query builder tests
+├── models/          # Model tests
+├── resources/       # Resource tests
 └── fixtures/             # Test response data
 ```
 
 ### Testing Principles
-- Mock at `_make_request` level, not HTTP level
+- Mock at HTTP level
 - Use fixtures for common test data
-- Test pagination logic thoroughly
 - Verify query builder immutability
 - Test plugin integration
 
