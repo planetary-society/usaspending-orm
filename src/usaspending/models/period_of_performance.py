@@ -1,5 +1,8 @@
-from .common import *
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Dict, Any, Optional
 from ..utils.formatter import to_float
+from datetime import datetime
 
 @dataclass(slots=True)
 class PeriodOfPerformance:

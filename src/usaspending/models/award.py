@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from functools import cached_property
 
-from .common import *
 from .lazy_record import LazyRecord
 from .recipient import Recipient
 from .location import Location
@@ -126,12 +125,13 @@ class Award(LazyRecord):
             return Recipient(data, self._client) if data else None
         
         # Check if we have fallback fields before calling API
-        recipient_keys = ["Recipient Name", "Recipient DUNS Number", "recipient_id"]
+        recipient_keys = ["Recipient Name", "Recipient DUNS Number", "recipient_id", "recipient_hash"]
         if any(self.get_value([k]) for k in recipient_keys):
             recipient = Recipient({
                 "recipient_name": self.get_value(["Recipient Name"]),
                 "recipient_unique_id": self.get_value(["Recipient DUNS Number"]),
                 "recipient_id": self.get_value(["recipient_id"]),
+                "recipient_hash": self.get_value(["recipient_hash"]),
             }, client=self._client)
             
             # Add location if available to avoid separate API call

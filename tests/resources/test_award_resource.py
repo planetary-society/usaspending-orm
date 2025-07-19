@@ -16,7 +16,7 @@ class TestAwardResource:
     @pytest.fixture
     def award_fixture_data(self):
         """Load award fixture data."""
-        fixture_path = Path(__file__).parent / "fixtures" / "award.json"
+        fixture_path = Path(__file__).parent.parent / "fixtures" / "award.json"
         with open(fixture_path) as f:
             return json.load(f)
 
@@ -102,8 +102,23 @@ class TestAwardResource:
         assert award.total_obligations == 168657782.95
         assert award.total_outlay == 150511166.49
         
+        # Test helper methods
+        
+        # Preferentially return the external Award ID
+        assert award.prime_award_id == award_fixture_data.get("piid", "")
+        
+        # Test description is present
+        assert award.description
+        
+        # Ensure description is not all uppercase
+        assert not award.description.isupper()
+    
+    def test_award_loads_related_models(self, award_fixture_data, mock_client):
+        """Test that Award model properties work with fixture data."""
+        award = Award(award_fixture_data, mock_client)
+        
         # Test that recipient data is accessible
-        assert award.recipient is not None
+        assert isinstance(award.recipient, Recipient)
         assert award.recipient.name == "The University of Iowa"
         
         # Test place of performance

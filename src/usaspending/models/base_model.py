@@ -1,11 +1,9 @@
 # usaspendingapi/models/base.py
-from typing import Optional, Dict, Any, TypeVar, List, TYPE_CHECKING
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from weakref import ref
 
 if TYPE_CHECKING:
     from usaspending.client import USASpending
-
-T = TypeVar('T')
 
 class BaseModel:
     """Base class for all models with fundamental behaviors."""

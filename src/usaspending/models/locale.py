@@ -1,4 +1,3 @@
-from usaspending.data_types.common import *
 from usaspending.client_session import get_usaspending_client, USASpendingClient
 from usaspending.data_types.recipient import Recipient
 from usaspending.data_types.award import Award

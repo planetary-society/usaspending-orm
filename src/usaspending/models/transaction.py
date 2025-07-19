@@ -1,10 +1,12 @@
-from .common import *
 from .base_model import BaseModel
+from dataclasses import dataclass, field
+from typing import Dict, Any, Optional
 from ..utils.formatter import to_float, smart_sentence_case
+
 from datetime import datetime
 
 @dataclass
-class Transaction():
+class Transaction(BaseModel):
     _raw: Dict[str, Any] = field(repr=False, default_factory=dict)
 
     @property

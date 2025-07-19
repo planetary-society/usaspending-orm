@@ -3,28 +3,21 @@ from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from functools import cached_property
 import re
 
-from .common import *
 from .lazy_record import LazyRecord
 from .location import Location
 from ..utils.formatter import to_float, contracts_titlecase
+
+from ..exceptions import ValidationError
+from ..logging_config import USASpendingLogger
+
+logger = USASpendingLogger.get_logger(__name__)
 
 if TYPE_CHECKING:
     from ..client import USASpending
 
 # TODO: Add logic to self-categorize recipient type based on FPDS categories
 
-# ──────────────────────────────────────────────────
-#  Recipient wrapper
-# ──────────────────────────────────────────────────
 class Recipient(LazyRecord):
-    """
-    Wrapper around USAspending recipient data.
-
-    Construction
-    ------------
-    • Recipient(recipient_overview_dict_or_search_row)
-    • Recipient(recipient_id_str)
-    """
 
     # compiled once at import time
     _LIST_SUFFIX_RE = re.compile(
@@ -36,18 +29,16 @@ class Recipient(LazyRecord):
         re.VERBOSE,
     )
 
-    # ─────────────────────────────────────────────
-    #  Construction
-    # ─────────────────────────────────────────────
     def __init__(self, data_or_id: Dict[str, Any] | str, client: Optional[USASpending] = None):
         if isinstance(data_or_id, dict):
             raw = data_or_id.copy()
-            if rid := raw.get("recipient_id"):
+            rid = raw.get("recipient_id") or raw.get("recipient_hash")
+            if rid:
                 raw["recipient_id"] = self._clean_recipient_id(rid)
         elif isinstance(data_or_id, str):
             raw = {"recipient_id": self._clean_recipient_id(data_or_id)}
         else:
-            raise TypeError("Recipient expects dict or recipient_id string")
+            raise TypeError("Recipient expects dict or recipient_id/hash string")
         super().__init__(raw, client)
         
     # ---------------------- fetch hook -------------------------------- #
@@ -66,7 +57,9 @@ class Recipient(LazyRecord):
     @staticmethod
     def _clean_recipient_id(rid: str) -> str:
         """
-        Normalise funky list-annotated recipient IDs.
+        Normalise list-annotated recipient IDs.
+        Sometimes these look like "abc123-['C','R']".
+        This will select the first letter after the dash,
         """
         if not isinstance(rid, str):
             return rid  # defensive; shouldn't happen
@@ -87,7 +80,7 @@ class Recipient(LazyRecord):
             if tok.strip()
         ]
 
-        letter = "R" if "R" in tokens else tokens[0]
+        letter = tokens[0]
         return f"{base}-{letter}" if letter else base
 
     # ─────────────────────────────────────────────
