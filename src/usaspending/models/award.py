@@ -39,7 +39,7 @@ class Award(LazyRecord):
             raise ValidationError("Award expects a dict or an award_id string")
         super().__init__(raw, client)
 
-    def _fetch_details(self, client: 'USASpending') -> Optional[Dict[str, Any]]:
+    def _fetch_details(self) -> Optional[Dict[str, Any]]:
         """Fetch full award details from the awards resource."""
         award_id = self.get_value(['generated_unique_award_id'])
         if not award_id:
@@ -47,7 +47,7 @@ class Award(LazyRecord):
         
         try:
             # Use the awards resource to get full award data
-            full_award = client.awards.get(award_id)
+            full_award = self._client.awards.get(award_id)
             return full_award.raw
         except Exception:
             # If fetch fails, return None to avoid breaking the application

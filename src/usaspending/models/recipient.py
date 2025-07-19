@@ -51,9 +51,13 @@ class Recipient(LazyRecord):
         super().__init__(raw, client)
         
     # ---------------------- fetch hook -------------------------------- #
-    def _fetch_details(self, client: 'USASpending') -> Optional[Dict[str, Any]]:
-        rid = self.recipient_id
-        return client._raw_client.get_recipient(rid) if rid else None
+    def _fetch_details(self) -> Optional[Dict[str, Any]]:
+        try:
+            return self._client.recipients.get(self.recipient_id).raw
+        except Exception as e:
+            # If fetch fails, return None to avoid breaking the application
+            logger.error(f"Failed to fetch recipient details for {self.recipient_id}: {e}")
+            return None
 
     # ─────────────────────────────────────────────
     #  Static cleaning utility

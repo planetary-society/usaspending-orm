@@ -65,7 +65,7 @@ class TestAwardFetchDetails:
         mock_client._resources["awards"] = mock_awards_resource
         
         # Call _fetch_details
-        result = award._fetch_details(mock_client)
+        result = award._fetch_details()
         
         # Verify the result
         assert result == award_fixture_data
@@ -82,7 +82,7 @@ class TestAwardFetchDetails:
         mock_client._resources["awards"] = mock_awards_resource
         
         with pytest.raises(ValidationError):
-            result = award._fetch_details(mock_client)
+            result = award._fetch_details()
         
         mock_awards_resource.get.assert_not_called()
     
@@ -96,7 +96,7 @@ class TestAwardFetchDetails:
         mock_client._resources["awards"] = mock_awards_resource
         
         # Should return None instead of raising
-        result = award._fetch_details(mock_client)
+        result = award._fetch_details()
         
         assert result is None
         mock_awards_resource.get.assert_called_once_with("CONT_AWD_123")

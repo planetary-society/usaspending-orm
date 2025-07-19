@@ -18,12 +18,12 @@ class LazyRecord(ClientAwareModel):
             return
         
         client = self._client
-        new_data = self._fetch_details(client)
+        new_data = self._fetch_details()
         if new_data:
             self._data.update(new_data)
         self._details_fetched = True
     
-    def _fetch_details(self, client: 'USASpending') -> Optional[Dict[str, Any]]:
+    def _fetch_details(self) -> Optional[Dict[str, Any]]:
         """Override in subclasses."""
         raise NotImplementedError
     
