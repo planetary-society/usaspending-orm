@@ -8,13 +8,13 @@ from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
-    from ..queries.recipient import RecipientSearch
+    from ..queries.spending_by_recipients_search import SpendingByRecipientsSearch
     from ..models.recipient import Recipient
 
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class RecipientResource(BaseResource):
+class RecipientsResource(BaseResource):
     """Resource for recipient-related operations.
     
     Provides access to recipient search and retrieval endpoints.
@@ -53,15 +53,15 @@ class RecipientResource(BaseResource):
         from ..models.recipient import Recipient
         return Recipient(response, client=self._client)
     
-    def search(self) -> RecipientSearch:
+    def search(self) -> SpendingByRecipientsSearch:
         """Create a new recipient search query builder.
         
         Returns:
-            RecipientSearch query builder for chaining filters
+            SpendingByRecipientsSearch query builder for chaining filters
         """
-        logger.debug("Creating new RecipientSearch query builder")
-        from ..queries.recipient import RecipientSearch
-        return RecipientSearch(self._client)
+        logger.debug("Creating new SpendingByRecipientsSearch query builder")
+        from ..queries import SpendingByRecipientsSearch
+        return SpendingByRecipientsSearch(self._client)
     
     def _clean_recipient_id(self, recipient_id: str) -> str:
         """Clean recipient ID format.

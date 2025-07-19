@@ -11,7 +11,7 @@ Award Queries:
     AwardsSearch: Complex award search with filtering and chaining
     
 Recipient Queries:
-    RecipientSearch: Recipient search with filtering and chaining
+    SpendingByRecipientsSearch: Recipient search with filtering and chaining
 
 Example:
     >>> from usaspending.client import USASpending
@@ -44,7 +44,7 @@ from ..exceptions import (
 from .query_builder import QueryBuilder
 from .award_query import AwardQuery
 from .awards_search import AwardsSearch
-from .recipient_search import RecipientSearch
+from .spending_by_recipients_search import SpendingByRecipientsSearch
 from .transactions_search import TransactionsSearch
 
 __all__ = [
@@ -52,7 +52,7 @@ __all__ = [
     "QueryBuilder",
     "AwardQuery", 
     "AwardsSearch",
-    "RecipientSearch",
+    "SpendingByRecipientsSearch",
     "TransactionsSearch",
     "USASpendingError",
     "APIError",

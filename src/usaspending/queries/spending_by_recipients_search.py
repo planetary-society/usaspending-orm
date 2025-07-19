@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class RecipientSearch(QueryBuilder["Recipient"]):
+class SpendingByRecipientsSearch(QueryBuilder["Recipient"]):
     """Query builder for recipient searches."""
     
     def _endpoint(self) -> str:
@@ -39,7 +39,7 @@ class RecipientSearch(QueryBuilder["Recipient"]):
         from ..models.recipient import Recipient
         return Recipient(data, client=self._client)
     
-    def for_agency(self, agency: str, account: Optional[str] = None) -> "RecipientSearch":
+    def for_agency(self, agency: str, account: Optional[str] = None) -> "s":
         """Filter recipients by funding agency.
         
         Reuses the same logic as AwardSearch for consistency.
@@ -84,7 +84,7 @@ class RecipientSearch(QueryBuilder["Recipient"]):
         
         return clone
     
-    def with_business_type(self, *types: str) -> "RecipientSearch":
+    def with_business_type(self, *types: str) -> "s":
         """Filter by recipient business type.
         
         Args:
@@ -97,7 +97,7 @@ class RecipientSearch(QueryBuilder["Recipient"]):
         clone._filters["recipient_type_names"] = list(types)
         return clone
     
-    def top_recipients(self, num: int = 100) -> "RecipientSearch":
+    def top_recipients(self, num: int = 100) -> "s":
         """Get top recipients by total obligations.
         
         Args:
