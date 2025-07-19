@@ -1,1 +1,247 @@
-{"id":111952974,"generated_unique_award_id":"CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-","piid":"80GSFC18C0008","category":"contract","type":"D","type_description":"DEFINITIVE CONTRACT","description":"THE TANDEM RECONNECTION AND CUSP ELECTRODYNAMICS RECONNAISSANCE SATELLITE (TRACERS) IS PROPOSED BY THE CONTRACTOR IN RESPONSE TO THE NATIONAL AERONAUTIC AND SPACE ADMINSTRATION'S (NASA) 2016 HELIOPHYSICS SMALL EXPLORER (SMEX) ANNOUNCEMENT OF OPPORTUNITY (AO). THIS STATEMENT OF WORK (SOW) DESCRIBES THE WORK TO BE CONDUCTED BY THE CONTRACTOR DURING THE PHASE A (TRACERS) PROJECT. THE CONTRACTOR SHALL PROVIDE THE NECESSARY PERSONNEL, MATERIALS, EQUIPMENT, AND FACILITIES TO PRODUCE THE TRACERS PHASE A CONCEPT STUDY REPORT (CSR) THAT ENCOMPASSES: 1. PRINCIPAL INVESTIGATOR PROGRAM OFFICE (PIPO). 2. INSTRUMENT SYSTEM ENGINEERING, INCLUDING INSTRUMENT MISSION ASSURANCE. 3. DESIGN OF A FLIGHT QUALIFIED TRACERS INSTRUMENT MEETING MISSION AND SCIENCE REQUIREMENTS. 4. DEVELOP PLANS IN SUPPORT OF INTEGRATION AND TEST OF THE TRACERS INSTRUMENT FLIGHT SYSTEM. 5. DEVELOP PLANS IN SUPPORT OF ESSENTIAL FIELD OPERATIONS. 6. DEVELOP PLANS IN SUPPORT OF LAUNCH OPERATIONS, FLIGHT OPERATIONS. 7. DEVELOP PLANS FOR AND LEAD THE TRACERS SCIENCE INVESTIGATION, AS WELL AS THE GENERATION OF RESULTING DATA PRODUCTS. THE CONTRACTOR SHALL PROVIDE A BRIEFING ON THE TRACERS SCIENCE AND SCIENCE IMPLEMENTATION PLAN AT THE PHASE A SITE VISIT. THE CONTRACTOR SHALL PROVIDE AN ORGANIZATION CHART DEFINING THE CONTRACTOR ROLES AND RESPONSIBILITIES, REPORTING PROCEDURES, AND LINES OF AUTHORITY. PARTICIPATE IN DEFINING THE RELATIONSHIPS BETWEEN THE CONTRACTOR PIPO AND THE NASA EXPLORERS PROGRAM OFFICE. THE CONTRACTOR SHALL DEVELOP A TRACERS INSTRUMENT SYSTEMS REQUIREMENTS DOCUMENT AND A TRACERS MISSION SYSTEMS REQUIREMENTS DOCUMENT. THE CONTRACTOR SHALL DEVELOP DETAILED BLOCK DIAGRAMS AND TECHNICAL DESCRIPTIONS OF ALL INSTRUMENT SYSTEMS. THE CONTRACTOR SHALL CONDUCT IN-DEPTH INSTRUMENT-LEVEL REVIEWS OF THE PROPOSED INSTRUMENT DESIGN. CONDUCT ESSENTIAL TRADE STUDIES, ANALYSES, MODELING AND SIMULATIONS TO ASSURE COMPLIANCE WITH INSTRUMENT REQUIREMENTS. THE CONTRACTOR SHALL LEAD THE SCIENCE TEAM. THE CONTRACTOR SHALL DEVELOP AN INSTRUMENT-LEVEL TEST PLAN AND PARTICIPATE IN PLANNING FOR INTEGRATION AND TEST. THE CONTRACTOR SHALL PREPARE A DETAILED INSTRUMENT DEVELOPMENT SCHEDULE COVERING ALL MISSION PHASES, LISTING MAJOR MILESTONES AND INCLUDING A DEFINED CRITICAL PATH AND SCHEDULE RESERVES. THE CONTRACTOR SHALL PREPARE UPDATED INSTRUMENT BUDGETS AND REVIEW AND APPROVE THE OVERALL TRACERS BUDGET. THE CONTRACTOR SHALL PREPARE AND SUBMIT THE CONCEPT STUDY REPORT.","total_obligation":168657782.95,"subaward_count":100,"total_subaward_amount":90674097.94,"date_signed":"2018-03-05","base_exercised_options":168657782.95,"base_and_all_options":168657782.95,"total_account_outlay":150511166.49,"total_account_obligation":163307372.66,"account_outlays_by_defc":[{"code":"Q","amount":150511166.49}],"account_obligations_by_defc":[{"code":"Q","amount":163307372.66}],"parent_award":null,"latest_transaction_contract_data":{"idv_type_description":null,"type_of_idc_description":null,"referenced_idv_agency_iden":null,"referenced_idv_agency_desc":null,"solicitation_identifier":"NNH16ZDA005O","solicitation_procedures":"NP","number_of_offers_received":"2","extent_competed":"A","type_set_aside":"NONE","type_set_aside_description":"NO SET ASIDE USED.","evaluated_preference":"NONE","fed_biz_opps":"Y","fed_biz_opps_description":"YES","small_business_competitive":false,"product_or_service_code":"AR11","naics":"541713","naics_description":"RESEARCH AND DEVELOPMENT IN NANOTECHNOLOGY","sea_transportation":null,"clinger_cohen_act_planning":"N","labor_standards":"N","cost_or_pricing_data":"N","domestic_or_foreign_entity":"B","foreign_funding":"X","major_program":null,"program_acronym":null,"subcontracting_plan":"F","multi_year_contract":"N","consolidated_contract":"D","type_of_contract_pricing":"S","national_interest_action":null,"multiple_or_single_award_description":null,"solicitation_procedures_description":"NEGOTIATED PROPOSAL/QUOTE","extent_competed_description":"FULL AND OPEN COMPETITION","other_than_full_and_open":null,"other_than_full_and_open_description":null,"commercial_item_acquisition":"D","commercial_item_acquisition_description":"COMMERCIAL PRODUCTS/SERVICES PROCEDURES NOT USED","commercial_item_test_program":"N","commercial_item_test_program_description":"NO","evaluated_preference_description":"NO PREFERENCE USED","fair_opportunity_limited":null,"fair_opportunity_limited_description":null,"product_or_service_description":"SPACE R&D SERVICES; SPACE FLIGHT, RESEARCH AND SUPPORTING ACTIVITIES; BASIC RESEARCH","dod_claimant_program":null,"dod_claimant_program_description":null,"dod_acquisition_program":null,"dod_acquisition_program_description":null,"information_technology_commercial_item_category":null,"information_technology_commercial_item_category_description":null,"sea_transportation_description":null,"clinger_cohen_act_planning_description":"NO","construction_wage_rate":"N","construction_wage_rate_description":"NO","labor_standards_description":"NO","materials_supplies":"N","materials_supplies_description":"NO","cost_or_pricing_data_description":"NO","domestic_or_foreign_entity_description":"OTHER U.S. ENTITY (E.G. GOVERNMENT)","foreign_funding_description":"NOT APPLICABLE","interagency_contracting_authority":"X","interagency_contracting_authority_description":"NOT APPLICABLE","price_evaluation_adjustment":"0.00","subcontracting_plan_description":"INDIVIDUAL SUBCONTRACT PLAN","multi_year_contract_description":"NO","purchase_card_as_payment_method":"N","purchase_card_as_payment_method_description":"NO","consolidated_contract_description":"NOT CONSOLIDATED","type_of_contract_pricing_description":"COST NO FEE","national_interest_action_description":null},"funding_agency":{"id":862,"has_agency_page":true,"toptier_agency":{"name":"National Aeronautics and Space Administration","code":"080","abbreviation":"NASA","slug":"national-aeronautics-and-space-administration"},"subtier_agency":{"name":"National Aeronautics and Space Administration","code":"8000","abbreviation":"NASA"},"office_agency_name":"NASA GODDARD SPACE FLIGHT CENTER"},"awarding_agency":{"id":862,"has_agency_page":true,"toptier_agency":{"name":"National Aeronautics and Space Administration","code":"080","abbreviation":"NASA","slug":"national-aeronautics-and-space-administration"},"subtier_agency":{"name":"National Aeronautics and Space Administration","code":"8000","abbreviation":"NASA"},"office_agency_name":"NASA GODDARD SPACE FLIGHT CENTER"},"period_of_performance":{"start_date":"2018-03-05","end_date":"2025-08-23","last_modified_date":"2025-06-23","potential_end_date":"2025-08-23 00:00:00"},"recipient":{"recipient_hash":"0b441d38-e3c0-de89-ee08-69fc9e6ee58a-C","recipient_name":"THE UNIVERSITY OF IOWA","recipient_uei":"Z1H9VJS8NG16","recipient_unique_id":null,"parent_recipient_hash":"0b441d38-e3c0-de89-ee08-69fc9e6ee58a-P","parent_recipient_name":"THE UNIVERSITY OF IOWA","parent_recipient_uei":"Z1H9VJS8NG16","parent_recipient_unique_id":null,"business_categories":["Category Business","Educational Institution","Government","Higher Education","U.S. National Government","Not Designated a Small Business","Higher Education (Public)","U.S. Regional/State Government"],"location":{"location_country_code":"USA","country_name":"UNITED STATES","state_code":"IA","state_name":"IOWA","city_name":"IOWA CITY","county_code":"103","county_name":"JOHNSON","address_line1":"105 JESSUP HALL","address_line2":null,"address_line3":null,"congressional_code":"01","zip4":"1316","zip5":"52242","foreign_postal_code":null,"foreign_province":null}},"executive_details":{"officers":[{"name":null,"amount":null},{"name":null,"amount":null},{"name":null,"amount":null},{"name":null,"amount":null},{"name":null,"amount":null}]},"place_of_performance":{"location_country_code":"USA","country_name":"UNITED STATES","county_code":"103","county_name":"JOHNSON","city_name":"IOWA CITY","state_code":"IA","state_name":"IOWA","congressional_code":"01","zip4":"1316","zip5":"52242","address_line1":null,"address_line2":null,"address_line3":null,"foreign_province":null,"foreign_postal_code":null},"psc_hierarchy":{"toptier_code":{"code":"A","description":"RESEARCH AND DEVELOPMENT"},"midtier_code":{"code":"AR","description":"Space R&D Services"},"subtier_code":{},"base_code":{"code":"AR11","description":"SPACE R&D SERVICES; SPACE FLIGHT, RESEARCH AND SUPPORTING ACTIVITIES; BASIC RESEARCH"}},"naics_hierarchy":{"toptier_code":{"code":"54","description":"Professional, Scientific, and Technical Services"},"midtier_code":{"code":"5417","description":"Scientific Research and Development Services"},"base_code":{"code":"541713","description":"Research and Development in Nanotechnology"}},"total_outlay":150511166.49}
+{
+    "id": 111952974,
+    "generated_unique_award_id": "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-",
+    "piid": "80GSFC18C0008",
+    "category": "contract",
+    "type": "D",
+    "type_description": "DEFINITIVE CONTRACT",
+    "description": "THE TANDEM RECONNECTION AND CUSP ELECTRODYNAMICS RECONNAISSANCE SATELLITE (TRACERS) IS PROPOSED BY THE CONTRACTOR IN RESPONSE TO THE NATIONAL AERONAUTIC AND SPACE ADMINSTRATION'S (NASA) 2016 HELIOPHYSICS SMALL EXPLORER (SMEX) ANNOUNCEMENT OF OPPORTUNITY (AO). THIS STATEMENT OF WORK (SOW) DESCRIBES THE WORK TO BE CONDUCTED BY THE CONTRACTOR DURING THE PHASE A (TRACERS) PROJECT. THE CONTRACTOR SHALL PROVIDE THE NECESSARY PERSONNEL, MATERIALS, EQUIPMENT, AND FACILITIES TO PRODUCE THE TRACERS PHASE A CONCEPT STUDY REPORT (CSR) THAT ENCOMPASSES: 1. PRINCIPAL INVESTIGATOR PROGRAM OFFICE (PIPO). 2. INSTRUMENT SYSTEM ENGINEERING, INCLUDING INSTRUMENT MISSION ASSURANCE. 3. DESIGN OF A FLIGHT QUALIFIED TRACERS INSTRUMENT MEETING MISSION AND SCIENCE REQUIREMENTS. 4. DEVELOP PLANS IN SUPPORT OF INTEGRATION AND TEST OF THE TRACERS INSTRUMENT FLIGHT SYSTEM. 5. DEVELOP PLANS IN SUPPORT OF ESSENTIAL FIELD OPERATIONS. 6. DEVELOP PLANS IN SUPPORT OF LAUNCH OPERATIONS, FLIGHT OPERATIONS. 7. DEVELOP PLANS FOR AND LEAD THE TRACERS SCIENCE INVESTIGATION, AS WELL AS THE GENERATION OF RESULTING DATA PRODUCTS. THE CONTRACTOR SHALL PROVIDE A BRIEFING ON THE TRACERS SCIENCE AND SCIENCE IMPLEMENTATION PLAN AT THE PHASE A SITE VISIT. THE CONTRACTOR SHALL PROVIDE AN ORGANIZATION CHART DEFINING THE CONTRACTOR ROLES AND RESPONSIBILITIES, REPORTING PROCEDURES, AND LINES OF AUTHORITY. PARTICIPATE IN DEFINING THE RELATIONSHIPS BETWEEN THE CONTRACTOR PIPO AND THE NASA EXPLORERS PROGRAM OFFICE. THE CONTRACTOR SHALL DEVELOP A TRACERS INSTRUMENT SYSTEMS REQUIREMENTS DOCUMENT AND A TRACERS MISSION SYSTEMS REQUIREMENTS DOCUMENT. THE CONTRACTOR SHALL DEVELOP DETAILED BLOCK DIAGRAMS AND TECHNICAL DESCRIPTIONS OF ALL INSTRUMENT SYSTEMS. THE CONTRACTOR SHALL CONDUCT IN-DEPTH INSTRUMENT-LEVEL REVIEWS OF THE PROPOSED INSTRUMENT DESIGN. CONDUCT ESSENTIAL TRADE STUDIES, ANALYSES, MODELING AND SIMULATIONS TO ASSURE COMPLIANCE WITH INSTRUMENT REQUIREMENTS. THE CONTRACTOR SHALL LEAD THE SCIENCE TEAM. THE CONTRACTOR SHALL DEVELOP AN INSTRUMENT-LEVEL TEST PLAN AND PARTICIPATE IN PLANNING FOR INTEGRATION AND TEST. THE CONTRACTOR SHALL PREPARE A DETAILED INSTRUMENT DEVELOPMENT SCHEDULE COVERING ALL MISSION PHASES, LISTING MAJOR MILESTONES AND INCLUDING A DEFINED CRITICAL PATH AND SCHEDULE RESERVES. THE CONTRACTOR SHALL PREPARE UPDATED INSTRUMENT BUDGETS AND REVIEW AND APPROVE THE OVERALL TRACERS BUDGET. THE CONTRACTOR SHALL PREPARE AND SUBMIT THE CONCEPT STUDY REPORT.",
+    "total_obligation": 168657782.95,
+    "subaward_count": 100,
+    "total_subaward_amount": 90674097.94,
+    "date_signed": "2018-03-05",
+    "base_exercised_options": 168657782.95,
+    "base_and_all_options": 168657782.95,
+    "total_account_outlay": 150511166.49,
+    "total_account_obligation": 163307372.66,
+    "account_outlays_by_defc": [
+        {
+            "code": "Q",
+            "amount": 150511166.49
+        }
+    ],
+    "account_obligations_by_defc": [
+        {
+            "code": "Q",
+            "amount": 163307372.66
+        }
+    ],
+    "parent_award": null,
+    "latest_transaction_contract_data": {
+        "idv_type_description": null,
+        "type_of_idc_description": null,
+        "referenced_idv_agency_iden": null,
+        "referenced_idv_agency_desc": null,
+        "solicitation_identifier": "NNH16ZDA005O",
+        "solicitation_procedures": "NP",
+        "number_of_offers_received": "2",
+        "extent_competed": "A",
+        "type_set_aside": "NONE",
+        "type_set_aside_description": "NO SET ASIDE USED.",
+        "evaluated_preference": "NONE",
+        "fed_biz_opps": "Y",
+        "fed_biz_opps_description": "YES",
+        "small_business_competitive": false,
+        "product_or_service_code": "AR11",
+        "naics": "541713",
+        "naics_description": "RESEARCH AND DEVELOPMENT IN NANOTECHNOLOGY",
+        "sea_transportation": null,
+        "clinger_cohen_act_planning": "N",
+        "labor_standards": "N",
+        "cost_or_pricing_data": "N",
+        "domestic_or_foreign_entity": "B",
+        "foreign_funding": "X",
+        "major_program": null,
+        "program_acronym": null,
+        "subcontracting_plan": "F",
+        "multi_year_contract": "N",
+        "consolidated_contract": "D",
+        "type_of_contract_pricing": "S",
+        "national_interest_action": null,
+        "multiple_or_single_award_description": null,
+        "solicitation_procedures_description": "NEGOTIATED PROPOSAL/QUOTE",
+        "extent_competed_description": "FULL AND OPEN COMPETITION",
+        "other_than_full_and_open": null,
+        "other_than_full_and_open_description": null,
+        "commercial_item_acquisition": "D",
+        "commercial_item_acquisition_description": "COMMERCIAL PRODUCTS/SERVICES PROCEDURES NOT USED",
+        "commercial_item_test_program": "N",
+        "commercial_item_test_program_description": "NO",
+        "evaluated_preference_description": "NO PREFERENCE USED",
+        "fair_opportunity_limited": null,
+        "fair_opportunity_limited_description": null,
+        "product_or_service_description": "SPACE R&D SERVICES; SPACE FLIGHT, RESEARCH AND SUPPORTING ACTIVITIES; BASIC RESEARCH",
+        "dod_claimant_program": null,
+        "dod_claimant_program_description": null,
+        "dod_acquisition_program": null,
+        "dod_acquisition_program_description": null,
+        "information_technology_commercial_item_category": null,
+        "information_technology_commercial_item_category_description": null,
+        "sea_transportation_description": null,
+        "clinger_cohen_act_planning_description": "NO",
+        "construction_wage_rate": "N",
+        "construction_wage_rate_description": "NO",
+        "labor_standards_description": "NO",
+        "materials_supplies": "N",
+        "materials_supplies_description": "NO",
+        "cost_or_pricing_data_description": "NO",
+        "domestic_or_foreign_entity_description": "OTHER U.S. ENTITY (E.G. GOVERNMENT)",
+        "foreign_funding_description": "NOT APPLICABLE",
+        "interagency_contracting_authority": "X",
+        "interagency_contracting_authority_description": "NOT APPLICABLE",
+        "price_evaluation_adjustment": "0.00",
+        "subcontracting_plan_description": "INDIVIDUAL SUBCONTRACT PLAN",
+        "multi_year_contract_description": "NO",
+        "purchase_card_as_payment_method": "N",
+        "purchase_card_as_payment_method_description": "NO",
+        "consolidated_contract_description": "NOT CONSOLIDATED",
+        "type_of_contract_pricing_description": "COST NO FEE",
+        "national_interest_action_description": null
+    },
+    "funding_agency": {
+        "id": 862,
+        "has_agency_page": true,
+        "toptier_agency": {
+            "name": "National Aeronautics and Space Administration",
+            "code": "080",
+            "abbreviation": "NASA",
+            "slug": "national-aeronautics-and-space-administration"
+        },
+        "subtier_agency": {
+            "name": "National Aeronautics and Space Administration",
+            "code": "8000",
+            "abbreviation": "NASA"
+        },
+        "office_agency_name": "NASA GODDARD SPACE FLIGHT CENTER"
+    },
+    "awarding_agency": {
+        "id": 862,
+        "has_agency_page": true,
+        "toptier_agency": {
+            "name": "National Aeronautics and Space Administration",
+            "code": "080",
+            "abbreviation": "NASA",
+            "slug": "national-aeronautics-and-space-administration"
+        },
+        "subtier_agency": {
+            "name": "National Aeronautics and Space Administration",
+            "code": "8000",
+            "abbreviation": "NASA"
+        },
+        "office_agency_name": "NASA GODDARD SPACE FLIGHT CENTER"
+    },
+    "period_of_performance": {
+        "start_date": "2018-03-05",
+        "end_date": "2025-08-23",
+        "last_modified_date": "2025-06-23",
+        "potential_end_date": "2025-08-23 00:00:00"
+    },
+    "recipient": {
+        "recipient_hash": "0b441d38-e3c0-de89-ee08-69fc9e6ee58a-C",
+        "recipient_name": "THE UNIVERSITY OF IOWA",
+        "recipient_uei": "Z1H9VJS8NG16",
+        "recipient_unique_id": null,
+        "parent_recipient_hash": "0b441d38-e3c0-de89-ee08-69fc9e6ee58a-P",
+        "parent_recipient_name": "THE UNIVERSITY OF IOWA",
+        "parent_recipient_uei": "Z1H9VJS8NG16",
+        "parent_recipient_unique_id": null,
+        "business_categories": [
+            "Category Business",
+            "Educational Institution",
+            "Government",
+            "Higher Education",
+            "U.S. National Government",
+            "Not Designated a Small Business",
+            "Higher Education (Public)",
+            "U.S. Regional/State Government"
+        ],
+        "location": {
+            "location_country_code": "USA",
+            "country_name": "UNITED STATES",
+            "state_code": "IA",
+            "state_name": "IOWA",
+            "city_name": "IOWA CITY",
+            "county_code": "103",
+            "county_name": "JOHNSON",
+            "address_line1": "105 JESSUP HALL",
+            "address_line2": null,
+            "address_line3": null,
+            "congressional_code": "01",
+            "zip4": "1316",
+            "zip5": "52242",
+            "foreign_postal_code": null,
+            "foreign_province": null
+        }
+    },
+    "executive_details": {
+        "officers": [
+            {
+                "name": null,
+                "amount": null
+            },
+            {
+                "name": null,
+                "amount": null
+            },
+            {
+                "name": null,
+                "amount": null
+            },
+            {
+                "name": null,
+                "amount": null
+            },
+            {
+                "name": null,
+                "amount": null
+            }
+        ]
+    },
+    "place_of_performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "county_code": "103",
+        "county_name": "JOHNSON",
+        "city_name": "IOWA CITY",
+        "state_code": "IA",
+        "state_name": "IOWA",
+        "congressional_code": "01",
+        "zip4": "1316",
+        "zip5": "52242",
+        "address_line1": null,
+        "address_line2": null,
+        "address_line3": null,
+        "foreign_province": null,
+        "foreign_postal_code": null
+    },
+    "psc_hierarchy": {
+        "toptier_code": {
+            "code": "A",
+            "description": "RESEARCH AND DEVELOPMENT"
+        },
+        "midtier_code": {
+            "code": "AR",
+            "description": "Space R&D Services"
+        },
+        "subtier_code": {},
+        "base_code": {
+            "code": "AR11",
+            "description": "SPACE R&D SERVICES; SPACE FLIGHT, RESEARCH AND SUPPORTING ACTIVITIES; BASIC RESEARCH"
+        }
+    },
+    "naics_hierarchy": {
+        "toptier_code": {
+            "code": "54",
+            "description": "Professional, Scientific, and Technical Services"
+        },
+        "midtier_code": {
+            "code": "5417",
+            "description": "Scientific Research and Development Services"
+        },
+        "base_code": {
+            "code": "541713",
+            "description": "Research and Development in Nanotechnology"
+        }
+    },
+    "total_outlay": 150511166.49
+}
