@@ -1,5 +1,5 @@
 # usaspendingapi/models/base.py
-from typing import Optional, Dict, Any, TypeVar, Type, List, TYPE_CHECKING
+from typing import Optional, Dict, Any, TypeVar, List, TYPE_CHECKING
 from weakref import ref
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ class BaseModel:
         
 
 class ClientAwareModel(BaseModel):
-    """Base class for all models that need client access."""
+    """Base class for all models that need API client access."""
     
     def __init__(self, data: Dict[str, Any], client: 'USASpending'):
         super().__init__(data)
