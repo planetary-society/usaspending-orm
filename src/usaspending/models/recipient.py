@@ -38,7 +38,7 @@ class Recipient(LazyRecord):
         elif isinstance(data_or_id, str):
             raw = {"recipient_id": self._clean_recipient_id(data_or_id)}
         else:
-            raise TypeError("Recipient expects dict or recipient_id/hash string")
+            raise ValidationError("Recipient expects dict or recipient_id/hash string")
         super().__init__(raw, client)
         
     # ---------------------- fetch hook -------------------------------- #
