@@ -3,8 +3,28 @@ from datetime import datetime
 import re
 from titlecase import titlecase
 import logging
+from ..logging_config import USASpendingLogger
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = USASpendingLogger.get_logger(__name__)
+
+def to_date(date_string: str) -> Optional[datetime]:
+    """Convert date string to datetime object.
+    
+    Args:
+        date_string: Date string in YYYY-MM-DD format
+        
+    Returns:
+        datetime object or None if parsing fails
+    """
+    try:
+        if not date_string:
+            return None
+        # Parse date string to datetime object
+        return datetime.strptime(date_string, "%Y-%m-%d")
+    except ValueError:
+        logger.warning(f"Could not parse date string: {date_string}")
+        # If parsing fails, return None
+        return None
 
 def round_to_millions(amount: float) -> str:
     """Format money amount with commas and 2 decimal places, display as millions or billions based on the amount."""

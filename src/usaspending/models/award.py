@@ -15,7 +15,7 @@ from ..exceptions import ValidationError
 from ..config import AWARD_TYPE_DESCRIPTIONS
 
 
-from ..helpers import smart_sentence_case, to_float
+from ..utils.formatter import smart_sentence_case, to_float, to_date
 
 if TYPE_CHECKING:
     from ..client import USASpending
