@@ -50,7 +50,7 @@ def mock_usa_client():
 @pytest.fixture
 def award_fixture_data():
     """Load the award fixture data."""
-    fixture_path = Path(__file__).parent / "fixtures" / "award.json"
+    fixture_path = Path(__file__).parent / "fixtures" / "awards" / "contract.json"
     with open(fixture_path) as f:
         return json.load(f)
 

@@ -1,0 +1,259 @@
+{
+  "spending_level": "awards",
+  "limit": 3,
+  "results": [
+    {
+      "internal_id": 89948049,
+      "Award ID": "NNM11AA01A",
+      "Recipient Name": "THE UNIVERSITY OF ALABAMA IN HUNTSVILLE",
+      "Recipent DUNS Number": null,
+      "recipient_id": "645c4737-caef-ce68-2bfb-9b507be06ddd-C",
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Agency Code": "080",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency Code": "8000",
+      "Funding Agency": "National Aeronautics and Space Administration",
+      "Funding Agency Code": "080",
+      "Funding Sub Agency": "National Aeronautics and Space Administration",
+      "Funding Sub Agency Code": "8000",
+      "Description": "THE NATIONAL SPACE SCIENCE AND TECHNOLOGY CENTER (NSSTC) IS A RESEARCH FACILITY LOCATED IN CRAMER HALL ON THE CAMPUS OF THE UNIVERSITY OF ALABAMA IN",
+      "Last Modified Date": "2024-02-20",
+      "Base Obligation Date": "2011-04-08",
+      "prime_award_recipient_id": null,
+      "generated_internal_id": "ASST_NON_NNM11AA01A_080",
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Recipient UEI": "HB6KNGVNJRU1",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "AL",
+        "state_name": "Alabama",
+        "city_name": "HUNTSVILLE",
+        "county_code": "089",
+        "county_name": "MADISON",
+        "address_line1": "301 SPARKMAN DR NW",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "05",
+        "zip4": "1911",
+        "zip5": "35805",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "AL",
+        "state_name": "Alabama",
+        "city_name": "HUNTSVILLE",
+        "county_code": "089",
+        "county_name": "MADISON",
+        "congressional_code": "05",
+        "zip4": "35805-1912",
+        "zip5": "35805"
+      },
+      "Start Date": "2011-04-01",
+      "End Date": null,
+      "Award Amount": 156725919.62,
+      "Total Outlays": 52414684.72,
+      "Award Type": "COOPERATIVE AGREEMENT (B)",
+      "SAI Number": "SAI EXEMPT",
+      "CFDA Number": "43.008",
+      "Assistance Listings": [
+        {
+          "cfda_number": "43.001",
+          "cfda_program_title": "AEROSPACE EDUCATION SERVICES PROGRAM"
+        },
+        {
+          "cfda_number": "43.008",
+          "cfda_program_title": "EDUCATION"
+        },
+        {
+          "cfda_number": "43.008",
+          "cfda_program_title": "OFFICE OF STEM ENGAGEMENT (OSTEM)"
+        }
+      ],
+      "primary_assistance_listing": {
+        "cfda_number": "43.008",
+        "cfda_program_title": "OFFICE OF STEM ENGAGEMENT (OSTEM)"
+      },
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration"
+    },
+    {
+      "internal_id": 89958544,
+      "Award ID": "NNX12AD05A",
+      "Recipient Name": "BAY AREA ENVIRONMENTAL RESEARCH INSTITUTE",
+      "Recipent DUNS Number": null,
+      "recipient_id": "61ee3e07-e942-59fb-0ef0-1ffc9aa9bc27-C",
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Agency Code": "080",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency Code": "8000",
+      "Funding Agency": "National Aeronautics and Space Administration",
+      "Funding Agency Code": "080",
+      "Funding Sub Agency": "National Aeronautics and Space Administration",
+      "Funding Sub Agency Code": "8000",
+      "Description": "THE BAY AREA ENVIRONMENTAL RESEARCH INSTITUTE (BAER INSTITUTE OR BAER), IN COOPERATION WITH THE UNIVERSITY CORPORATION AT MONTEREY BAY ON BEHALF OF C",
+      "Last Modified Date": "2023-11-20",
+      "Base Obligation Date": "2012-03-01",
+      "prime_award_recipient_id": null,
+      "generated_internal_id": "ASST_NON_NNX12AD05A_080",
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Recipient UEI": "QCKAHGYGVCE4",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "CA",
+        "state_name": "California",
+        "city_name": "SONOMA",
+        "county_code": "097",
+        "county_name": "SONOMA",
+        "address_line1": "560 THIRD ST W",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "18",
+        "zip4": "6502",
+        "zip5": "95476",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "CA",
+        "state_name": "California",
+        "city_name": "SONOMA",
+        "county_code": "097",
+        "county_name": "SONOMA",
+        "congressional_code": "04",
+        "zip4": "95476-6502",
+        "zip5": "95476"
+      },
+      "Start Date": "2012-03-01",
+      "End Date": "2024-09-30",
+      "Award Amount": 137783105.35,
+      "Total Outlays": 57683365.17,
+      "Award Type": "COOPERATIVE AGREEMENT (B)",
+      "SAI Number": "SAI EXEMPT",
+      "CFDA Number": "43.001",
+      "Assistance Listings": [
+        {
+          "cfda_number": "43.001",
+          "cfda_program_title": "AEROSPACE EDUCATION SERVICES PROGRAM"
+        },
+        {
+          "cfda_number": "43.001",
+          "cfda_program_title": "SCIENCE"
+        }
+      ],
+      "primary_assistance_listing": {
+        "cfda_number": "43.001",
+        "cfda_program_title": "SCIENCE"
+      },
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration"
+    },
+    {
+      "internal_id": 89966630,
+      "Award ID": "NNX16AO69A",
+      "Recipient Name": "BAYLOR COLLEGE OF MEDICINE",
+      "Recipent DUNS Number": null,
+      "recipient_id": "ddcd398f-5e59-e840-2368-a57b84efdc7d-C",
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Agency Code": "080",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency Code": "8000",
+      "Funding Agency": "National Aeronautics and Space Administration",
+      "Funding Agency Code": "080",
+      "Funding Sub Agency": "National Aeronautics and Space Administration",
+      "Funding Sub Agency Code": "8000",
+      "Description": "THIS PROPOSAL FOR A TRANSLATIONAL RESEARCH INSTITUTE IS SUBMITTED ON BEHALF OF A CONSORTIUM OF NON-PROFIT ACADEMIC INSTITUTIONS IN RESPONSE TO NASA C",
+      "Last Modified Date": "2025-06-20",
+      "Base Obligation Date": "2016-09-29",
+      "prime_award_recipient_id": null,
+      "generated_internal_id": "ASST_NON_NNX16AO69A_080",
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Recipient UEI": "FXKMA43NTV21",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "TX",
+        "state_name": "Texas",
+        "city_name": "HOUSTON",
+        "county_code": "201",
+        "county_name": "HARRIS",
+        "address_line1": "ONE BAYLOR PLAZA",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "09",
+        "zip4": "3411",
+        "zip5": "77030",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "TX",
+        "state_name": "Texas",
+        "city_name": "HOUSTON",
+        "county_code": "201",
+        "county_name": "HARRIS",
+        "congressional_code": "09",
+        "zip4": "77030-3411",
+        "zip5": "77030"
+      },
+      "Start Date": "2016-10-01",
+      "End Date": "2028-09-30",
+      "Award Amount": 124838979.94,
+      "Total Outlays": 92016141.93,
+      "Award Type": "COOPERATIVE AGREEMENT (B)",
+      "SAI Number": "SAI EXEMPT",
+      "CFDA Number": "43.003",
+      "Assistance Listings": [
+        {
+          "cfda_number": "43.001",
+          "cfda_program_title": "AEROSPACE EDUCATION SERVICES PROGRAM"
+        },
+        {
+          "cfda_number": "43.003",
+          "cfda_program_title": "EXPLORATION"
+        }
+      ],
+      "primary_assistance_listing": {
+        "cfda_number": "43.003",
+        "cfda_program_title": "EXPLORATION"
+      },
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration"
+    }
+  ],
+  "page_metadata": {
+    "page": 1,
+    "hasNext": true,
+    "last_record_unique_id": 89966630,
+    "last_record_sort_value": "124838979.94"
+  },
+  "messages": [
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. "
+  ]
+}
