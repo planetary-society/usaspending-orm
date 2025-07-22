@@ -88,12 +88,31 @@ tests/
 ```
 
 ### Testing Principles
-- Use pytest for test framework
+- Mock at HTTP level
 - Use fixtures for common test data
-- Use TDD (Test-Driven Development) approach
-- Aim for >80% test coverage
-- Use `pytest-mock` for mocking
-- Use `pytest-cov` for coverage reporting
+- Verify query builder immutability
+- Test plugin integration
+
+### Key Testing Patterns
+
+#### Mock Client Setup
+```python
+@pytest.fixture
+def mock_client():
+    config = Config(
+        cache_backend="memory",
+        rate_limit_calls=1000,
+    )
+    client = USASpending(config)
+    client._make_request = Mock()
+    return client
+```
+
+#### Testing Query Builders
+- Verify immutability with `_clone()`
+- Test filter accumulation
+- Verify pagination behavior
+- Test `first()`, `all()`, `count()` methods
 
 ## Implementation Patterns
 

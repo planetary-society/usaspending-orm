@@ -102,7 +102,7 @@ class TestFilterMethods:
         start = datetime.date(2024, 1, 1)
         end = datetime.date(2024, 12, 31)
         
-        result = awards_search.in_time_period(start, end, AwardDateType.ACTION_DATE)
+        result = awards_search.in_time_period(start_date=start, end_date=end, date_type=AwardDateType.ACTION_DATE)
         
         assert result is not awards_search
         assert len(result._filter_objects) == 1
@@ -113,6 +113,25 @@ class TestFilterMethods:
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
                 "date_type": "action_date"
+            }]
+        }
+
+    def test_in_time_period_new_awards_convenience_parameter(self, awards_search):
+        """Test the in_time_period filter method."""
+        start = datetime.date(2024, 1, 1)
+        end = datetime.date(2024, 12, 31)
+        
+        result = awards_search.in_time_period(start_date=start, end_date=end, new_awards_only=True)
+        
+        assert result is not awards_search
+        assert len(result._filter_objects) == 1
+        
+        filter_dict = result._filter_objects[0].to_dict()
+        assert filter_dict == {
+            "time_period": [{
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "date_type": "new_awards_only"
             }]
         }
 
@@ -128,6 +147,22 @@ class TestFilterMethods:
             "time_period": [{
                 "start_date": "2023-10-01",
                 "end_date": "2024-09-30"
+            }]
+        }
+        
+    def test_for_fiscal_year_new_awards_only_convenience_parameter(self, awards_search):
+        """Test the for_fiscal_year filter method."""
+        result = awards_search.for_fiscal_year(year=2024, new_awards_only=True)
+        
+        assert len(result._filter_objects) == 1
+        filter_dict = result._filter_objects[0].to_dict()
+        
+        # FY2024 runs from Oct 1, 2023 to Sep 30, 2024
+        assert filter_dict == {
+            "time_period": [{
+                "start_date": "2023-10-01",
+                "end_date": "2024-09-30",
+                "date_type": "new_awards_only"
             }]
         }
 

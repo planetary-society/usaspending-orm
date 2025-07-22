@@ -250,7 +250,7 @@ class TestResponseBuilder:
         response = ResponseBuilder.award_detail_response(
             award_id="CONT_AWD_123",
             recipient_name="SpaceX",
-            total_obligations=1000000.0,
+            total_obligation=1000000.0,
             awarding_agency="NASA"
         )
         

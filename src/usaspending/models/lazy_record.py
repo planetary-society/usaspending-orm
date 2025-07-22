@@ -45,6 +45,7 @@ class LazyRecord(ClientAwareModel):
             for key in keys:
                 if key in self._data:
                     value = self._data[key]
+                    break
                     
             if value is None:
                 # Load full resource data from source

@@ -12,48 +12,48 @@ class Location(BaseModel):
 
     # simple direct fields --------------------------------------------------
     @property
-    def address_line1(self) -> Optional[str]:          return self._raw.get("address_line1")
+    def address_line1(self) -> Optional[str]:          return self.get_value(["address_line1"])
     @property
-    def address_line2(self) -> Optional[str]:          return self._raw.get("address_line2")
+    def address_line2(self) -> Optional[str]:          return self.get_value(["address_line2"])
     @property
-    def address_line3(self) -> Optional[str]:          return self._raw.get("address_line3")
+    def address_line3(self) -> Optional[str]:          return self.get_value(["address_line3"])
     @property
     def city_name(self) -> Optional[str]:
-        return self.raw.get("city_name")
+        return self.get_value(["city_name"])
     
     @property  
     def city(self) -> Optional[str]:
         return self.city_name
     
     @property
-    def state_name(self)  -> Optional[str]:            return self._raw.get("state_name")
+    def state_name(self)  -> Optional[str]:            return self.get_value(["state_name"])
     @property
-    def country_name(self)-> Optional[str]:            return self._raw.get("country_name")
+    def country_name(self)-> Optional[str]:            return self.get_value(["country_name"])
     @property
-    def zip4(self)        -> Optional[str]:            return self._raw.get("zip4")
+    def zip4(self)        -> Optional[str]:            return self.get_value(["zip4"])
     @property
-    def county_name(self) -> Optional[str]:            return self._raw.get("county_name")
+    def county_name(self) -> Optional[str]:            return self.get_value(["county_name"])
     @property
-    def county_code(self) -> Optional[str]:            return self._raw.get("county_code")
+    def county_code(self) -> Optional[str]:            return self.get_value(["county_code"])
     @property
-    def congressional_code(self) -> Optional[str]:     return self._raw.get("congressional_code")
+    def congressional_code(self) -> Optional[str]:     return self.get_value(["congressional_code"])
     @property
-    def foreign_province(self) -> Optional[str]:       return self._raw.get("foreign_province")
+    def foreign_province(self) -> Optional[str]:       return self.get_value(["foreign_province"])
     @property
-    def foreign_postal_code(self) -> Optional[str]:    return self._raw.get("foreign_postal_code")
+    def foreign_postal_code(self) -> Optional[str]:    return self.get_value(["foreign_postal_code"])
 
     # dual-source fields ----------------------------------------------------
     @property
     def state_code(self) -> Optional[str]:
-        return self.raw.get("state_code") or  self.raw.get("Place of Performance State Code")
+        return self.get_value(["state_code", "Place of Performance State Code"])
 
     @property
     def country_code(self) -> Optional[str]:
-        return self.raw.get("location_country_code") or self.raw.get("Place of Performance Country Code")
+        return self.get_value(["location_country_code", "Place of Performance Country Code"])
 
     @property
     def zip5(self) -> Optional[str]:
-        val = self.raw.get("zip5") or self.raw.get("Place of Performance Zip5")
+        val = self.get_value(["zip5", "Place of Performance Zip5"])
         return str(val) if val is not None else ""
 
     # convenience -----------------------------------------------------------

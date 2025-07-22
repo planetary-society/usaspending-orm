@@ -340,6 +340,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         self,
         start_date: datetime.date,
         end_date: datetime.date,
+        new_awards_only: bool = False,
         date_type: Optional[AwardDateType] = None,
     ) -> AwardsSearch:
         """
@@ -348,31 +349,39 @@ class AwardsSearch(QueryBuilder["Award"]):
         Args:
             start_date: The start date of the period.
             end_date: The end date of the period.
+            new_awards_only: If True, filters by awards with a start date within the given range.
             date_type: The type of date to filter on (e.g., action_date).
 
         Returns:
             A new `AwardsSearch` instance with the filter applied.
         """
+        
+        # If convenience flag is set, use NEW_AWARDS_ONLY date type
+        # and override any provided date_type
+        if new_awards_only:
+            date_type = AwardDateType.NEW_AWARDS_ONLY
         clone = self._clone()
         clone._filter_objects.append(
             TimePeriodFilter(start_date=start_date, end_date=end_date, date_type=date_type)
         )
         return clone
 
-    def for_fiscal_year(self, year: int) -> AwardsSearch:
+    def for_fiscal_year(self, year: int, new_awards_only: bool = False, date_type: Optional[AwardDateType] = None) -> AwardsSearch:
         """
         Adds a time period filter for a single US government fiscal year
         (October 1 to September 30).
 
         Args:
             year: The fiscal year to filter by.
+            new_awards_only: If True, filters by awards with a start date within the FY
+            date_type: The type of date to filter on (e.g., action_date).
 
         Returns:
             A new `AwardsSearch` instance with the fiscal year filter applied.
         """
         start_date = datetime.date(year - 1, 10, 1)
         end_date = datetime.date(year, 9, 30)
-        return self.in_time_period(start_date, end_date)
+        return self.in_time_period(start_date=start_date, end_date=end_date, new_awards_only=new_awards_only, date_type=date_type)
 
     def with_place_of_performance_scope(self, scope: LocationScope) -> AwardsSearch:
         """

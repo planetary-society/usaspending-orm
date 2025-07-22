@@ -81,7 +81,7 @@ class TestMockClientExamples:
         # Load award detail from fixture
         mock_usa_client.set_fixture_response(
             "/v2/awards/CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-/",
-            "award"
+            "awards/contract"
         )
         
         # Get award
@@ -177,7 +177,7 @@ class TestMockClientExamples:
         mock_usa_client.mock_award_detail(
             "CONT_AWD_123",
             recipient_name="SpaceX",
-            total_obligations=5000000000.0,
+            total_obligation=5000000000.0,
             awarding_agency="NASA"
         )
         
@@ -201,7 +201,7 @@ class TestMockClientExamples:
         # 2. Get award detail
         award = mock_usa_client.awards.get("CONT_AWD_123")
         assert award.recipient.name == "SpaceX"
-        assert award.total_obligations == 5000000000.0
+        assert award.total_obligation == 5000000000.0
         
         # 3. Get transactions (would need transaction implementation)
         # transactions = list(mock_usa_client.transactions.for_award("CONT_AWD_123"))

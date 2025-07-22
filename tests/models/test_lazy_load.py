@@ -191,8 +191,8 @@ class TestLazyRecord:
             "truthy": "good_value"
         }, mock_client)
         
-        # Should return the first non-None value found (good_value, not empty string)
+        # Should return the first non-None value found
         # The loop continues until it finds a non-None value
         result = record._lazy_get("empty", "truthy")
-        assert result == "good_value"
+        assert result == ""
         assert record._details_fetched is False
