@@ -4,26 +4,22 @@
 
 USASpending Python Wrapper is a Python client library for the USAspending.gov API, providing a modern, client-centric interface with query builders, automatic pagination, and a plugin system for agency-specific functionality.
 
-## Venv access
-To access the virtual environment, run:
-```bash
-source .venv/bin/activate
-```
-
 ## USASpending API Reference Documentation
 See `api-docs-links.md` for official endpoint documentation links
+You may also use contex7 MCP to access the API documentation for the `usaspendingapi` project.
 
 ## Architecture Principles
 
 ### Agency-agnostic implementation
 - Designed to work with any agency's data
 - No hardcoded agency logic
-- Uses agency codes for filtering loaded via plugins
-- Defaults to NASA as the primary agency for NASA-specific features
+- Provides agency-specific filters and helper methods via plugins
+- Plugin system allows for easy extension
+- `AgencyPlugin` provides agency code to name mapping
 
 ### Client-Centric Design
 - All operations flow through a central `USASpending` client instance
-- Resources accessed as properties: `client.awards`, `client.recipients`
+- Resources accessed as properties: `client.awards`, `client.recipients`, etc.
 - No global state or session variables
 - Thread-safe through instance-based design
 
@@ -31,6 +27,7 @@ See `api-docs-links.md` for official endpoint documentation links
 - Chainable, immutable query construction via `_clone()` method
 - Lazy evaluation - queries execute only when iterated
 - Automatic, transparent pagination in `__iter__`
+- Standard python List-like interface for results will fire relevant API calls (e.g. `len(client.awards)` fires off an API call to a `count` endpoint, for example)
 - Type-safe with Generic[T] base class
 
 ### Resource Organization
@@ -38,6 +35,15 @@ See `api-docs-links.md` for official endpoint documentation links
 - Each resource inherits from `BaseResource`
 - Resources create and return appropriate query builders
 - Clean separation between resources and queries
+
+### Models and Data Structures
+- Data models in `models/` directory
+- Use composition for nested structures
+- Raw API data stored in `_data` attribute
+- Properties provide access to structured data
+- Models are lazy-loaded to avoid unnecessary API calls and to ensure access to full data set
+- Models can chain their associations (e.g. `award.transactions` to get all transactions for an award)
+- Models provide helper methods to provide consitent naming conventions and data access patterns
 
 ## Code Style and Standards
 
@@ -75,38 +81,19 @@ src/usaspendingapi/
 tests/
 ├── conftest.py           # Shared fixtures
 ├── test_client.py        # Client tests
-├── queries/         # Query builder tests
-├── models/          # Model tests
-├── resources/       # Resource tests
-└── fixtures/             # Test response data
+├── queries/              # Query builder tests
+├── models/               # Model tests
+├── resources/            # Resource tests
+└── fixtures/             # Real-world POST-header and response JSON data from USASPending API
 ```
 
 ### Testing Principles
-- Mock at HTTP level
+- Use pytest for test framework
 - Use fixtures for common test data
-- Verify query builder immutability
-- Test plugin integration
-
-### Key Testing Patterns
-
-#### Mock Client Setup
-```python
-@pytest.fixture
-def mock_client():
-    config = Config(
-        cache_backend="memory",
-        rate_limit_calls=1000,
-    )
-    client = USASpending(config)
-    client._make_request = Mock()
-    return client
-```
-
-#### Testing Query Builders
-- Verify immutability with `_clone()`
-- Test filter accumulation
-- Verify pagination behavior
-- Test `first()`, `all()`, `count()` methods
+- Use TDD (Test-Driven Development) approach
+- Aim for >80% test coverage
+- Use `pytest-mock` for mocking
+- Use `pytest-cov` for coverage reporting
 
 ## Implementation Patterns
 
@@ -134,18 +121,25 @@ def mock_client():
 - Check `hasNext` in response metadata
 - Support `max_pages` limit
 - Page size limited to API maximum (100)
+- Must be responsive to user-provided limit() filters (i.e. should not load more results than the user requested)
 
 ### Plugin System
 - Simple registration via `client.register_plugin()`
-- Initially data-only (e.g., agency codes)
-- Plugins retrieved in query builders
 - `AgencyPlugin` for agency name → code mapping
+- Plugins can add custom filters and methods
+- Plugins can extend existing resources or queries
 
 ### Cache Abstraction
-- Abstract `CacheBackend` interface
-- File-based implementation with cachier
-- Cache key generation from URL + params
-- Only cache GET requests
+- Implement a very simple `CacheBackend` abstraction interface for future extensibility
+- Default implementation uses `cachier` for file-based caching
+- Cache configurable via `Config` dataclass
+- Cache all API responses
+
+### Logging
+- Implementd via custom `Logger` class using Python's `logging` module
+- Log all API requests and responses, including total counts of API calls
+- Log query execution times
+- Config DEBUG or INFO level in `Config` dataclass
 
 ## Development Workflow
 
@@ -161,40 +155,9 @@ def mock_client():
 - [ ] Query builders use `_clone()`
 - [ ] All methods have type hints
 - [ ] Docstrings follow Google style
-- [ ] Tests cover pagination
-- [ ] No hardcoded URLs/values
 - [ ] Proper exception handling
-
-## Common Implementation Tasks
-
-### Adding a New Resource
-1. Create `resources/new_resource.py`
-2. Add property to `client.py`
-3. Create corresponding query builder
-4. Write comprehensive tests
-
-### Adding Query Filter Methods
-```python
-def new_filter(self, value: str) -> "AwardSearch":
-    """Add new filter with cloning."""
-    clone = self._clone()
-    clone._filters["new_key"] = value
-    return clone
-```
-
-### Implementing Model Classes
-- Use composition for nested data
-- Lazy-load related models
-- Store raw data in `_data`
-- Provide property accessors
-
-## Performance Considerations
-
-### Rate Limiting
-- Implement in `RateLimiter` class
-- Configurable calls/period
-- Block in `_make_request`
-- No rate limiting in tests
+- [ ] Pythonic code style
+- [ ] Simplicity and clarity are paramount
 
 ## Error Handling
 
@@ -218,20 +181,6 @@ def new_filter(self, value: str) -> "AwardSearch":
 - Document return values
 - Add usage examples
 - Note any side effects
-
-### Public API Documentation
-- All public methods documented
-- Examples in docstrings
-- Type hints complete
-- Exceptions documented
-
-## Security Considerations
-
-### Input Validation
-- Validate in query builders
-- Sanitize before API calls
-- Type checking via hints
-- Clear error messages
 
 ## Release Process
 
