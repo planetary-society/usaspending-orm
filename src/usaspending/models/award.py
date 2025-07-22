@@ -116,7 +116,7 @@ class Award(LazyRecord):
     @property
     def type_description(self) -> Optional[str]:
         """Get the award type code description."""
-        return self._lazy_get("type_description", default="")
+        return self.get_value(["type_description", "Award Type"], default="")
     
     @property
     def total_obligation(self) -> float:
@@ -137,6 +137,11 @@ class Award(LazyRecord):
     def date_signed(self) -> Optional[datetime]:
         """Date the award was signed."""
         return to_date(self._lazy_get("date_signed", default=None))
+
+    @property
+    def base_obligation_date(self) -> Optional[datetime]:
+        """Base obligation date for the award."""
+        return to_date(self.get_value(["base_obligation_date", "Base Obligation Date"], default=None))
 
     @property
     def base_exercised_options(self) -> Optional[float]:
@@ -206,7 +211,17 @@ class Award(LazyRecord):
     @property
     def cfda_info(self) -> List[Dict[str, Any]]:
         """Catalog of Federal Domestic Assistance information for grants."""
-        return self._lazy_get("cfda_info", default=[])
+        return self.get_value(["cfda_info", "Assistance Listings"], default=[])
+
+    @property
+    def cfda_number(self) -> Optional[str]:
+        """Primary CFDA number for grants."""
+        return self.get_value(["cfda_number", "CFDA Number"])
+
+    @property
+    def primary_cfda_info(self) -> Optional[Dict[str, Any]]:
+        """Primary CFDA program information."""
+        return self.get_value(["primary_cfda_info", "primary_assistance_listing"])
 
     @cached_property
     def funding_opportunity(self) -> Optional[Dict[str, Any]]:
@@ -232,6 +247,73 @@ class Award(LazyRecord):
     def executive_details(self) -> Optional[Dict[str, Any]]:
         """Executive compensation details for the award recipient."""
         return self._lazy_get("executive_details")
+
+    @property
+    def sai_number(self) -> Optional[str]:
+        """System for Award Identification (SAI) number for grants."""
+        return self.get_value(["sai_number", "SAI Number"])
+
+    @property
+    def contract_award_type(self) -> Optional[str]:
+        """Contract award type description."""
+        return self.get_value(["contract_award_type", "Contract Award Type"])
+
+    @property
+    def naics_code(self) -> Optional[str]:
+        """NAICS industry classification code."""
+        naics_data = self.get_value(["naics", "NAICS"])
+        if isinstance(naics_data, dict):
+            return naics_data.get("code")
+        return None
+
+    @property
+    def naics_description(self) -> Optional[str]:
+        """NAICS industry classification description."""
+        naics_data = self.get_value(["naics", "NAICS"])
+        if isinstance(naics_data, dict):
+            return naics_data.get("description")
+        return None
+
+    @property
+    def psc_code(self) -> Optional[str]:
+        """Product/Service Code (PSC) for contracts."""
+        psc_data = self.get_value(["psc", "PSC"])
+        if isinstance(psc_data, dict):
+            return psc_data.get("code")
+        return None
+
+    @property
+    def psc_description(self) -> Optional[str]:
+        """Product/Service Code (PSC) description."""
+        psc_data = self.get_value(["psc", "PSC"])
+        if isinstance(psc_data, dict):
+            return psc_data.get("description")
+        return None
+
+    @property
+    def recipient_uei(self) -> Optional[str]:
+        """Recipient Unique Entity Identifier (UEI)."""
+        return self.get_value(["recipient_uei", "Recipient UEI"])
+
+    @property
+    def covid19_obligations(self) -> float:
+        """COVID-19 related obligations amount."""
+        return to_float(self.get_value(["covid19_obligations", "COVID-19 Obligations"], default=0))
+
+    @property
+    def covid19_outlays(self) -> float:
+        """COVID-19 related outlays amount."""
+        return to_float(self.get_value(["covid19_outlays", "COVID-19 Outlays"], default=0))
+
+    @property
+    def infrastructure_obligations(self) -> float:
+        """Infrastructure related obligations amount."""
+        return to_float(self.get_value(["infrastructure_obligations", "Infrastructure Obligations"], default=0))
+
+    @property
+    def infrastructure_outlays(self) -> float:
+        """Infrastructure related outlays amount."""
+        return to_float(self.get_value(["infrastructure_outlays", "Infrastructure Outlays"], default=0))
 
 
 
@@ -272,7 +354,7 @@ class Award(LazyRecord):
     @cached_property
     def place_of_performance(self) -> Optional[Location]:
         """Award place of performance location."""
-        data = self._data.get('place_of_performance')
+        data = self.get_value(['place_of_performance', 'Primary Place of Performance'])
         return Location(data, self._client) if data else None
 
     @cached_property
