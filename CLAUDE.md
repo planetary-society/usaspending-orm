@@ -82,10 +82,10 @@ tests/
 ```
 
 ### Testing Principles
-- Mock at HTTP level
-- Use fixtures for common test data
-- Verify query builder immutability
-- Test plugin integration
+- Use pytest for all tests
+- Use fixture data from `tests/fixtures/` as much as possible
+- Mock external API calls with `MockUSASpendingClient`
+- Use `ResponseBuilder` for consistent response formatting
 
 ### Key Testing Patterns
 
