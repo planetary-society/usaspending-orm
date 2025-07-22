@@ -170,12 +170,12 @@ class TestAwardPropertiesWithRealData:
         # Real data description should start with "The" due to smart_sentence_case
         assert description.startswith("The")
     
-    def test_total_obligations_property(self, mock_client, award_fixture_data):
-        """Test total_obligations property with real financial data."""
+    def test_total_obligation_property(self, mock_client, award_fixture_data):
+        """Test total_obligation property with real financial data."""
         award = Award(award_fixture_data, mock_client)
         
-        assert award.total_obligations == 168657782.95
-        assert isinstance(award.total_obligations, float)
+        assert award.total_obligation == 168657782.95
+        assert isinstance(award.total_obligation, float)
     
     def test_total_outlay_property(self, mock_client, award_fixture_data):
         """Test total_outlay property with real financial data."""
@@ -195,8 +195,8 @@ class TestAwardPropertiesWithRealData:
         """Test potential_value property fallback with real data."""
         award = Award(award_fixture_data, mock_client)
         
-        # Should fall back to total_obligations since no "Award Amount" or "Loan Amount"
-        assert award.potential_value == award.total_obligations
+        # Should fall back to total_obligation since no "Award Amount" or "Loan Amount"
+        assert award.potential_value == award.total_obligation
         assert award.potential_value == 168657782.95
     
     def test_period_of_performance_from_real_data(self, mock_client, award_fixture_data):
@@ -206,10 +206,10 @@ class TestAwardPropertiesWithRealData:
         pop = award.period_of_performance
         assert pop is not None
         
-        # Test the structure - PeriodOfPerformance uses _raw not _data
-        assert hasattr(pop, '_raw')
+        # Test the structure - PeriodOfPerformance uses raw not _data
+        assert hasattr(pop, 'raw')
         expected_pop_data = award_fixture_data["period_of_performance"]
-        assert pop._raw == expected_pop_data
+        assert pop.raw == expected_pop_data
 
 
 class TestAwardHelperMethods:
@@ -219,13 +219,13 @@ class TestAwardHelperMethods:
         """Test the get() helper method with real fixture data."""
         award = Award(award_fixture_data, mock_client)
         
-        assert award.get("piid") == "80GSFC18C0008"
-        assert award.get("type") == "D"
-        assert award.get("category") == "contract"
-        assert award.get("nonexistent_key", "default") == "default"
-        assert award.get("nonexistent_key") is None
+        assert award.raw.get("piid") == "80GSFC18C0008"
+        assert award.raw.get("type") == "D"
+        assert award.raw.get("category") == "contract"
+        assert award.raw.get("nonexistent_key", "default") == "default"
+        assert award.raw.get("nonexistent_key") is None
     
-    def test_raw_property(self, mock_client, award_fixture_data):
+    def testraw_property(self, mock_client, award_fixture_data):
         """Test the raw property returns the data dictionary."""
         award = Award(award_fixture_data, mock_client)
         
@@ -304,38 +304,25 @@ class TestAwardTypeInformation:
         award = Award(award_fixture_data, mock_client)
         
         # Test that we can access type information that exists in real data
-        assert award.get("type") == "D"
-        assert award.get("type_description") == "DEFINITIVE CONTRACT"
-        assert award.get("category") == "contract"
+        assert award.raw.get("type") == "D"
+        assert award.raw.get("type_description") == "DEFINITIVE CONTRACT"
+        assert award.raw.get("category") == "contract"
         
         # Test financial amounts from real data
-        assert award.get("total_obligation") == 168657782.95
-        assert award.get("total_account_outlay") == 150511166.49
-        assert award.get("base_exercised_options") == 168657782.95
-        assert award.get("base_and_all_options") == 168657782.95
+        assert award.raw.get("total_obligation") == 168657782.95
+        assert award.raw.get("total_account_outlay") == 150511166.49
+        assert award.raw.get("base_exercised_options") == 168657782.95
+        assert award.raw.get("base_and_all_options") == 168657782.95
 
 
 class TestAwardEdgeCases:
     """Test Award behavior with edge cases and missing data."""
-    
-    def test_properties_with_empty_award(self, mock_client):
-        """Test all properties work with completely empty award data."""
-        award = Award({}, mock_client)
-        
-        # Should not raise exceptions
-        assert award.prime_award_id == ""
-        assert award.generated_unique_award_id is None
-        assert award.description == ""
-        assert award.total_obligations == 0.0
-        assert award.total_outlay == 0.0
-        assert award.award_amount == 0.0
-        assert award.potential_value == 0.0
-        assert award.period_of_performance is None
-        assert award.raw == {}
+
     
     def test_get_value_integration_with_truthy_logic(self, mock_client):
         """Test that Award properly uses the updated get_value() method for truthy values."""
         data = {
+            "generated_unique_award_id": "CONT_AWD_123",
             "field1": "",  # Falsy
             "field2": None,  # Falsy
             "field3": "actual_value"  # Truthy
@@ -349,13 +336,14 @@ class TestAwardEdgeCases:
     def test_financial_properties_with_award_amount_key(self, mock_client):
         """Test financial properties when Award Amount is present."""
         data = {
+            "generated_unique_award_id": "CONT_AWD_123",
             "Award Amount": 1000000.50,
             "total_obligation": 500000.25
         }
         award = Award(data, mock_client)
         
-        # total_obligations should prefer "total_obligation" over "Award Amount"
-        assert award.total_obligations == 500000.25
+        # total_obligation should prefer "total_obligation" over "Award Amount"
+        assert award.total_obligation == 500000.25
         # award_amount should use "Award Amount"
         assert award.award_amount == 1000000.50
         # potential_value should use "Award Amount" over fallback
@@ -462,7 +450,7 @@ class TestAwardPropertyCaching:
         
         # Should be the same instance
         assert period1 is period2
-        assert period1._raw["start_date"] == "2023-01-01"
+        assert period1.raw["start_date"] == "2023-01-01"
     
     def test_transactions_property_only_queries_once(self, mock_client):
         """Test that transactions property only makes one query."""

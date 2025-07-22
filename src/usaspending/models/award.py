@@ -98,7 +98,7 @@ class Award(LazyRecord):
         return self._lazy_get("type_description", default="")
     
     @property
-    def total_obligations(self) -> float:
+    def total_obligation(self) -> float:
         """Total obligated amount for this award."""
         return to_float(self._lazy_get("total_obligation", "Award Amount")) or 0.0
 
@@ -148,7 +148,7 @@ class Award(LazyRecord):
     def potential_value(self) -> float:
         """Potential total value of the award."""
         return to_float(
-            self.get_value(["Award Amount", "Loan Amount"], default=self.total_obligations)
+            self.get_value(["Award Amount", "Loan Amount"], default=self.total_obligation)
         ) or 0.0
 
     @property
