@@ -232,19 +232,13 @@ class TestAwardHelperMethods:
 class TestAwardTransactions:
     """Test Award transactions property (current implementation)."""
     
-    def test_transactions_current_implementation_with_real_data(self, mock_client, award_fixture_data):
+    def test_transactions_current_implementation_with_real_data(self, mock_usa_client, award_fixture_data):
         """Test current transactions implementation returns transactions from fixture data."""
-        import json
-        from pathlib import Path
         from unittest.mock import Mock
         
-        # Load transactions fixture data
-        fixture_path = Path(__file__).parent.parent / "fixtures" / "awards" / "transactions.json"
-        with open(fixture_path) as f:
-            transactions_response = json.load(f)
-        
-        # Mock the API response
-        mock_client._make_request.return_value = transactions_response
+        # Set up mock transactions response using the helper method
+        award_id = "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
+        mock_usa_client.mock_transactions_for_award(award_id, fixture_name="awards/transactions")
         
         # Mock the transactions resource to return a mock query builder
         mock_transactions_resource = Mock()
@@ -255,16 +249,18 @@ class TestAwardTransactions:
         
         # Mock the all() method to return Transaction objects from the fixture data
         from usaspending.models.transaction import Transaction
+        # Get the fixture data from the mock client
+        response = mock_usa_client._make_request("POST", "/v2/transactions/", {})
         mock_transactions = [
-            Transaction(result) for result in transactions_response["results"]
+            Transaction(result) for result in response["results"]
         ]
         mock_query.all = Mock(return_value=mock_transactions)
         
         # Set up the mock resource to return the mock query
         mock_transactions_resource.for_award = Mock(return_value=mock_query)
-        mock_client._resources["transactions"] = mock_transactions_resource
+        mock_usa_client._resources["transactions"] = mock_transactions_resource
         
-        award = Award(award_fixture_data, mock_client)
+        award = Award(award_fixture_data, mock_usa_client)
         
         # Get transactions
         transactions = award.transactions

@@ -397,3 +397,48 @@ class MockUSASpendingClient(USASpending):
             **award_data
         )
         self.set_response(f"/v2/awards/{award_id}/", response)
+
+    def mock_transactions_for_award(
+        self,
+        award_id: str,
+        fixture_name: Optional[str] = None,
+        transactions: Optional[List[Dict[str, Any]]] = None
+    ) -> None:
+        """Mock transactions response for a specific award.
+        
+        Args:
+            award_id: Award identifier
+            fixture_name: Name of fixture file (without .json)
+            transactions: List of transaction data (overrides fixture)
+        """
+        if fixture_name:
+            self.set_fixture_response("/v2/transactions/", fixture_name)
+        elif transactions:
+            response = {
+                "results": transactions,
+                "page_metadata": {
+                    "total": len(transactions),
+                    "count": len(transactions),
+                    "page": 1,
+                    "has_next": False,
+                    "has_previous": False,
+                    "next": None,
+                    "previous": None
+                }
+            }
+            self.set_response("/v2/transactions/", response)
+        else:
+            # Default empty response
+            response = {
+                "results": [],
+                "page_metadata": {
+                    "total": 0,
+                    "count": 0,
+                    "page": 1,
+                    "has_next": False,
+                    "has_previous": False,
+                    "next": None,
+                    "previous": None
+                }
+            }
+            self.set_response("/v2/transactions/", response)
