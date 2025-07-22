@@ -21,7 +21,7 @@ class BaseModel:
         return self._data
 
     def get_value(self, keys: List[str], default: Any = None) -> Any:
-        """ Return the first truthy value from the given keys."""
+        """ Return the first non-None value from the given keys."""
         if not isinstance(keys, list):
             keys = [keys]
         
@@ -30,7 +30,7 @@ class BaseModel:
         for key in keys:
             if key in self._data:
                 value = self._data[key]
-                if value:  # Check for truthiness instead of just non-None
+                if value is not None:  # Check for non-None instead of truthiness
                     return value
         return default
         

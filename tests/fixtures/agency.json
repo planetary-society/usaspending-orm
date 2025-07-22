@@ -1,0 +1,79 @@
+{
+  "fiscal_year": 2025,
+  "toptier_code": "080",
+  "name": "National Aeronautics and Space Administration",
+  "abbreviation": "NASA",
+  "agency_id": 862,
+  "icon_filename": "NASA.jpg",
+  "mission": "Drive advances in science, technology, aeronautics, and space exploration to enhance knowledge, education, innovation, economic vitality, and stewardship of Earth.",
+  "website": "https://www.nasa.gov/",
+  "congressional_justification_url": "https://www.nasa.gov/cj",
+  "about_agency_data": null,
+  "subtier_agency_count": 2,
+  "def_codes": [
+    {
+      "code": "AAB",
+      "public_law": "Emergency P.L. 117-328",
+      "title": "Consolidated Appropriations Act, 2023",
+      "urls": "http://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf",
+      "disaster": null
+    },
+    {
+      "code": "AAF",
+      "public_law": "Emergency P.L. 118-42",
+      "title": "Consolidated Appropriations Act, 2024",
+      "urls": "http://www.govinfo.gov/content/pkg/PLAW-118publ42/pdf/PLAW-118publ42.pdf",
+      "disaster": null
+    },
+    {
+      "code": "AAK",
+      "public_law": "Emergency P.L. 118-158",
+      "title": "American Relief Act, 2025",
+      "urls": "http://www.govinfo.gov/content/pkg/PLAW-118publ158/pdf/PLAW-118publ158.pdf",
+      "disaster": null
+    },
+    {
+      "code": "AAL",
+      "public_law": "Emergency P.L. 119-4",
+      "title": "Full-Year Continuing Appropriations and Extensions Act, 2025",
+      "urls": "http://www.govinfo.gov/content/pkg/PLAW-119publ4/pdf/PLAW-119publ4.pdf",
+      "disaster": null
+    },
+    {
+      "code": "C",
+      "public_law": "Emergency P.L. 115-123",
+      "title": "Bipartisan Budget Act of 2018",
+      "urls": "http://www.govinfo.gov/content/pkg/PLAW-115publ123/pdf/PLAW-115publ123.pdf",
+      "disaster": null
+    },
+    {
+      "code": "N",
+      "public_law": "Emergency P.L. 116-136",
+      "title": "Coronavirus Aid, Relief, and Economic Security Act or the CARES Act",
+      "urls": "http://www.govinfo.gov/content/pkg/PLAW-116publ136/pdf/PLAW-116publ136.pdf",
+      "disaster": "covid_19"
+    },
+    {
+      "code": "Q",
+      "public_law": "Not Designated Nonemergency/Emergency/Disaster/Wildfire Suppression",
+      "title": "Not Designated Nonemergency/Emergency/Disaster/Wildfire Suppression",
+      "urls": null,
+      "disaster": null
+    },
+    {
+      "code": "V",
+      "public_law": "Non-emergency P.L. 117-2",
+      "title": "American Rescue Plan Act of 2021",
+      "urls": "http://www.govinfo.gov/content/pkg/PLAW-117publ2/pdf/PLAW-117publ2.pdf",
+      "disaster": "covid_19"
+    },
+    {
+      "code": "X",
+      "public_law": "Emergency P.L. 117-43",
+      "title": "Extending Government Funding and Delivering Emergency Assistance Act",
+      "urls": "http://www.govinfo.gov/content/pkg/PLAW-117publ43/pdf/PLAW-117publ43.pdf",
+      "disaster": null
+    }
+  ],
+  "messages": []
+}

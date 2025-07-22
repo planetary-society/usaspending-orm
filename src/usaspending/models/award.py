@@ -11,9 +11,9 @@ from .recipient import Recipient
 from .location import Location
 from .transaction import Transaction
 from .period_of_performance import PeriodOfPerformance
+from .agency import Agency
 from ..exceptions import ValidationError
 
-from ..config import AWARD_TYPE_DESCRIPTIONS
 
 
 from ..utils.formatter import smart_sentence_case, to_float, to_date
@@ -54,6 +54,11 @@ class Award(LazyRecord):
 
     # Core scalar properties
     @property
+    def id(self) -> Optional[int]:
+        """Internal USASpending database ID for this award."""
+        return self._lazy_get("id")
+
+    @property
     def prime_award_id(self) -> str:
         """Primary award identifier (PIID, FAIN, URI, etc.)."""
         return str(self.get_value(["Award ID", "piid", "fain", "uri"], default=""))
@@ -69,7 +74,23 @@ class Award(LazyRecord):
         The Procurement Instrument Identifier, a unique number assigned
         to a federal contract, grant, or other procurement action.
         """
-        return self._lazy_get(["piid"])
+        return self._lazy_get("piid")
+
+    @property
+    def fain(self) -> Optional[str]:
+        """Federal Award Identification Number (FAIN) for grants."""
+        return self._lazy_get("fain")
+
+    @property
+    def uri(self) -> Optional[str]:
+        """Unique Record Identifier (URI) for grants."""
+        return self._lazy_get("uri")
+
+    @property
+    def parent_award(self) -> Optional[Award]:
+        """Reference to parent award for child awards."""
+        data = self._lazy_get('parent_award')
+        return Award(data, self._client) if data else None
 
     @property
     def  category(self) -> str:
@@ -141,6 +162,76 @@ class Award(LazyRecord):
     def total_outlay(self) -> Optional[float]:
         """Total amount paid out for this award."""
         return to_float(self._lazy_get("total_account_outlay", "Total Outlays", default=None))
+
+    @property
+    def account_outlays_by_defc(self) -> List[Dict[str, Any]]:
+        """Outlays broken down by Disaster Emergency Fund Code (DEFC)."""
+        return self._lazy_get("account_outlays_by_defc", default=[])
+
+    @property
+    def account_obligations_by_defc(self) -> List[Dict[str, Any]]:
+        """Obligations broken down by Disaster Emergency Fund Code (DEFC)."""
+        return self._lazy_get("account_obligations_by_defc", default=[])
+
+    @property
+    def total_subsidy_cost(self) -> Optional[float]:
+        """Total subsidy cost for loan programs."""
+        return to_float(self._lazy_get("total_subsidy_cost", default=None))
+
+    @property
+    def total_loan_value(self) -> Optional[float]:
+        """Total value of loans for loan programs."""
+        return to_float(self._lazy_get("total_loan_value", default=None))
+
+    @property
+    def non_federal_funding(self) -> Optional[float]:
+        """Non-federal funding amount for grants."""
+        return to_float(self._lazy_get("non_federal_funding", default=None))
+
+    @property
+    def total_funding(self) -> Optional[float]:
+        """Total funding including federal and non-federal sources."""
+        return to_float(self._lazy_get("total_funding", default=None))
+
+    @property
+    def transaction_obligated_amount(self) -> Optional[float]:
+        """Transaction-level obligated amount."""
+        return to_float(self._lazy_get("transaction_obligated_amount", default=None))
+
+    @property
+    def record_type(self) -> Optional[int]:
+        """Grant record type identifier."""
+        return self._lazy_get("record_type")
+
+    @property
+    def cfda_info(self) -> List[Dict[str, Any]]:
+        """Catalog of Federal Domestic Assistance information for grants."""
+        return self._lazy_get("cfda_info", default=[])
+
+    @cached_property
+    def funding_opportunity(self) -> Optional[Dict[str, Any]]:
+        """Funding opportunity details for grants."""
+        return self._lazy_get("funding_opportunity")
+
+    @cached_property
+    def latest_transaction_contract_data(self) -> Optional[Dict[str, Any]]:
+        """Latest contract transaction data with procurement-specific details."""
+        return self._lazy_get("latest_transaction_contract_data")
+
+    @cached_property
+    def psc_hierarchy(self) -> Optional[Dict[str, Any]]:
+        """Product/Service Code (PSC) hierarchy information."""
+        return self._lazy_get("psc_hierarchy")
+
+    @cached_property
+    def naics_hierarchy(self) -> Optional[Dict[str, Any]]:
+        """North American Industry Classification System (NAICS) hierarchy."""
+        return self._lazy_get("naics_hierarchy")
+
+    @cached_property
+    def executive_details(self) -> Optional[Dict[str, Any]]:
+        """Executive compensation details for the award recipient."""
+        return self._lazy_get("executive_details")
 
 
 
@@ -217,6 +308,18 @@ class Award(LazyRecord):
             return Recipient(data, self._client) if data else None
         
         return None
+
+    @cached_property
+    def funding_agency(self) -> Optional[Agency]:
+        """Funding agency information."""
+        data = self._data.get('funding_agency')
+        return Agency(data, self._client) if data else None
+
+    @cached_property
+    def awarding_agency(self) -> Optional[Agency]:
+        """Awarding agency information."""
+        data = self._data.get('awarding_agency')
+        return Agency(data, self._client) if data else None
 
     @cached_property
     def transactions(self) -> List[Transaction]:

@@ -39,8 +39,8 @@ class TestBaseModelGetValue:
         result = model.get_value(["key1"])
         assert result == "value1"
     
-    def test_get_value_returns_default_when_all_keys_falsy(self):
-        """Test that get_value returns default when all keys have falsy values."""
+    def test_get_value_does_not_return_default_when_all_keys_falsy(self):
+        """Test that get_value doest not return default when all keys have falsy values."""
         data = {
             "key1": None,
             "key2": "",
@@ -49,7 +49,7 @@ class TestBaseModelGetValue:
         model = BaseModel(data)
         
         result = model.get_value(["key1", "key2", "key3"], default="default_value")
-        assert result == "default_value"
+        assert result == ""
     
     def test_get_value_returns_default_when_keys_missing(self):
         """Test that get_value returns default when keys don't exist."""
@@ -60,14 +60,14 @@ class TestBaseModelGetValue:
         assert result == "default_value"
     
     def test_get_value_returns_none_default_when_not_specified(self):
-        """Test that get_value returns None when no default is specified and all values are falsy."""
-        data = {"key1": None, "key2": ""}
+        """Test that get_value returns None when no default is specified and all values are None."""
+        data = {"key1": None, "key2": None}
         model = BaseModel(data)
         
         result = model.get_value(["key1", "key2", "missing_key"])
         assert result is None
     
-    def test_get_value_skips_falsy_values(self):
+    def test_get_value_does_not_skip_falsy_values(self):
         """Test that get_value skips falsy values and returns the first truthy value."""
         data = {
             "key1": None,
@@ -82,10 +82,17 @@ class TestBaseModelGetValue:
         
         # Should skip all falsy values and return the truthy one
         result = model.get_value(["key1", "key2", "key3", "key4", "key5", "key6", "key7"])
-        assert result == "truthy_value"
+        assert result == ""
         
-        # When all values are falsy, should return default
-        result = model.get_value(["key1", "key2", "key3"], default="default_value")
+        # False value should be returned
+        result = model.get_value(["key3","key7"])
+        assert result == False
+        
+        # Default only applies to missing or "None" values:
+        data = {"key2": None}
+        model = BaseModel(data)
+        
+        result = model.get_value(["key1","key2"], default="default_value")
         assert result == "default_value"
     
     def test_get_value_with_mixed_existing_and_missing_keys(self):
@@ -174,7 +181,7 @@ class TestBaseModelGetValue:
         
         # key1 exists but is None, key2 exists but is empty, key3 doesn't exist, key4 has a truthy value
         result = model.get_value(["key1", "key2", "key3", "key4"], default="default")
-        assert result == "found_value"
+        assert result == ""
 
 
 class TestBaseModelOtherMethods:

@@ -189,7 +189,7 @@ class TestPeriodOfPerformance:
         """Test that get_value properly prioritizes keys"""
         # Data with multiple possible keys
         data = {
-            "start_date": "",  # Empty, should be skipped
+            "start_date": None,  # Empty, should be skipped
             "Start Date": "2020-01-01",  # Should be used
             "Period of Performance Start Date": "2019-01-01"  # Should be ignored
         }
