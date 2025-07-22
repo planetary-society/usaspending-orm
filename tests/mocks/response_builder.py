@@ -149,7 +149,7 @@ class ResponseBuilder:
     def award_detail_response(
         award_id: str,
         recipient_name: str = "Test Recipient",
-        total_obligations: float = 1000000.0,
+        total_obligation: float = 1000000.0,
         award_type: str = "A",
         awarding_agency: str = "Test Agency"
     ) -> Dict[str, Any]:
@@ -158,7 +158,7 @@ class ResponseBuilder:
         Args:
             award_id: Unique award identifier
             recipient_name: Name of recipient
-            total_obligations: Total award amount
+            total_obligation: Total award amount
             award_type: Type code of award
             awarding_agency: Name of awarding agency
             
@@ -176,8 +176,8 @@ class ResponseBuilder:
                     "city_name": "SAN FRANCISCO"
                 }
             },
-            "total_obligation": total_obligations,
-            "total_outlay": total_obligations * 0.8,  # 80% outlays
+            "total_obligation": total_obligation,
+            "total_outlay": total_obligation * 0.8,  # 80% outlays
             "award_type": award_type,
             "category": "contract" if award_type in ["A", "B", "C", "D"] else "grant",
             "type_description": "Contract" if award_type in ["A", "B", "C", "D"] else "Grant",

@@ -16,7 +16,7 @@ class TestAwardResource:
     @pytest.fixture
     def award_fixture_data(self):
         """Load award fixture data."""
-        fixture_path = Path(__file__).parent.parent / "fixtures" / "award.json"
+        fixture_path = Path(__file__).parent.parent / "fixtures" / "awards" / "contract.json"
         with open(fixture_path) as f:
             return json.load(f)
 
@@ -99,7 +99,7 @@ class TestAwardResource:
         
         # Test basic properties
         assert award.generated_unique_award_id == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        assert award.total_obligations == 168657782.95
+        assert award.total_obligation == 168657782.95
         assert award.total_outlay == 150511166.49
         
         # Test helper methods

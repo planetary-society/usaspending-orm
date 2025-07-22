@@ -127,7 +127,7 @@ def test_api_error(mock_usa_client):
 
 ```python
 def test_with_fixture(mock_usa_client):
-    # Load from tests/fixtures/award.json
+    # Load from tests/fixtures/awards
     mock_usa_client.set_fixture_response(
         "/v2/awards/CONT_AWD_123/",
         "award"
