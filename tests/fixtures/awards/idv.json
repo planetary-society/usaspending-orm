@@ -1,0 +1,245 @@
+{
+  "id": 169434328,
+  "generated_unique_award_id": "CONT_IDV_NNJ16GX08B_8000",
+  "piid": "NNJ16GX08B",
+  "category": "idv",
+  "type": "IDV_B_B",
+  "type_description": "INDEFINITE DELIVERY / INDEFINITE QUANTITY",
+  "description": "IGF::OT::IGF ISS COMMERCIAL RESUPPLY SERVICES 2",
+  "total_obligation": 3074515659.39,
+  "subaward_count": 0,
+  "total_subaward_amount": null,
+  "date_signed": "2016-01-14",
+  "base_exercised_options": null,
+  "base_and_all_options": 14000000000.0,
+  "total_account_outlay": 2285964858.45,
+  "total_account_obligation": 2195881416.49,
+  "account_outlays_by_defc": [
+    {
+      "code": "Q",
+      "amount": 2285964858.45
+    }
+  ],
+  "account_obligations_by_defc": [
+    {
+      "code": "Q",
+      "amount": 2195881416.49
+    }
+  ],
+  "parent_award": null,
+  "latest_transaction_contract_data": {
+    "idv_type_description": "IDC",
+    "type_of_idc_description": "INDEFINITE DELIVERY / INDEFINITE QUANTITY",
+    "referenced_idv_agency_iden": null,
+    "referenced_idv_agency_desc": null,
+    "solicitation_identifier": "NNJ14507542R",
+    "solicitation_procedures": "NP",
+    "number_of_offers_received": "5",
+    "extent_competed": "A",
+    "type_set_aside": "NONE",
+    "type_set_aside_description": "NO SET ASIDE USED.",
+    "evaluated_preference": "NONE",
+    "fed_biz_opps": "Y",
+    "fed_biz_opps_description": "YES",
+    "small_business_competitive": false,
+    "product_or_service_code": "V126",
+    "naics": "481212",
+    "naics_description": "NONSCHEDULED CHARTERED FREIGHT AIR TRANSPORTATION",
+    "sea_transportation": null,
+    "clinger_cohen_act_planning": "N",
+    "labor_standards": "N",
+    "cost_or_pricing_data": "N",
+    "domestic_or_foreign_entity": "A",
+    "foreign_funding": "X",
+    "major_program": null,
+    "program_acronym": null,
+    "subcontracting_plan": "G",
+    "multi_year_contract": "N",
+    "consolidated_contract": "N",
+    "type_of_contract_pricing": "J",
+    "national_interest_action": null,
+    "multiple_or_single_award_description": "MULTIPLE AWARD",
+    "solicitation_procedures_description": "NEGOTIATED PROPOSAL/QUOTE",
+    "extent_competed_description": "FULL AND OPEN COMPETITION",
+    "other_than_full_and_open": null,
+    "other_than_full_and_open_description": null,
+    "commercial_item_acquisition": "A",
+    "commercial_item_acquisition_description": "COMMERCIAL PRODUCTS/SERVICES",
+    "commercial_item_test_program": "N",
+    "commercial_item_test_program_description": "NO",
+    "evaluated_preference_description": "NO PREFERENCE USED",
+    "fair_opportunity_limited": null,
+    "fair_opportunity_limited_description": null,
+    "product_or_service_description": "TRANSPORTATION/TRAVEL/RELOCATION- TRANSPORTATION: SPACE TRANSPORTATION/LAUNCH",
+    "dod_claimant_program": null,
+    "dod_claimant_program_description": null,
+    "dod_acquisition_program": null,
+    "dod_acquisition_program_description": null,
+    "information_technology_commercial_item_category": null,
+    "information_technology_commercial_item_category_description": null,
+    "sea_transportation_description": null,
+    "clinger_cohen_act_planning_description": "NO",
+    "construction_wage_rate": "N",
+    "construction_wage_rate_description": "NO",
+    "labor_standards_description": "NO",
+    "materials_supplies": "N",
+    "materials_supplies_description": "NO",
+    "cost_or_pricing_data_description": "NO",
+    "domestic_or_foreign_entity_description": "U.S. OWNED BUSINESS",
+    "foreign_funding_description": "NOT APPLICABLE",
+    "interagency_contracting_authority": "X",
+    "interagency_contracting_authority_description": "NOT APPLICABLE",
+    "price_evaluation_adjustment": null,
+    "subcontracting_plan_description": "COMMERCIAL SUBCONTRACT PLAN",
+    "multi_year_contract_description": "NO",
+    "purchase_card_as_payment_method": null,
+    "purchase_card_as_payment_method_description": null,
+    "consolidated_contract_description": "NO",
+    "type_of_contract_pricing_description": "FIRM FIXED PRICE",
+    "national_interest_action_description": null
+  },
+  "funding_agency": {
+    "id": 862,
+    "has_agency_page": true,
+    "toptier_agency": {
+      "name": "National Aeronautics and Space Administration",
+      "code": "080",
+      "abbreviation": "NASA",
+      "slug": "national-aeronautics-and-space-administration"
+    },
+    "subtier_agency": {
+      "name": "National Aeronautics and Space Administration",
+      "code": "8000",
+      "abbreviation": "NASA"
+    },
+    "office_agency_name": "NASA JOHNSON SPACE CENTER"
+  },
+  "awarding_agency": {
+    "id": 862,
+    "has_agency_page": true,
+    "toptier_agency": {
+      "name": "National Aeronautics and Space Administration",
+      "code": "080",
+      "abbreviation": "NASA",
+      "slug": "national-aeronautics-and-space-administration"
+    },
+    "subtier_agency": {
+      "name": "National Aeronautics and Space Administration",
+      "code": "8000",
+      "abbreviation": "NASA"
+    },
+    "office_agency_name": "NASA JOHNSON SPACE CENTER"
+  },
+  "period_of_performance": {
+    "start_date": "2016-01-14",
+    "end_date": "2030-12-31",
+    "last_modified_date": "2025-05-22",
+    "potential_end_date": null
+  },
+  "recipient": {
+    "recipient_hash": "8a3a5525-3218-a488-db0e-4823241ceb90-C",
+    "recipient_name": "SPACE EXPLORATION TECHNOLOGIES CORP.",
+    "recipient_uei": "C6M7C2FLKER5",
+    "recipient_unique_id": null,
+    "parent_recipient_hash": "8a3a5525-3218-a488-db0e-4823241ceb90-P",
+    "parent_recipient_name": "SPACE EXPLORATION TECHNOLOGIES CORP.",
+    "parent_recipient_uei": "C6M7C2FLKER5",
+    "parent_recipient_unique_id": null,
+    "business_categories": [
+      "Category Business",
+      "Corporate Entity Not Tax Exempt",
+      "Manufacturer of Goods",
+      "Not Designated a Small Business",
+      "Special Designations",
+      "U.S.-Owned Business"
+    ],
+    "location": {
+      "location_country_code": "USA",
+      "country_name": "UNITED STATES",
+      "state_code": "CA",
+      "state_name": "CALIFORNIA",
+      "city_name": "HAWTHORNE",
+      "county_code": "037",
+      "county_name": "LOS ANGELES",
+      "address_line1": "1 ROCKET RD",
+      "address_line2": null,
+      "address_line3": null,
+      "congressional_code": "43",
+      "zip4": "6844",
+      "zip5": "90250",
+      "foreign_postal_code": null,
+      "foreign_province": null
+    }
+  },
+  "executive_details": {
+    "officers": [
+      {
+        "name": "GWYNNE  SHOTWELL",
+        "amount": 4077012.0
+      },
+      {
+        "name": "BRET  JOHNSEN",
+        "amount": 3079137.0
+      },
+      {
+        "name": "TIMOTHY  HUGHES",
+        "amount": 1868953.0
+      },
+      {
+        "name": "DAVID  ANDERMAN",
+        "amount": 1818183.0
+      },
+      {
+        "name": "MARK  JUNCOSA",
+        "amount": 1753618.0
+      }
+    ]
+  },
+  "place_of_performance": {
+    "location_country_code": null,
+    "country_name": null,
+    "county_code": null,
+    "county_name": null,
+    "city_name": null,
+    "state_code": null,
+    "state_name": null,
+    "congressional_code": null,
+    "zip4": null,
+    "zip5": null,
+    "address_line1": null,
+    "address_line2": null,
+    "address_line3": null,
+    "foreign_province": null,
+    "foreign_postal_code": null
+  },
+  "psc_hierarchy": {
+    "toptier_code": {
+      "code": "V",
+      "description": "TRANSPORT, TRAVEL, RELOCATION"
+    },
+    "midtier_code": {
+      "code": "V1",
+      "description": "TRANSPORTATION OF THINGS"
+    },
+    "subtier_code": {},
+    "base_code": {
+      "code": "V126",
+      "description": "TRANSPORTATION/TRAVEL/RELOCATION- TRANSPORTATION: SPACE TRANSPORTATION/LAUNCH"
+    }
+  },
+  "naics_hierarchy": {
+    "toptier_code": {
+      "code": "48",
+      "description": "Transportation and Warehousing"
+    },
+    "midtier_code": {
+      "code": "4812",
+      "description": "Nonscheduled Air Transportation"
+    },
+    "base_code": {
+      "code": "481212",
+      "description": "Nonscheduled Chartered Freight Air Transportation"
+    }
+  },
+  "total_outlay": 2285964858.45
+}
