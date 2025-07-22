@@ -131,7 +131,7 @@ class Award(LazyRecord):
     @property
     def total_subaward_amount(self) -> Optional[float]:
         """Total amount of subawards for this award."""
-        return to_float(self._lazy_get("total_subaward_amount"),default=None)
+        return to_float(self._lazy_get("total_subaward_amount", default=None))
 
     @property
     def date_signed(self) -> Optional[datetime]:
