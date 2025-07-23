@@ -1,8 +1,9 @@
 from typing import List, Dict, List, Any, Optional, Set
 from datetime import datetime
 import re
+
+from ..config import BUSINESS_CATEGORIES
 from titlecase import titlecase
-import logging
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -225,3 +226,11 @@ def custom_titlecase_callback(word, **kwargs):
 def contracts_titlecase(text):
     """Apply NASA-specific title casing rules to text"""
     return titlecase(text, callback=custom_titlecase_callback)
+
+def get_business_category_display_names(business_category_list):
+    business_category_display_name_list = []
+    for business_category in business_category_list:
+        display_name = BUSINESS_CATEGORIES.get(business_category)
+        if display_name:
+            business_category_display_name_list.append(display_name)
+    return business_category_display_name_list
