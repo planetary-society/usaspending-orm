@@ -71,19 +71,29 @@ class Award(LazyRecord):
     @property
     def piid(self) -> Optional[str]:
         """
-        The Procurement Instrument Identifier, a unique number assigned
-        to a federal contract, grant, or other procurement action.
+        Procurement Instrument Identifier - A unique identifier assigned to a federal
+        contract, purchase order, basic ordering agreement, basic agreement, and
+        blanket purchase agreement. It is used to track the contract, and any
+        modifications or transactions related to it. After October 2017, it is
+        between 13 and 17 digits, both letters and numbers.
         """
         return self._lazy_get("piid")
 
     @property
     def fain(self) -> Optional[str]:
-        """Federal Award Identification Number (FAIN) for grants."""
+        """
+        An identification code assigned to each financial assistance award tracking
+        purposes. The FAIN is tied to that award (and all future modifications to that
+        award) throughout the award's life. Each FAIN is assigned by an agency. Within
+        an agency, FAIN are unique: each new award must be issued a new FAIN. FAIN
+        stands for Federal Award Identification Number, though the digits are letters,
+        not numbers.
+        """
         return self._lazy_get("fain")
 
     @property
     def uri(self) -> Optional[str]:
-        """Unique Record Identifier (URI) for grants."""
+        """The uri of the award"""
         return self._lazy_get("uri")
 
     @property
@@ -94,7 +104,7 @@ class Award(LazyRecord):
 
     @property
     def  category(self) -> str:
-        """The general classification of the award (contract, grant, etc.)."""
+        """A field that generalizes the award's type."""
         return self._lazy_get("category", default="")
     
     @property
@@ -110,32 +120,36 @@ class Award(LazyRecord):
     
     @property
     def type(self) -> Optional[str]:
-        """Get the award type code."""
+        """
+        The mechanism used to distribute funding. The federal government can distribute
+        funding in several forms. These award types include contracts, grants, loans,
+        and direct payments.
+        """
         return self._lazy_get("type", default="")
     
     @property
     def type_description(self) -> Optional[str]:
-        """Get the award type code description."""
+        """The plain text description of the type of the award"""
         return self.get_value(["type_description", "Award Type"], default="")
     
     @property
     def total_obligation(self) -> float:
-        """Total obligated amount for this award."""
+        """The amount of money the government is obligated to pay for the award"""
         return to_float(self._lazy_get("total_obligation", "Award Amount")) or 0.0
 
     @property
     def subaward_count(self) -> Optional[int]:
-        """Total amount paid out for this award."""
+        """The number of subawards associated with this award."""
         return int(self._lazy_get("subaward_count", default=0))
    
     @property
     def total_subaward_amount(self) -> Optional[float]:
-        """Total amount of subawards for this award."""
+        """The total amount of subawards for this award."""
         return to_float(self._lazy_get("total_subaward_amount", default=None))
 
     @property
     def date_signed(self) -> Optional[datetime]:
-        """Date the award was signed."""
+        """The date the award was signed"""
         return to_date(self._lazy_get("date_signed", default=None))
 
     @property
@@ -145,12 +159,12 @@ class Award(LazyRecord):
 
     @property
     def base_exercised_options(self) -> Optional[float]:
-        """The value of the award, including any options that have already been exercised"""
+        """The sum of the base_exercised_options_val from associated transactions"""
         return to_float(self._lazy_get("base_exercised_options", default=None))
 
     @property
     def base_and_all_options(self) -> Optional[float]:
-        """The total potential value of the award if all available options are exercised in the future"""
+        """The sum of the base_and_all_options_value from associated transactions"""
         return to_float(self._lazy_get("base_and_all_options", default=None))
 
     @property
@@ -180,22 +194,22 @@ class Award(LazyRecord):
 
     @property
     def total_subsidy_cost(self) -> Optional[float]:
-        """Total subsidy cost for loan programs."""
+        """The total of the original_loan_subsidy_cost from associated transactions"""
         return to_float(self._lazy_get("total_subsidy_cost", default=None))
 
     @property
     def total_loan_value(self) -> Optional[float]:
-        """Total value of loans for loan programs."""
+        """The total of the face_value_loan_guarantee from associated transactions"""
         return to_float(self._lazy_get("total_loan_value", default=None))
 
     @property
     def non_federal_funding(self) -> Optional[float]:
-        """Non-federal funding amount for grants."""
+        """A summation of this award's transactions' non-federal funding amount"""
         return to_float(self._lazy_get("non_federal_funding", default=None))
 
     @property
     def total_funding(self) -> Optional[float]:
-        """Total funding including federal and non-federal sources."""
+        """A summation of this award's transactions' funding amount"""
         return to_float(self._lazy_get("total_funding", default=None))
 
     @property
