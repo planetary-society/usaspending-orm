@@ -42,32 +42,18 @@ class SpendingByRecipientsSearch(QueryBuilder["Recipient"]):
     def for_agency(self, agency: str, account: Optional[str] = None) -> "s":
         """Filter recipients by funding agency.
         
-        Reuses the same logic as AwardSearch for consistency.
+        Args:
+            agency: Agency code or name
+            account: Optional account code
+            
+        Returns:
+            New query builder with agency filter
         """
-        # Same implementation as AwardSearch.for_agency()
-        # (Could be extracted to a mixin for DRY)
         clone = self._clone()
         
-        # Agency lookup logic (same as above)
-        from ..plugins.base import AgencyPlugin
-        agency_plugins = self._client.plugins.get_by_type(AgencyPlugin)
-        
+        # Use agency as provided - no plugin lookup
         agency_code = agency
         agency_name = agency
-        account_code = None
-        
-        for plugin in agency_plugins.values():
-            if agency.upper() in (
-                plugin.agency_name.upper(),
-                plugin.abbreviation.upper(),
-                plugin.agency_code
-            ):
-                agency_code = plugin.agency_code
-                agency_name = plugin.agency_name
-                
-                if account:
-                    account_code = plugin.get_account_code(account)
-                break
         
         clone._filters.setdefault("agencies", []).append({
             "type": "funding",
@@ -76,10 +62,10 @@ class SpendingByRecipientsSearch(QueryBuilder["Recipient"]):
             "name": agency_name,
         })
         
-        if account_code:
+        if account:
             clone._filters.setdefault("tas_codes", []).append({
                 "aid": agency_code,
-                "main": account_code
+                "main": account
             })
         
         return clone

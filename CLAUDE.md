@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-USASpending Python Wrapper is a Python client library for the USAspending.gov API, providing a modern, client-centric interface with query builders, automatic pagination, and a plugin system for agency-specific functionality.
+USASpending Python Wrapper is a Python client library for the USAspending.gov API, providing a modern, client-centric interface with query builders and automatic pagination.
 
 ## USASpending API Reference Documentation
 See `api-docs-links.md` for official endpoint documentation links
@@ -13,9 +13,7 @@ You may also use contex7 MCP to access the API documentation for the `usaspendin
 ### Agency-agnostic implementation
 - Designed to work with any agency's data
 - No hardcoded agency logic
-- Provides agency-specific filters and helper methods via plugins
-- Plugin system allows for easy extension
-- `AgencyPlugin` provides agency code to name mapping
+- Provides generic filters and helper methods
 
 ### Client-Centric Design
 - All operations flow through a central `USASpending` client instance
@@ -70,7 +68,6 @@ src/usaspendingapi/
 ├── queries/              # Query builders
 ├── models/               # Data models
 ├── cache/                # Cache backends
-├── plugins/              # Plugin system
 └── utils/                # Utilities (retry, rate limit)
 ```
 
@@ -88,31 +85,11 @@ tests/
 ```
 
 ### Testing Principles
-- Mock at HTTP level
-- Use fixtures for common test data
-- Verify query builder immutability
-- Test plugin integration
-
-### Key Testing Patterns
-
-#### Mock Client Setup
-```python
-@pytest.fixture
-def mock_client():
-    config = Config(
-        cache_backend="memory",
-        rate_limit_calls=1000,
-    )
-    client = USASpending(config)
-    client._make_request = Mock()
-    return client
-```
-
-#### Testing Query Builders
-- Verify immutability with `_clone()`
-- Test filter accumulation
-- Verify pagination behavior
-- Test `first()`, `all()`, `count()` methods
+- Use pytest for test framework
+- Use fixtures in `tests/fixtures/` for common test data
+- Use TDD (Test-Driven Development) approach
+- Aim for >80% test coverage
+- Use helper methods in `tests/mocks/` for mocking external API calls and resources
 
 ## Implementation Patterns
 
@@ -141,12 +118,6 @@ def mock_client():
 - Support `max_pages` limit
 - Page size limited to API maximum (100)
 - Must be responsive to user-provided limit() filters (i.e. should not load more results than the user requested)
-
-### Plugin System
-- Simple registration via `client.register_plugin()`
-- `AgencyPlugin` for agency name → code mapping
-- Plugins can add custom filters and methods
-- Plugins can extend existing resources or queries
 
 ### Cache Abstraction
 - Implement a very simple `CacheBackend` abstraction interface for future extensibility
