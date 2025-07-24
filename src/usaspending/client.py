@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 import time
+from datetime import timedelta
 from typing import Optional, Dict, Any, TYPE_CHECKING
 from urllib.parse import urljoin
 
 import requests
+from cachier import cachier, set_default_params
 
 from .config import Config
 from .exceptions import HTTPError, APIError, ConfigurationError
@@ -63,6 +65,17 @@ class USASpending:
         
         # Resource cache
         self._resources: Dict[str, BaseResource] = {}
+        
+        # Configure cachier global settings
+        if self.config.cache_enabled:
+            set_default_params(
+                stale_after=timedelta(seconds=self.config.cache_ttl),
+                cache_dir=self.config.cache_dir,
+                separate_files=True,
+                caching_enabled=True
+            )
+        else:
+            set_default_params(caching_enabled=False)
         
         logger.debug("USASpending client initialized successfully")
     
@@ -127,7 +140,21 @@ class USASpending:
             self._resources["transactions"] = TransactionsResource(self)
         return self._resources["transactions"]
     
+    @cachier()
     def _make_request(
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """A cacheable HTTP request method that won't trigger rate-limiting or other unnecessary behaviors"""
+        return self._make_uncached_request(
+            method, endpoint, params=params, json=json, **kwargs
+        )
+    
+    def _make_uncached_request(
         self,
         method: str,
         endpoint: str,
@@ -157,15 +184,6 @@ class USASpending:
         
         # Build full URL
         url = urljoin(self.config.base_url, endpoint.lstrip("/"))
-        
-        # Check cache for GET requests
-        cache_key = None
-        if method.upper() == "GET" and params and hasattr(self, 'cache'):
-            cache_key = self.cache.make_key(url, params)
-            cached = self.cache.get(cache_key)
-            if cached is not None:
-                logger.debug(f"Cache hit for {url}")
-                return cached
         
         # Log API request
         log_api_request(logger, method, url, params, json)
@@ -253,11 +271,6 @@ class USASpending:
             log_api_response(logger, response.status_code,
                            len(response.content) if response.content else None,
                            duration)
-            
-            # Cache successful GET responses
-            if cache_key and hasattr(self, 'cache'):
-                self.cache.set(cache_key, data, ttl=self.config.cache_ttl)
-                logger.debug(f"Cached response for {url}")
             
             return data
             

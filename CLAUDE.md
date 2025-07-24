@@ -119,11 +119,15 @@ tests/
 - Page size limited to API maximum (100)
 - Must be responsive to user-provided limit() filters (i.e. should not load more results than the user requested)
 
-### Cache Abstraction
-- Implement a very simple `CacheBackend` abstraction interface for future extensibility
-- Default implementation uses `cachier` for file-based caching
-- Cache configurable via `Config` dataclass
-- Cache all API responses
+### Caching
+- Implemented using `cachier` library for flexible backend support
+- Supports file (default), memory, MongoDB, Redis, and SQL backends
+- Cache configurable via `Config` dataclass:
+  - `cache_enabled`: Enable/disable caching (default: True)
+  - `cache_ttl`: Time-to-live in seconds (default: 604800 = 1 week)
+  - `cache_dir`: Directory for file-based cache (default: ".usaspending_cache")
+- Only caches GET requests (POST requests are never cached)
+- Supports cachier's per-call options (skip_cache, overwrite_cache, etc.)
 
 ### Logging
 - Implementd via custom `Logger` class using Python's `logging` module
