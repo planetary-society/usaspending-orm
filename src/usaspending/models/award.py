@@ -130,7 +130,7 @@ class Award(LazyRecord):
     @property
     def type_description(self) -> Optional[str]:
         """The plain text description of the type of the award"""
-        return self.get_value(["type_description", "Award Type"], default="")
+        return self.get_value(["type_description", "Award Type", "contract_award_type", "Contract Award Type"], default="")
     
     @property
     def total_obligation(self) -> float:

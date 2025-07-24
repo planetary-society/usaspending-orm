@@ -1,0 +1,258 @@
+{
+  "spending_level": "awards",
+  "limit": 3,
+  "results": [
+    {
+      "internal_id": 169434166,
+      "Award ID": "NNJ09GA02B",
+      "Recipient Name": "ORBITAL SCIENCES LLC",
+      "Recipent DUNS Number": null,
+      "recipient_id": "c8c17467-80ae-cdbc-49ab-584b1416d93d-C",
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Agency Code": "080",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency Code": "8000",
+      "Funding Agency": "National Aeronautics and Space Administration",
+      "Funding Agency Code": "080",
+      "Funding Sub Agency": "National Aeronautics and Space Administration",
+      "Funding Sub Agency Code": "8000",
+      "Description": "ISS COMMERCIAL RESUPPLY SERVICES",
+      "Last Modified Date": "2020-08-31",
+      "Base Obligation Date": "2008-12-23",
+      "prime_award_recipient_id": null,
+      "generated_internal_id": "CONT_IDV_NNJ09GA02B_8000",
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Recipient UEI": "JFDGGEVK4EA5",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "VA",
+        "state_name": "Virginia",
+        "city_name": "DULLES",
+        "county_code": "107",
+        "county_name": "LOUDOUN",
+        "address_line1": "21839 ATLANTIC BLVD",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "10",
+        "zip4": "6850",
+        "zip5": "20166",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": null,
+        "state_code": null,
+        "state_name": null,
+        "city_name": null,
+        "county_code": null,
+        "county_name": null,
+        "congressional_code": null,
+        "zip4": null,
+        "zip5": null
+      },
+      "Start Date": "2008-12-23",
+      "End Date": null,
+      "Award Amount": 2890983472.11,
+      "Total Outlays": 177349.0,
+      "Award Type": null,
+      "SAI Number": null,
+      "CFDA Number": null,
+      "Assistance Listings": null,
+      "primary_assistance_listing": {
+        "cfda_number": null,
+        "cfda_program_title": null
+      },
+      "Contract Award Type": "INDEFINITE DELIVERY / INDEFINITE QUANTITY",
+      "Last Date to Order": "2019-12-31",
+      "NAICS": {
+        "code": "481212",
+        "description": "NONSCHEDULED CHARTERED FREIGHT AIR TRANSPORTATION"
+      },
+      "PSC": {
+        "code": "V126",
+        "description": "TRANSPORTATION/TRAVEL/RELOCATION- TRANSPORTATION: SPACE TRANSPORTATION/LAUNCH"
+      },
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration"
+    },
+    {
+      "internal_id": 169042208,
+      "Award ID": "80JSC019C0012",
+      "Recipient Name": "LOCKHEED MARTIN CORP",
+      "Recipent DUNS Number": null,
+      "recipient_id": "6e7a895c-aa57-8600-2a8a-4e237f6213f6-C",
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Agency Code": "080",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency Code": "8000",
+      "Funding Agency": "National Aeronautics and Space Administration",
+      "Funding Agency Code": "080",
+      "Funding Sub Agency": "National Aeronautics and Space Administration",
+      "Funding Sub Agency Code": "8000",
+      "Description": "ORION PRODUCTION AND OPERATIONS CONTRACT",
+      "Last Modified Date": "2025-07-03",
+      "Base Obligation Date": "2019-06-05",
+      "prime_award_recipient_id": null,
+      "generated_internal_id": "CONT_IDV_80JSC019C0012_8000",
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Recipient UEI": "FYHNA5WC8XD7",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "CO",
+        "state_name": "Colorado",
+        "city_name": "LITTLETON",
+        "county_code": "035",
+        "county_name": "DOUGLAS",
+        "address_line1": "12257 S WADSWORTH BLVD",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "07",
+        "zip4": "8504",
+        "zip5": "80125",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": null,
+        "state_code": null,
+        "state_name": null,
+        "city_name": null,
+        "county_code": null,
+        "county_name": null,
+        "congressional_code": null,
+        "zip4": null,
+        "zip5": null
+      },
+      "Start Date": "2019-06-05",
+      "End Date": null,
+      "Award Amount": 2770845719.63,
+      "Total Outlays": 2442918291.79,
+      "Award Type": null,
+      "SAI Number": null,
+      "CFDA Number": null,
+      "Assistance Listings": null,
+      "primary_assistance_listing": {
+        "cfda_number": null,
+        "cfda_program_title": null
+      },
+      "Contract Award Type": "INDEFINITE DELIVERY / INDEFINITE QUANTITY",
+      "Last Date to Order": "2030-09-30",
+      "NAICS": {
+        "code": "541715",
+        "description": "RESEARCH AND DEVELOPMENT IN THE PHYSICAL, ENGINEERING, AND LIFE SCIENCES (EXCEPT NANOTECHNOLOGY AND BIOTECHNOLOGY)"
+      },
+      "PSC": {
+        "code": "1555",
+        "description": "SPACE VEHICLES"
+      },
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration"
+    },
+    {
+      "internal_id": 169434474,
+      "Award ID": "NNK10LB00B",
+      "Recipient Name": "UNITED LAUNCH SERVICES, LLC",
+      "Recipent DUNS Number": null,
+      "recipient_id": "96b9d7ec-4f76-3e5d-ef47-355f7ce954df-C",
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Agency Code": "080",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency Code": "8000",
+      "Funding Agency": "National Aeronautics and Space Administration",
+      "Funding Agency Code": "080",
+      "Funding Sub Agency": "National Aeronautics and Space Administration",
+      "Funding Sub Agency Code": "8000",
+      "Description": "NASA LAUNCH SERVICES II - UNITED LAUNCH SERVICES, LLC THE AWARD WILL PROVIDE A BROAD RANGE OF LAUNCH SERVICES FOR NASA'S PLANETARY, EARTH-OBSERVING, EXPLORATION, AND SCIENTIFIC SATELLITES. THE NLS CONTRACTS PROVIDE FOR A MINIMUM CAPABILITY OF DELIVERING AGENCY PAYLOADS WEIGHING APPROXIMATELY 550 POUNDS OR MORE TO A MINIMUM 124-MILE-HIGH CIRCULAR ORBIT WITH A LAUNCH INCLINATION OF 28.5 DEGREES. THE LAUNCH SERVICE PROVIDER ALSO MAY OFFER A RANGE OF VEHICLES TO NASA TO MEET HIGHER PAYLOAD WEIGHT AND ORBIT REQUIREMENTS.***NNK10LB00B WAS CREATED TO REPLACE NNK10LB04B DUE TO A VENDOR NUMBER ERROR***",
+      "Last Modified Date": "2025-06-25",
+      "Base Obligation Date": "2010-09-23",
+      "prime_award_recipient_id": null,
+      "generated_internal_id": "CONT_IDV_NNK10LB00B_8000",
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Recipient UEI": "XHAMULHCL9N3",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "CO",
+        "state_name": "Colorado",
+        "city_name": "CENTENNIAL",
+        "county_code": "005",
+        "county_name": "ARAPAHOE",
+        "address_line1": "9501 E PANORAMA CIR",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "06",
+        "zip4": "3401",
+        "zip5": "80112",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": null,
+        "state_code": null,
+        "state_name": null,
+        "city_name": null,
+        "county_code": null,
+        "county_name": null,
+        "congressional_code": null,
+        "zip4": null,
+        "zip5": null
+      },
+      "Start Date": "2010-09-23",
+      "End Date": null,
+      "Award Amount": 2470736058.0,
+      "Total Outlays": 625990924.0,
+      "Award Type": null,
+      "SAI Number": null,
+      "CFDA Number": null,
+      "Assistance Listings": null,
+      "primary_assistance_listing": {
+        "cfda_number": null,
+        "cfda_program_title": null
+      },
+      "Contract Award Type": "INDEFINITE DELIVERY / INDEFINITE QUANTITY",
+      "Last Date to Order": "2032-12-31",
+      "NAICS": {
+        "code": "336414",
+        "description": "GUIDED MISSILE AND SPACE VEHICLE MANUFACTURING"
+      },
+      "PSC": {
+        "code": "V126",
+        "description": "TRANSPORTATION/TRAVEL/RELOCATION- TRANSPORTATION: SPACE TRANSPORTATION/LAUNCH"
+      },
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration"
+    }
+  ],
+  "page_metadata": {
+    "page": 2,
+    "hasNext": true,
+    "last_record_unique_id": 169434474,
+    "last_record_sort_value": "2470736058.0"
+  },
+  "messages": [
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. "
+  ]
+}
