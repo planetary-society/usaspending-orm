@@ -66,7 +66,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
 
     def _transform_result(self, result: Dict[str, Any]) -> Transaction:
         """Transforms a single API result item into a Transaction model."""
-        return Transaction(_raw=result)
+        return Transaction(result)
 
     def count(self) -> int:
         """ Counts the number of transactions per a given award id."""
