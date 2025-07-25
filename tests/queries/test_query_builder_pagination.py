@@ -13,7 +13,9 @@ from usaspending.queries.awards_search import AwardsSearch
 @pytest.fixture
 def mock_client():
     """Create a mock USASpending client for testing."""
-    config = Config(cache_backend="memory", rate_limit_calls=1000)
+    config = Config()
+    config.cache_enabled = False  # Disable caching for tests
+    config.rate_limit_calls = 1000  # High limit for testing
     client = USASpending(config)
     client._make_request = Mock()
     return client
