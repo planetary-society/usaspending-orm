@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any, TYPE_CHECKING
 from urllib.parse import urljoin
 
 import requests
-from cachier import cachier, set_default_params
+from cachier import cachier, set_global_params
 
 from .config import Config
 from .exceptions import HTTPError, APIError, ConfigurationError
@@ -68,14 +68,14 @@ class USASpending:
         
         # Configure cachier global settings
         if self.config.cache_enabled:
-            set_default_params(
+            set_global_params(
                 stale_after=timedelta(seconds=self.config.cache_ttl),
                 cache_dir=self.config.cache_dir,
                 separate_files=True,
                 caching_enabled=True
             )
         else:
-            set_default_params(caching_enabled=False)
+            set_global_params(caching_enabled=False)
         
         logger.debug("USASpending client initialized successfully")
     
