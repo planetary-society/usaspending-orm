@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from usaspending.client import USASpending
 from usaspending.exceptions import ValidationError
@@ -338,8 +338,8 @@ class AwardsSearch(QueryBuilder["Award"]):
 
     def in_time_period(
         self,
-        start_date: datetime.date,
-        end_date: datetime.date,
+        start_date: Union[datetime.date, str],
+        end_date: Union[datetime.date, str],
         new_awards_only: bool = False,
         date_type: Optional[AwardDateType] = None,
     ) -> AwardsSearch:
@@ -347,14 +347,30 @@ class AwardsSearch(QueryBuilder["Award"]):
         Filter by a specific date range.
 
         Args:
-            start_date: The start date of the period.
-            end_date: The end date of the period.
+            start_date: The start date of the period (datetime.date or string in "YYYY-MM-DD" format).
+            end_date: The end date of the period (datetime.date or string in "YYYY-MM-DD" format).
             new_awards_only: If True, filters by awards with a start date within the given range.
             date_type: The type of date to filter on (e.g., action_date).
 
         Returns:
             A new `AwardsSearch` instance with the filter applied.
+        
+        Raises:
+            ValidationError: If string dates are not in valid "YYYY-MM-DD" format.
         """
+        
+        # Parse string dates if needed
+        if isinstance(start_date, str):
+            try:
+                start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValidationError(f"Invalid start_date format: '{start_date}'. Expected 'YYYY-MM-DD'.")
+        
+        if isinstance(end_date, str):
+            try:
+                end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValidationError(f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'.")
         
         # If convenience flag is set, use NEW_AWARDS_ONLY date type
         # and override any provided date_type

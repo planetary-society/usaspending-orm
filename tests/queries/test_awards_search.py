@@ -135,6 +135,59 @@ class TestFilterMethods:
             }]
         }
 
+    def test_in_time_period_with_string_dates(self, awards_search):
+        """Test the in_time_period filter method with string dates."""
+        result = awards_search.in_time_period(
+            start_date="2024-01-01", 
+            end_date="2024-12-31", 
+            date_type=AwardDateType.ACTION_DATE
+        )
+        
+        assert result is not awards_search
+        assert len(result._filter_objects) == 1
+        
+        filter_dict = result._filter_objects[0].to_dict()
+        assert filter_dict == {
+            "time_period": [{
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "date_type": "action_date"
+            }]
+        }
+
+    def test_in_time_period_with_mixed_date_types(self, awards_search):
+        """Test the in_time_period filter method with mixed date types."""
+        start = datetime.date(2024, 1, 1)
+        
+        result = awards_search.in_time_period(
+            start_date=start, 
+            end_date="2024-12-31", 
+            date_type=AwardDateType.ACTION_DATE
+        )
+        
+        assert result is not awards_search
+        assert len(result._filter_objects) == 1
+        
+        filter_dict = result._filter_objects[0].to_dict()
+        assert filter_dict == {
+            "time_period": [{
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "date_type": "action_date"
+            }]
+        }
+
+    def test_in_time_period_with_invalid_string_date_format(self, awards_search):
+        """Test the in_time_period filter method with invalid string date format."""
+        with pytest.raises(ValidationError, match="Invalid start_date format: '01-01-2024'. Expected 'YYYY-MM-DD'."):
+            awards_search.in_time_period(start_date="01-01-2024", end_date="2024-12-31")
+        
+        with pytest.raises(ValidationError, match="Invalid end_date format: '2024/12/31'. Expected 'YYYY-MM-DD'."):
+            awards_search.in_time_period(start_date="2024-01-01", end_date="2024/12/31")
+        
+        with pytest.raises(ValidationError, match="Invalid start_date format: 'invalid'. Expected 'YYYY-MM-DD'."):
+            awards_search.in_time_period(start_date="invalid", end_date="2024-12-31")
+
     def test_for_fiscal_year(self, awards_search):
         """Test the for_fiscal_year filter method."""
         result = awards_search.for_fiscal_year(2024)
