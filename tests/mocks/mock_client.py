@@ -49,11 +49,10 @@ class MockUSASpendingClient(USASpending):
                    and high rate limits for testing.
         """
         if config is None:
-            config = Config(
-                cache_backend="memory",
-                rate_limit_calls=10000,  # High limit for tests
-                rate_limit_period=0.001,  # Very short period
-            )
+            config = Config()
+            config.cache_enabled = False
+            config.rate_limit_calls = 10000  # High limit for testing
+
         super().__init__(config)
         
         # Response storage

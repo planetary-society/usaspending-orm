@@ -26,35 +26,20 @@ from usaspending.queries.filters import (
 )
 
 
-@pytest.fixture
-def mock_client():
-    """Create a mock USASpending client for testing.
-    
-    This fixture is kept for backward compatibility with tests that
-    only need simple mocking of _make_request.
-    """
-    config = Config(
-        cache_backend="memory",
-        rate_limit_calls=1000,
-    )
-    client = USASpending(config)
-    client._make_request = Mock()
-    return client
-
 
 @pytest.fixture
-def awards_search(mock_client):
+def awards_search(mock_usa_client):
     """Create an AwardsSearch instance with a mock client."""
-    return AwardsSearch(mock_client)
+    return AwardsSearch(mock_usa_client)
 
 
 class TestAwardsSearchInitialization:
     """Test initialization and basic properties of AwardsSearch."""
 
-    def test_initialization(self, mock_client):
+    def test_initialization(self, mock_usa_client):
         """Test that AwardsSearch initializes correctly."""
-        search = AwardsSearch(mock_client)
-        assert search._client == mock_client
+        search = AwardsSearch(mock_usa_client)
+        assert search._client == mock_usa_client
         assert search._filter_objects == []
         assert search._page_size == 100
         assert search._max_pages is None
