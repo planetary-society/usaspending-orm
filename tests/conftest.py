@@ -11,23 +11,6 @@ from tests.mocks import MockUSASpendingClient
 
 
 @pytest.fixture
-def mock_client():
-    """Create a mock USASpending client for testing.
-    
-    Mocks the _make_request method to avoid actual API calls.
-    Uses optimized settings for faster test execution.
-    """
-    config = Config(
-        cache_backend="memory",
-        rate_limit_calls=1000,
-        max_retries=0,  # Disable retries for faster tests
-    )
-    client = USASpending(config)
-    client._make_request = Mock()
-    return client
-
-
-@pytest.fixture
 def mock_usa_client():
     """Create a MockUSASpendingClient for testing.
     
