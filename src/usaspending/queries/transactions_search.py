@@ -31,6 +31,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         super().__init__(client)
         self._award_id: str = None
 
+    @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
         return "/v2/transactions/"

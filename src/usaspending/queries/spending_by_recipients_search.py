@@ -15,6 +15,7 @@ logger = USASpendingLogger.get_logger(__name__)
 class SpendingByRecipientsSearch(QueryBuilder["Recipient"]):
     """Query builder for recipient searches."""
     
+    @property
     def _endpoint(self) -> str:
         return "/search/spending_by_recipient/"
     
