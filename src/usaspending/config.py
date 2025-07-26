@@ -16,7 +16,7 @@ class Config:
         retry_backoff: Backoff multiplier for retries
         rate_limit_calls: Number of calls allowed per period
         rate_limit_period: Period in seconds for rate limiting
-        cache_backend: Cache backend type ("file" or "memory")
+        cache_enabled: Enable/disable caching
         cache_dir: Directory for file-based cache
         cache_ttl: Cache time-to-live in seconds
         user_agent: User agent string for requests
@@ -26,16 +26,21 @@ class Config:
     """
     
     base_url: str = "https://api.usaspending.gov/api/v2"
+    user_agent: str = "usaspendingapi-python/0.1.0"
     timeout: int = 30
     max_retries: int = 3
     retry_delay: float = 1.0
     retry_backoff: float = 2.0
     rate_limit_calls: int = 30
     rate_limit_period: int = 1
-    cache_backend: str = "file"
+    
+    # Caching via cachier
+    cache_enabled: bool = True
     cache_dir: str = ".usaspending_cache"
-    cache_ttl: int = 3600  # 1 hour
-    user_agent: str = "usaspendingapi-python/0.1.0"
+    cache_ttl: int = 604800  # 1 week
+    
+    
+    # Logging configuration
     logging_level: str = "DEBUG"
     debug_mode: bool = True
     log_file: Optional[str] = None
@@ -48,8 +53,6 @@ class Config:
             raise ValueError("max_retries must be non-negative")
         if self.rate_limit_calls <= 0:
             raise ValueError("rate_limit_calls must be positive")
-        if self.cache_backend not in ("file", "memory"):
-            raise ValueError("cache_backend must be 'file' or 'memory'")
         if self.logging_level.upper() not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
             raise ValueError("logging_level must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL")
 
