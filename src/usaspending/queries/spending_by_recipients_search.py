@@ -40,7 +40,7 @@ class SpendingByRecipientsSearch(QueryBuilder["Recipient"]):
         from ..models.recipient import Recipient
         return Recipient(data, client=self._client)
     
-    def for_agency(self, agency: str, account: Optional[str] = None) -> "s":
+    def for_agency(self, agency: str, account: Optional[str] = None) -> "SpendingByRecipientsSearch":
         """Filter recipients by funding agency.
         
         Args:
@@ -71,7 +71,7 @@ class SpendingByRecipientsSearch(QueryBuilder["Recipient"]):
         
         return clone
     
-    def with_business_type(self, *types: str) -> "s":
+    def with_business_type(self, *types: str) -> "SpendingByRecipientsSearch":
         """Filter by recipient business type.
         
         Args:
@@ -84,7 +84,7 @@ class SpendingByRecipientsSearch(QueryBuilder["Recipient"]):
         clone._filters["recipient_type_names"] = list(types)
         return clone
     
-    def top_recipients(self, num: int = 100) -> "s":
+    def top_recipients(self, num: int = 100) -> "SpendingByRecipientsSearch":
         """Get top recipients by total obligations.
         
         Args:
@@ -94,3 +94,21 @@ class SpendingByRecipientsSearch(QueryBuilder["Recipient"]):
             New query builder configured for top recipients
         """
         return self.page_size(min(num, 100)).limit(num).order_by("amount", "desc")
+    
+    def count(self) -> int:
+        """Get total count of recipients.
+        
+        Since there's no dedicated count endpoint for recipients,
+        this method counts by iterating through all results.
+        
+        Returns:
+            Total number of matching recipients
+        """
+        logger.debug(f"{self.__class__.__name__}.count() called")
+        
+        count = 0
+        for _ in self:
+            count += 1
+            
+        logger.info(f"{self.__class__.__name__}.count() = {count} recipients")
+        return count
