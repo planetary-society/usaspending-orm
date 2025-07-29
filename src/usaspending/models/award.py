@@ -20,6 +20,7 @@ from ..utils.formatter import smart_sentence_case, to_float, to_date
 
 if TYPE_CHECKING:
     from ..client import USASpending
+    from ..queries.transactions_search import TransactionsSearch
 
 class Award(LazyRecord):
     """Rich wrapper around a USAspending award record."""
@@ -130,7 +131,7 @@ class Award(LazyRecord):
     @property
     def type_description(self) -> Optional[str]:
         """The plain text description of the type of the award"""
-        return self.get_value(["type_description", "Award Type", "contract_award_type", "Contract Award Type"], default="")
+        return self.get_value(["type_description", "Award Type"], default="")
     
     @property
     def total_obligation(self) -> float:
@@ -417,9 +418,18 @@ class Award(LazyRecord):
         data = self._data.get('awarding_agency')
         return Agency(data, self._client) if data else None
 
-    @cached_property
-    def transactions(self) -> List[Transaction]:
-        return self._client.transactions.for_award(self.generated_unique_award_id).all()
+    @property
+    def transactions(self) -> "TransactionsSearch":
+        """Get transactions query builder for this award.
+        
+        Returns a TransactionsSearch object that can be further filtered and chained.
+        
+        Examples:
+            >>> award.transactions.count()  # Get count without loading all data
+            >>> award.transactions.limit(10).all()  # Get first 10 transactions
+            >>> list(award.transactions)  # Iterate through all transactions
+        """
+        return self._client.transactions.for_award(self.generated_unique_award_id)
     
     @cached_property
     def transactions_count(self) -> int:

@@ -263,8 +263,11 @@ class TestAwardTransactions:
         
         award = Award(award_fixture_data, mock_usa_client)
         
-        # Get transactions
-        transactions = award.transactions
+        # Get transactions query builder
+        transactions_query = award.transactions
+        
+        # Get all transactions
+        transactions = transactions_query.all()
         
         # Verify the result
         assert isinstance(transactions, list)
@@ -279,6 +282,41 @@ class TestAwardTransactions:
         assert transactions[0].federal_action_obligation == 1600000.0
         assert transactions[1].id == "CONT_TX_8000_-NONE-_80GSFC18C0008_P00064_-NONE-_0"
         assert transactions[2].id == "CONT_TX_8000_-NONE-_80GSFC18C0008_P00063_-NONE-_0"
+
+    def test_transactions_property_returns_query_builder(self, mock_usa_client, award_fixture_data):
+        """Test that transactions property returns a TransactionsSearch query builder."""
+        # Create mocks
+        mock_query = Mock()
+        mock_query.count = Mock(return_value=5)
+        mock_query.limit = Mock(return_value=mock_query)
+        mock_query.all = Mock(return_value=[])
+        
+        mock_transactions_resource = Mock()
+        mock_transactions_resource.for_award = Mock(return_value=mock_query)
+        mock_usa_client._resources["transactions"] = mock_transactions_resource
+        
+        award = Award(award_fixture_data, mock_usa_client)
+        
+        # Test that transactions returns a query builder
+        transactions_query = award.transactions
+        
+        # Test chaining count
+        count = transactions_query.count()
+        assert count == 5
+        mock_query.count.assert_called_once()
+        
+        # Test chaining limit
+        limited_query = transactions_query.limit(10)
+        assert limited_query is mock_query
+        mock_query.limit.assert_called_once_with(10)
+        
+        # Test chaining limit and all
+        results = transactions_query.limit(10).all()
+        assert results == []
+        mock_query.all.assert_called_once()
+        
+        # Verify for_award was called with correct ID
+        mock_transactions_resource.for_award.assert_called_with("CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-")
 
 
 class TestAwardTypeInformation:
