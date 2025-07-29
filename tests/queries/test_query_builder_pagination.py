@@ -10,6 +10,8 @@ from usaspending.queries.awards_search import AwardsSearch
 @pytest.fixture
 def awards_search(mock_usa_client):
     """Create an AwardsSearch instance with a mock client."""
+    # Set a default count response to prevent __len__ from failing
+    mock_usa_client.mock_award_count(contracts=1000)  # High number to not interfere with limits
     return AwardsSearch(mock_usa_client).with_award_types("A")
 
 
@@ -129,8 +131,9 @@ class TestLimitFunctionality:
         results = list(search)
         
         assert len(results) == 0
-        # Should not make any API calls
-        assert mock_usa_client.get_request_count() == 0
+        # Should make one call to count endpoint (from __len__), but not the search endpoint
+        assert mock_usa_client.get_request_count("/v2/search/spending_by_award_count/") == 1
+        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 0
     
     def test_no_limit_fetches_all(self, awards_search, mock_usa_client):
         """Test that no limit fetches all available results."""
@@ -313,6 +316,8 @@ class TestPageSizeFunctionality:
         assert payload1["limit"] == 10  # Should use limit, not page_size
         
         mock_usa_client.reset()
+        # Need to re-add count endpoint after reset
+        mock_usa_client.mock_award_count(contracts=1000)
         mock_usa_client.set_response(
             "/v2/search/spending_by_award/",
             {
@@ -330,6 +335,8 @@ class TestPageSizeFunctionality:
         assert payload2["limit"] == 100  # Should use page_size, not limit
         
         mock_usa_client.reset()
+        # Need to re-add count endpoint after reset
+        mock_usa_client.mock_award_count(contracts=1000)
         mock_usa_client.set_response(
             "/v2/search/spending_by_award/",
             {

@@ -382,6 +382,10 @@ class MockUSASpendingClient(USASpending):
             awards,
             page_size
         )
+        
+        # Also mock the count endpoint since __len__ now calls count()
+        # Default to contracts category for backward compatibility
+        self.mock_award_count(contracts=len(awards))
     
     def mock_award_count(self, **counts) -> None:
         """Set up mock response for award count.

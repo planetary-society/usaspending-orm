@@ -980,9 +980,9 @@ class TestErrorHandling:
 
     def test_api_error_propagation(self, mock_usa_client):
         """Test that API errors are propagated correctly."""
-        # Set up error response
+        # Set up error response for count endpoint (called by __len__)
         mock_usa_client.set_error_response(
-            "/v2/search/spending_by_award/",
+            "/v2/search/spending_by_award_count/",
             error_code=400,
             detail="Bad request"
         )

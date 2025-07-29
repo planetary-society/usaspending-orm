@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterator, List, Dict, Any, Optional, TypeVar, Generic, TYPE_CHECKING
+from typing import Iterator, List, Dict, Any, Optional, TypeVar, Generic, TYPE_CHECKING, Union
 
 # Import exceptions for use by all query builders
 from ..exceptions import (
@@ -132,12 +132,111 @@ class QueryBuilder(ABC, Generic[T]):
         logger.info(f"{self.__class__.__name__}.all() returned {len(results)} results")
         return results
     
+    def __len__(self) -> int:
+        """Return the total number of items (delegates to count())."""
+        return self.count()
+    
+    def __getitem__(self, key: Union[int, slice]) -> Union[T, List[T]]:
+        """Support list-like indexing and slicing.
+        
+        Args:
+            key: Integer index or slice object
+            
+        Returns:
+            Single item for integer index, list of items for slice
+            
+        Raises:
+            IndexError: If index is out of bounds
+            TypeError: If key is not int or slice
+        """
+        if isinstance(key, int):
+            # Handle single index
+            total_count = self.count()
+            
+            # Convert negative index to positive
+            if key < 0:
+                key = total_count + key
+            
+            # Check bounds
+            if key < 0 or key >= total_count:
+                raise IndexError(f"Index {key} out of range for query with {total_count} items")
+            
+            # Calculate which page contains this item
+            page_num = (key // self._page_size) + 1
+            offset_in_page = key % self._page_size
+            
+            # Fetch just the page we need
+            logger.debug(f"Fetching page {page_num} to get item at index {key}")
+            response = self._execute_query(page_num)
+            results = response.get("results", [])
+            
+            if offset_in_page < len(results):
+                return self._transform_result(results[offset_in_page])
+            else:
+                raise IndexError(f"Index {key} not found in results")
+                
+        elif isinstance(key, slice):
+            # Handle slice
+            total_count = self.count()
+            
+            # Convert slice indices
+            start, stop, step = key.indices(total_count)
+            
+            # If step is not 1, we need to fetch more data
+            if step != 1:
+                # For non-unit steps, fetch all items in range and then slice
+                items = []
+                for i in range(start, stop):
+                    if (i - start) % step == 0:
+                        items.append(self[i])  # Recursive call
+                return items
+            
+            # For contiguous slices, optimize by fetching only needed pages
+            if start >= stop:
+                return []
+            
+            # Calculate page range
+            start_page = (start // self._page_size) + 1
+            end_page = ((stop - 1) // self._page_size) + 1
+            
+            items = []
+            items_collected = 0
+            
+            logger.debug(f"Fetching pages {start_page} to {end_page} for slice [{start}:{stop}]")
+            
+            for page in range(start_page, end_page + 1):
+                response = self._execute_query(page)
+                results = response.get("results", [])
+                
+                # Calculate which items to take from this page
+                page_start_idx = (page - 1) * self._page_size
+                page_end_idx = page_start_idx + len(results)
+                
+                # Determine overlap with requested slice
+                take_start = max(0, start - page_start_idx)
+                take_end = min(len(results), stop - page_start_idx)
+                
+                if take_start < take_end:
+                    for i in range(take_start, take_end):
+                        items.append(self._transform_result(results[i]))
+                        items_collected += 1
+                        
+                # Stop if we've collected all requested items
+                if items_collected >= (stop - start):
+                    break
+                    
+            return items
+            
+        else:
+            raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
+    
     @abstractmethod
     def count(self) -> int:
         """Get total count without fetching all results."""
         pass
     
     @property
+    @abstractmethod
     def _endpoint(self) -> str:
         """API endpoint for this query."""
         pass
@@ -206,6 +305,7 @@ class QueryBuilder(ABC, Generic[T]):
         """Create a copy for method chaining."""
         clone = self.__class__(self._client)
         clone._filters = self._filters.copy()
+        clone._filter_objects = self._filter_objects.copy()
         clone._page_size = self._page_size
         clone._total_limit = self._total_limit
         clone._max_pages = self._max_pages
