@@ -150,8 +150,13 @@ class MockUSASpendingClient(USASpending):
                     
             return response
         
-        # Return empty response by default
-        return ResponseBuilder.paginated_response([], has_next=False)
+        # Return appropriate default response based on endpoint
+        if "count" in endpoint:
+            # Count endpoints need a different structure
+            return {"results": {}, "messages": []}
+        else:
+            # Search endpoints use paginated structure
+            return ResponseBuilder.paginated_response([], has_next=False)
     
     def set_response(
         self,
@@ -178,7 +183,8 @@ class MockUSASpendingClient(USASpending):
         self,
         endpoint: str,
         items: List[Dict[str, Any]],
-        page_size: int = 100
+        page_size: int = 100,
+        auto_count: bool = True
     ) -> None:
         """Automatically paginate a list of items.
         
@@ -186,6 +192,7 @@ class MockUSASpendingClient(USASpending):
             endpoint: API endpoint
             items: List of all items to paginate
             page_size: Items per page
+            auto_count: Whether to automatically set up count endpoint
         """
         # Clear any existing responses
         self._responses[endpoint] = []
@@ -208,6 +215,10 @@ class MockUSASpendingClient(USASpending):
             self._responses[endpoint].append(
                 ResponseBuilder.paginated_response([], has_next=False)
             )
+        
+        # Automatically set up count endpoint if requested
+        if auto_count:
+            self._auto_setup_count_endpoint(endpoint, len(items))
     
     def set_fixture_response(
         self,
@@ -237,7 +248,8 @@ class MockUSASpendingClient(USASpending):
         endpoint: str,
         error_code: int,
         error_message: Optional[str] = None,
-        detail: Optional[str] = None
+        detail: Optional[str] = None,
+        auto_count_error: bool = True
     ) -> None:
         """Simulate API errors.
         
@@ -246,6 +258,7 @@ class MockUSASpendingClient(USASpending):
             error_code: HTTP error code
             error_message: General error message
             detail: Detailed error message (for 400 errors)
+            auto_count_error: Whether to also set the same error for count endpoints
         """
         error_data = ResponseBuilder.error_response(
             status_code=error_code,
@@ -253,19 +266,40 @@ class MockUSASpendingClient(USASpending):
             error=error_message
         )
         self.set_response(endpoint, error_data, status_code=error_code)
+        
+        # Also set error for corresponding count endpoint if requested
+        if auto_count_error:
+            count_endpoint_mapping = {
+                "/v2/search/spending_by_award/": "/v2/search/spending_by_award_count/",
+                "/v2/transactions/": "/v2/awards/count/transaction/",
+                "/search/spending_by_recipient/": "/search/spending_by_recipient_count/",
+            }
+            
+            count_endpoint = count_endpoint_mapping.get(endpoint)
+            if count_endpoint:
+                self.set_response(count_endpoint, error_data, status_code=error_code)
     
     def add_response_sequence(
         self,
         endpoint: str,
-        responses: List[Dict[str, Any]]
+        responses: List[Dict[str, Any]],
+        auto_count: bool = True
     ) -> None:
         """Add multiple responses for sequential calls.
         
         Args:
             endpoint: API endpoint
             responses: List of responses to return in sequence
+            auto_count: Whether to automatically set up count endpoint
         """
         self._responses[endpoint].extend(responses)
+        
+        # Automatically set up count endpoint based on first response
+        if auto_count and responses:
+            first_response = responses[0]
+            if "results" in first_response and isinstance(first_response["results"], list):
+                total_count = len(first_response["results"])
+                self._auto_setup_count_endpoint(endpoint, total_count)
     
     def simulate_rate_limit(self, delay: float = 0.1) -> None:
         """Enable rate limiting simulation.
@@ -280,6 +314,30 @@ class MockUSASpendingClient(USASpending):
         """Disable rate limiting simulation."""
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
+    
+    def _auto_setup_count_endpoint(self, search_endpoint: str, total_count: int) -> None:
+        """Automatically set up count endpoint for a search endpoint.
+        
+        Args:
+            search_endpoint: The search endpoint (e.g., "/v2/search/spending_by_award/")
+            total_count: Total number of items
+        """
+        # Map search endpoints to their count endpoints
+        count_endpoint_mapping = {
+            "/v2/search/spending_by_award/": "/v2/search/spending_by_award_count/",
+            "/v2/transactions/": "/v2/awards/count/transaction/",  # Would need award_id
+            "/search/spending_by_recipient/": "/search/spending_by_recipient_count/",  # If it existed
+        }
+        
+        count_endpoint = count_endpoint_mapping.get(search_endpoint)
+        if count_endpoint == "/v2/search/spending_by_award_count/":
+            # For awards, default to contracts category for backward compatibility
+            self.mock_award_count(contracts=total_count)
+        elif count_endpoint and "transaction" not in count_endpoint:
+            # For other endpoints, set up a generic count response
+            # This could be enhanced based on specific endpoint needs
+            response = {"results": {"total": total_count}, "messages": []}
+            self.set_response(count_endpoint, response)
     
     # Request tracking and assertions
     

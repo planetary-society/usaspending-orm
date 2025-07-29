@@ -47,6 +47,9 @@ class TestMockClientExamples:
             page_size=100
         )
         
+        # Also mock the count endpoint since list() calls __len__ which calls count()
+        mock_usa_client.mock_award_count(contracts=250)
+        
         # Execute search and collect all results
         results = list(
             mock_usa_client.awards.search()
@@ -59,14 +62,14 @@ class TestMockClientExamples:
     
     def test_error_simulation(self, mock_usa_client):
         """Test API error simulation."""
-        # Set up error response
+        # Set up error response for the count endpoint (since list() calls count() first)
         mock_usa_client.set_error_response(
-            "/v2/search/spending_by_award/",
+            "/v2/search/spending_by_award_count/",
             error_code=400,
             detail="Invalid award type code: X"
         )
         
-        # Should raise APIError
+        # Should raise APIError when calling count()
         with pytest.raises(APIError) as exc_info:
             list(
                 mock_usa_client.awards.search()
@@ -208,7 +211,8 @@ class TestMockClientExamples:
         # assert len(transactions) == 2
         
         # Verify all endpoints were called
-        assert mock_usa_client.get_request_count() == 2  # search + detail
+        # Expected: search count + search + detail = 3 total requests
+        assert mock_usa_client.get_request_count() == 3
     
     def test_reset_functionality(self, mock_usa_client):
         """Test resetting mock state between tests."""
@@ -217,7 +221,8 @@ class TestMockClientExamples:
         list(mock_usa_client.awards.search().with_award_types("A"))
         
         # Verify state
-        assert mock_usa_client.get_request_count() == 1
+        # Expected: count + search = 2 total requests (list() calls both)
+        assert mock_usa_client.get_request_count() == 2
         
         # Reset
         mock_usa_client.reset()

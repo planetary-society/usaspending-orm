@@ -156,7 +156,8 @@ class TestGetItemMethod:
                     "results": [{"Award ID": f"AWARD-{100+i}"} for i in range(100)],
                     "page_metadata": {"hasNext": True}
                 }
-            ]
+            ],
+            auto_count=False  # Don't auto-setup count since we manually set it above
         )
         
         results = awards_search[95:105]
