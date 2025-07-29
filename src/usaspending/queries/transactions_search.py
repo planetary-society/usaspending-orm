@@ -31,6 +31,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         super().__init__(client)
         self._award_id: str = None
 
+    @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
         return "/v2/transactions/"
@@ -65,7 +66,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
 
     def _transform_result(self, result: Dict[str, Any]) -> Transaction:
         """Transforms a single API result item into a Transaction model."""
-        return Transaction(_raw=result)
+        return Transaction(result)
 
     def count(self) -> int:
         """ Counts the number of transactions per a given award id."""
