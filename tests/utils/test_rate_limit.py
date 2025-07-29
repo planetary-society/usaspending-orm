@@ -66,7 +66,7 @@ class TestRateLimiterBasicFunctionality:
     
     def test_exceeding_limit_causes_wait(self):
         """Test that exceeding the limit causes a wait."""
-        limiter = RateLimiter(max_calls=2, period=0.5)
+        limiter = RateLimiter(max_calls=2, period=0.005)
         
         # Make two calls (at the limit)
         limiter.wait_if_needed()
@@ -77,18 +77,18 @@ class TestRateLimiterBasicFunctionality:
         limiter.wait_if_needed()
         elapsed = time.time() - start_time
         
-        assert elapsed >= 0.4  # Should wait almost the full period
-        assert elapsed < 0.6  # But not too long
+        assert elapsed >= 0.004  # Should wait almost the full period
+        assert elapsed < 0.008  # But not too long
     
     def test_sliding_window(self):
         """Test that the sliding window works correctly."""
-        limiter = RateLimiter(max_calls=2, period=0.3)
+        limiter = RateLimiter(max_calls=2, period=0.003)
         
         # Make first call
         limiter.wait_if_needed()
         
         # Wait half the period
-        time.sleep(0.15)
+        time.sleep(0.0015)
         
         # Make second call
         limiter.wait_if_needed()
@@ -98,8 +98,8 @@ class TestRateLimiterBasicFunctionality:
         limiter.wait_if_needed()
         elapsed = time.time() - start_time
         
-        # Should wait about 0.15s (0.3s period - 0.15s already elapsed)
-        assert 0.1 <= elapsed <= 0.2
+        # Should wait about 0.0015s (0.003s period - 0.0015s already elapsed)
+        assert 0.001 <= elapsed <= 0.002
     
     def test_reset(self):
         """Test that reset() clears the call history."""
@@ -125,7 +125,7 @@ class TestRateLimiterProperties:
     
     def test_available_calls_property(self):
         """Test the available_calls property."""
-        limiter = RateLimiter(max_calls=3, period=0.5)
+        limiter = RateLimiter(max_calls=3, period=0.005)
         
         assert limiter.available_calls == 3
         
@@ -139,12 +139,12 @@ class TestRateLimiterProperties:
         assert limiter.available_calls == 0
         
         # Wait for calls to expire
-        time.sleep(0.6)
+        time.sleep(0.006)
         assert limiter.available_calls == 3
     
     def test_next_available_time_property(self):
         """Test the next_available_time property."""
-        limiter = RateLimiter(max_calls=1, period=1.0)
+        limiter = RateLimiter(max_calls=1, period=0.01)
         
         # Should be None when calls are available
         assert limiter.next_available_time is None
@@ -156,10 +156,10 @@ class TestRateLimiterProperties:
         # Should return when the call expires
         next_time = limiter.next_available_time
         assert next_time is not None
-        assert abs(next_time - (call_time + 1.0)) < 0.1
+        assert abs(next_time - (call_time + 0.01)) < 0.001
         
         # Wait for it to expire
-        time.sleep(1.1)
+        time.sleep(0.011)
         assert limiter.next_available_time is None
 
 
@@ -168,7 +168,7 @@ class TestRateLimiterThreadSafety:
     
     def test_concurrent_calls_respect_limit(self):
         """Test that concurrent calls from multiple threads respect the limit."""
-        limiter = RateLimiter(max_calls=5, period=1.0)
+        limiter = RateLimiter(max_calls=5, period=0.01)
         call_times = []
         lock = threading.Lock()
         
@@ -195,11 +195,11 @@ class TestRateLimiterThreadSafety:
         
         # First 5 calls should be immediate
         for i in range(5):
-            assert call_times[i] - start_time < 0.2
+            assert call_times[i] - start_time < 0.002
         
-        # Next 5 calls should be after 1 second
+        # Next 5 calls should be after 0.01 second
         for i in range(5, 10):
-            assert call_times[i] - start_time >= 0.9
+            assert call_times[i] - start_time >= 0.009
     
     def test_concurrent_property_access(self):
         """Test that properties can be accessed safely from multiple threads."""
@@ -234,13 +234,13 @@ class TestRateLimiterEdgeCases:
     
     def test_fractional_period(self):
         """Test rate limiter with fractional second periods."""
-        limiter = RateLimiter(max_calls=2, period=0.1)
+        limiter = RateLimiter(max_calls=2, period=0.001)
         
         # Should be able to make rapid calls after period expires
         for _ in range(5):
             limiter.wait_if_needed()
             limiter.wait_if_needed()
-            time.sleep(0.11)  # Just over the period
+            time.sleep(0.0011)  # Just over the period
     
     def test_high_frequency_calls(self):
         """Test with high frequency rate limit."""
@@ -287,17 +287,17 @@ class TestRateLimiterEdgeCases:
     
     def test_cleanup_old_calls(self):
         """Test that old calls are properly cleaned up."""
-        limiter = RateLimiter(max_calls=1000, period=0.1)
+        limiter = RateLimiter(max_calls=1000, period=0.001)
         
         # Make many calls over time
         for i in range(100):
             limiter.wait_if_needed()
             if i % 10 == 0:
-                time.sleep(0.02)  # Small delay every 10 calls
+                time.sleep(0.0002)  # Small delay every 10 calls
         
         # Internal deque should not grow unbounded
         # After period expires, old calls should be cleaned up
-        time.sleep(0.15)
+        time.sleep(0.0015)
         
         # All calls should be available again
         assert limiter.available_calls == 1000
