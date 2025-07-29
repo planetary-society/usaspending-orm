@@ -11,6 +11,7 @@ import requests
 if TYPE_CHECKING:
     from ..config import Config
 
+from ..config import config
 from ..exceptions import APIError, HTTPError, RateLimitError
 from ..logging_config import USASpendingLogger
 
@@ -47,7 +48,7 @@ class RetryHandler:
         requests.exceptions.ReadTimeout,
     )
     
-    def __init__(self, config: Config):
+    def __init__(self):
         """
         Initialize the retry handler.
         

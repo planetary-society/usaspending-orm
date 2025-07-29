@@ -2,12 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
-from usaspending.client import USASpending
-from usaspending.config import Config
-
-
 class TestClientTransactionsIntegration:
     """Test that transactions resource is properly integrated with client."""
     

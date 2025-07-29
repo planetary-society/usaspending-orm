@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 from unittest.mock import Mock
 
 from usaspending.client import USASpending
-from usaspending.config import Config
+from usaspending.config import config
 from usaspending.exceptions import APIError, HTTPError
 
 from .response_builder import ResponseBuilder
@@ -41,19 +41,14 @@ class MockUSASpendingClient(USASpending):
         ```
     """
     
-    def __init__(self, config: Optional[Config] = None):
-        """Initialize mock client with test-friendly defaults.
+    def __init__(self):
+        """Initialize mock client with test-friendly defaults."""
+        # Configure test-friendly defaults
+        # High rate limit to avoid interference with tests unless explicitly testing rate limiting
+        config.configure(cache_enabled=False)
         
-        Args:
-            config: Optional config override. Defaults to memory cache
-                   and high rate limits for testing.
-        """
-        if config is None:
-            config = Config()
-            config.cache_enabled = False
-            config.rate_limit_calls = 10000  # High limit for testing
-
-        super().__init__(config)
+        # Initialize parent class
+        super().__init__()
         
         # Response storage
         self._responses: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
@@ -140,7 +135,20 @@ class MockUSASpendingClient(USASpending):
         
         # Check for default response
         if endpoint in self._default_responses:
-            return self._default_responses[endpoint]
+            response = self._default_responses[endpoint]
+            
+            # Log messages from successful responses (200 status code) - mimic real client behavior
+            if "messages" in response:
+                from usaspending.logging_config import USASpendingLogger
+                logger = USASpendingLogger.get_logger(__name__)
+                messages = response["messages"]
+                if isinstance(messages, list):
+                    for msg in messages:
+                        logger.info(f"API Message: {msg}")
+                else:
+                    logger.info(f"API Message: {messages}")
+                    
+            return response
         
         # Return empty response by default
         return ResponseBuilder.paginated_response([], has_next=False)
@@ -419,8 +427,8 @@ class MockUSASpendingClient(USASpending):
                     "total": len(transactions),
                     "count": len(transactions),
                     "page": 1,
-                    "has_next": False,
-                    "has_previous": False,
+                    "hasNext": False,
+                    "hasPrevious": False,
                     "next": None,
                     "previous": None
                 }

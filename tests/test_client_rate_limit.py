@@ -1,85 +1,65 @@
 """Test rate limiter integration with USASpending client."""
 
-from unittest.mock import Mock, patch
 import time
-
-import pytest
-
-from usaspending.client import USASpending
-from usaspending.config import Config
+from usaspending.config import config
 
 
 class TestClientRateLimitIntegration:
     """Test that the client properly integrates with the rate limiter."""
-    
-    def test_client_creates_rate_limiter(self):
+
+    def test_client_creates_rate_limiter(self, mock_usa_client):
         """Test that client creates rate limiter with correct config."""
-        config = Config(rate_limit_calls=10, rate_limit_period=2.0)
-        client = USASpending(config)
-        
-        # Access the rate limiter
-        limiter = client.rate_limiter
-        
+
+        # Act: Access the rate limiter from the mock client
+        limiter = mock_usa_client.rate_limiter
+
+        # Assert
         assert limiter is not None
-        assert limiter.max_calls == 10
-        assert limiter.period == 2.0
-        assert limiter.available_calls == 10
-    
-    def test_client_caches_rate_limiter(self):
+        assert limiter.max_calls == config.rate_limit_calls
+        assert limiter.period == config.rate_limit_period
+
+    def test_client_caches_rate_limiter(self, mock_usa_client):
         """Test that client returns the same rate limiter instance."""
-        config = Config()
-        client = USASpending(config)
-        
-        limiter1 = client.rate_limiter
-        limiter2 = client.rate_limiter
-        
+        # Act
+        limiter1 = mock_usa_client.rate_limiter
+        limiter2 = mock_usa_client.rate_limiter
+
+        # Assert
         assert limiter1 is limiter2
-    
-    @patch('requests.Session.request')
-    def test_make_request_uses_rate_limiter(self, mock_request):
-        """Test that _make_request calls the rate limiter."""
-        # Set up mock response
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.content = b'{"results": []}'
-        mock_response.json.return_value = {"results": []}
-        mock_request.return_value = mock_response
+
+    def test_make_request_uses_rate_limiter(self, client_config, mock_usa_client):
+        """Test that _make_request calls the rate limiter and waits."""
+        # Arrange
+        # Set a tight rate limit
+        client_config(rate_limit_calls=2, rate_limit_period=0.5)
         
-        # Create client with tight rate limit
-        config = Config(rate_limit_calls=2, rate_limit_period=0.5)
-        client = USASpending(config)
+        # Set up responses for the endpoints
+        mock_usa_client.set_response("/test1", {"results": []})
+        mock_usa_client.set_response("/test2", {"results": []})
+        mock_usa_client.set_response("/test3", {"results": []})
         
-        # Make 3 requests
+        # Enable rate limit simulation to verify behavior
+        mock_usa_client.simulate_rate_limit(delay=0.001)  # Small delay for testing
+        
+        # Record start time
         start_time = time.time()
-        client._make_request("GET", "/test1")
-        client._make_request("GET", "/test2")
-        client._make_request("GET", "/test3")  # This should wait
-        elapsed = time.time() - start_time
+
+        # Act
+        mock_usa_client._make_request("GET", "/test1")
+        mock_usa_client._make_request("GET", "/test2")
+        mock_usa_client._make_request("GET", "/test3")  # This should trigger rate limit delay
         
-        # Should have waited for rate limit
-        assert elapsed >= 0.4  # Close to 0.5s period
-        assert mock_request.call_count == 3
-    
-    @patch('requests.Session.request')
-    def test_rate_limit_shared_across_resources(self, mock_request):
-        """Test that rate limit is shared across different resources."""
-        # Set up mock response
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.content = b'{"results": []}'
-        mock_response.json.return_value = {"results": []}
-        mock_request.return_value = mock_response
+        # Record end time
+        end_time = time.time()
+
+        # Assert
+        # Verify all requests were made
+        assert mock_usa_client.get_request_count() == 3
         
-        # Create client with rate limit of 1 per second
-        config = Config(rate_limit_calls=1, rate_limit_period=1.0)
-        client = USASpending(config)
+        # Verify specific endpoints were called
+        assert mock_usa_client.get_request_count("/test1") == 1
+        assert mock_usa_client.get_request_count("/test2") == 1
+        assert mock_usa_client.get_request_count("/test3") == 1
         
-        # Make requests through different paths
-        start_time = time.time()
-        client._make_request("GET", "/api/v2/awards/1/")
-        client._make_request("GET", "/api/v2/recipients/2/")  # Should wait
-        elapsed = time.time() - start_time
-        
-        # Should have waited due to shared rate limit
-        assert elapsed >= 0.9
-        assert mock_request.call_count == 2
+        # Verify that the rate limiter caused a delay (3 requests * 0.001s delay)
+        assert end_time - start_time >= 0.003

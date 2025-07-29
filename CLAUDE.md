@@ -22,11 +22,10 @@ You may also use contex7 MCP to access the API documentation for the `usaspendin
 - Thread-safe through instance-based design
 
 ### Query Builder Pattern
+- Inspired by ActiveRecord and Django ORM syntax
 - Chainable, immutable query construction via `_clone()` method
 - Lazy evaluation - queries execute only when iterated
-- Automatic, transparent pagination in `__iter__`
 - Standard python List-like interface for results will fire relevant API calls (e.g. `len(client.awards)` fires off an API call to a `count` endpoint, for example)
-- Type-safe with Generic[T] base class
 
 ### Resource Organization
 - Resources grouped in `resources/` directory
@@ -37,11 +36,11 @@ You may also use contex7 MCP to access the API documentation for the `usaspendin
 ### Models and Data Structures
 - Data models in `models/` directory
 - Use composition for nested structures
-- Raw API data stored in `_data` attribute
+- Raw API data stored in internal `_data` attribute and exposed via raw() method in `BaseModel`
 - Properties provide access to structured data
 - Models are lazy-loaded to avoid unnecessary API calls and to ensure access to full data set
 - Models can chain their associations (e.g. `award.transactions` to get all transactions for an award)
-- Models provide helper methods to provide consitent naming conventions and data access patterns
+- Models provide a consistent API to underlying property names given the API's sometimes inconsistent naming conventions
 
 ## Code Style and Standards
 
@@ -62,12 +61,12 @@ You may also use contex7 MCP to access the API documentation for the `usaspendin
 ```
 src/usaspendingapi/
 ├── client.py              # Main USASpending client
-├── config.py              # Configuration dataclass
+├── config.py              # Configuration settings
+├── logging_config.py      # Custom logger configuration
 ├── exceptions.py          # Custom exceptions
 ├── resources/            # Resource classes
 ├── queries/              # Query builders
 ├── models/               # Data models
-├── cache/                # Cache backends
 └── utils/                # Utilities (retry, rate limit)
 ```
 
@@ -85,11 +84,12 @@ tests/
 ```
 
 ### Testing Principles
-- Use pytest for test framework
+- Use pytest for test framework and use pytest best practices
+- Always use common pytest mocks and fixtures in `tests/conftest.py` if relevant
 - Use fixtures in `tests/fixtures/` for common test data
 - Use TDD (Test-Driven Development) approach
 - Aim for >80% test coverage
-- Use helper methods in `tests/mocks/` for mocking external API calls and resources
+- Mock API client using the `mock_usa_client()` method and other helps in `tests/mocks/`
 
 ## Implementation Patterns
 
@@ -112,28 +112,20 @@ tests/
   - `_transform_result()`: Result transformation
 - All filter methods return cloned instances
 
-### Pagination Strategy
-- Automatic in `__iter__` method
-- Check `hasNext` in response metadata
-- Support `max_pages` limit
-- Page size limited to API maximum (100)
-- Must be responsive to user-provided limit() filters (i.e. should not load more results than the user requested)
-
 ### Caching
-- Implemented using `cachier` library for flexible backend support
-- Supports file (default), memory, MongoDB, Redis, and SQL backends
-- Cache configurable via `Config` dataclass:
+- Implemented using `cachier` library via `cachier` decorator
+- Supports file (default) and memory backendds
+- Cache configurable via the global `config` object set in `src/usaspending/config.py`:
   - `cache_enabled`: Enable/disable caching (default: True)
   - `cache_ttl`: Time-to-live in seconds (default: 604800 = 1 week)
   - `cache_dir`: Directory for file-based cache (default: ".usaspending_cache")
-- Only caches GET requests (POST requests are never cached)
-- Supports cachier's per-call options (skip_cache, overwrite_cache, etc.)
+  - `cache_backend`: Backend type ('file' or 'memory', default: 'file')
 
 ### Logging
-- Implementd via custom `Logger` class using Python's `logging` module
+- Implementd via custom `USASpendingLogger` class using Python's `logging` module
 - Log all API requests and responses, including total counts of API calls
 - Log query execution times
-- Config DEBUG or INFO level in `Config` dataclass
+- Implement variable log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
 ## Development Workflow
 

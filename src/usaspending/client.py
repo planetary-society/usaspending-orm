@@ -7,10 +7,10 @@ from typing import Optional, Dict, Any, TYPE_CHECKING
 from urllib.parse import urljoin
 
 import requests
-from cachier import cachier, set_global_params
+import cachier
 
-from .config import Config
-from .exceptions import HTTPError, APIError, ConfigurationError
+from .config import config
+from .exceptions import HTTPError, APIError
 from .logging_config import USASpendingLogger, log_api_request, log_api_response
 
 if TYPE_CHECKING:
@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from .utils.retry import RetryHandler
 
 logger = USASpendingLogger.get_logger(__name__)
-
 
 class USASpending:
     """Main client for USASpending API.
@@ -37,24 +36,10 @@ class USASpending:
         ...     print(f"{award.recipient_name}: ${award.amount:,.2f}")
     """
     
-    def __init__(self, config: Optional[Config] = None):
-        """Initialize USASpending client.
-        
-        Args:
-            config: Configuration object. If None, uses defaults.
-        """
-        self.config = config or Config()
-        self._validate_config()
-        
-        # Configure logging if specified
-        if hasattr(self.config, 'logging_level') or hasattr(self.config, 'debug_mode'):
-            USASpendingLogger.configure(
-                level=getattr(self.config, 'logging_level', 'INFO'),
-                debug_mode=getattr(self.config, 'debug_mode', False),
-                log_file=getattr(self.config, 'log_file', None)
-            )
-        
-        logger.info(f"Initializing USASpending client with base URL: {self.config.base_url}")
+    def __init__(self):
+        """Initialize USASpending client."""
+
+        logger.debug(f"Initializing USASpending client with base URL: {config.base_url}")
         
         # Initialize HTTP session
         self._session = self._create_session()
@@ -66,32 +51,13 @@ class USASpending:
         # Resource cache
         self._resources: Dict[str, BaseResource] = {}
         
-        # Configure cachier global settings
-        if self.config.cache_enabled:
-            set_global_params(
-                stale_after=timedelta(seconds=self.config.cache_ttl),
-                cache_dir=self.config.cache_dir,
-                separate_files=True,
-                caching_enabled=True
-            )
-        else:
-            set_global_params(caching_enabled=False)
-        
         logger.debug("USASpending client initialized successfully")
-    
-    def _validate_config(self) -> None:
-        """Validate client configuration."""
-        if not self.config.base_url:
-            raise ConfigurationError("base_url cannot be empty")
-        
-        # Ensure base_url doesn't end with slash
-        self.config.base_url = self.config.base_url.rstrip("/")
     
     def _create_session(self) -> requests.Session:
         """Create configured requests session."""
         session = requests.Session()
         session.headers.update({
-            "User-Agent": self.config.user_agent,
+            "User-Agent": config.user_agent,
             "Accept": "application/json",
             "Content-Type": "application/json",
         })
@@ -103,8 +69,8 @@ class USASpending:
         if self._rate_limiter is None:
             from .utils.rate_limit import RateLimiter
             self._rate_limiter = RateLimiter(
-                self.config.rate_limit_calls,
-                self.config.rate_limit_period
+                config.rate_limit_calls,
+                config.rate_limit_period
             )
         return self._rate_limiter
     
@@ -113,7 +79,7 @@ class USASpending:
         """Get retry handler (lazy-loaded)."""
         if self._retry_handler is None:
             from .utils.retry import RetryHandler
-            self._retry_handler = RetryHandler(self.config)
+            self._retry_handler = RetryHandler()
         return self._retry_handler
     
     @property
@@ -140,7 +106,7 @@ class USASpending:
             self._resources["transactions"] = TransactionsResource(self)
         return self._resources["transactions"]
     
-    @cachier()
+    @cachier.cachier()
     def _make_request(
         self,
         method: str,
@@ -150,9 +116,7 @@ class USASpending:
         **kwargs
     ) -> Dict[str, Any]:
         """A cacheable HTTP request method that won't trigger rate-limiting or other unnecessary behaviors"""
-        return self._make_uncached_request(
-            method, endpoint, params=params, json=json, **kwargs
-        )
+        return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
     
     def _make_uncached_request(
         self,
@@ -183,7 +147,7 @@ class USASpending:
         self.rate_limiter.wait_if_needed()
         
         # Build full URL
-        url = urljoin(self.config.base_url, endpoint.lstrip("/"))
+        url = urljoin(config.base_url, endpoint.lstrip("/"))
         
         # Log API request
         log_api_request(logger, method, url, params, json)
@@ -194,7 +158,7 @@ class USASpending:
             "url": url,
             "params": params,
             "json": json,
-            "timeout": self.config.timeout,
+            "timeout": config.timeout,
             **kwargs
         }
         

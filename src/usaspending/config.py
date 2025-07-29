@@ -1,60 +1,115 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from datetime import timedelta
 from typing import Optional
+from usaspending.logging_config import USASpendingLogger
+from usaspending.exceptions import ConfigurationError
+import cachier
+
+logger = USASpendingLogger.get_logger(__name__)
 
 
 
-@dataclass
-class Config:
-    """Configuration for USASpending client.
-    
-    Attributes:
-        base_url: Base URL for USASpending API
-        timeout: Request timeout in seconds
-        max_retries: Maximum number of retry attempts
-        retry_delay: Initial delay between retries in seconds
-        retry_backoff: Backoff multiplier for retries
-        rate_limit_calls: Number of calls allowed per period
-        rate_limit_period: Period in seconds for rate limiting
-        cache_enabled: Enable/disable caching
-        cache_dir: Directory for file-based cache
-        cache_ttl: Cache time-to-live in seconds
-        user_agent: User agent string for requests
-        logging_level: Logging level (DEBUG, INFO, WARNING, ERROR)
-        debug_mode: Enable verbose debug logging
-        log_file: Optional file path for log output
+class _Config:
     """
-    
-    base_url: str = "https://api.usaspending.gov/api/v2"
-    user_agent: str = "usaspendingapi-python/0.1.0"
-    timeout: int = 30
-    max_retries: int = 3
-    retry_delay: float = 1.0
-    retry_backoff: float = 2.0
-    rate_limit_calls: int = 30
-    rate_limit_period: int = 1
-    
-    # Caching via cachier
-    cache_enabled: bool = True
-    cache_dir: str = ".usaspending_cache"
-    cache_ttl: int = 604800  # 1 week
-    
-    
-    # Logging configuration
-    logging_level: str = "DEBUG"
-    debug_mode: bool = True
-    log_file: Optional[str] = None
-    
-    def __post_init__(self):
-        """Validate configuration."""
+    A container for all library configuration settings.
+    Do not instantiate this class directly. Instead, import and use the global `config` object.
+    """
+    def __init__(self):
+        # Default settings are defined here as instance attributes
+        self.base_url: str = "https://api.usaspending.gov/api/v2"
+        self.user_agent: str = "usaspendingapi-python/0.1.0"
+        self.timeout: int = 30
+        self.max_retries: int = 3
+        self.retry_delay: float = 1.0
+        self.retry_backoff: float = 2.0
+        self.rate_limit_calls: int = 30
+        self.rate_limit_period: int = 1
+
+        # Caching via cachier
+        self.cache_enabled: bool = True
+        self.cache_backend: str = 'pickle' # Default file-based backend for cachier
+        self.cache_dir: str = ".usaspending_cache"
+        self.cache_ttl: timedelta = timedelta(weeks=1)
+
+        # Logging configuration
+        self.logging_level: str = "DEBUG"
+        self.debug_mode: bool = True
+        self.log_file: Optional[str] = None
+
+        # Apply the initial default settings when the object is created
+        self._apply_cachier_settings()
+
+    def configure(self, **kwargs):
+        """
+        Updates configuration settings and applies them across the library.
+
+        This is the primary method for users to modify the library's behavior.
+        Any keyword argument passed will overwrite the existing configuration value.
+
+        Args:
+            **kwargs: Configuration keys and their new values.
+        
+        Raises:
+            ValueError: If any provided configuration value is invalid.
+        """
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if key == 'cache_ttl' and isinstance(value, (int, float)):
+                    self.cache_ttl = timedelta(seconds=value)
+                else:
+                    setattr(self, key, value)
+            else:
+                logger.warning(f"Warning: Unknown configuration key '{key}' was ignored.")
+
+        self.validate()
+        self._apply_cachier_settings()
+
+    def _apply_cachier_settings(self):
+        """Applies the current caching settings to the cachier library."""
+        if self.cache_enabled:
+            if self.cache_backend == 'file':
+                cache_backend = 'pickle'  # cachier uses 'pickle' for file caching
+            else:
+                cache_backend = self.cache_backend
+            cachier.set_global_params(
+                stale_after=self.cache_ttl,
+                cache_dir=self.cache_dir,
+                backend=cache_backend
+            )
+            cachier.enable_caching()
+        else:
+            cachier.disable_caching()
+
+    def _apply_logging_settings(self):
+        """Applies the current logging settings to the logger."""
+        # This is the logic moved from your client file
+        USASpendingLogger.configure(
+            level=self.logging_level,
+            debug_mode=self.debug_mode,
+            log_file=self.log_file,
+        )
+
+    def validate(self) -> None:
+        """Validate the current configuration values."""
         if self.timeout <= 0:
-            raise ValueError("timeout must be positive")
+            raise ConfigurationError("timeout must be positive")
         if self.max_retries < 0:
-            raise ValueError("max_retries must be non-negative")
+            raise ConfigurationError("max_retries must be non-negative")
         if self.rate_limit_calls <= 0:
-            raise ValueError("rate_limit_calls must be positive")
-        if self.logging_level.upper() not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
-            raise ValueError("logging_level must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL")
+            raise ConfigurationError("rate_limit_calls must be positive")
+        
+        valid_log_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        if self.logging_level.upper() not in valid_log_levels:
+            raise ConfigurationError(f"logging_level must be one of: {valid_log_levels}")
+        
+        valid_backends = {'file', 'memory'}
+        if self.cache_enabled and (self.cache_backend not in valid_backends):
+            raise ConfigurationError(f"cache_backend must be one of: {valid_backends}")
+
+# Global configuration object
+# This is the single instance that should be used throughout the library
+config = _Config()
+
 
 # In src/usaspendingapi/config.py
 

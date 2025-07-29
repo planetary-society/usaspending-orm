@@ -7,8 +7,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from usaspending.client import USASpending
-from usaspending.config import Config
 from usaspending.exceptions import ValidationError, APIError
 from usaspending.models import Award
 from usaspending.queries.awards_search import AwardsSearch

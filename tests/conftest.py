@@ -1,14 +1,45 @@
 """Shared test fixtures for USASpending API tests."""
 
 import json
+import copy
 import pytest
 from unittest.mock import Mock
 from pathlib import Path
 
-from usaspending.client import USASpending
-from usaspending.config import Config
 from tests.mocks import MockUSASpendingClient
+from usaspending.config import config
 
+
+@pytest.fixture(autouse=True)
+def default_test_config():
+    """
+    This fixture automatically sets the baseline configuration for all tests.
+    It runs before any other test-specific fixture.
+    """
+    config.configure(
+        cache_enabled=False,
+        max_retries=0,
+        timeout=0.01,
+        retry_delay=0.01,
+        retry_backoff=0.01,
+        rate_limit_calls=10000
+    )
+
+@pytest.fixture
+def client_config():
+    """
+    This fixture provides the `config.configure` function to a test,
+    ensuring that the original configuration is restored after the test completes.
+    """
+    # 1. Save a copy of the config object's state dictionary
+    original_config_vars = copy.deepcopy(vars(config))
+
+    # 2. Yield the configure function to the test for modification
+    yield config.configure
+
+    # 3. Teardown: Restore the original state using the public `configure()` method
+    # Unpacking the saved dictionary as keyword arguments is the key.
+    config.configure(**original_config_vars)
 
 @pytest.fixture
 def mock_usa_client():
@@ -27,7 +58,8 @@ def mock_usa_client():
             results = list(mock_usa_client.awards.search().with_award_types("A"))
             assert len(results) == 1
     """
-    return MockUSASpendingClient()
+    client = MockUSASpendingClient()
+    return client
 
 
 @pytest.fixture
