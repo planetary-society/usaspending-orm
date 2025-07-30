@@ -311,24 +311,24 @@ class TestIDVWithRealFixtureData:
         idv = IDV(idv_fixture_data, mock_usa_client)
         
         # Test basic properties
-        assert idv.id == 169042208
-        assert idv.piid == "80JSC019C0012"
-        assert idv.category == "idv"
-        assert idv.type == "IDV_B_B"
+        assert idv.id == idv_fixture_data["id"]
+        assert idv.piid == idv_fixture_data["piid"]
+        assert idv.category == idv_fixture_data["category"]
+        assert idv.type == idv_fixture_data["type"]
         
         # Test IDV-specific properties
-        assert idv.base_and_all_options == 10489314619.0
+        assert idv.base_and_all_options == idv_fixture_data["base_and_all_options"]
         assert idv.contract_award_type is None  # Not present in this fixture
         
         # Test classification data
         assert idv.latest_transaction_contract_data is not None
-        assert idv.latest_transaction_contract_data["idv_type_description"] == "IDC"
-        assert idv.latest_transaction_contract_data["solicitation_identifier"] == "80JSC018R0014"
+        assert idv.latest_transaction_contract_data["idv_type_description"] == idv_fixture_data["latest_transaction_contract_data"]["idv_type_description"]
+        assert idv.latest_transaction_contract_data["solicitation_identifier"] == idv_fixture_data["latest_transaction_contract_data"]["solicitation_identifier"]
         
         # Test hierarchy data
         assert idv.psc_hierarchy is not None
-        assert idv.psc_hierarchy["midtier_code"]["code"] == "15"
-        assert idv.naics_hierarchy["base_code"]["code"] == "541715"
+        assert idv.psc_hierarchy["midtier_code"]["code"] == idv_fixture_data["psc_hierarchy"]["midtier_code"]["code"]
+        assert idv.naics_hierarchy["base_code"]["code"] == idv_fixture_data["naics_hierarchy"]["base_code"]["code"]
         
         # Test that IDV has no place of performance (all values are null)
         assert idv.place_of_performance is None

@@ -214,7 +214,7 @@ class TestContractSearchResultsAssignment:
         
         # Test 1: subaward_count (not in search results, present in contract.json)
         subaward_count = award.subaward_count
-        assert subaward_count == 100  # Value from contract.json
+        assert subaward_count == contract_fixture_data["subaward_count"]
         award._fetch_details.assert_called_once()
         assert award._details_fetched
         
@@ -223,7 +223,7 @@ class TestContractSearchResultsAssignment:
         
         # Test 2: total_subaward_amount (should not trigger fetch again)
         total_subaward_amount = award.total_subaward_amount
-        assert total_subaward_amount == 90674097.94  # Value from contract.json
+        assert total_subaward_amount == contract_fixture_data["total_subaward_amount"]
         award._fetch_details.assert_not_called()  # Should not fetch again
         
         # Test 3: date_signed (should not trigger fetch again)
@@ -236,7 +236,7 @@ class TestContractSearchResultsAssignment:
         executive_details = award.executive_details
         assert executive_details is not None
         assert "officers" in executive_details
-        assert len(executive_details["officers"]) == 5
+        assert len(executive_details["officers"]) == len(contract_fixture_data["executive_details"]["officers"])
         award._fetch_details.assert_not_called()  # Should not fetch again
 
 
@@ -430,7 +430,7 @@ class TestGrantsSearchResultsAssignment:
         
         # Test 1: subaward_count (not in search results, present in grant.json)
         subaward_count = award.subaward_count
-        assert subaward_count == 99  # Value from grant.json
+        assert subaward_count == grant_fixture_data["subaward_count"]
         award._fetch_details.assert_called_once()
         assert award._details_fetched
         
@@ -439,7 +439,7 @@ class TestGrantsSearchResultsAssignment:
         
         # Test 2: total_subaward_amount (should not trigger fetch again)
         total_subaward_amount = award.total_subaward_amount
-        assert total_subaward_amount == 11231619.45  # Value from grant.json
+        assert total_subaward_amount == grant_fixture_data["total_subaward_amount"]
         award._fetch_details.assert_not_called()  # Should not fetch again
         
         # Test 3: executive_details (complex nested object)
@@ -666,7 +666,7 @@ class TestIDVSearchResultsAssignment:
         
         # Test 1: id (internal database ID, not in search results)
         internal_id = award.id
-        assert internal_id == 169042208  # Value from idv.json
+        assert internal_id == idv_fixture_data["id"]
         award._fetch_details.assert_called_once()
         assert award._details_fetched
         
@@ -675,22 +675,22 @@ class TestIDVSearchResultsAssignment:
         
         # Test 2: category (should not trigger fetch again)
         category = award.category
-        assert category == "idv"  # Value from idv.json
+        assert category == idv_fixture_data["category"]
         award._fetch_details.assert_not_called()  # Should not fetch again
         
         # Test 3: type (should not trigger fetch again)
         award_type = award.type
-        assert award_type == "IDV_B_B"  # Value from idv.json
+        assert award_type == idv_fixture_data["type"]
         award._fetch_details.assert_not_called()  # Should not fetch again
         
         # Test 4: subaward_count (should not trigger fetch again)
         subaward_count = award.subaward_count
-        assert subaward_count == 3029  # Value from idv.json
+        assert subaward_count == idv_fixture_data["subaward_count"]
         award._fetch_details.assert_not_called()  # Should not fetch again
         
         # Test 5: total_subaward_amount (should not trigger fetch again)
         total_subaward_amount = award.total_subaward_amount
-        assert total_subaward_amount == 10845840904.67  # Value from idv.json
+        assert total_subaward_amount == idv_fixture_data["total_subaward_amount"]
         award._fetch_details.assert_not_called()  # Should not fetch again
         
         # Test 6: date_signed (should not trigger fetch again)

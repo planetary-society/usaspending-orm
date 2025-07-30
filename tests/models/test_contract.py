@@ -293,20 +293,20 @@ class TestContractWithRealFixtureData:
         contract = Contract(contract_fixture_data, mock_usa_client)
         
         # Test basic properties
-        assert contract.id == 111952974
-        assert contract.piid == "80GSFC18C0008"
-        assert contract.category == "contract"
-        assert contract.type == "D"
+        assert contract.id == contract_fixture_data["id"]
+        assert contract.piid == contract_fixture_data["piid"]
+        assert contract.category == contract_fixture_data["category"]
+        assert contract.type == contract_fixture_data["type"]
         
         # Test contract-specific properties
-        assert contract.base_exercised_options == 168657782.95
-        assert contract.base_and_all_options == 168657782.95
+        assert contract.base_exercised_options == contract_fixture_data["base_exercised_options"]
+        assert contract.base_and_all_options == contract_fixture_data["base_and_all_options"]
         
         # Test classification data
         assert contract.latest_transaction_contract_data is not None
-        assert contract.latest_transaction_contract_data["solicitation_identifier"] == "NNH16ZDA005O"
+        assert contract.latest_transaction_contract_data["solicitation_identifier"] == contract_fixture_data["latest_transaction_contract_data"]["solicitation_identifier"]
         
         # Test hierarchy data
         assert contract.psc_hierarchy is not None
-        assert contract.psc_hierarchy["toptier_code"]["code"] == "A"
-        assert contract.naics_hierarchy["base_code"]["code"] == "541713"
+        assert contract.psc_hierarchy["toptier_code"]["code"] == contract_fixture_data["psc_hierarchy"]["toptier_code"]["code"]
+        assert contract.naics_hierarchy["base_code"]["code"] == contract_fixture_data["naics_hierarchy"]["base_code"]["code"]

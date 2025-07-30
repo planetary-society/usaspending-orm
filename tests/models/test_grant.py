@@ -337,22 +337,22 @@ class TestGrantWithRealFixtureData:
         grant = Grant(grant_fixture_data, mock_usa_client)
         
         # Test basic properties
-        assert grant.id == 89948049
-        assert grant.fain == "NNM11AA01A"
-        assert grant.uri is None
-        assert grant.category == "grant"
-        assert grant.type == "05"
+        assert grant.id == grant_fixture_data["id"]
+        assert grant.fain == grant_fixture_data["fain"]
+        assert grant.uri == grant_fixture_data["uri"]
+        assert grant.category == grant_fixture_data["category"]
+        assert grant.type == grant_fixture_data["type"]
         
         # Test grant-specific properties
-        assert grant.record_type == 2
-        assert grant.non_federal_funding == 0.0
-        assert grant.total_funding == 156725919.62
-        assert grant.transaction_obligated_amount == 83852595.67
+        assert grant.record_type == grant_fixture_data["record_type"]
+        assert grant.non_federal_funding == grant_fixture_data["non_federal_funding"]
+        assert grant.total_funding == grant_fixture_data["total_funding"]
+        assert grant.transaction_obligated_amount == grant_fixture_data["transaction_obligated_amount"]
         
         # Test CFDA info
-        assert len(grant.cfda_info) == 2
-        assert grant.cfda_info[0]["cfda_number"] == "43.008"
-        assert grant.cfda_info[1]["cfda_number"] == "43.001"
+        assert len(grant.cfda_info) == len(grant_fixture_data["cfda_info"])
+        assert grant.cfda_info[0]["cfda_number"] == grant_fixture_data["cfda_info"][0]["cfda_number"]
+        assert grant.cfda_info[1]["cfda_number"] == grant_fixture_data["cfda_info"][1]["cfda_number"]
         
         # Test funding opportunity
         assert grant.funding_opportunity is not None
