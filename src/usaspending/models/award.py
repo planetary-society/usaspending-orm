@@ -9,7 +9,6 @@ from datetime import datetime
 from .lazy_record import LazyRecord
 from .recipient import Recipient
 from .location import Location
-from .transaction import Transaction
 from .period_of_performance import PeriodOfPerformance
 from .agency import Agency
 from ..exceptions import ValidationError

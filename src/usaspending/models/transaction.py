@@ -1,9 +1,8 @@
 from .base_model import BaseModel
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, Any, Optional
 from ..utils.formatter import to_float, smart_sentence_case, to_date
 
-from datetime import datetime
 
 @dataclass
 class Transaction(BaseModel):
