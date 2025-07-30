@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 import time
-from datetime import timedelta
 from typing import Optional, Dict, Any, TYPE_CHECKING
 from urllib.parse import urljoin
 

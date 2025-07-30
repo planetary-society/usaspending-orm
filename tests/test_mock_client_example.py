@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from usaspending.exceptions import APIError, ValidationError
+from usaspending.exceptions import APIError
 from usaspending.models import Award
-from usaspending.queries.filters import Location
 
 
 class TestMockClientExamples:

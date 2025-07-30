@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import Mock
 
 from usaspending.models.award_factory import create_award
 from usaspending.models.award import Award

@@ -30,12 +30,8 @@ from usaspending.queries.filters import (
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
 )
-
-logger = USASpendingLogger.get_logger(__name__)
-
 # Import award type codes from config
 # These are defined by USASpending.gov and represent different categories of awards
-
 from ..config import (
     CONTRACT_CODES,
     IDV_CODES,
@@ -45,6 +41,8 @@ from ..config import (
     OTHER_CODES,
     AWARD_TYPE_GROUPS
 )
+
+logger = USASpendingLogger.get_logger(__name__)
 
 class AwardsSearch(QueryBuilder["Award"]):
     """

@@ -1,7 +1,7 @@
 """Recipient search query builder."""
 
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional, TYPE_CHECKING
 
 from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger

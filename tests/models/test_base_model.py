@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import Mock
 
-from usaspending.models.base_model import BaseModel, ClientAwareModel
+from usaspending.models.base_model import BaseModel
 
 
 class TestBaseModelGetValue:
@@ -86,7 +85,7 @@ class TestBaseModelGetValue:
         
         # False value should be returned
         result = model.get_value(["key3","key7"])
-        assert result == False
+        assert not result
         
         # Default only applies to missing or "None" values:
         data = {"key2": None}

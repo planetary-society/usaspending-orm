@@ -6,8 +6,7 @@ import json
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-from unittest.mock import Mock
+from typing import Any, Dict, List, Optional
 
 from usaspending.client import USASpending
 from usaspending.config import config

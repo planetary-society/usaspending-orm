@@ -1,11 +1,8 @@
 """Test 400 Bad Request error handling with detail property."""
 
-from unittest.mock import Mock, patch
 import pytest
 import logging
 
-from usaspending.client import USASpending
-from usaspending.config import config
 from usaspending.exceptions import APIError, HTTPError
 
 

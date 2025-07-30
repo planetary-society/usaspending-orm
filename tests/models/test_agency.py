@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-from unittest.mock import Mock
 
 from usaspending.models.agency import Agency, AgencyTier
 

@@ -151,7 +151,7 @@ class TestTransaction:
         assert transaction.action_type is None
         assert transaction.action_type_description is None
         assert transaction.modification_number is None
-        assert transaction.award_description is ''
+        assert transaction.award_description == ''
         assert transaction.federal_action_obligation is None
         assert transaction.face_value_loan_guarantee is None
         assert transaction.original_loan_subsidy_cost is None

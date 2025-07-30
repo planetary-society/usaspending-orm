@@ -2,14 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Iterator, List, Dict, Any, Optional, TypeVar, Generic, TYPE_CHECKING, Union
 
 # Import exceptions for use by all query builders
-from ..exceptions import (
-    USASpendingError,
-    APIError,
-    HTTPError,
-    ValidationError,
-    RateLimitError,
-    ConfigurationError,
-)
 
 from .filters import BaseFilter
 
@@ -210,7 +202,6 @@ class QueryBuilder(ABC, Generic[T]):
                 
                 # Calculate which items to take from this page
                 page_start_idx = (page - 1) * self._page_size
-                page_end_idx = page_start_idx + len(results)
                 
                 # Determine overlap with requested slice
                 take_start = max(0, start - page_start_idx)

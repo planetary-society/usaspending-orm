@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-from unittest.mock import Mock
 
 from usaspending.models.contract import Contract
 from usaspending.models.award import Award
-from usaspending.exceptions import ValidationError
 
 
 class TestContractInitialization:

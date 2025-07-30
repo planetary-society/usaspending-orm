@@ -4,15 +4,12 @@ from __future__ import annotations
 
 import random
 import time
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import Any, Callable, Optional
 
 import requests
 
-if TYPE_CHECKING:
-    from ..config import Config
-
 from ..config import config
-from ..exceptions import APIError, HTTPError, RateLimitError
+from ..exceptions import HTTPError, RateLimitError
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)

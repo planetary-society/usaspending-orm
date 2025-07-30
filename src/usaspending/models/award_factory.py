@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional, TYPE_CHECKING
 
 from ..config import (
     CONTRACT_CODES, IDV_CODES, GRANT_CODES, 
-    LOAN_CODES, DIRECT_PAYMENT_CODES, OTHER_CODES
+    LOAN_CODES
 )
 from ..exceptions import ValidationError
 

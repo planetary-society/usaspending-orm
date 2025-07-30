@@ -64,9 +64,9 @@ class Location(BaseModel):
 
     @property
     def formatted_address(self) -> Optional[str]:
-        lines: list[str] = [l for l in (self.address_line1,
-                                        self.address_line2,
-                                        self.address_line3) if l]
+        lines: list[str] = [line for line in (self.address_line1,
+                                               self.address_line2,
+                                               self.address_line3) if line]
         trailing = [p for p in (self.city, self.state_code, self.zip5) if p]
         if trailing:
             lines.append(", ".join(trailing))

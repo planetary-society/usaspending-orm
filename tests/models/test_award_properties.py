@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from usaspending.models.award import Award
 from usaspending.models.recipient import Recipient

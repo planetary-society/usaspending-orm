@@ -1,11 +1,10 @@
 """Tests for award resource implementation."""
 
 import pytest
-from unittest.mock import Mock
 
 from usaspending.resources import AwardResource
 from usaspending.models import Award, Recipient
-from usaspending.exceptions import ValidationError, APIError
+from usaspending.exceptions import ValidationError
 
 
 class TestAwardResource:
@@ -85,7 +84,7 @@ class TestAwardResource:
         """Test Award model initialization without client parameter."""
         
         with pytest.raises(TypeError):
-            award = Award(award_fixture_data)
+            Award(award_fixture_data)
     
     def test_award_model_properties_from_fixture(self, award_fixture_data, mock_usa_client):
         """Test that Award model properties work with fixture data."""

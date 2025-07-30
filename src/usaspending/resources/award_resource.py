@@ -1,10 +1,9 @@
 """Award resource implementation."""
 
 from __future__ import annotations
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from .base_resource import BaseResource
-from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:

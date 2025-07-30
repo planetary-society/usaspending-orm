@@ -19,6 +19,10 @@ from .period_of_performance import PeriodOfPerformance
 from .award_factory import create_award
 
 __all__ = [
+    # Base classes
+    "BaseModel",
+    "ClientAwareModel", 
+    "LazyRecord",
 
     # Core models
     "Award",

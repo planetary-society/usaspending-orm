@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, TYPE_CHECKING, Optional, Iterator
+from typing import Any, Dict, TYPE_CHECKING, Iterator
 from datetime import datetime
 
 from ..exceptions import ValidationError

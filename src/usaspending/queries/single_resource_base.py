@@ -2,7 +2,7 @@ from ..exceptions import ValidationError
 from ..client import USASpending
 from typing import Any
 from abc import ABC, abstractmethod
-from ..logging_config import USASpendingLogger, log_query_execution
+from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
     

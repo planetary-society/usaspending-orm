@@ -1,4 +1,4 @@
-from typing import List, Dict, List, Any, Optional, Set
+from typing import List, Any, Optional, Set
 from datetime import datetime
 import re
 
@@ -30,7 +30,7 @@ def to_date(date_string: str) -> Optional[datetime]:
 def round_to_millions(amount: float) -> str:
     """Format money amount with commas and 2 decimal places, display as millions or billions based on the amount."""
     if amount is None:
-        return format_money(amount)
+        return "$0.00"
     if amount >= 1_000_000_000:
         return "${:,.1f} billion".format(amount / 1_000_000_000)
     elif amount >= 10_000_000:
@@ -185,7 +185,7 @@ def smart_sentence_case(
         return processed_text
 
     except Exception as e:
-        logging.error(f"Error processing text: '{text[:50]}...' - {e}", exc_info=True)
+        logger.error(f"Error processing text: '{text[:50]}...' - {e}", exc_info=True)
         # Decide on fallback behavior: return original text or empty string?
         # Returning original might be safer if processing fails unexpectedly.
         return text # Fallback to original text on error

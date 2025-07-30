@@ -1,10 +1,9 @@
 """Tests for the RetryHandler class."""
 
 from __future__ import annotations
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 import requests
 from usaspending.config import config
-from usaspending.exceptions import APIError, HTTPError, RateLimitError
 from usaspending.utils.retry import RetryHandler
 
 

@@ -3,7 +3,6 @@
 import json
 import copy
 import pytest
-from unittest.mock import Mock
 from pathlib import Path
 
 from tests.mocks import MockUSASpendingClient

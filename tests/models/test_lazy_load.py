@@ -42,7 +42,7 @@ class TestLazyRecord:
         # Now ensure that an empty string field is not considered "missing"
         # i.e. only None or missing fields should trigger a fetch
         assert test_lazy_record._data["empty_string_field"] == ""
-        result_empty = test_lazy_record._lazy_get("empty_string_field")
+        test_lazy_record._lazy_get("empty_string_field")
         #assert result_empty == ""
         
         test_lazy_record._ensure_details.assert_not_called()

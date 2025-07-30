@@ -15,8 +15,6 @@ from usaspending.queries.filters import (
     KeywordsFilter,
     Location,
     LocationFilter,
-    LocationScope,
-    LocationScopeFilter,
     SimpleListFilter,
     TieredCodeFilter,
     TimePeriodFilter,
