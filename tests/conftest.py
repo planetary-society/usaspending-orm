@@ -88,6 +88,11 @@ def grant_fixture_data():
     return load_json_fixture("awards/grant.json")
 
 @pytest.fixture
+def loan_fixture_data():
+    """Load the loan fixture data."""
+    return load_json_fixture("awards/loan.json")
+
+@pytest.fixture
 def top_recipients_response():
     """Load the top recipients response fixture."""
     return load_json_fixture("top_recipients_response.json")

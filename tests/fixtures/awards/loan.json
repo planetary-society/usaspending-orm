@@ -1,0 +1,142 @@
+{
+  "id": 90860378,
+  "generated_unique_award_id": "ASST_NON_P268K115150_091",
+  "fain": "P268K115150",
+  "uri": null,
+  "category": "loans",
+  "type": "07",
+  "type_description": null,
+  "description": "2010-2011 DL BASE RECORD",
+  "subaward_count": 0,
+  "total_subaward_amount": null,
+  "total_subsidy_cost": 0.0,
+  "total_loan_value": 717015404040.0,
+  "total_obligation": 0.0,
+  "date_signed": "2010-04-07",
+  "base_and_all_options": null,
+  "base_exercised_options": null,
+  "non_federal_funding": 0.0,
+  "total_funding": 0.0,
+  "total_account_outlay": 0,
+  "total_account_obligation": 0,
+  "account_outlays_by_defc": [],
+  "account_obligations_by_defc": [],
+  "record_type": 2,
+  "cfda_info": [
+    {
+      "applicant_eligibility": "The applicant must be a U.S. citizen, national, or person in the United States for other than a temporary purpose. A student borrower must be enrolled or accepted for enrollment in a degree or certificate program on at least a half-time basis as an undergraduate, graduate, or professional student at a participating postsecondary institution. An otherwise eligible student is eligible for loans during a single twelve-month period in which the student is enrolled in a non-degree/non-certificate course of study that the institution has determined is necessary in order for the student to enroll in a program leading to a degree or certificate. Under the Direct PLUS program, parents may borrow for dependent undergraduate students. Also, graduate and professional students are eligible to borrow PLUS Loans. Direct Unsubsidized and PLUS loans are available to eligible borrowers regardless of need. However, a financial needs test based on family income is required for an undergraduate student to receive a Direct Subsidized loan. A student that is presently enrolled at a participating institution must be maintaining satisfactory academic progress in the course of study that they are pursuing. The borrower may not owe a refund on any Title IV grant or be in default on any Title IV loan received for attendance at any institution. The borrower must also file a Statement of Registration compliance (Selective Service). ",
+      "beneficiary_eligibility": "Vocational, undergraduate, and graduate postsecondary school students and their parents.",
+      "cfda_federal_agency": "OFFICE OF FEDERAL STUDENT AID, EDUCATION, DEPARTMENT OF",
+      "cfda_number": "84.268",
+      "cfda_objectives": "To provide loan capital directly from the Federal government to vocational, undergraduate, and graduate postsecondary school students and their parents.",
+      "cfda_obligations": "(Direct Loans) FY 23$85,103,121,000.00; FY 24 est $91,560,354,000.00; FY 25 est $92,912,816,000.00; FY 22$83,507,645,000.00; FY 21$84,456,530,000.00; FY 20$88,446,619,000.00; FY 19$90,660,894,000.00; FY 18$95,864,248,000.00; FY 17$93,812,654,000.00; FY 16$95,462,059,000.00; - Figures represent Net Commitment Loan volume, without Consolidation.(Direct Loans) FY 23$40,784,748,000.00; FY 24 est $73,224,171,000.00; FY 25 est $41,464,355,000.00; FY 22$35,826,082,000.00; FY 21$19,964,715,000.00; FY 20$30,400,791,000.00; FY 19$39,892,538,000.00; FY 18$41,632,348,000.00; FY 17$48,762,128,000.00; FY 16$45,633,297,000.00; - (Figures represent Net Commitment Consolidation volume)",
+      "cfda_popular_name": "",
+      "cfda_title": "Federal Direct Student Loans",
+      "cfda_website": "http://www.ifap.ed.gov/.",
+      "federal_action_obligation_amount": 0.0,
+      "non_federal_funding_amount": 0.0,
+      "sam_website": "https://sam.gov/fal/0e7378d4aca84364b2ae95522c737394/view",
+      "total_funding_amount": 0.0
+    }
+  ],
+  "transaction_obligated_amount": null,
+  "funding_agency": null,
+  "awarding_agency": {
+    "id": 1068,
+    "has_agency_page": true,
+    "toptier_agency": {
+      "name": "Department of Education",
+      "code": "091",
+      "abbreviation": "ED",
+      "slug": "department-of-education"
+    },
+    "subtier_agency": {
+      "name": "Department of Education",
+      "code": "9100",
+      "abbreviation": "ED"
+    },
+    "office_agency_name": null
+  },
+  "period_of_performance": {
+    "start_date": "2010-01-01",
+    "end_date": "2015-12-31",
+    "last_modified_date": "2013-02-06"
+  },
+  "recipient": {
+    "recipient_hash": "229dc4f2-69f7-9fca-8f49-f6d54f13dbf4-R",
+    "recipient_name": "IOWA COLLEGE ACQUISITION CORP.",
+    "recipient_uei": "UVB3GENU4W45",
+    "recipient_unique_id": "078090388",
+    "parent_recipient_hash": null,
+    "parent_recipient_name": null,
+    "parent_recipient_uei": null,
+    "parent_recipient_unique_id": null,
+    "business_categories": [
+      "Category Business",
+      "Not Designated a Small Business"
+    ],
+    "location": {
+      "location_country_code": "USA",
+      "country_name": "UNITED STATES",
+      "state_code": "IA",
+      "state_name": "IOWA",
+      "city_name": "DAVENPORT",
+      "county_code": "163",
+      "county_name": "SCOTT",
+      "address_line1": "1801 E KIMBERLY RD STE 1",
+      "address_line2": null,
+      "address_line3": null,
+      "congressional_code": "01",
+      "zip4": "2095",
+      "zip5": "52807",
+      "foreign_postal_code": null,
+      "foreign_province": null
+    }
+  },
+  "executive_details": {
+    "officers": [
+      {
+        "name": null,
+        "amount": null
+      },
+      {
+        "name": null,
+        "amount": null
+      },
+      {
+        "name": null,
+        "amount": null
+      },
+      {
+        "name": null,
+        "amount": null
+      },
+      {
+        "name": null,
+        "amount": null
+      }
+    ]
+  },
+  "place_of_performance": {
+    "location_country_code": "USA",
+    "country_name": "UNITED STATES",
+    "county_code": "163",
+    "county_name": "SCOTT",
+    "city_name": "DAVENPORT",
+    "state_code": "IA",
+    "state_name": "IOWA",
+    "congressional_code": "01",
+    "zip4": "2095",
+    "zip5": "52807",
+    "address_line1": null,
+    "address_line2": null,
+    "address_line3": null,
+    "foreign_province": null,
+    "foreign_postal_code": null
+  },
+  "total_outlay": null,
+  "funding_opportunity": {
+    "number": null,
+    "goals": null
+  }
+}
