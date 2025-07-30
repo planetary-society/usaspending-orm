@@ -58,7 +58,7 @@ def create_award(data_or_id: Dict[str, Any] | str, client: Optional[USASpending]
         return Contract(data_or_id, client)
     elif award_type in IDV_CODES:
         return IDV(data_or_id, client)
-    elif award_type in GRANT_CODES or award_type in DIRECT_PAYMENT_CODES or award_type in OTHER_CODES:
+    elif award_type in GRANT_CODES:
         return Grant(data_or_id, client)  # Grants handle all assistance types
     elif award_type in LOAN_CODES:
         return Loan(data_or_id, client)
