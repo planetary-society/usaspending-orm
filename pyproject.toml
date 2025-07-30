@@ -3,7 +3,7 @@ name = "usaspending"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Casey Dreier",email = "cdreier@gmail.com"}
+    {name = "Casey Dreier",email = "casey.dreier@planetary.org"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +20,7 @@ packages = [{include = "usaspending", from = "src"}]
 [tool.poetry.group.test.dependencies]
 pytest = "^8.4.1"
 requests-mock = "^1.12.1"
+ruff = "^0.12.7"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
