@@ -5,8 +5,8 @@
 USASpending Python Wrapper is a Python client library for the USAspending.gov API, providing a modern, client-centric interface with query builders and automatic pagination.
 
 ## USASpending API Reference Documentation
-See `api-docs-links.md` for official endpoint documentation links
-You may also use contex7 MCP to access the API documentation for the `usaspendingapi` project.
+- See `api-docs-links.md` for official endpoint documentation links
+- Use **contex7 MCP** to access the API documentation for the usaspendingapi project.
 
 ## Architecture Principles
 
@@ -34,22 +34,28 @@ You may also use contex7 MCP to access the API documentation for the `usaspendin
 - Clean separation between resources and queries
 
 ### Models and Data Structures
+- Inspired by ActiveRecord and Django ORM structure
 - Data models in `models/` directory
 - Use composition for nested structures
-- Raw API data stored in internal `_data` attribute and exposed via raw() method in `BaseModel`
+- Raw API data stored in internal `_data` attribute and exposed via `raw()` method in `BaseModel`
 - Properties provide access to structured data
 - Models are lazy-loaded to avoid unnecessary API calls and to ensure access to full data set
-- Models can chain their associations (e.g. `award.transactions` to get all transactions for an award)
+- Properties use the `_lazy_get()` method to fetch data lazily for models inheriting from `LazyRecord`
+- Models can chain their associations as QueryBuilder objects for one-to-many associations (e.g. `award.transactions.all()`
+- Models load related one-to-one associations as related model objects (e.g. `award.recipient`)
 - Models provide a consistent API to underlying property names given the API's sometimes inconsistent naming conventions
 
 ## Code Style and Standards
 
 ### Python Guidelines
 - Follow PEP 8 strictly
-- Target Python 3.8+ for broad compatibility
+- Prefer simple, readable code
+- Don't over-engineer solutions! Implement the simplest solution that works
+  unless specifically required otherwise
+- Target Python 3.9+ for broad compatibility
 - Use descriptive variable names
 - Keep functions focused and single-purpose
-- Prefer composition over inheritance
+- Use ruff to check linting and formatting
 
 ### Type Hints
 - Use `from __future__ import annotations` for forward references
@@ -84,19 +90,19 @@ tests/
 ```
 
 ### Testing Principles
-- Use pytest for test framework and use pytest best practices
-- Always use common pytest mocks and fixtures in `tests/conftest.py` if relevant
+- Use pytest for test framework and implement pytest best practices
 - Use fixtures in `tests/fixtures/` for common test data
 - Use TDD (Test-Driven Development) approach
 - Aim for >80% test coverage
 - Mock API client using the `mock_usa_client()` method and other helps in `tests/mocks/`
+- Use helper methods to load fixtures and the mock client object in `tests/conftest.py`
+
 
 ## Implementation Patterns
 
 ### Configuration
-- Single `Config` dataclass with sensible defaults
+- Uses a global `config` object
 - No environment variables in library code
-- Configuration passed at client instantiation
 
 ### Resource Classes
 - Lazy-loaded via property descriptors
@@ -110,11 +116,13 @@ tests/
   - `_endpoint()`: API endpoint
   - `_build_payload()`: Request payload
   - `_transform_result()`: Result transformation
+  - `_clone()`: Return cloned instance
+  - `__iter__()`: Iterable interface
 - All filter methods return cloned instances
 
 ### Caching
-- Implemented using `cachier` library via `cachier` decorator
-- Supports file (default) and memory backendds
+- Implemented using `cachier` python library via `cachier` decorator
+- Supports file (default, via pickle) and memory backendds
 - Cache configurable via the global `config` object set in `src/usaspending/config.py`:
   - `cache_enabled`: Enable/disable caching (default: True)
   - `cache_ttl`: Time-to-live in seconds (default: 604800 = 1 week)
@@ -138,12 +146,12 @@ tests/
 6. Document in docstrings
 
 ### Code Review Checklist
-- [ ] Query builders use `_clone()`
 - [ ] All methods have type hints
 - [ ] Docstrings follow Google style
 - [ ] Proper exception handling
 - [ ] Pythonic code style
 - [ ] Simplicity and clarity are paramount
+- [ ] Passes `ruff` linting and formatting check
 
 ## Error Handling
 
@@ -181,3 +189,17 @@ tests/
 - Alpha releases initially
 - Document all changes
 - Migration guides for major versions
+
+## 🧠 Claude Code: Special Instructions
+
+- **This file is committed to the repository and so should never include any secrets.**
+- **Always read this file, `README.md` before making changes.**
+- **Cross-reference:** Also read `api-docs-links.md` for detailed contributor guidelines.
+- **When adding new features, update all relevant docs, tests, and requirements files.**
+- **All code must be Python 3.9+ compatible.**
+- **If you are stuck, suggest opening a new chat with the latest context.**
+- **When in doubt, prefer explicit, readable code over cleverness.**
+- **Never use non-ASCII characters or the em dash.**
+- **If adding new dependencies, use context7 MCP to get latest versions.**
+- **Use per-file or per-line ignores for ruff only when justified.**
+- **All new code must have full type annotations and Google-style docstrings.**
