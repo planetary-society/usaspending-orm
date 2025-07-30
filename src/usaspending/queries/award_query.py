@@ -29,6 +29,6 @@ class AwardQuery(SingleResourceBase):
         # Make API request
         response = self._get_resource(award_id)
         
-        # Create model instance
-        from ..models.award import Award
-        return Award(response, client=self._client)
+        # Create model instance using factory
+        from ..models.award_factory import create_award
+        return create_award(response, client=self._client)

@@ -5,7 +5,12 @@ from typing import Any, Optional, Union
 
 from usaspending.client import USASpending
 from usaspending.exceptions import ValidationError
+from usaspending.models.award_factory import create_award
 from usaspending.models import Award
+from usaspending.models.contract import Contract
+from usaspending.models.grant import Grant
+from usaspending.models.idv import IDV
+from usaspending.models.loan import Loan
 from usaspending.queries.query_builder import QueryBuilder
 from usaspending.logging_config import USASpendingLogger
 from usaspending.queries.filters import (
@@ -89,7 +94,7 @@ class AwardsSearch(QueryBuilder["Award"]):
 
     def _transform_result(self, result: dict[str, Any]) -> Award:
         """Transforms a single API result item into an Award model."""
-        return Award(result, self._client)
+        return create_award(result, self._client)
 
     def _get_award_type_codes(self) -> set[str]:
         """Extract award type codes from current filters."""
@@ -211,108 +216,28 @@ class AwardsSearch(QueryBuilder["Award"]):
         - Loans (07, 08): Include loan-specific fields
         - Grants/Assistance (02, 03, 04, 05, 06, 09, 10, 11, -1): Include assistance fields
         """
-        # Base fields common to all award types
-        base_fields = [
-            "Award ID",
-            "Recipient Name", 
-            "Recipent DUNS Number",
-            "recipient_id",
-            "Awarding Agency",
-            "Awarding Agency Code",
-            "Awarding Sub Agency", 
-            "Awarding Sub Agency Code",
-            "Funding Agency",
-            "Funding Agency Code",
-            "Funding Sub Agency",
-            "Funding Sub Agency Code",
-            "Description",
-            "Last Modified Date",
-            "Base Obligation Date",
-            "prime_award_recipient_id",
-            "generated_internal_id",
-            "def_codes",
-            "COVID-19 Obligations",
-            "COVID-19 Outlays", 
-            "Infrastructure Obligations",
-            "Infrastructure Outlays",
-            "Recipient UEI",
-            "Recipient Location",
-            "Primary Place of Performance"
-        ]
+        # Start with base fields from Award model
+        base_fields = Award.SEARCH_FIELDS.copy()
         
         # Get award type codes from filters
         award_types = self._get_award_type_codes()
         additional_fields = []
         
-        # Define field sets for each category using the config mapping
-        field_sets = {
-            "contracts": [
-                "Start Date",
-                "End Date", 
-                "Award Amount",
-                "Total Outlays",
-                "Contract Award Type",
-                "NAICS",
-                "PSC"
-            ],
-            "idvs": [
-                "Start Date",
-                "Award Amount", 
-                "Total Outlays",
-                "Contract Award Type",
-                "Last Date to Order",
-                "NAICS",
-                "PSC"
-            ],
-            "loans": [
-                "Issued Date",
-                "Loan Value",
-                "Subsidy Cost", 
-                "SAI Number",
-                "CFDA Number",
-                "Assistance Listings",
-                "primary_assistance_listing"
-            ],
-            # All assistance types share the same fields
-            "grants": [
-                "Start Date",
-                "End Date",
-                "Award Amount",
-                "Total Outlays",
-                "Award Type",
-                "SAI Number", 
-                "CFDA Number",
-                "Assistance Listings",
-                "primary_assistance_listing"
-            ],
-            "direct_payments": [
-                "Start Date",
-                "End Date",
-                "Award Amount",
-                "Total Outlays",
-                "Award Type",
-                "SAI Number", 
-                "CFDA Number",
-                "Assistance Listings",
-                "primary_assistance_listing"
-            ],
-            "other_assistance": [
-                "Start Date",
-                "End Date",
-                "Award Amount",
-                "Total Outlays",
-                "Award Type",
-                "SAI Number", 
-                "CFDA Number",
-                "Assistance Listings",
-                "primary_assistance_listing"
-            ]
-        }
-        
-        # Check each category and add appropriate fields
+        # Check each category and add appropriate fields based on model
         for category_name, codes in AWARD_TYPE_GROUPS.items():
             if award_types & frozenset(codes.keys()):
-                additional_fields.extend(field_sets[category_name])
+                if category_name == "contracts":
+                    # Use Contract.SEARCH_FIELDS but exclude base fields
+                    additional_fields.extend([f for f in Contract.SEARCH_FIELDS if f not in base_fields])
+                elif category_name == "idvs":
+                    # Use IDV.SEARCH_FIELDS but exclude base fields
+                    additional_fields.extend([f for f in IDV.SEARCH_FIELDS if f not in base_fields])
+                elif category_name == "loans":
+                    # Use Loan.SEARCH_FIELDS but exclude base fields
+                    additional_fields.extend([f for f in Loan.SEARCH_FIELDS if f not in base_fields])
+                elif category_name in ["grants", "direct_payments", "other_assistance"]:
+                    # Use Grant.SEARCH_FIELDS but exclude base fields
+                    additional_fields.extend([f for f in Grant.SEARCH_FIELDS if f not in base_fields])
         
         # Combine base fields with additional fields, removing duplicates
         all_fields = base_fields + additional_fields

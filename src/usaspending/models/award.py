@@ -23,6 +23,35 @@ if TYPE_CHECKING:
 
 class Award(LazyRecord):
     """Rich wrapper around a USAspending award record."""
+    
+    # Base fields common to all award types
+    SEARCH_FIELDS = [
+        "Award ID",
+        "Recipient Name", 
+        "Recipent DUNS Number",
+        "recipient_id",
+        "Awarding Agency",
+        "Awarding Agency Code",
+        "Awarding Sub Agency", 
+        "Awarding Sub Agency Code",
+        "Funding Agency",
+        "Funding Agency Code",
+        "Funding Sub Agency",
+        "Funding Sub Agency Code",
+        "Description",
+        "Last Modified Date",
+        "Base Obligation Date",
+        "prime_award_recipient_id",
+        "generated_internal_id",
+        "def_codes",
+        "COVID-19 Obligations",
+        "COVID-19 Outlays", 
+        "Infrastructure Obligations",
+        "Infrastructure Outlays",
+        "Recipient UEI",
+        "Recipient Location",
+        "Primary Place of Performance"
+    ]
 
     def __init__(self, data_or_id: Dict[str, Any] | str, client: Optional[USASpending] = None):
         """Initialize Award instance.
@@ -47,7 +76,21 @@ class Award(LazyRecord):
         try:
             # Use the awards resource to get full award data
             full_award = self._client.awards.get(award_id)
-            return full_award.raw
+            full_data = full_award.raw
+            
+            # If we're a base Award class and now have type information,
+            # convert to appropriate subclass
+            if full_data and self.__class__ == Award:
+                from .award_factory import create_award
+                new_instance = create_award(full_data, self._client)
+                if new_instance.__class__ != Award:
+                    # Copy state from new instance to self
+                    self.__class__ = new_instance.__class__
+                    # Merge the data
+                    self._data.update(full_data)
+                    return full_data
+            
+            return full_data
         except Exception:
             # If fetch fails, return None to avoid breaking the application
             return None
@@ -68,33 +111,8 @@ class Award(LazyRecord):
         """USASpending-generated unique award identifier."""
         return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
-    @property
-    def piid(self) -> Optional[str]:
-        """
-        Procurement Instrument Identifier - A unique identifier assigned to a federal
-        contract, purchase order, basic ordering agreement, basic agreement, and
-        blanket purchase agreement. It is used to track the contract, and any
-        modifications or transactions related to it. After October 2017, it is
-        between 13 and 17 digits, both letters and numbers.
-        """
-        return self._lazy_get("piid")
 
-    @property
-    def fain(self) -> Optional[str]:
-        """
-        An identification code assigned to each financial assistance award tracking
-        purposes. The FAIN is tied to that award (and all future modifications to that
-        award) throughout the award's life. Each FAIN is assigned by an agency. Within
-        an agency, FAIN are unique: each new award must be issued a new FAIN. FAIN
-        stands for Federal Award Identification Number, though the digits are letters,
-        not numbers.
-        """
-        return self._lazy_get("fain")
 
-    @property
-    def uri(self) -> Optional[str]:
-        """The uri of the award"""
-        return self._lazy_get("uri")
 
     @property
     def parent_award(self) -> Optional[Award]:
@@ -157,15 +175,7 @@ class Award(LazyRecord):
         """Base obligation date for the award."""
         return to_date(self.get_value(["base_obligation_date", "Base Obligation Date"], default=None))
 
-    @property
-    def base_exercised_options(self) -> Optional[float]:
-        """The sum of the base_exercised_options_val from associated transactions"""
-        return to_float(self._lazy_get("base_exercised_options", default=None))
 
-    @property
-    def base_and_all_options(self) -> Optional[float]:
-        """The sum of the base_and_all_options_value from associated transactions"""
-        return to_float(self._lazy_get("base_and_all_options", default=None))
 
     @property
     def total_account_outlay(self) -> Optional[float]:
@@ -192,117 +202,29 @@ class Award(LazyRecord):
         """Obligations broken down by Disaster Emergency Fund Code (DEFC)."""
         return self._lazy_get("account_obligations_by_defc", default=[])
 
-    @property
-    def total_subsidy_cost(self) -> Optional[float]:
-        """The total of the original_loan_subsidy_cost from associated transactions"""
-        return to_float(self._lazy_get("total_subsidy_cost", default=None))
 
-    @property
-    def total_loan_value(self) -> Optional[float]:
-        """The total of the face_value_loan_guarantee from associated transactions"""
-        return to_float(self._lazy_get("total_loan_value", default=None))
 
-    @property
-    def non_federal_funding(self) -> Optional[float]:
-        """A summation of this award's transactions' non-federal funding amount"""
-        return to_float(self._lazy_get("non_federal_funding", default=None))
 
-    @property
-    def total_funding(self) -> Optional[float]:
-        """A summation of this award's transactions' funding amount"""
-        return to_float(self._lazy_get("total_funding", default=None))
 
-    @property
-    def transaction_obligated_amount(self) -> Optional[float]:
-        """Transaction-level obligated amount."""
-        return to_float(self._lazy_get("transaction_obligated_amount", default=None))
 
-    @property
-    def record_type(self) -> Optional[int]:
-        """Grant record type identifier."""
-        return self._lazy_get("record_type")
 
-    @property
-    def cfda_info(self) -> List[Dict[str, Any]]:
-        """Catalog of Federal Domestic Assistance information for grants."""
-        return self.get_value(["cfda_info", "Assistance Listings"], default=[])
 
-    @property
-    def cfda_number(self) -> Optional[str]:
-        """Primary CFDA number for grants."""
-        return self.get_value(["cfda_number", "CFDA Number"])
 
-    @property
-    def primary_cfda_info(self) -> Optional[Dict[str, Any]]:
-        """Primary CFDA program information."""
-        return self.get_value(["primary_cfda_info", "primary_assistance_listing"])
 
-    @cached_property
-    def funding_opportunity(self) -> Optional[Dict[str, Any]]:
-        """Funding opportunity details for grants."""
-        return self._lazy_get("funding_opportunity")
 
-    @cached_property
-    def latest_transaction_contract_data(self) -> Optional[Dict[str, Any]]:
-        """Latest contract transaction data with procurement-specific details."""
-        return self._lazy_get("latest_transaction_contract_data")
 
-    @cached_property
-    def psc_hierarchy(self) -> Optional[Dict[str, Any]]:
-        """Product/Service Code (PSC) hierarchy information."""
-        return self._lazy_get("psc_hierarchy")
 
-    @cached_property
-    def naics_hierarchy(self) -> Optional[Dict[str, Any]]:
-        """North American Industry Classification System (NAICS) hierarchy."""
-        return self._lazy_get("naics_hierarchy")
 
     @cached_property
     def executive_details(self) -> Optional[Dict[str, Any]]:
         """Executive compensation details for the award recipient."""
         return self._lazy_get("executive_details")
 
-    @property
-    def sai_number(self) -> Optional[str]:
-        """System for Award Identification (SAI) number for grants."""
-        return self.get_value(["sai_number", "SAI Number"])
 
-    @property
-    def contract_award_type(self) -> Optional[str]:
-        """Contract award type description."""
-        return self.get_value(["contract_award_type", "Contract Award Type"])
 
-    @property
-    def naics_code(self) -> Optional[str]:
-        """NAICS industry classification code."""
-        naics_data = self.get_value(["naics", "NAICS"])
-        if isinstance(naics_data, dict):
-            return naics_data.get("code")
-        return None
 
-    @property
-    def naics_description(self) -> Optional[str]:
-        """NAICS industry classification description."""
-        naics_data = self.get_value(["naics", "NAICS"])
-        if isinstance(naics_data, dict):
-            return naics_data.get("description")
-        return None
 
-    @property
-    def psc_code(self) -> Optional[str]:
-        """Product/Service Code (PSC) for contracts."""
-        psc_data = self.get_value(["psc", "PSC"])
-        if isinstance(psc_data, dict):
-            return psc_data.get("code")
-        return None
 
-    @property
-    def psc_description(self) -> Optional[str]:
-        """Product/Service Code (PSC) description."""
-        psc_data = self.get_value(["psc", "PSC"])
-        if isinstance(psc_data, dict):
-            return psc_data.get("description")
-        return None
 
     @property
     def recipient_uei(self) -> Optional[str]:
