@@ -369,8 +369,15 @@ class Award(LazyRecord):
     @cached_property
     def place_of_performance(self) -> Optional[Location]:
         """Award place of performance location."""
-        data = self.get_value(['place_of_performance', 'Primary Place of Performance'])
-        return Location(data, self._client) if data else None
+        data = self._lazy_get('place_of_performance', 'Primary Place of Performance', default=None)
+        if not isinstance(data, dict) or not data:
+            return None
+        
+        # Check if all values in the dict are None/null (common for IDV awards)
+        if all(v is None for v in data.values()):
+            return None
+        
+        return Location(data, self._client)
 
     @cached_property
     def recipient(self) -> Optional[Recipient]:

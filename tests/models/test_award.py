@@ -503,8 +503,8 @@ class TestAwardPropertyCaching:
         assert award2.recipient is recipient2
 
 
-class TestAwardNewBasicProperties:
-    """Test newly added basic Award properties."""
+class TestAwardBasicProperties:
+    """Test common Award properties."""
     
     def test_id_property(self, mock_usa_client):
         """Test internal ID property."""
@@ -1049,18 +1049,8 @@ class TestAwardRealFixtureDataIntegration:
         assert award.psc_hierarchy["toptier_code"]["code"] == "A"
         assert award.naics_hierarchy["base_code"]["code"] == "541713"
     
-    def test_grant_fixture_new_properties(self, mock_usa_client):
+    def test_grant_fixture_new_properties(self, mock_usa_client, grant_fixture_data):
         """Test new properties work with grant fixture data."""
-        # Load grant fixture
-        import json
-        import os
-        
-        fixture_path = os.path.join(
-            os.path.dirname(__file__), 
-            '../fixtures/awards/grant.json'
-        )
-        with open(fixture_path, 'r') as f:
-            grant_data = json.load(f)
         
         # Set up mock response for lazy loading
         mock_usa_client.set_fixture_response(
@@ -1068,7 +1058,7 @@ class TestAwardRealFixtureDataIntegration:
             "awards/grant"
         )
         
-        award = Award(grant_data, mock_usa_client)
+        award = Award(grant_fixture_data, mock_usa_client)
         
         # Test grant-specific properties
         assert award.id == 89948049
@@ -1088,3 +1078,13 @@ class TestAwardRealFixtureDataIntegration:
         assert award.non_federal_funding == 0.0
         assert award.total_funding == 156725919.62
         assert award.transaction_obligated_amount == 83852595.67
+
+class TestIDVAwardProperties:
+    
+    def test_idv_has_no_place_of_performance(self, mock_usa_client, idv_fixture_data):
+        """Test that IDV awards do not have place_of_performance."""
+        award = Award(idv_fixture_data, mock_usa_client)
+        
+        # IDVs should not have place_of_performance
+        assert award.place_of_performance is None
+    
