@@ -1,0 +1,178 @@
+{
+  "category": "recipient",
+  "spending_level": "awards",
+  "limit": 20,
+  "page_metadata": {
+    "page": 1,
+    "next": 2,
+    "previous": null,
+    "hasNext": true,
+    "hasPrevious": false
+  },
+  "results": [
+    {
+      "amount": 13313681655.0,
+      "recipient_id": "3632dc26-45b8-9d0e-1128-63e866708c8f-['C']",
+      "name": "THE BOEING COMPANY",
+      "code": "126368257",
+      "uei": "SML4NN2CT556",
+      "total_outlays": 6396085994.85
+    },
+    {
+      "amount": 1752586588.68,
+      "recipient_id": "435aa33d-8ca5-7631-ec18-85dbb07c6fa1-['C']",
+      "name": "AMENTUM TECHNOLOGY, INC.",
+      "code": "007923014",
+      "uei": "H2RGSKWXKHQ5",
+      "total_outlays": 1284463310.29
+    },
+    {
+      "amount": 402180382.37,
+      "recipient_id": "78ec491d-7c2b-71fe-33cf-48692f533970-['C']",
+      "name": "TELEDYNE BROWN ENGINEERING, INC.",
+      "code": "113633189",
+      "uei": "FBRSJB6V4LW8",
+      "total_outlays": 256044971.16
+    },
+    {
+      "amount": 324736337.43,
+      "recipient_id": "ab6154d4-55f4-bacc-962f-e4c111812d7e-['C']",
+      "name": "BASTION TECHNOLOGIES, INC.",
+      "code": "074625364",
+      "uei": "DKYXDAHNYD36",
+      "total_outlays": 242250167.11
+    },
+    {
+      "amount": 169164463.8,
+      "recipient_id": "e1b55302-90bb-96ac-3428-ed567cfa9713-['C']",
+      "name": "RSI-QUANTITECH JV LLC",
+      "code": "117166990",
+      "uei": "WGPCPHF95RY6",
+      "total_outlays": 135094241.38
+    },
+    {
+      "amount": 166801968.02,
+      "recipient_id": "78b77c74-bfa8-da47-3898-97879670c1d8-['C', 'R']",
+      "name": "VICTORY SOLUTIONS, INC.",
+      "code": "142136600",
+      "uei": "GJP8ASXKB3X5",
+      "total_outlays": 91171308.04
+    },
+    {
+      "amount": 139582673.04,
+      "recipient_id": "d86df7af-f6c1-a07a-ccc4-ec74331bafc5-['C', 'R']",
+      "name": "CGI FEDERAL INC.",
+      "code": "145969783",
+      "uei": "TRKEP1HEBNS5",
+      "total_outlays": 120408249.64
+    },
+    {
+      "amount": 126985871.36,
+      "recipient_id": "645c4737-caef-ce68-2bfb-9b507be06ddd-['C', 'R']",
+      "name": "THE UNIVERSITY OF ALABAMA IN HUNTSVILLE",
+      "code": "949687123",
+      "uei": "HB6KNGVNJRU1",
+      "total_outlays": 82631075.55999999
+    },
+    {
+      "amount": 96643226.0,
+      "recipient_id": "4a605384-14df-6b86-f58d-4f1f1b3e46ef-['C']",
+      "name": "YULISTA TACTICAL SERVICES LLC",
+      "code": "078758610",
+      "uei": "E3PXRWGLJ1H9",
+      "total_outlays": 79947450.43
+    },
+    {
+      "amount": 55961239.48,
+      "recipient_id": "0e75bcea-cce2-b87c-0073-6fc8862b9d29-['C']",
+      "name": "COLSA CORP",
+      "code": "102067378",
+      "uei": "EH2ULQUQ2KG9",
+      "total_outlays": 40160440.97
+    },
+    {
+      "amount": 51030713.62,
+      "recipient_id": "59086e25-25d4-133f-580d-3cf28baf3a90-['C']",
+      "name": "ACCURA ROSSER 8A JV LLC",
+      "code": "080033094",
+      "uei": "MW2NBKFVSNW3",
+      "total_outlays": 36249630.050000004
+    },
+    {
+      "amount": 41762034.3,
+      "recipient_id": "c6e5b0f8-e619-cbbd-c2f7-9eb2bdd0cf29-['C']",
+      "name": "L&M TECHNOLOGIES, INC.",
+      "code": "076465491",
+      "uei": "C722A7TELNX3",
+      "total_outlays": 35516024.18
+    },
+    {
+      "amount": 37583163.63,
+      "recipient_id": "83f39725-68ce-aaf2-164d-475e790e2b8e-['C']",
+      "name": "DYNETICS, INC.",
+      "code": "075458455",
+      "uei": "FH7ML8E9EWJ7",
+      "total_outlays": 33634072.39
+    },
+    {
+      "amount": 35558785.0,
+      "recipient_id": "06ca1e58-d452-3ce3-2d68-d9020cbece47-['C']",
+      "name": "YULISTA SOLUTIONS, LLC",
+      "code": "117071075",
+      "uei": "C6KAN1XKA915",
+      "total_outlays": 21085639.63
+    },
+    {
+      "amount": 32346625.36,
+      "recipient_id": "455555be-773d-eab1-1e6b-7b94400b757e-['C']",
+      "name": "GENERAL DYNAMICS INFORMATION TECHNOLOGY, INC.",
+      "code": "067641597",
+      "uei": "SMNWM6HN79X5",
+      "total_outlays": 32346625.36
+    },
+    {
+      "amount": 31188124.09,
+      "recipient_id": "fe5366b4-84c8-12ff-126f-f123de29819c-['C']",
+      "name": "AMENTUM SERVICES, INC.",
+      "code": "961530545",
+      "uei": "QEMLRQA7PLG4",
+      "total_outlays": 19065375.7
+    },
+    {
+      "amount": 26847995.44,
+      "recipient_id": "26e104c4-1307-f677-c014-ac7fe7ab9e6d-['C', 'R']",
+      "name": "UNIVERSITIES SPACE RESEARCH ASSOCIATION",
+      "code": "056912900",
+      "uei": "VPWMMPGGPJ74",
+      "total_outlays": 19049995.44
+    },
+    {
+      "amount": 22739686.89,
+      "recipient_id": "dff5ea13-87ef-1d23-7ba0-fbf570ef2475-['C', 'R']",
+      "name": "AUBURN UNIVERSITY",
+      "code": "066470972",
+      "uei": "DMQNDJDHTDG4",
+      "total_outlays": 20298727.400000002
+    },
+    {
+      "amount": 17934972.78,
+      "recipient_id": "1d9c5580-b697-2aa5-fe87-4de883da79ae-['C']",
+      "name": "CEPEDA SYSTEMS & SOFTWARE ANALYSIS, INC.",
+      "code": "066074340",
+      "uei": "DVKXGN7LJVD9",
+      "total_outlays": 14230469.97
+    },
+    {
+      "amount": 16267446.95,
+      "recipient_id": "ded7256c-011c-2248-ec90-35326ab8066e-['C']",
+      "name": "AKIMA GLOBAL LOGISTICS, LLC",
+      "code": "117493530",
+      "uei": "NDKZZ567K4E5",
+      "total_outlays": 8455118.04
+    }
+  ],
+  "messages": [
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+    "'subawards' will be deprecated in the future. Set ‘spending_level’ to ‘subawards’ instead. See documentation for more information. "
+  ]
+}

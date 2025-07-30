@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from .resources.award_resource import AwardResource
     from .resources.transactions_resource import TransactionsResource
     from .resources.recipients_resource import RecipientsResource
+    from .resources.spending_resource import SpendingResource
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
@@ -104,6 +105,14 @@ class USASpending:
             from .resources.transactions_resource import TransactionsResource
             self._resources["transactions"] = TransactionsResource(self)
         return self._resources["transactions"]
+    
+    @property
+    def spending(self) -> "SpendingResource":
+        """Access spending by category endpoints."""
+        if "spending" not in self._resources:
+            from .resources.spending_resource import SpendingResource
+            self._resources["spending"] = SpendingResource(self)
+        return self._resources["spending"]
     
     @cachier.cachier()
     def _make_request(

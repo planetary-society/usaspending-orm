@@ -18,6 +18,11 @@ from .transaction import Transaction
 from .period_of_performance import PeriodOfPerformance
 from .award_factory import create_award
 
+# Spending models
+from .spending import Spending
+from .recipient_spending import RecipientSpending
+from .district_spending import DistrictSpending
+
 __all__ = [
     # Base classes
     "BaseModel",
@@ -34,6 +39,11 @@ __all__ = [
     "Location",
     "Transaction",
     "PeriodOfPerformance",
+    
+    # Spending models
+    "Spending",
+    "RecipientSpending", 
+    "DistrictSpending",
     
     # Factory
     "create_award",
