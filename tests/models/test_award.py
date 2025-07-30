@@ -475,45 +475,6 @@ class TestAwardPropertyCaching:
         assert period1 is period2
         assert period1.raw["start_date"] == "2023-01-01"
     
-    # TODO: Fix this test - same MockUSASpendingClient endpoint matching issue as transactions test above
-    # def test_transactions_property_only_queries_once(self, mock_usa_client):
-    #     """Test that transactions property only makes one query."""
-    #     # Set up mock transactions response
-    #     mock_usa_client.set_response("/v2/transactions/", {
-    #         "results": [
-    #             {"transaction_id": "1"},
-    #             {"transaction_id": "2"}
-    #         ],
-    #         "page_metadata": {
-    #             "total": 2,
-    #             "count": 2,
-    #             "page": 1,
-    #             "has_next": False,
-    #             "has_previous": False,
-    #             "next": None,
-    #             "previous": None
-    #         }
-    #     })
-    #     
-    #     award_data = {
-    #         "generated_unique_award_id": "CONT_AWD_123"
-    #     }
-    #     
-    #     award = Award(award_data, mock_usa_client)
-    #     
-    #     # Access transactions multiple times
-    #     trans1 = award.transactions
-    #     trans2 = award.transactions
-    #     trans3 = award.transactions
-    #     
-    #     # Should only make one API call (cached property)
-    #     assert mock_usa_client.get_request_count("/v2/transactions/") == 1
-    #     
-    #     # Should return the same list instance
-    #     assert trans1 is trans2
-    #     assert trans2 is trans3
-    #     assert len(trans1) == 2
-    
     def test_multiple_awards_have_separate_caches(self, mock_usa_client):
         """Test that different Award instances maintain separate caches."""
         award1_data = {

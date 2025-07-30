@@ -61,18 +61,33 @@ def mock_usa_client():
     client = MockUSASpendingClient()
     return client
 
+def load_json_fixture(relative_path):
+    """Helper to load a JSON fixture file given a relative path from the test directory."""
+    fixture_path = Path(__file__).parent / "fixtures" / relative_path
+    with open(fixture_path) as f:
+        return json.load(f)
 
 @pytest.fixture
 def award_fixture_data():
     """Load the award fixture data."""
-    fixture_path = Path(__file__).parent / "fixtures" / "awards" / "contract.json"
-    with open(fixture_path) as f:
-        return json.load(f)
+    return load_json_fixture("awards/contract.json")
 
+@pytest.fixture
+def contract_fixture_data():
+    """Load the award fixture data."""
+    return load_json_fixture("awards/contract.json")
+
+@pytest.fixture
+def idv_fixture_data():
+    """Load the award fixture data."""
+    return load_json_fixture("awards/idv.json")
+
+@pytest.fixture
+def grant_fixture_data():
+    """Load the award fixture data."""
+    return load_json_fixture("awards/grant.json")
 
 @pytest.fixture
 def top_recipients_response():
     """Load the top recipients response fixture."""
-    fixture_path = Path(__file__).parent / "fixtures" / "top_recipients_response.json"
-    with open(fixture_path) as f:
-        return json.load(f)
+    return load_json_fixture("top_recipients_response.json")
