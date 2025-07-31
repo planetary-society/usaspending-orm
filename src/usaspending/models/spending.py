@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
-
+from ..utils.formatter import to_float
 from .base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -45,12 +45,12 @@ class Spending(BaseModel):
     @property
     def amount(self) -> Optional[float]:
         """Total spending amount for this record."""
-        return self.get_value(["amount"])
+        return to_float(self.get_value(["amount"]))
     
     @property
     def total_outlays(self) -> Optional[float]:
         """Total outlays for this spending record."""
-        return self.get_value(["total_outlays"])
+        return to_float(self.get_value(["total_outlays"]))
     
     @property
     def spending_level(self) -> Optional[str]:
