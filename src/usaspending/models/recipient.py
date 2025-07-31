@@ -41,19 +41,21 @@ class Recipient(LazyRecord):
             raise ValidationError("Recipient expects dict or recipient_id/hash string")
         super().__init__(raw, client)
         
-    # ---------------------- fetch hook -------------------------------- #
     def _fetch_details(self) -> Optional[Dict[str, Any]]:
+        """Fetch full recipient details from the recipients resource."""
+        recipient_id = self.recipient_id
+        if not recipient_id:
+            logger.error("Cannot lazy-load Recipient data. Property `recipient_id` is required to fetch details.")
+            return None
         try:
-            return self._client.recipients.get(self.recipient_id).raw
+            # Use the recipients resource to get full recipient data
+            full_recipient = self._client.recipients.get(recipient_id)
+            return full_recipient.raw
         except Exception as e:
             # If fetch fails, return None to avoid breaking the application
-            logger.error(f"Failed to fetch recipient details for {self.recipient_id}: {e}")
+            logger.error(f"Failed to fetch recipient details for {recipient_id}: {e}")
             return None
 
-    # ─────────────────────────────────────────────
-    #  Static cleaning utility
-    # ─────────────────────────────────────────────
-    
     @staticmethod
     def _clean_recipient_id(rid: str) -> str:
         """
@@ -83,31 +85,25 @@ class Recipient(LazyRecord):
         letter = tokens[0]
         return f"{base}-{letter}" if letter else base
 
-    # ─────────────────────────────────────────────
-    #  Core scalar props
-    # ─────────────────────────────────────────────
     @property
     def recipient_id(self) -> Optional[str]:
         return self.get_value(["recipient_id", "recipient_hash"], default=None)
 
     @property
     def name(self) -> Optional[str]:
-        return contracts_titlecase(self.get_value(["name", "recipient_name", "Recipient Name"]))
+        return contracts_titlecase(self._lazy_get("name", "recipient_name", "Recipient Name", default=None))
 
     @property
     def duns(self) -> Optional[str]:
-        return self.get_value(["duns", "recipient_unique_id", "Recipient DUNS Number"])
+        return self._lazy_get("duns", "recipient_unique_id", "Recipient DUNS Number", default=None)
 
     @property
     def uei(self) -> Optional[str]:
-        return self.get_value(["uei", "recipient_uei"])
+        return self._lazy_get("uei", "recipient_uei")
 
-    # ─────────────────────────────────────────────
-    #  Parent relationships
-    # ─────────────────────────────────────────────
     @cached_property
     def parent(self) -> Optional["Recipient"]:
-        pid = self.get_value("parent_id")
+        pid = self._lazy_get("parent_id")
         if not pid:
             return None
         return Recipient(
@@ -138,27 +134,31 @@ class Recipient(LazyRecord):
                 )
         return plist
 
-    # ─────────────────────────────────────────────
-    #  Business & totals 
-    # ─────────────────────────────────────────────
     @property
     def business_types(self) -> List[str]:
-        return self.get_value("business_types", "business_categories", default=[])
+        return self._lazy_get("business_types", "business_categories", default=[])
 
     @cached_property
     def location(self) -> Optional[Location]:
         """Get recipient location - shares same client."""
-        data = self._data.get('location')
+        data = self._lazy_get('location')
         return Location(data, self._client) if data else None
 
+    @property
+    def total_transaction_amount(self):
+        return to_float(self._lazy_get("total_transaction_amount"))
+    
+    @property
+    def total_transactions(self):
+        return self._lazy_get("total_transactions")
+    
+    @property
+    def total_face_value_loan_amount(self):
+        return to_float(self._lazy_get("total_face_value_loan_amount"))
+    
+    @property
+    def total_face_value_loan_transactions(self):
+        return self._lazy_get("total_face_value_loan_transactions")
 
-    @property
-    def total_transaction_amount(self):          return to_float(self.get_value("total_transaction_amount"))
-    @property
-    def total_transactions(self):                return self.get_value("total_transactions")
-    @property
-    def total_face_value_loan_amount(self):      return to_float(self.get_value("total_face_value_loan_amount"))
-    @property
-    def total_face_value_loan_transactions(self):return self.get_value("total_face_value_loan_transactions")
-
-    def __repr__(self) -> str:                    return f"<Recipient {self.name or '?'} ({self.recipient_id})>"
+    def __repr__(self) -> str:
+        return f"<Recipient {self.name or '?'} ({self.recipient_id})>"
