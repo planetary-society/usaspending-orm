@@ -104,7 +104,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
     def _transform_result(self, result: dict[str, Any]) -> Spending:
         """Transforms a single API result item into appropriate Spending model."""
         # Add category info to result data for model initialization
-        result_with_category = {**result, "category": self._category}
+        result_with_category = {**result, "category": self._category, "spending_level": self._spending_level}
         
         if self._category == "recipient":
             return RecipientSpending(result_with_category, self._client)

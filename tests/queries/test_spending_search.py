@@ -32,7 +32,7 @@ class TestCategorySelection:
         search = SpendingSearch(mock_usa_client)
         recipient_search = search.by_recipient()
         
-        assert recipient_search._category == "recipient"
+        assert recipient_search._spending_level == "transactions"
         assert recipient_search is not search  # Should return new instance
     
     def test_by_district(self, mock_usa_client):
@@ -186,7 +186,7 @@ class TestResultTransformation:
         
         assert isinstance(transformed, RecipientSpending)
         assert transformed.name == "Test Recipient"
-        assert transformed.category == "recipient"
+        assert transformed.spending_level == "transactions"
     
     def test_transform_result_district(self, mock_usa_client):
         """Test _transform_result for district category."""
