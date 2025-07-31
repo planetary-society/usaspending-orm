@@ -13,7 +13,7 @@ class RecipientQuery(SingleResourceBase):
     """Retrieve a single-recipient"""
     
     def __init__(self, client: USASpending):
-        self.super().__init__(client)
+        super().__init__(client)
     
     @property
     def _endpoint(self) -> str:
