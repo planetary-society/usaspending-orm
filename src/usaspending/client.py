@@ -94,8 +94,8 @@ class USASpending:
     def recipients(self) -> "RecipientsResource":
         """Access recipient endpoints."""
         if "recipients" not in self._resources:
-            from .resources.recipients_resource import RecipientResource
-            self._resources["recipients"] = RecipientResource(self)
+            from .resources.recipients_resource import RecipientsResource
+            self._resources["recipients"] = RecipientsResource(self)
         return self._resources["recipients"]
     
     @property
