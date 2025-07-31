@@ -202,29 +202,10 @@ class Award(LazyRecord):
         """Obligations broken down by Disaster Emergency Fund Code (DEFC)."""
         return self._lazy_get("account_obligations_by_defc", default=[])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     @cached_property
     def executive_details(self) -> Optional[Dict[str, Any]]:
         """Executive compensation details for the award recipient."""
         return self._lazy_get("executive_details")
-
-
-
-
-
-
 
     @property
     def recipient_uei(self) -> Optional[str]:
@@ -251,8 +232,6 @@ class Award(LazyRecord):
         """Infrastructure related outlays amount."""
         return to_float(self.get_value(["infrastructure_outlays", "Infrastructure Outlays"], default=0))
 
-
-
     @property
     def potential_value(self) -> float:
         """Potential total value of the award."""
@@ -271,7 +250,7 @@ class Award(LazyRecord):
         if isinstance(self.get_value(["period_of_performance"]), dict):
             return PeriodOfPerformance(self._data["period_of_performance"])
 
-        # Award search results return Period of Performanec information in a flat structure
+        # Award search results return Period of Performance information in a flat structure
         # We need to assign these values to a PeriodOfPerformance object
         # to maintain consistency.
         date_keys = ["Start Date", "End Date", "Last Modified Date"]

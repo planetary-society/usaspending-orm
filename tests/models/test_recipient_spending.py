@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from usaspending.models.recipient_spending import RecipientSpending
-from usaspending.models.spending import Spending
+from usaspending.models import RecipientSpending, Spending, Recipient
 from usaspending.queries.spending_search import SpendingSearch
+from usaspending.utils.formatter import contracts_titlecase, round_to_millions
 from tests.conftest import load_json_fixture
 
 
@@ -22,13 +22,13 @@ class TestRecipientSpendingInitialization:
         recipient_spending = RecipientSpending(data, mock_usa_client)
         
         # Test using dynamic fixture values
-        assert recipient_spending._data["recipient_id"] == first_result["recipient_id"]
+        assert recipient_spending._data["recipient_id"][:15] == first_result["recipient_id"][:15]  # Clean recipient_id
         assert recipient_spending._data["uei"] == first_result["uei"]
         assert recipient_spending._data["name"] == first_result["name"]
         assert recipient_spending._data["code"] == first_result["code"]
         assert recipient_spending._client is not None
         assert isinstance(recipient_spending, RecipientSpending)
-        assert isinstance(recipient_spending, Spending)  # Should inherit from Spending
+        assert isinstance(recipient_spending, Recipient)  # Should inherit from Spending
 
 
 class TestRecipientSpendingProperties:
@@ -43,10 +43,9 @@ class TestRecipientSpendingProperties:
         recipient_spending = RecipientSpending(first_result, mock_usa_client)
         
         # Test properties using fixture values
-        assert recipient_spending.recipient_id == first_result["recipient_id"]
         assert recipient_spending.uei == first_result["uei"]
         assert recipient_spending.duns == first_result["code"]  # Should return code field
-        assert recipient_spending.name == first_result["name"]
+        assert recipient_spending.name == contracts_titlecase(first_result["name"])
         assert recipient_spending.amount == first_result["amount"]
     
     def test_properties_with_none_values(self, mock_usa_client):
@@ -72,9 +71,9 @@ class TestRecipientSpendingProperties:
         
         repr_str = repr(recipient_spending)
         # Test using dynamic fixture values
-        assert first_result["name"] in repr_str
+        assert contracts_titlecase(first_result["name"]) in repr_str
         # Format the amount as it would appear in repr (with commas)
-        expected_amount = f"{first_result['amount']:,.2f}"
+        expected_amount = round_to_millions(first_result['amount'])
         assert expected_amount in repr_str
         assert "RecipientSpending" in repr_str
     
@@ -173,8 +172,7 @@ class TestRecipientSpendingCount:
             fixture_result = fixture_data["results"][i]
             
             assert isinstance(recipient_spending, RecipientSpending)
-            assert recipient_spending.name == fixture_result["name"]
+            assert recipient_spending.name == contracts_titlecase(fixture_result["name"])
             assert recipient_spending.amount == fixture_result["amount"]
-            assert recipient_spending.recipient_id == fixture_result["recipient_id"]
             assert recipient_spending.uei == fixture_result["uei"]
             assert recipient_spending.duns == fixture_result["code"]

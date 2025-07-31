@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
-
-from .spending import Spending
+from ..utils.formatter import to_float, round_to_millions
+from .recipient import Recipient
 
 if TYPE_CHECKING:
     from ..client import USASpending
 
 
-class RecipientSpending(Spending):
+class RecipientSpending(Recipient):
     """Model for spending by recipient data.
     
     Represents spending data grouped by recipient with recipient-specific 
@@ -27,23 +27,27 @@ class RecipientSpending(Spending):
         super().__init__(data, client)
     
     @property
-    def recipient_id(self) -> Optional[str]:
-        """Unique recipient identifier including hash and level."""
-        return self.get_value(["recipient_id"])
-    
-    @property
-    def uei(self) -> Optional[str]:
-        """Unique Entity Identifier for the recipient."""
-        return self.get_value(["uei"])
-    
-    @property
     def duns(self) -> Optional[str]:
-        """DUNS number for the recipient (legacy identifier)."""
-        # The API documentation shows 'code' field contains DUNS for recipients
-        return self.code
+        """DUNS number from spending data (stored in 'code' field)."""
+        return self.get_value(["code"], default=None)
+    
+    @property
+    def amount(self) -> Optional[float]:
+        """Total spending amount for this record."""
+        return to_float(self.get_value(["amount"]))
+    
+    @property
+    def total_outlays(self) -> Optional[float]:
+        """Total outlays for this spending record."""
+        return to_float(self.get_value(["total_outlays"]))
+    
+    @property
+    def spending_level(self) -> Optional[str]:
+        """The spending level used for this data (transactions, awards, subawards)."""
+        return self.get_value(["spending_level"])
     
     def __repr__(self) -> str:
         """String representation of RecipientSpending."""
         name = self.name or "Unknown Recipient"
-        amount = self.amount or 0
-        return f"<RecipientSpending {name}: ${amount:,.2f}>"
+        formatted_amount = round_to_millions(self.amount) or 0
+        return f"<RecipientSpending {name}: {formatted_amount}>"
