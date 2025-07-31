@@ -225,6 +225,8 @@ def custom_titlecase_callback(word, **kwargs):
 
 def contracts_titlecase(text):
     """Apply NASA-specific title casing rules to text"""
+    if text is None:
+        return None
     return titlecase(text, callback=custom_titlecase_callback)
 
 def get_business_category_display_names(business_category_list):
