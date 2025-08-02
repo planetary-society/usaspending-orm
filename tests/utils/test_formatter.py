@@ -7,6 +7,8 @@ import yaml
 from usaspending.utils.formatter import (
     custom_titlecase_callback,
     contracts_titlecase,
+    smart_sentence_case,
+    TextFormatter,
     _load_special_cases,
 )
 
@@ -208,3 +210,112 @@ class TestContractsTitlecase:
             contracts_titlecase("the university of maryland and nasa")
             == "the University of Maryland and NASA"
         )
+
+
+class TestSmartSentenceCase:
+    """Test the smart_sentence_case function."""
+
+    @pytest.fixture(autouse=True)
+    def setup_yaml(self):
+        """Mock the YAML file for consistent tests."""
+        import usaspending.utils.formatter
+
+        usaspending.utils.formatter._special_cases_cache = None
+        TextFormatter._special_cases_cache = None
+
+        mock_special_cases = [
+            "NASA",
+            "ESA", 
+            "USA",
+            "SBIR",
+            "LLC",
+            "Inc.",
+            "Ltd.",
+            "and",
+            "or",
+            "of",
+            "the",
+            "for",
+            "with",
+            "NE",
+            "SW",
+            "St.",
+            "Ave.",
+            "OSIRIS-REx",
+            "SCaN",
+            "EPSCoR",
+        ]
+        mock_yaml_content = yaml.dump(mock_special_cases)
+
+        with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
+            yield
+
+        usaspending.utils.formatter._special_cases_cache = None
+        TextFormatter._special_cases_cache = None
+
+    def test_none_input(self):
+        """Test handling of None input."""
+        assert smart_sentence_case(None) == ""
+
+    def test_empty_input(self):
+        """Test handling of empty input."""
+        assert smart_sentence_case("") == ""
+
+    def test_basic_sentence_case(self):
+        """Test basic sentence case behavior."""
+        assert smart_sentence_case("HELLO WORLD") == "Hello world"
+        assert smart_sentence_case("THIS IS A TEST") == "This is a test"
+
+    def test_special_cases_preserved(self):
+        """Test that special cases from YAML are preserved."""
+        assert smart_sentence_case("NASA HEADQUARTERS") == "NASA headquarters"
+        assert smart_sentence_case("WORKING WITH NASA") == "Working with NASA"
+        assert smart_sentence_case("OSIRIS-REX MISSION") == "OSIRIS-REx mission"
+
+    def test_sentence_boundaries(self):
+        """Test sentence boundary detection."""
+        assert smart_sentence_case("FIRST SENTENCE. SECOND SENTENCE") == "First sentence. Second sentence"
+        assert smart_sentence_case("QUESTION HERE? ANSWER THERE") == "Question here? Answer there"
+        assert smart_sentence_case("EXCLAMATION! ANOTHER SENTENCE") == "Exclamation! Another sentence"
+
+    def test_multiple_spaces_after_punctuation(self):
+        """Test sentence boundaries with multiple spaces."""
+        assert smart_sentence_case("FIRST SENTENCE.  SECOND SENTENCE") == "First sentence.  Second sentence"
+        assert smart_sentence_case("FIRST SENTENCE.   THIRD SENTENCE") == "First sentence.   Third sentence"
+
+    def test_short_parenthetical_content(self):
+        """Test short parenthetical content stays uppercase."""
+        assert smart_sentence_case("CONTRACT (RFP) FOR NASA") == "Contract (RFP) for NASA"
+        assert smart_sentence_case("USING SCAN NETWORK") == "Using SCaN network"
+
+    def test_acronym_expansion_direct_match(self):
+        """Test direct acronym expansion."""
+        # Direct match: N-A-S-A
+        assert smart_sentence_case("NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)") == "National Aeronautics Space Administration (NASA)"
+
+    def test_acronym_expansion_skip_small_words(self):
+        """Test acronym expansion skipping small words."""
+        # Should skip "OF", "AND" to match N-A-S-E-M
+        result = smart_sentence_case("NATIONAL ACADEMIES OF SCIENCES, ENGINEERING, AND MEDICINE (NASEM)")
+        assert result == "National Academies of Sciences, Engineering, and Medicine (NASEM)"
+
+    def test_acronym_expansion_no_match(self):
+        """Test when acronym expansion finds no match."""
+        assert smart_sentence_case("RANDOM WORDS HERE (XYZ)") == "Random words here (XYZ)"
+
+    def test_mixed_content(self):
+        """Test complex mixed content."""
+        text = "THIS CONTRACT WILL ENSURE NASA OSIRIS-REX DATA IS PRETTY. WILL PROCESS USING COMMUNICATIONS (SCAN) DATA."
+        expected = "This contract will ensure NASA OSIRIS-REx data is pretty. Will process using communications (SCaN) data."
+        assert smart_sentence_case(text) == expected
+
+    def test_vs_contracts_titlecase(self):
+        """Test that smart_sentence_case differs from contracts_titlecase."""
+        text = "UNITED LAUNCH ALLIANCE FOR NASA AND AMERICA"
+        sentence_result = smart_sentence_case(text)
+        title_result = contracts_titlecase(text)
+        
+        # Should be different
+        assert sentence_result != title_result
+        assert sentence_result == "United launch alliance for NASA and america"
+        assert title_result == "United Launch Alliance for NASA and America"

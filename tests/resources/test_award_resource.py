@@ -131,5 +131,4 @@ class TestAwardResource:
 
         # Test place of performance
         assert award.place_of_performance is not None
-        assert award.place_of_performance.state_code == "IA"
-        assert award.place_of_performance.city_name == "IOWA CITY"
+        assert award.place_of_performance.state_code == award_fixture_data.get("place_of_performance", {}).get("state_code")

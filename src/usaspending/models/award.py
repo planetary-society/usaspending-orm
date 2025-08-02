@@ -136,9 +136,9 @@ class Award(LazyRecord):
         acronyms, or other information that is not plain English such as that required
         by OMB policies (CARES Act, etc).
         """
-        return smart_sentence_case(
-            self.get_value(["description", "Description"], default="")
-        )
+        if isinstance(self.get_value(["description", "Description"]), str):
+            return smart_sentence_case(self.get_value(["description", "Description"]))
+        return None
 
     @property
     def type(self) -> Optional[str]:
