@@ -68,6 +68,7 @@ class AwardDateType(Enum):
     NEW_AWARDS_ONLY = "new_awards_only"
 
 
+# TODO: Consider making this a subclass of Location model or change the class name to avoid confusion
 @dataclass(frozen=True)
 class Location:
     """Represents a standard location for Place of Performance or Recipient filters."""
