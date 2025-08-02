@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional
 from titlecase import titlecase
+from ..utils.formatter import contracts_titlecase
 from .base_model import BaseModel
 
 
@@ -25,21 +26,29 @@ class Location(BaseModel):
         return self._format_location_string_property(self.get_value(["address_line3"]))
 
     @property
+    def city_name(self) -> Optional[str]:
+        city_name = self.get_value(["city_name", "city"])
+        if not isinstance(city_name, str):
+            return None
+        return titlecase(city_name)
+
+    @property
     def city(self) -> Optional[str]:
-        return self._format_location_string_property(
-            self.get_value(["city_name", "city"])
-        )
+        return self.city_name
 
     @property
     def state_name(self) -> Optional[str]:
-        self._format_location_string_property(self.get_value(["state_name", "state"]))
+        state_name = titlecase(self.get_value(["state_name", "state"]))
+        if not isinstance(state_name, str):
+            return None
+        return titlecase(state_name)
 
     @property
     def country_name(self) -> Optional[str]:
         country = self._format_location_string_property(
             self.get_value(["country_name"])
         )
-        if country.lower() == "usa":
+        if country and country.lower() == "usa":
             country = "USA"
         return country
 
@@ -49,7 +58,10 @@ class Location(BaseModel):
 
     @property
     def county_name(self) -> Optional[str]:
-        return self.get_value(["county_name"])
+        county_name = titlecase(self.get_value(["county_name", "county"]))
+        if not isinstance(county_name, str):
+            return None
+        return county_name
 
     @property
     def county_code(self) -> Optional[str]:
@@ -57,7 +69,7 @@ class Location(BaseModel):
 
     @property
     def congressional_code(self) -> Optional[str]:
-        return self.get_value(["congressional_code"])
+        return self.get_value(["congressional_code","district"])
 
     @property
     def foreign_province(self) -> Optional[str]:
@@ -107,7 +119,7 @@ class Location(BaseModel):
         """Format a location string with string check."""
         if not isinstance(text, str):
             return None
-        return titlecase(text.strip())
+        return contracts_titlecase(text.strip())
 
     def __repr__(self) -> str:
         return f"<Location {self.city or '?'} {self.state_code or ''} {self.country_code or ''}>"

@@ -44,22 +44,21 @@ class TestLocationSimpleFields:
 
     def test_address_fields(self, recipient_location):
         """Test address line fields."""
-        assert recipient_location.address_line1 == "301 SPARKMAN DR NW"
+        assert recipient_location.address_line1 == "301 Sparkman Dr NW"
         assert recipient_location.address_line2 is None
         assert recipient_location.address_line3 is None
 
     def test_city_fields(self, recipient_location):
         """Test city name and alias."""
-        assert recipient_location.city_name == "HUNTSVILLE"
-        assert recipient_location.city == "HUNTSVILLE"  # Test alias
+        assert recipient_location.city == "Huntsville"
 
     def test_state_name(self, recipient_location):
         """Test state name field."""
-        assert recipient_location.state_name == "ALABAMA"
+        assert recipient_location.state_name == "Alabama"
 
     def test_country_name(self, recipient_location):
         """Test country name field."""
-        assert recipient_location.country_name == "UNITED STATES"
+        assert recipient_location.country_name == "United States"
 
     def test_zip4(self, recipient_location):
         """Test zip4 field."""
@@ -67,7 +66,7 @@ class TestLocationSimpleFields:
 
     def test_county_fields(self, recipient_location):
         """Test county name and code."""
-        assert recipient_location.county_name == "MADISON"
+        assert recipient_location.county_name == "Madison"
         assert recipient_location.county_code == "089"
 
     def test_congressional_code(self, recipient_location):
@@ -168,12 +167,12 @@ class TestLocationConvenienceMethods:
 
     def test_formatted_address_full(self, recipient_location):
         """Test formatted address with all components."""
-        expected = "301 SPARKMAN DR NW\nHUNTSVILLE, AL, 35805\nUNITED STATES"
+        expected = "301 Sparkman Dr NW\nHuntsville, AL, 35805\nUnited States"
         assert recipient_location.formatted_address == expected
 
     def test_formatted_address_minimal(self):
         """Test formatted address with minimal data."""
-        data = {"address_line1": "123 Main St", "city_name": "Austin"}
+        data = {"address_line1": "123 Main St", "city": "Austin"}
         location = Location(data)
         assert location.formatted_address == "123 Main St\nAustin"
 
@@ -183,7 +182,7 @@ class TestLocationConvenienceMethods:
             "address_line1": "123 Main St",
             "address_line2": "Suite 200",
             "address_line3": "Building A",
-            "city_name": "Austin",
+            "city": "Austin",
             "state_code": "TX",
             "zip5": "78701",
         }
@@ -203,7 +202,7 @@ class TestLocationRepr:
 
     def test_repr_with_all_fields(self, recipient_location):
         """Test repr with city, state, and country codes."""
-        assert repr(recipient_location) == "<Location HUNTSVILLE AL USA>"
+        assert repr(recipient_location) == "<Location Huntsville AL USA>"
 
     def test_repr_with_missing_city(self):
         """Test repr with missing city shows placeholder."""
@@ -223,10 +222,10 @@ class TestLocationWithPlaceOfPerformanceData:
 
     def test_place_of_performance_basic_fields(self, place_of_performance_location):
         """Test basic fields from place of performance data."""
-        assert place_of_performance_location.city_name == "HUNTSVILLE"
-        assert place_of_performance_location.state_name == "ALABAMA"
-        assert place_of_performance_location.country_name == "UNITED STATES"
-        assert place_of_performance_location.county_name == "MADISON"
+        assert place_of_performance_location.city == "Huntsville"
+        assert place_of_performance_location.state_name == "Alabama"
+        assert place_of_performance_location.country_name == "United States"
+        assert place_of_performance_location.county_name == "Madison"
         assert place_of_performance_location.county_code == "089"
 
     def test_place_of_performance_codes(self, place_of_performance_location):
@@ -253,7 +252,7 @@ class TestLocationWithPlaceOfPerformanceData:
     ):
         """Test formatted address for place of performance location."""
         # Since address lines are null, formatted address should only have city/state/zip
-        expected = "HUNTSVILLE, AL, 35805\nUNITED STATES"
+        expected = "Huntsville, AL, 35805\nUnited States"
         assert place_of_performance_location.formatted_address == expected
 
 
@@ -264,7 +263,7 @@ class TestLocationEdgeCases:
         """Test Location with empty data dictionary."""
         location = Location({})
         assert location.address_line1 is None
-        assert location.city_name is None
+        assert location.city is None
         assert location.state_code is None
         assert location.zip5 == ""
 
@@ -272,7 +271,7 @@ class TestLocationEdgeCases:
         """Test Location with None data is handled gracefully."""
         location = Location(None)
         # Should return None for all properties instead of raising error
-        assert location.city_name is None
+        assert location.city is None
         assert location.address_line1 is None
         assert location.state_code is None
         assert location.zip5 == ""  # zip5 returns empty string when None
@@ -280,5 +279,5 @@ class TestLocationEdgeCases:
     def test_client_parameter_ignored(self):
         """Test that client parameter is properly ignored."""
         # Should not raise an error
-        location = Location({"city_name": "Test City"}, client="dummy_client")
-        assert location.city_name == "Test City"
+        location = Location({"city": "Test City"}, client="dummy_client")
+        assert location.city == "Test City"
