@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional
-
+from titlecase import titlecase
 from .base_model import BaseModel
 
 class Location(BaseModel):
@@ -12,23 +12,33 @@ class Location(BaseModel):
 
     # simple direct fields --------------------------------------------------
     @property
-    def address_line1(self) -> Optional[str]:          return self.get_value(["address_line1"])
-    @property
-    def address_line2(self) -> Optional[str]:          return self.get_value(["address_line2"])
-    @property
-    def address_line3(self) -> Optional[str]:          return self.get_value(["address_line3"])
-    @property
-    def city_name(self) -> Optional[str]:
-        return self.get_value(["city_name"])
+    def address_line1(self) -> Optional[str]:
+        return self._format_location_string_property(self.get_value(["address_line1"]))
     
-    @property  
+    @property
+    def address_line2(self) -> Optional[str]:
+        return self._format_location_string_property(self.get_value(["address_line2"]))
+    
+    @property
+    def address_line3(self) -> Optional[str]:
+        return self._format_location_string_property(self.get_value(["address_line3"]))
+    
+    @property
     def city(self) -> Optional[str]:
-        return self.city_name
+        return self._format_location_string_property(self.get_value(["city_name", "city"]))
+
     
     @property
-    def state_name(self)  -> Optional[str]:            return self.get_value(["state_name"])
+    def state_name(self)  -> Optional[str]:
+        self._format_location_string_property(self.get_value(["state_name", "state"]))
+    
     @property
-    def country_name(self)-> Optional[str]:            return self.get_value(["country_name"])
+    def country_name(self)-> Optional[str]:
+        country = self._format_location_string_property(self.get_value(["country_name"]))
+        if country.lower() == "usa":
+            country = "USA"
+        return country
+    
     @property
     def zip4(self)        -> Optional[str]:            return self.get_value(["zip4"])
     @property
@@ -74,7 +84,11 @@ class Location(BaseModel):
             lines.append(self.country_name)
         return "\n".join(lines) or None
 
-    # misc ------------------------------------------------------------------
+    def _format_location_string_property(self, text: str) -> Optional[str]:
+        """Format a location string with string check."""
+        if not isinstance(text,str):
+            return None
+        return titlecase(text.strip())
 
     def __repr__(self) -> str:
         return f"<Location {self.city or '?'} {self.state_code or ''} {self.country_code or ''}>"
