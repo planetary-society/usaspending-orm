@@ -1,0 +1,45 @@
+# Updatable list of special cases for title casing when converting USASpending field data
+# from uppercase to title or sentence case.
+# These words will display exactly as they are listed here, regardless of their position in a sentence.
+
+# NASA and technical acronyms
+- NASA
+- ESA
+- USA
+- SBIR
+- STTR
+- ISS
+- TDM
+- TDRS
+- FY
+- SCaN
+- EPSCoR
+- STEM
+- OSIRIS-REx
+- EPSCoR
+
+# Business suffixes
+- LLC
+- LLP
+- P.C.
+- P.A.
+- S.A.
+- S.C.
+- GmbH
+- B.V.
+- N.V.
+
+# Directional abbreviations
+- Dr
+- N
+- S
+- E
+- W
+- NE
+- NW
+- SE
+- SW
+- N.E.
+- N.W.
+- S.E.
+- S.W.

@@ -1,6 +1,8 @@
 from typing import List, Any, Optional, Set
 from datetime import datetime
 import re
+import yaml
+from pathlib import Path
 
 from ..config import BUSINESS_CATEGORIES
 from titlecase import titlecase
@@ -220,58 +222,97 @@ def smart_sentence_case(
         return text  # Fallback to original text on error
 
 
+# Cache for special cases from YAML
+_special_cases_cache = None
+
+
+def _load_special_cases():
+    """Load and cache special cases from YAML file."""
+    global _special_cases_cache
+    if _special_cases_cache is None:
+        yaml_path = Path(__file__).parent / "special_cases.yaml"
+        try:
+            with open(yaml_path, "r") as f:
+                _special_cases_cache = yaml.safe_load(f) or []
+        except FileNotFoundError:
+            logger.warning(f"Special cases file not found: {yaml_path}")
+            _special_cases_cache = []
+        except Exception as e:
+            logger.error(f"Error loading special cases: {e}")
+            _special_cases_cache = []
+    return _special_cases_cache
+
+
 # Define a callback function for custom word handling
 def custom_titlecase_callback(word, **kwargs):
+    """Custom titlecase callback using YAML configuration."""
+    if not isinstance(word, str):
+        return word
+    
     # If the word is enclosed in parentheses, preserve the case inside.
     if word.startswith("(") and word.endswith(")"):
         return word
 
-    # Special NASA acronyms - always uppercase.
-    nasa_acronyms = [
-        "nasa",
-        "sbir",
-        "sttr",
-        "iss",
-        "tdm",
-        "tdrs",
-        "fy",
-        "scan",
-        "epscor",
-        "stem",
-    ]
-    if word.lower() in nasa_acronyms:
-        return word.upper()
+    # normalizations
+    normalized_words = {"L.L.C.": "LLC", "I.N.C.": "Inc", "L.L.P.": "LLP", "L.T.D.": "LTD",
+                        "P.L.L.C.": "PLLC", "P.A.": "PA", "P.C.": "PC"}
 
-    # Special NASA acronyms - always uppercase.
-    business_acronyms = [
-        "llc",
-        "inc",
-        "llp",
-        "ltd",
-        "l.l.c.",
-        "i.n.c.",
-        "l.l.p.",
-        "l.t.d.",
-    ]
-    if word.lower() in business_acronyms:
-        return word.upper()
+    if word.upper() in normalized_words.keys():
+        word = normalized_words[word.upper()]
 
-    # Handle special cases.
-    if word.upper() == "OSIRIS-REX":
-        return "OSIRIS-REx"
-    if word.upper() == "SCAN":
-        return "SCaN"
-    if word.upper() == "EPSCOR":
-        return "EPSCoR"
+    # Load special cases YAML file
+    special_cases = _load_special_cases()
 
-    # For small words that should be lowercase (like 'and', 'of', 'the', etc.).
-    small_words = ["and", "of", "for", "the", "a", "an", "in", "on", "at", "to"]
-    if (
-        word.lower() in small_words
-        and not word.istitle()
-        and kwargs.get("index", 0) != 0
-    ):
-        return word.lower()
+    # Check if word has trailing punctuation
+    trailing_punct = ""
+    clean_word = word
+
+    # Strip trailing punctuation (but handle contractions like 's)
+    if word:
+        # Handle contractions separately
+        if "'" in word:
+            # For words like "NASA's", split at apostrophe
+            parts = word.split("'", 1)
+            if len(parts) == 2:
+                clean_word = parts[0]
+                trailing_punct = "'" + parts[1]
+            else:
+                clean_word = word
+                trailing_punct = ""
+        else:
+            # Find where the alphanumeric part ends
+            i = len(word) - 1
+            while i >= 0 and not word[i].isalnum():
+                i -= 1
+            if i >= 0:
+                clean_word = word[: i + 1]
+                trailing_punct = word[i + 1 :]
+            else:
+                # All punctuation, no alphanumeric chars
+                clean_word = word
+                trailing_punct = ""
+
+    # Check for case-insensitive match
+    for special_word in special_cases:
+        # Ensure special_word is a string
+        if not isinstance(special_word, str):
+            continue
+
+        # First try exact match with full word (including punctuation)
+        if word.lower() == special_word.lower():
+            return special_word
+
+        # Then try match with clean word
+        if clean_word.lower() == special_word.lower():
+            return special_word + trailing_punct
+
+        # Also try if special_word has punctuation that matches
+        if (
+            special_word.endswith(".")
+            and clean_word.lower() == special_word[:-1].lower()
+        ):
+            # Word like "inc" matching "Inc."
+            return special_word + trailing_punct
 
     # Return None to let titlecase handle it normally.
     return None
