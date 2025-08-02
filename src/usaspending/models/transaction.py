@@ -12,9 +12,12 @@ class Transaction(BaseModel):
     @property
     def amt(self) -> Optional[float]:
         """Get the transaction amount."""
-        amt = self.federal_action_obligation or \
-                self.face_value_loan_guarantee or \
-                self.original_loan_subsidy_cost or None
+        amt = (
+            self.federal_action_obligation
+            or self.face_value_loan_guarantee
+            or self.original_loan_subsidy_cost
+            or None
+        )
 
         return to_float(amt)
 
@@ -48,7 +51,7 @@ class Transaction(BaseModel):
 
     @property
     def award_description(self) -> Optional[str]:
-        return smart_sentence_case(self.raw.get("description",""))
+        return smart_sentence_case(self.raw.get("description", ""))
 
     @property
     def federal_action_obligation(self) -> Optional[float]:

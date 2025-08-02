@@ -8,12 +8,13 @@ from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
 
+
 def to_date(date_string: str) -> Optional[datetime]:
     """Convert date string to datetime object.
-    
+
     Args:
         date_string: Date string in YYYY-MM-DD format
-        
+
     Returns:
         datetime object or None if parsing fails
     """
@@ -26,6 +27,7 @@ def to_date(date_string: str) -> Optional[datetime]:
         logger.warning(f"Could not parse date string: {date_string}")
         # If parsing fails, return None
         return None
+
 
 def round_to_millions(amount: float) -> str:
     """Format money amount with commas and 2 decimal places, display as millions or billions based on the amount."""
@@ -41,7 +43,7 @@ def round_to_millions(amount: float) -> str:
 
 
 def current_fiscal_year() -> int:
-    """ Returns the current fiscal year """
+    """Returns the current fiscal year"""
     current_date = datetime.now()
     current_month = datetime.now().month
     if current_month < 10:
@@ -49,26 +51,27 @@ def current_fiscal_year() -> int:
     else:
         return current_date.year + 1
 
+
 def get_past_fiscal_years(num_years: int = 3) -> List[int]:
     """
     Get the past N fiscal years.
     In the US, the federal fiscal year starts on October 1.
-    
+
     Args:
         num_years: Number of past fiscal years to return
-        
+
     Returns:
         List of fiscal years, starting with the most recent
     """
     current_date = datetime.now()
     current_year = current_date.year
-    
+
     # We always want the last completed fiscal year
     if current_date.month < 10:
         current_fiscal_year = current_year - 1
     else:
         current_fiscal_year = current_year
-        
+
     return [current_fiscal_year - i for i in range(num_years)]
 
 
@@ -84,39 +87,65 @@ def to_float(x: Any) -> Optional[float]:
 # This could be loaded from a config file or environment variables in a larger application.
 DEFAULT_KEEP_UPPERCASE: Set[str] = {
     # Common Business / Legal
-    "LLC", "INC", "LLP", "LTD", "L.L.C.", "I.N.C.", "L.L.P.", "L.T.D.",
+    "LLC",
+    "INC",
+    "LLP",
+    "LTD",
+    "L.L.C.",
+    "I.N.C.",
+    "L.L.P.",
+    "L.T.D.",
     # Geographical / Governmental
-    "USA", "US", "UK",
+    "USA",
+    "US",
+    "UK",
     # Organizations / Agencies
-    "NASA", "ESA", "JAXA",
+    "NASA",
+    "ESA",
+    "JAXA",
     # NASA Facilities & Major Programs (add more as needed)
-    "JPL", # Jet Propulsion Laboratory
-    "JSC", # Johnson Space Center
-    "KSC", # Kennedy Space Center
-    "GSFC", # Goddard Space Flight Center
-    "MSFC", # Marshall Space Flight Center
-    "ARC", # Ames Research Center
-    "GRC", # Glenn Research Center
-    "LARC", # Langley Research Center (or LaRC - handled by case-insensitive check)
-    "AFRC", # Armstrong Flight Research Center
-    "SSC", # Stennis Space Center
-    "ISS", # International Space Station
-    "JWST", # James Webb Space Telescope
+    "JPL",  # Jet Propulsion Laboratory
+    "JSC",  # Johnson Space Center
+    "KSC",  # Kennedy Space Center
+    "GSFC",  # Goddard Space Flight Center
+    "MSFC",  # Marshall Space Flight Center
+    "ARC",  # Ames Research Center
+    "GRC",  # Glenn Research Center
+    "LARC",  # Langley Research Center (or LaRC - handled by case-insensitive check)
+    "AFRC",  # Armstrong Flight Research Center
+    "SSC",  # Stennis Space Center
+    "ISS",  # International Space Station
+    "JWST",  # James Webb Space Telescope
     # Specific examples from user input
-    "CSOS", "CL", "FL", "FPRW", "PADF", "ICAT", "ICATEQ", "AC" # For A.C. style
+    "CSOS",
+    "CL",
+    "FL",
+    "FPRW",
+    "PADF",
+    "ICAT",
+    "ICATEQ",
+    "AC"  # For A.C. style
     # Add other common contract/technical acronyms as needed
-    "RFQ", "RFP", "SOW", "CDR", "PDR", "QA", "PI", "COTS",
+    "RFQ",
+    "RFP",
+    "SOW",
+    "CDR",
+    "PDR",
+    "QA",
+    "PI",
+    "COTS",
 }
 
 # Maximum length for parenthesized text to be uppercased
-PAREN_UPPERCASE_MAX_LEN: int = 9 # Fewer than 10 characters
+PAREN_UPPERCASE_MAX_LEN: int = 9  # Fewer than 10 characters
 
 # --- Helper Function ---
+
 
 def smart_sentence_case(
     text: Optional[str],
     keep_uppercase: Set[str] = DEFAULT_KEEP_UPPERCASE,
-    paren_max_len: int = PAREN_UPPERCASE_MAX_LEN
+    paren_max_len: int = PAREN_UPPERCASE_MAX_LEN,
 ) -> str:
     """
     Converts an uppercase string to sentence case, preserving specified acronyms
@@ -152,14 +181,14 @@ def smart_sentence_case(
         # 2. Handle parenthesized text: Uppercase if short
         # Uses a lambda function to check length and conditionally uppercase
         def paren_replacer(match):
-            content = match.group(1) # Content inside parentheses
+            content = match.group(1)  # Content inside parentheses
             if len(content) <= paren_max_len:
                 return f"({content.upper()})"
             else:
                 # Return original match (lowercase parens + content)
                 return match.group(0)
 
-        processed_text = re.sub(r'\(([^)]+)\)', paren_replacer, processed_text)
+        processed_text = re.sub(r"\(([^)]+)\)", paren_replacer, processed_text)
 
         # 3. Handle specified acronyms/words: Uppercase if in the set
         # Uses a lambda function to check against the keep_uppercase set
@@ -176,7 +205,7 @@ def smart_sentence_case(
 
         # This regex finds sequences of letters bounded by non-word characters (or start/end)
         # It won't capture A.C. directly but will process A and C individually if AC is in the set.
-        processed_text = re.sub(r'\b([a-zA-Z]+)\b', acronym_replacer, processed_text)
+        processed_text = re.sub(r"\b([a-zA-Z]+)\b", acronym_replacer, processed_text)
 
         # 4. Capitalize the first letter of the entire string
         if processed_text:
@@ -188,46 +217,72 @@ def smart_sentence_case(
         logger.error(f"Error processing text: '{text[:50]}...' - {e}", exc_info=True)
         # Decide on fallback behavior: return original text or empty string?
         # Returning original might be safer if processing fails unexpectedly.
-        return text # Fallback to original text on error
+        return text  # Fallback to original text on error
 
 
 # Define a callback function for custom word handling
 def custom_titlecase_callback(word, **kwargs):
     # If the word is enclosed in parentheses, preserve the case inside.
-    if word.startswith('(') and word.endswith(')'):
+    if word.startswith("(") and word.endswith(")"):
         return word
 
     # Special NASA acronyms - always uppercase.
-    nasa_acronyms = ['nasa', 'sbir', 'sttr', 'iss', 'tdm', 'tdrs', 'fy', 'scan', 'epscor', 'stem']
+    nasa_acronyms = [
+        "nasa",
+        "sbir",
+        "sttr",
+        "iss",
+        "tdm",
+        "tdrs",
+        "fy",
+        "scan",
+        "epscor",
+        "stem",
+    ]
     if word.lower() in nasa_acronyms:
         return word.upper()
 
     # Special NASA acronyms - always uppercase.
-    business_acronyms = ['llc', 'inc', 'llp', 'ltd', 'l.l.c.', 'i.n.c.', 'l.l.p.', 'l.t.d.']
+    business_acronyms = [
+        "llc",
+        "inc",
+        "llp",
+        "ltd",
+        "l.l.c.",
+        "i.n.c.",
+        "l.l.p.",
+        "l.t.d.",
+    ]
     if word.lower() in business_acronyms:
         return word.upper()
 
     # Handle special cases.
-    if word.upper() == 'OSIRIS-REX':
-        return 'OSIRIS-REx'
-    if word.upper() == 'SCAN':
-        return 'SCaN'
-    if word.upper() == 'EPSCOR':
-        return 'EPSCoR'
+    if word.upper() == "OSIRIS-REX":
+        return "OSIRIS-REx"
+    if word.upper() == "SCAN":
+        return "SCaN"
+    if word.upper() == "EPSCOR":
+        return "EPSCoR"
 
     # For small words that should be lowercase (like 'and', 'of', 'the', etc.).
-    small_words = ['and', 'of', 'for', 'the', 'a', 'an', 'in', 'on', 'at', 'to']
-    if word.lower() in small_words and not word.istitle() and kwargs.get('index', 0) != 0:
+    small_words = ["and", "of", "for", "the", "a", "an", "in", "on", "at", "to"]
+    if (
+        word.lower() in small_words
+        and not word.istitle()
+        and kwargs.get("index", 0) != 0
+    ):
         return word.lower()
 
     # Return None to let titlecase handle it normally.
     return None
+
 
 def contracts_titlecase(text):
     """Apply NASA-specific title casing rules to text"""
     if text is None:
         return None
     return titlecase(text, callback=custom_titlecase_callback)
+
 
 def get_business_category_display_names(business_category_list):
     business_category_display_name_list = []

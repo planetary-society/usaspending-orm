@@ -9,21 +9,21 @@ from typing import Dict, Any, Optional
 
 class USASpendingLogger:
     """Centralized logging configuration for USASpending API client."""
-    
+
     _loggers: Dict[str, logging.Logger] = {}
     _configured = False
-    
+
     @classmethod
     def configure(
         self,
         level: str = "INFO",
         debug_mode: bool = False,
         log_format: Optional[str] = None,
-        log_file: Optional[str] = None
+        log_file: Optional[str] = None,
     ) -> None:
         """
         Configure logging for the USASpending API client.
-        
+
         Args:
             level: Base logging level (DEBUG, INFO, WARNING, ERROR)
             debug_mode: Enable verbose debug logging for API calls and internals
@@ -32,21 +32,21 @@ class USASpendingLogger:
         """
         if self._configured:
             return
-            
+
         # Set root logger level
         root_logger = logging.getLogger("usaspending")
-        
+
         # Set level based on debug mode
         if debug_mode:
             root_logger.setLevel(logging.DEBUG)
             level = "DEBUG"
         else:
             root_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
-        
+
         # Remove existing handlers
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
-        
+
         # Create formatter
         if not log_format:
             if debug_mode:
@@ -56,75 +56,83 @@ class USASpendingLogger:
                 )
             else:
                 log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        
+
         formatter = logging.Formatter(log_format)
-        
+
         # Console handler
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(formatter)
         root_logger.addHandler(console_handler)
-        
+
         # File handler if specified
         if log_file:
             file_handler = logging.FileHandler(log_file)
             file_handler.setFormatter(formatter)
             root_logger.addHandler(file_handler)
-        
+
         # Configure specific loggers for different components
         component_levels = {
             "usaspending.client": logging.DEBUG if debug_mode else logging.INFO,
             "usaspending.queries": logging.DEBUG if debug_mode else logging.INFO,
             "usaspending.models": logging.DEBUG if debug_mode else logging.WARNING,
-            "usaspending.utils.rate_limit": logging.DEBUG if debug_mode else logging.WARNING,
+            "usaspending.utils.rate_limit": logging.DEBUG
+            if debug_mode
+            else logging.WARNING,
             "usaspending.utils.retry": logging.DEBUG if debug_mode else logging.WARNING,
             "usaspending.cache": logging.DEBUG if debug_mode else logging.WARNING,
         }
-        
+
         for logger_name, logger_level in component_levels.items():
             logger = logging.getLogger(logger_name)
             logger.setLevel(logger_level)
             # Prevent duplicate messages
             logger.propagate = True
-        
+
         # Mark as configured
         self._configured = True
-        
+
         # Log configuration
         config_logger = self.get_logger("usaspending.config")
         config_logger.info(f"Logging configured - Level: {level}, Debug: {debug_mode}")
         if log_file:
             config_logger.info(f"Logging to file: {log_file}")
-    
+
     @classmethod
     def get_logger(cls, name: str) -> logging.Logger:
         """
         Get a logger instance for the given name.
-        
+
         Args:
             name: Logger name (typically module name)
-            
+
         Returns:
             Configured logger instance
         """
         if name not in cls._loggers:
             cls._loggers[name] = logging.getLogger(name)
         return cls._loggers[name]
-    
+
     @classmethod
     def is_debug_enabled(cls) -> bool:
         """Check if debug logging is enabled."""
         root_logger = logging.getLogger("usaspending")
         return root_logger.isEnabledFor(logging.DEBUG)
-    
+
     @classmethod
     def reset(cls) -> None:
         """Reset logging configuration (mainly for testing)."""
         cls._configured = False
         cls._loggers.clear()
-        
+
         # Clear all handlers from our loggers
-        for logger_name in ["usaspending", "usaspending.client", "usaspending.queries",
-                           "usaspending.models", "usaspending.utils", "usaspending.cache"]:
+        for logger_name in [
+            "usaspending",
+            "usaspending.client",
+            "usaspending.queries",
+            "usaspending.models",
+            "usaspending.utils",
+            "usaspending.cache",
+        ]:
             logger = logging.getLogger(logger_name)
             for handler in logger.handlers[:]:
                 logger.removeHandler(handler)
@@ -133,10 +141,10 @@ class USASpendingLogger:
 def get_logger(name: str) -> logging.Logger:
     """
     Convenience function to get a logger.
-    
+
     Args:
         name: Logger name
-        
+
     Returns:
         Logger instance
     """
@@ -148,11 +156,11 @@ def log_api_request(
     method: str,
     url: str,
     params: Optional[Dict[str, Any]] = None,
-    json_data: Optional[Dict[str, Any]] = None
+    json_data: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     Log an API request with appropriate detail level.
-    
+
     Args:
         logger: Logger instance
         method: HTTP method
@@ -175,11 +183,11 @@ def log_api_response(
     status_code: int,
     response_size: Optional[int] = None,
     duration: Optional[float] = None,
-    error: Optional[str] = None
+    error: Optional[str] = None,
 ) -> None:
     """
     Log an API response with appropriate detail level.
-    
+
     Args:
         logger: Logger instance
         status_code: HTTP status code
@@ -197,7 +205,7 @@ def log_api_response(
             msg_parts.append(f"({duration:.3f}s)")
         if response_size is not None and logger.isEnabledFor(logging.DEBUG):
             msg_parts.append(f"- {response_size} bytes")
-        
+
         if status_code >= 300:
             logger.warning(" ".join(msg_parts))
         else:
@@ -209,11 +217,11 @@ def log_query_execution(
     query_type: str,
     filters_count: int,
     endpoint: str,
-    page: int = 1
+    page: int = 1,
 ) -> None:
     """
     Log query execution details.
-    
+
     Args:
         logger: Logger instance
         query_type: Type of query (e.g., "AwardsSearch")
@@ -222,7 +230,9 @@ def log_query_execution(
         page: Page number
     """
     if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(f"Executing {query_type} query - {filters_count} filters, "
-                    f"endpoint: {endpoint}, page: {page}")
+        logger.debug(
+            f"Executing {query_type} query - {filters_count} filters, "
+            f"endpoint: {endpoint}, page: {page}"
+        )
     else:
         logger.info(f"Executing {query_type} query - {filters_count} filters")

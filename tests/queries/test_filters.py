@@ -35,9 +35,7 @@ def test_time_period_filter_serialization():
     end_date = datetime.date(2025, 9, 30)
     time_period_filter = TimePeriodFilter(start_date=start_date, end_date=end_date)
     expected_dict = {
-        "time_period": [
-            {"start_date": "2024-10-01", "end_date": "2025-09-30"}
-        ]
+        "time_period": [{"start_date": "2024-10-01", "end_date": "2025-09-30"}]
     }
 
     # Act
@@ -144,9 +142,7 @@ def test_location_filter_for_state():
         key="place_of_performance_locations", locations=[location]
     )
     expected_dict = {
-        "place_of_performance_locations": [
-            {"country": "USA", "state": "VA"}
-        ]
+        "place_of_performance_locations": [{"country": "USA", "state": "VA"}]
     }
 
     # Act

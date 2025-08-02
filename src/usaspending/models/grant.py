@@ -10,7 +10,7 @@ from ..utils.formatter import to_float
 
 class Grant(Award):
     """Grant and assistance award types."""
-    
+
     TYPE_FIELDS = [
         "fain",
         "uri",
@@ -22,21 +22,21 @@ class Grant(Award):
         "funding_opportunity",
         "non_federal_funding",
         "total_funding",
-        "transaction_obligated_amount"
+        "transaction_obligated_amount",
     ]
-    
+
     SEARCH_FIELDS = Award.SEARCH_FIELDS + [
         "Start Date",
         "End Date",
         "Award Amount",
         "Total Outlays",
         "Award Type",
-        "SAI Number", 
+        "SAI Number",
         "CFDA Number",
         "Assistance Listings",
-        "primary_assistance_listing"
+        "primary_assistance_listing",
     ]
-    
+
     @property
     def fain(self) -> Optional[str]:
         """
@@ -53,7 +53,7 @@ class Grant(Award):
     def uri(self) -> Optional[str]:
         """The uri of the award"""
         return self._lazy_get("uri")
-    
+
     @property
     def record_type(self) -> Optional[int]:
         """Grant record type identifier."""
@@ -73,17 +73,17 @@ class Grant(Award):
     def primary_cfda_info(self) -> Optional[Dict[str, Any]]:
         """Primary CFDA program information."""
         return self.get_value(["primary_cfda_info", "primary_assistance_listing"])
-    
+
     @property
     def sai_number(self) -> Optional[str]:
         """System for Award Identification (SAI) number for grants."""
         return self.get_value(["sai_number", "SAI Number"])
-    
+
     @cached_property
     def funding_opportunity(self) -> Optional[Dict[str, Any]]:
         """Funding opportunity details for grants."""
         return self._lazy_get("funding_opportunity")
-    
+
     @property
     def non_federal_funding(self) -> Optional[float]:
         """A summation of this award's transactions' non-federal funding amount"""

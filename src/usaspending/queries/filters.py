@@ -14,28 +14,21 @@ from typing import Any, ClassVar, Literal, Optional
 CONTRACT_CODES = frozenset({"A", "B", "C", "D"})
 
 # IDV award type codes
-IDV_CODES = frozenset({
-    "IDV_A", "IDV_B", "IDV_B_A", "IDV_B_B", "IDV_B_C", 
-    "IDV_C", "IDV_D", "IDV_E"
-})
+IDV_CODES = frozenset(
+    {"IDV_A", "IDV_B", "IDV_B_A", "IDV_B_B", "IDV_B_C", "IDV_C", "IDV_D", "IDV_E"}
+)
 
 # Loan award type codes
 LOAN_CODES = frozenset({"07", "08"})
 
 # Grant award type codes
-GRANT_CODES = frozenset({
-    "02", "03", "04", "05"
-})
+GRANT_CODES = frozenset({"02", "03", "04", "05"})
 
 # Direct payment award type codes
-DIRECT_PAYMENT_CODES = frozenset({
-    "06","10"
-})
+DIRECT_PAYMENT_CODES = frozenset({"06", "10"})
 
 # Other award type codes that do not fit into the above categories
-OTHER_CODES = frozenset({
-    "09", "11", "-1"
-})
+OTHER_CODES = frozenset({"09", "11", "-1"})
 
 # All valid award type codes
 ALL_AWARD_CODES = CONTRACT_CODES | IDV_CODES | LOAN_CODES | GRANT_CODES
@@ -47,24 +40,28 @@ ALL_AWARD_CODES = CONTRACT_CODES | IDV_CODES | LOAN_CODES | GRANT_CODES
 
 class AgencyType(Enum):
     """Enumeration for agency types."""
+
     AWARDING = "awarding"
     FUNDING = "funding"
 
 
 class AgencyTier(Enum):
     """Enumeration for agency tiers."""
+
     TOPTIER = "toptier"
     SUBTIER = "subtier"
 
 
 class LocationScope(Enum):
     """Enumeration for location scopes."""
+
     DOMESTIC = "domestic"
     FOREIGN = "foreign"
 
 
 class AwardDateType(Enum):
     """Enumeration for award search date types."""
+
     ACTION_DATE = "action_date"
     DATE_SIGNED = "date_signed"
     LAST_MODIFIED = "last_modified_date"
@@ -74,6 +71,7 @@ class AwardDateType(Enum):
 @dataclass(frozen=True)
 class Location:
     """Represents a standard location for Place of Performance or Recipient filters."""
+
     country_code: str
     state_code: Optional[str] = None
     county_code: Optional[str] = None
@@ -99,6 +97,7 @@ class Location:
             data["zip"] = self.zip_code
         return data
 
+
 # ==============================================================================
 # Base Filter Abstraction
 # ==============================================================================
@@ -106,12 +105,14 @@ class Location:
 
 class BaseFilter(ABC):
     """Abstract base class for all query filter types."""
+
     key: ClassVar[str]
 
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:
         """Converts the filter to its dictionary representation for the API."""
         pass
+
 
 # ==============================================================================
 # Individual Filter Implementations
@@ -121,6 +122,7 @@ class BaseFilter(ABC):
 @dataclass(frozen=True)
 class KeywordsFilter(BaseFilter):
     """Filter by a list of keywords."""
+
     key: ClassVar[str] = "keywords"
     values: list[str]
 
@@ -131,6 +133,7 @@ class KeywordsFilter(BaseFilter):
 @dataclass(frozen=True)
 class TimePeriodFilter(BaseFilter):
     """Filter by a date range."""
+
     key: ClassVar[str] = "time_period"
     start_date: datetime.date
     end_date: datetime.date
@@ -149,6 +152,7 @@ class TimePeriodFilter(BaseFilter):
 @dataclass(frozen=True)
 class LocationScopeFilter(BaseFilter):
     """Filter by domestic or foreign scope for location."""
+
     key: Literal["place_of_performance_scope", "recipient_scope"]
     scope: LocationScope
 
@@ -159,6 +163,7 @@ class LocationScopeFilter(BaseFilter):
 @dataclass(frozen=True)
 class LocationFilter(BaseFilter):
     """Filter by one or more specific geographic locations."""
+
     key: Literal["place_of_performance_locations", "recipient_locations"]
     locations: list[Location]
 
@@ -169,6 +174,7 @@ class LocationFilter(BaseFilter):
 @dataclass(frozen=True)
 class AgencyFilter(BaseFilter):
     """Filter by an awarding or funding agency."""
+
     key: ClassVar[str] = "agencies"
     agency_type: AgencyType
     tier: AgencyTier
@@ -186,6 +192,7 @@ class AgencyFilter(BaseFilter):
 @dataclass(frozen=True)
 class SimpleListFilter(BaseFilter):
     """A generic filter for API keys that accept a list of string values."""
+
     key: str
     values: list[str]
 
@@ -196,6 +203,7 @@ class SimpleListFilter(BaseFilter):
 @dataclass(frozen=True)
 class AwardAmount:
     """Represents a single award amount range for filtering."""
+
     lower_bound: Optional[float] = None
     upper_bound: Optional[float] = None
 
@@ -211,6 +219,7 @@ class AwardAmount:
 @dataclass(frozen=True)
 class AwardAmountFilter(BaseFilter):
     """Filter by one or more award amount ranges."""
+
     key: ClassVar[str] = "award_amounts"
     amounts: list[AwardAmount]
 
@@ -221,6 +230,7 @@ class AwardAmountFilter(BaseFilter):
 @dataclass(frozen=True)
 class TieredCodeFilter(BaseFilter):
     """Handles filters with a 'require' and 'exclude' structure like NAICS."""
+
     key: Literal["naics_codes", "psc_codes", "tas_codes"]
     require: list[list[str]] = field(default_factory=list)
     exclude: list[list[str]] = field(default_factory=list)
@@ -237,6 +247,7 @@ class TieredCodeFilter(BaseFilter):
 @dataclass(frozen=True)
 class TreasuryAccountComponentsFilter(BaseFilter):
     """Filter by specific components of a Treasury Account."""
+
     key: ClassVar[str] = "treasury_account_components"
     components: list[dict[str, str]]
 

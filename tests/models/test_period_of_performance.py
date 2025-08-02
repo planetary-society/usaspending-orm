@@ -14,7 +14,7 @@ class TestPeriodOfPerformance:
             "start_date": "2018-03-05",
             "end_date": "2025-08-23",
             "last_modified_date": "2025-06-23",
-            "potential_end_date": "2025-08-23 00:00:00"
+            "potential_end_date": "2025-08-23 00:00:00",
         }
 
     @pytest.fixture
@@ -25,7 +25,7 @@ class TestPeriodOfPerformance:
             "End Date": "2021-12-31",
             "Last Modified Date": "2021-06-15",
             "Period of Performance Start Date": "2020-01-01",
-            "Period of Performance Current End Date": "2021-12-31"
+            "Period of Performance Current End Date": "2021-12-31",
         }
 
     @pytest.fixture
@@ -69,7 +69,7 @@ class TestPeriodOfPerformance:
     def test_alternate_key_names(self, period_with_alternate_keys):
         """Test that alternate key names are properly handled"""
         period = PeriodOfPerformance(period_with_alternate_keys)
-        
+
         # Should pick up "Start Date"
         start_date = period.start_date
         assert isinstance(start_date, datetime)
@@ -97,10 +97,10 @@ class TestPeriodOfPerformance:
             "start_date": "2022-01-01",
             "Period of Performance Start Date": "2020-01-01",
             "end_date": "2022-12-31",
-            "Period of Performance Current End Date": "2020-12-31"
+            "Period of Performance Current End Date": "2020-12-31",
         }
         period = PeriodOfPerformance(data)
-        
+
         # Should use start_date over Period of Performance Start Date
         assert period.start_date.year == 2022
         assert period.end_date.year == 2022
@@ -128,7 +128,7 @@ class TestPeriodOfPerformance:
         invalid_data = {
             "start_date": "invalid-date",
             "end_date": "2020/01/01",  # Wrong format
-            "last_modified_date": "January 1, 2020"  # Wrong format
+            "last_modified_date": "January 1, 2020",  # Wrong format
         }
         period = PeriodOfPerformance(invalid_data)
         assert period.start_date is None
@@ -139,7 +139,10 @@ class TestPeriodOfPerformance:
         """Test __repr__ with complete data"""
         period = PeriodOfPerformance(sample_period_data)
         repr_str = repr(period)
-        assert repr_str == "<Period of Performance 2018-03-05 00:00:00 -> 2025-08-23 00:00:00>"
+        assert (
+            repr_str
+            == "<Period of Performance 2018-03-05 00:00:00 -> 2025-08-23 00:00:00>"
+        )
 
     def test_repr_with_missing_start_date(self):
         """Test __repr__ with missing start date"""
@@ -163,11 +166,7 @@ class TestPeriodOfPerformance:
 
     def test_null_values_return_none(self):
         """Test that null values return None"""
-        null_data = {
-            "start_date": None,
-            "end_date": None,
-            "last_modified_date": None
-        }
+        null_data = {"start_date": None, "end_date": None, "last_modified_date": None}
         period = PeriodOfPerformance(null_data)
         assert period.start_date is None
         assert period.end_date is None
@@ -175,11 +174,7 @@ class TestPeriodOfPerformance:
 
     def test_empty_string_values_return_none(self):
         """Test that empty string values return None"""
-        empty_string_data = {
-            "start_date": "",
-            "end_date": "",
-            "last_modified_date": ""
-        }
+        empty_string_data = {"start_date": "", "end_date": "", "last_modified_date": ""}
         period = PeriodOfPerformance(empty_string_data)
         assert period.start_date is None
         assert period.end_date is None
@@ -191,7 +186,7 @@ class TestPeriodOfPerformance:
         data = {
             "start_date": None,  # Empty, should be skipped
             "Start Date": "2020-01-01",  # Should be used
-            "Period of Performance Start Date": "2019-01-01"  # Should be ignored
+            "Period of Performance Start Date": "2019-01-01",  # Should be ignored
         }
         period = PeriodOfPerformance(data)
         assert period.start_date.year == 2020
@@ -210,7 +205,7 @@ class TestPeriodOfPerformance:
         assert period.end_date is None
         assert period.last_modified_date is None
 
-    @patch('src.usaspending.utils.formatter.logger')
+    @patch("src.usaspending.utils.formatter.logger")
     def test_date_parsing_warning(self, mock_logger):
         """Test that invalid dates log warnings"""
         invalid_data = {"start_date": "invalid-date-format"}

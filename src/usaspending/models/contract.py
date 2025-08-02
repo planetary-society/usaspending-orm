@@ -10,31 +10,31 @@ from ..utils.formatter import to_float
 
 class Contract(Award):
     """Contract award type including definitive contracts and purchase orders."""
-    
+
     TYPE_FIELDS = [
         "piid",
-        "base_exercised_options", 
+        "base_exercised_options",
         "base_and_all_options",
         "contract_award_type",
         "naics_code",
         "naics_description",
         "naics_hierarchy",
-        "psc_code", 
+        "psc_code",
         "psc_description",
         "psc_hierarchy",
-        "latest_transaction_contract_data"
+        "latest_transaction_contract_data",
     ]
-    
+
     SEARCH_FIELDS = Award.SEARCH_FIELDS + [
         "Start Date",
-        "End Date", 
+        "End Date",
         "Award Amount",
         "Total Outlays",
         "Contract Award Type",
         "NAICS",
-        "PSC"
+        "PSC",
     ]
-    
+
     @property
     def piid(self) -> Optional[str]:
         """
@@ -45,7 +45,7 @@ class Contract(Award):
         between 13 and 17 digits, both letters and numbers.
         """
         return self._lazy_get("piid")
-    
+
     @property
     def base_exercised_options(self) -> Optional[float]:
         """The sum of the base_exercised_options_val from associated transactions"""
@@ -55,7 +55,7 @@ class Contract(Award):
     def base_and_all_options(self) -> Optional[float]:
         """The sum of the base_and_all_options_value from associated transactions"""
         return to_float(self._lazy_get("base_and_all_options", default=None))
-    
+
     @property
     def contract_award_type(self) -> Optional[str]:
         """Contract award type description."""
@@ -92,7 +92,7 @@ class Contract(Award):
         if isinstance(psc_data, dict):
             return psc_data.get("description")
         return None
-    
+
     @cached_property
     def psc_hierarchy(self) -> Optional[Dict[str, Any]]:
         """Product/Service Code (PSC) hierarchy information."""
@@ -102,7 +102,7 @@ class Contract(Award):
     def naics_hierarchy(self) -> Optional[Dict[str, Any]]:
         """North American Industry Classification System (NAICS) hierarchy."""
         return self._lazy_get("naics_hierarchy")
-    
+
     @cached_property
     def latest_transaction_contract_data(self) -> Optional[Dict[str, Any]]:
         """Latest contract transaction data with procurement-specific details."""

@@ -11,30 +11,30 @@ from ..utils.formatter import to_float
 
 class IDV(Award):
     """Indefinite Delivery Vehicle (IDV) award type."""
-    
+
     TYPE_FIELDS = [
         "piid",
         "base_and_all_options",
         "contract_award_type",
         "naics_code",
-        "naics_description", 
+        "naics_description",
         "naics_hierarchy",
         "psc_code",
         "psc_description",
         "psc_hierarchy",
-        "latest_transaction_contract_data"
+        "latest_transaction_contract_data",
     ]
-    
+
     SEARCH_FIELDS = Award.SEARCH_FIELDS + [
         "Start Date",
-        "Award Amount", 
+        "Award Amount",
         "Total Outlays",
         "Contract Award Type",
         "Last Date to Order",
         "NAICS",
-        "PSC"
+        "PSC",
     ]
-    
+
     @property
     def piid(self) -> Optional[str]:
         """
@@ -45,12 +45,12 @@ class IDV(Award):
         between 13 and 17 digits, both letters and numbers.
         """
         return self._lazy_get("piid")
-    
+
     @property
     def base_and_all_options(self) -> Optional[float]:
         """The sum of the base_and_all_options_value from associated transactions"""
         return to_float(self._lazy_get("base_and_all_options", default=None))
-    
+
     @property
     def contract_award_type(self) -> Optional[str]:
         """Contract award type description."""
@@ -87,7 +87,7 @@ class IDV(Award):
         if isinstance(psc_data, dict):
             return psc_data.get("description")
         return None
-    
+
     @cached_property
     def psc_hierarchy(self) -> Optional[Dict[str, Any]]:
         """Product/Service Code (PSC) hierarchy information."""
@@ -97,24 +97,26 @@ class IDV(Award):
     def naics_hierarchy(self) -> Optional[Dict[str, Any]]:
         """North American Industry Classification System (NAICS) hierarchy."""
         return self._lazy_get("naics_hierarchy")
-    
+
     @cached_property
     def latest_transaction_contract_data(self) -> Optional[Dict[str, Any]]:
         """Latest contract transaction data with procurement-specific details."""
         return self._lazy_get("latest_transaction_contract_data")
-    
+
     @cached_property
     def place_of_performance(self) -> Optional[Location]:
         """Award place of performance location.
-        
+
         Note: IDVs typically have null or empty place_of_performance data.
         """
-        data = self._lazy_get('place_of_performance', 'Primary Place of Performance', default=None)
+        data = self._lazy_get(
+            "place_of_performance", "Primary Place of Performance", default=None
+        )
         if not isinstance(data, dict) or not data:
             return None
-        
+
         # Check if all values in the dict are None/null (common for IDV awards)
         if all(v is None for v in data.values()):
             return None
-        
+
         return Location(data, self._client)

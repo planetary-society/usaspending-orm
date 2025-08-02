@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 # TODO: Add logic to self-categorize recipient type based on FPDS categories
 
-class Recipient(LazyRecord):
 
+class Recipient(LazyRecord):
     # compiled once at import time
     _LIST_SUFFIX_RE = re.compile(
         r"""
@@ -29,7 +29,9 @@ class Recipient(LazyRecord):
         re.VERBOSE,
     )
 
-    def __init__(self, data_or_id: Dict[str, Any] | str, client: Optional[USASpending] = None):
+    def __init__(
+        self, data_or_id: Dict[str, Any] | str, client: Optional[USASpending] = None
+    ):
         if isinstance(data_or_id, dict):
             raw = data_or_id.copy()
             rid = raw.get("recipient_id") or raw.get("recipient_hash")
@@ -40,12 +42,14 @@ class Recipient(LazyRecord):
         else:
             raise ValidationError("Recipient expects dict or recipient_id/hash string")
         super().__init__(raw, client)
-        
+
     def _fetch_details(self) -> Optional[Dict[str, Any]]:
         """Fetch full recipient details from the recipients resource."""
         recipient_id = self.recipient_id
         if not recipient_id:
-            logger.error("Cannot lazy-load Recipient data. Property `recipient_id` is required to fetch details.")
+            logger.error(
+                "Cannot lazy-load Recipient data. Property `recipient_id` is required to fetch details."
+            )
             return None
         try:
             # Use the recipients resource to get full recipient data
@@ -77,9 +81,7 @@ class Recipient(LazyRecord):
 
         # turn  "'C','R'"  or  "'R'"  etc.  into a list of clean tokens
         tokens = [
-            tok.strip().strip("'\"").upper()
-            for tok in body.split(",")
-            if tok.strip()
+            tok.strip().strip("'\"").upper() for tok in body.split(",") if tok.strip()
         ]
 
         letter = tokens[0]
@@ -91,11 +93,15 @@ class Recipient(LazyRecord):
 
     @property
     def name(self) -> Optional[str]:
-        return contracts_titlecase(self._lazy_get("name", "recipient_name", "Recipient Name", default=None))
+        return contracts_titlecase(
+            self._lazy_get("name", "recipient_name", "Recipient Name", default=None)
+        )
 
     @property
     def duns(self) -> Optional[str]:
-        return self._lazy_get("duns", "recipient_unique_id", "Recipient DUNS Number", default=None)
+        return self._lazy_get(
+            "duns", "recipient_unique_id", "Recipient DUNS Number", default=None
+        )
 
     @property
     def uei(self) -> Optional[str]:
@@ -113,7 +119,7 @@ class Recipient(LazyRecord):
                 "duns": self.get_value("parent_duns"),
                 "uei": self.get_value("parent_uei"),
             },
-            client=self._client
+            client=self._client,
         )
 
     @cached_property
@@ -129,7 +135,7 @@ class Recipient(LazyRecord):
                             "duns": p.get("parent_duns"),
                             "uei": p.get("parent_uei"),
                         },
-                        client=self._client
+                        client=self._client,
                     )
                 )
         return plist
@@ -141,21 +147,21 @@ class Recipient(LazyRecord):
     @cached_property
     def location(self) -> Optional[Location]:
         """Get recipient location - shares same client."""
-        data = self._lazy_get('location')
+        data = self._lazy_get("location")
         return Location(data, self._client) if data else None
 
     @property
     def total_transaction_amount(self):
         return to_float(self._lazy_get("total_transaction_amount"))
-    
+
     @property
     def total_transactions(self):
         return self._lazy_get("total_transactions")
-    
+
     @property
     def total_face_value_loan_amount(self):
         return to_float(self._lazy_get("total_face_value_loan_amount"))
-    
+
     @property
     def total_face_value_loan_transactions(self):
         return self._lazy_get("total_face_value_loan_transactions")

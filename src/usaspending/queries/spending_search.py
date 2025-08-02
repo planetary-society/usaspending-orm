@@ -40,7 +40,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
     """
     Builds and executes spending by category search queries, allowing for complex
     filtering on spending data. This class follows a fluent interface pattern.
-    
+
     Supports both recipient and district spending searches with configurable
     spending levels (transactions, awards, subawards).
     """
@@ -79,7 +79,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload from the filter objects."""
-        
+
         if self._category is None:
             raise ValidationError(
                 "Category must be set. Use .by_recipient() or .by_district() method."
@@ -94,18 +94,22 @@ class SpendingSearch(QueryBuilder["Spending"]):
             "page": page,
             "spending_level": self._spending_level,
         }
-        
+
         # Add deprecated subawards field if needed
         if self._subawards:
             payload["subawards"] = self._subawards
-            
+
         return payload
 
     def _transform_result(self, result: dict[str, Any]) -> Spending:
         """Transforms a single API result item into appropriate Spending model."""
         # Add category info to result data for model initialization
-        result_with_category = {**result, "category": self._category, "spending_level": self._spending_level}
-        
+        result_with_category = {
+            **result,
+            "category": self._category,
+            "spending_level": self._spending_level,
+        }
+
         if self._category == "recipient":
             return RecipientSpending(result_with_category, self._client)
         elif self._category == "district":
@@ -116,57 +120,59 @@ class SpendingSearch(QueryBuilder["Spending"]):
     def count(self) -> int:
         """
         Get the total count of results by iterating through pages.
-        
+
         Respects pagination constraints like limit() and max_pages() to match
-        the behavior of iteration. The spending by category endpoints don't 
+        the behavior of iteration. The spending by category endpoints don't
         have a total count in page_metadata, so we fetch pages and count results.
-        
+
         Returns:
             The total number of matching spending records, up to any set limits.
         """
         logger.debug(f"{self.__class__.__name__}.count() called")
-        
+
         # Early return for zero or negative limits
         if self._total_limit is not None and self._total_limit <= 0:
-            logger.info(f"{self.__class__.__name__}.count() = 0 (limit: {self._total_limit})")
+            logger.info(
+                f"{self.__class__.__name__}.count() = 0 (limit: {self._total_limit})"
+            )
             return 0
-        
+
         total_count = 0
         page = 1
         pages_fetched = 0
-        
+
         while True:
             # Check if we've reached the max pages limit
             if self._max_pages and pages_fetched >= self._max_pages:
                 logger.debug(f"Max pages limit ({self._max_pages}) reached")
                 break
-                
+
             response = self._execute_query(page)
             results = response.get("results", [])
-            
+
             # Count items, but respect total_limit
             items_to_count = len(results)
             if self._total_limit is not None:
                 remaining = self._total_limit - total_count
                 items_to_count = min(items_to_count, remaining)
-            
+
             total_count += items_to_count
-            
+
             # Stop if we've reached our limit
             if self._total_limit is not None and total_count >= self._total_limit:
                 logger.debug(f"Total limit of {self._total_limit} items reached")
                 break
-            
+
             # Check if there are more pages
             page_metadata = response.get("page_metadata", {})
             has_next = page_metadata.get("hasNext", False)
-            
+
             if not has_next or not results:
                 break
-                
+
             page += 1
             pages_fetched += 1
-        
+
         logger.info(f"{self.__class__.__name__}.count() = {total_count}")
         return total_count
 
@@ -177,7 +183,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
     def by_recipient(self) -> SpendingSearch:
         """
         Configure search to return spending grouped by recipient.
-        
+
         Returns:
             A new SpendingSearch instance configured for recipient spending.
         """
@@ -188,7 +194,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
     def by_district(self) -> SpendingSearch:
         """
         Configure search to return spending grouped by congressional district.
-        
+
         Returns:
             A new SpendingSearch instance configured for district spending.
         """
@@ -203,10 +209,10 @@ class SpendingSearch(QueryBuilder["Spending"]):
     def spending_level(self, level: SpendingLevel) -> SpendingSearch:
         """
         Set the spending level for data aggregation.
-        
+
         Args:
             level: The spending level - "transactions", "awards", or "subawards"
-            
+
         Returns:
             A new SpendingSearch instance with the spending level configured.
         """
@@ -217,10 +223,10 @@ class SpendingSearch(QueryBuilder["Spending"]):
     def subawards_only(self, enabled: bool = True) -> SpendingSearch:
         """
         Enable subawards search (deprecated parameter).
-        
+
         Args:
             enabled: Whether to search subawards instead of prime awards
-            
+
         Returns:
             A new SpendingSearch instance with subawards flag set.
         """
@@ -264,35 +270,46 @@ class SpendingSearch(QueryBuilder["Spending"]):
 
         Returns:
             A new SpendingSearch instance with the filter applied.
-        
+
         Raises:
             ValidationError: If string dates are not in valid "YYYY-MM-DD" format.
         """
-        
+
         # Parse string dates if needed
         if isinstance(start_date, str):
             try:
                 start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
             except ValueError:
-                raise ValidationError(f"Invalid start_date format: '{start_date}'. Expected 'YYYY-MM-DD'.")
-        
+                raise ValidationError(
+                    f"Invalid start_date format: '{start_date}'. Expected 'YYYY-MM-DD'."
+                )
+
         if isinstance(end_date, str):
             try:
                 end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
             except ValueError:
-                raise ValidationError(f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'.")
-        
+                raise ValidationError(
+                    f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'."
+                )
+
         # If convenience flag is set, use NEW_AWARDS_ONLY date type
         if new_awards_only:
             date_type = AwardDateType.NEW_AWARDS_ONLY
-            
+
         clone = self._clone()
         clone._filter_objects.append(
-            TimePeriodFilter(start_date=start_date, end_date=end_date, date_type=date_type)
+            TimePeriodFilter(
+                start_date=start_date, end_date=end_date, date_type=date_type
+            )
         )
         return clone
 
-    def for_fiscal_year(self, year: int, new_awards_only: bool = False, date_type: Optional[AwardDateType] = None) -> SpendingSearch:
+    def for_fiscal_year(
+        self,
+        year: int,
+        new_awards_only: bool = False,
+        date_type: Optional[AwardDateType] = None,
+    ) -> SpendingSearch:
         """
         Adds a time period filter for a single US government fiscal year
         (October 1 to September 30).
@@ -307,7 +324,12 @@ class SpendingSearch(QueryBuilder["Spending"]):
         """
         start_date = datetime.date(year - 1, 10, 1)
         end_date = datetime.date(year, 9, 30)
-        return self.in_time_period(start_date=start_date, end_date=end_date, new_awards_only=new_awards_only, date_type=date_type)
+        return self.in_time_period(
+            start_date=start_date,
+            end_date=end_date,
+            new_awards_only=new_awards_only,
+            date_type=date_type,
+        )
 
     def with_place_of_performance_scope(self, scope: LocationScope) -> SpendingSearch:
         """
@@ -325,7 +347,9 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_place_of_performance_locations(self, *locations: Location) -> SpendingSearch:
+    def with_place_of_performance_locations(
+        self, *locations: Location
+    ) -> SpendingSearch:
         """
         Filter by one or more specific geographic places of performance.
 
@@ -337,7 +361,9 @@ class SpendingSearch(QueryBuilder["Spending"]):
         """
         clone = self._clone()
         clone._filter_objects.append(
-            LocationFilter(key="place_of_performance_locations", locations=list(locations))
+            LocationFilter(
+                key="place_of_performance_locations", locations=list(locations)
+            )
         )
         return clone
 
@@ -407,7 +433,9 @@ class SpendingSearch(QueryBuilder["Spending"]):
             A new SpendingSearch instance with the filter applied.
         """
         clone = self._clone()
-        clone._filter_objects.append(LocationScopeFilter(key="recipient_scope", scope=scope))
+        clone._filter_objects.append(
+            LocationScopeFilter(key="recipient_scope", scope=scope)
+        )
         return clone
 
     def with_recipient_locations(self, *locations: Location) -> SpendingSearch:
@@ -469,7 +497,9 @@ class SpendingSearch(QueryBuilder["Spending"]):
             A new SpendingSearch instance with the filter applied.
         """
         clone = self._clone()
-        clone._filter_objects.append(SimpleListFilter(key="award_ids", values=list(award_ids)))
+        clone._filter_objects.append(
+            SimpleListFilter(key="award_ids", values=list(award_ids))
+        )
         return clone
 
     def with_award_amounts(self, *amounts: AwardAmount) -> SpendingSearch:
@@ -522,7 +552,9 @@ class SpendingSearch(QueryBuilder["Spending"]):
         require_list = [[code] for code in require] if require else []
         exclude_list = [[code] for code in exclude] if exclude else []
         clone._filter_objects.append(
-            TieredCodeFilter(key="naics_codes", require=require_list, exclude=exclude_list)
+            TieredCodeFilter(
+                key="naics_codes", require=require_list, exclude=exclude_list
+            )
         )
         return clone
 

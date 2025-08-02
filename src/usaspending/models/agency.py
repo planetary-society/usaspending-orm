@@ -15,7 +15,7 @@ class Agency(LazyRecord):
 
     def __init__(self, data: Dict[str, Any], client: Optional[USASpending] = None):
         """Initialize Agency instance.
-        
+
         Args:
             data: Agency data dictionary
             client: Optional USASpending client instance
@@ -44,13 +44,13 @@ class Agency(LazyRecord):
     @cached_property
     def toptier_agency(self) -> Optional[AgencyTier]:
         """Top-tier agency information."""
-        data = self._data.get('toptier_agency')
+        data = self._data.get("toptier_agency")
         return AgencyTier(data) if data else None
 
     @cached_property
     def subtier_agency(self) -> Optional[AgencyTier]:
         """Sub-tier agency information."""
-        data = self._data.get('subtier_agency')
+        data = self._data.get("subtier_agency")
         return AgencyTier(data) if data else None
 
     @property
@@ -92,7 +92,7 @@ class AgencyTier:
 
     def __init__(self, data: Dict[str, Any]):
         """Initialize AgencyTier instance.
-        
+
         Args:
             data: Agency tier data dictionary
         """

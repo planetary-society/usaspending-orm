@@ -21,8 +21,9 @@ def default_test_config():
         timeout=0.01,
         retry_delay=0.01,
         retry_backoff=0.01,
-        rate_limit_calls=10000
+        rate_limit_calls=10000,
     )
+
 
 @pytest.fixture
 def client_config():
@@ -40,25 +41,27 @@ def client_config():
     # Unpacking the saved dictionary as keyword arguments is the key.
     config.configure(**original_config_vars)
 
+
 @pytest.fixture
 def mock_usa_client():
     """Create a MockUSASpendingClient for testing.
-    
+
     This is the new recommended way to mock the USASpending client.
     It provides better functionality for testing pagination, errors,
     and complex scenarios.
-    
+
     Example:
         def test_award_search(mock_usa_client):
             mock_usa_client.mock_award_search([
                 {"Award ID": "123", "Recipient Name": "Test Corp"}
             ])
-            
+
             results = list(mock_usa_client.awards.search().with_award_types("A"))
             assert len(results) == 1
     """
     client = MockUSASpendingClient()
     return client
+
 
 def load_json_fixture(relative_path):
     """Helper to load a JSON fixture file given a relative path from the test directory."""
@@ -66,30 +69,46 @@ def load_json_fixture(relative_path):
     with open(fixture_path) as f:
         return json.load(f)
 
+
+@pytest.fixture
+def load_fixture():
+    """General fixture loader that returns a function to load any fixture file."""
+
+    def _load(relative_path):
+        return load_json_fixture(relative_path)
+
+    return _load
+
+
 @pytest.fixture
 def award_fixture_data():
     """Load the award fixture data."""
     return load_json_fixture("awards/contract.json")
+
 
 @pytest.fixture
 def contract_fixture_data():
     """Load the award fixture data."""
     return load_json_fixture("awards/contract.json")
 
+
 @pytest.fixture
 def idv_fixture_data():
     """Load the award fixture data."""
     return load_json_fixture("awards/idv.json")
+
 
 @pytest.fixture
 def grant_fixture_data():
     """Load the award fixture data."""
     return load_json_fixture("awards/grant.json")
 
+
 @pytest.fixture
 def loan_fixture_data():
     """Load the loan fixture data."""
     return load_json_fixture("awards/loan.json")
+
 
 @pytest.fixture
 def top_recipients_response():

@@ -32,34 +32,36 @@ class TestClientRateLimitIntegration:
         # Arrange
         # Set a tight rate limit
         client_config(rate_limit_calls=2, rate_limit_period=0.5)
-        
+
         # Set up responses for the endpoints
         mock_usa_client.set_response("/test1", {"results": []})
         mock_usa_client.set_response("/test2", {"results": []})
         mock_usa_client.set_response("/test3", {"results": []})
-        
+
         # Enable rate limit simulation to verify behavior
         mock_usa_client.simulate_rate_limit(delay=0.001)  # Small delay for testing
-        
+
         # Record start time
         start_time = time.time()
 
         # Act
         mock_usa_client._make_request("GET", "/test1")
         mock_usa_client._make_request("GET", "/test2")
-        mock_usa_client._make_request("GET", "/test3")  # This should trigger rate limit delay
-        
+        mock_usa_client._make_request(
+            "GET", "/test3"
+        )  # This should trigger rate limit delay
+
         # Record end time
         end_time = time.time()
 
         # Assert
         # Verify all requests were made
         assert mock_usa_client.get_request_count() == 3
-        
+
         # Verify specific endpoints were called
         assert mock_usa_client.get_request_count("/test1") == 1
         assert mock_usa_client.get_request_count("/test2") == 1
         assert mock_usa_client.get_request_count("/test3") == 1
-        
+
         # Verify that the rate limiter caused a delay (3 requests * 0.001s delay)
         assert end_time - start_time >= 0.003

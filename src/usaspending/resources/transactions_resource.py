@@ -14,19 +14,19 @@ logger = USASpendingLogger.get_logger(__name__)
 
 class TransactionsResource(BaseResource):
     """Resource for transaction-related operations.
-    
+
     Provides access to transaction search and retrieval endpoints.
     """
-    
+
     def for_award(self, award_id: str) -> "TransactionsSearch":
         """Create a transactions search query for a specific award.
-        
+
         Args:
             award_id: Unique award identifier
-            
+
         Returns:
             TransactionsSearch query builder for chaining filters
-            
+
         Example:
             >>> transactions = client.transactions.for_award("CONT_AWD_123")
             ...     .limit(50)
@@ -35,4 +35,5 @@ class TransactionsResource(BaseResource):
         """
         logger.debug(f"Creating transactions search for award: {award_id}")
         from ..queries.transactions_search import TransactionsSearch
+
         return TransactionsSearch(self._client).for_award(award_id)

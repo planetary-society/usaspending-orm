@@ -12,40 +12,40 @@ if TYPE_CHECKING:
 
 class RecipientSpending(Recipient):
     """Model for spending by recipient data.
-    
-    Represents spending data grouped by recipient with recipient-specific 
+
+    Represents spending data grouped by recipient with recipient-specific
     fields like recipient_id and UEI.
     """
-    
+
     def __init__(self, data: dict, client: Optional["USASpending"] = None):
         """Initialize RecipientSpending model.
-        
+
         Args:
             data: Raw recipient spending data from API
             client: USASpending client instance
         """
         super().__init__(data, client)
-    
+
     @property
     def duns(self) -> Optional[str]:
         """DUNS number from spending data (stored in 'code' field)."""
         return self.get_value(["code"], default=None)
-    
+
     @property
     def amount(self) -> Optional[float]:
         """Total spending amount for this record."""
         return to_float(self.get_value(["amount"]))
-    
+
     @property
     def total_outlays(self) -> Optional[float]:
         """Total outlays for this spending record."""
         return to_float(self.get_value(["total_outlays"]))
-    
+
     @property
     def spending_level(self) -> Optional[str]:
         """The spending level used for this data (transactions, awards, subawards)."""
         return self.get_value(["spending_level"])
-    
+
     def __repr__(self) -> str:
         """String representation of RecipientSpending."""
         name = self.name or "Unknown Recipient"

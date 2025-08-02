@@ -3,9 +3,10 @@ from typing import Dict, Any, Optional
 from titlecase import titlecase
 from .base_model import BaseModel
 
+
 class Location(BaseModel):
     """Location model for USASpending data."""
-    
+
     def __init__(self, data: Dict[str, Any], client=None):
         """Initialize Location. Client parameter is ignored for compatibility."""
         super().__init__(data)
@@ -14,43 +15,57 @@ class Location(BaseModel):
     @property
     def address_line1(self) -> Optional[str]:
         return self._format_location_string_property(self.get_value(["address_line1"]))
-    
+
     @property
     def address_line2(self) -> Optional[str]:
         return self._format_location_string_property(self.get_value(["address_line2"]))
-    
+
     @property
     def address_line3(self) -> Optional[str]:
         return self._format_location_string_property(self.get_value(["address_line3"]))
-    
+
     @property
     def city(self) -> Optional[str]:
-        return self._format_location_string_property(self.get_value(["city_name", "city"]))
+        return self._format_location_string_property(
+            self.get_value(["city_name", "city"])
+        )
 
-    
     @property
-    def state_name(self)  -> Optional[str]:
+    def state_name(self) -> Optional[str]:
         self._format_location_string_property(self.get_value(["state_name", "state"]))
-    
+
     @property
-    def country_name(self)-> Optional[str]:
-        country = self._format_location_string_property(self.get_value(["country_name"]))
+    def country_name(self) -> Optional[str]:
+        country = self._format_location_string_property(
+            self.get_value(["country_name"])
+        )
         if country.lower() == "usa":
             country = "USA"
         return country
-    
+
     @property
-    def zip4(self)        -> Optional[str]:            return self.get_value(["zip4"])
+    def zip4(self) -> Optional[str]:
+        return self.get_value(["zip4"])
+
     @property
-    def county_name(self) -> Optional[str]:            return self.get_value(["county_name"])
+    def county_name(self) -> Optional[str]:
+        return self.get_value(["county_name"])
+
     @property
-    def county_code(self) -> Optional[str]:            return self.get_value(["county_code"])
+    def county_code(self) -> Optional[str]:
+        return self.get_value(["county_code"])
+
     @property
-    def congressional_code(self) -> Optional[str]:     return self.get_value(["congressional_code"])
+    def congressional_code(self) -> Optional[str]:
+        return self.get_value(["congressional_code"])
+
     @property
-    def foreign_province(self) -> Optional[str]:       return self.get_value(["foreign_province"])
+    def foreign_province(self) -> Optional[str]:
+        return self.get_value(["foreign_province"])
+
     @property
-    def foreign_postal_code(self) -> Optional[str]:    return self.get_value(["foreign_postal_code"])
+    def foreign_postal_code(self) -> Optional[str]:
+        return self.get_value(["foreign_postal_code"])
 
     # dual-source fields ----------------------------------------------------
     @property
@@ -59,7 +74,9 @@ class Location(BaseModel):
 
     @property
     def country_code(self) -> Optional[str]:
-        return self.get_value(["location_country_code", "Place of Performance Country Code"])
+        return self.get_value(
+            ["location_country_code", "Place of Performance Country Code"]
+        )
 
     @property
     def zip5(self) -> Optional[str]:
@@ -74,9 +91,11 @@ class Location(BaseModel):
 
     @property
     def formatted_address(self) -> Optional[str]:
-        lines: list[str] = [line for line in (self.address_line1,
-                                               self.address_line2,
-                                               self.address_line3) if line]
+        lines: list[str] = [
+            line
+            for line in (self.address_line1, self.address_line2, self.address_line3)
+            if line
+        ]
         trailing = [p for p in (self.city, self.state_code, self.zip5) if p]
         if trailing:
             lines.append(", ".join(trailing))
@@ -86,7 +105,7 @@ class Location(BaseModel):
 
     def _format_location_string_property(self, text: str) -> Optional[str]:
         """Format a location string with string check."""
-        if not isinstance(text,str):
+        if not isinstance(text, str):
             return None
         return titlecase(text.strip())
 

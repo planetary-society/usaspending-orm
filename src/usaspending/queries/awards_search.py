@@ -30,6 +30,7 @@ from usaspending.queries.filters import (
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
 )
+
 # Import award type codes from config
 # These are defined by USASpending.gov and represent different categories of awards
 from ..config import (
@@ -39,10 +40,11 @@ from ..config import (
     GRANT_CODES,
     DIRECT_PAYMENT_CODES,
     OTHER_CODES,
-    AWARD_TYPE_GROUPS
+    AWARD_TYPE_GROUPS,
 )
 
 logger = USASpendingLogger.get_logger(__name__)
+
 
 class AwardsSearch(QueryBuilder["Award"]):
     """
@@ -72,7 +74,7 @@ class AwardsSearch(QueryBuilder["Award"]):
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload from the filter objects."""
-        
+
         final_filters = self._aggregate_filters()
 
         # The 'award_type_codes' filter is required by the API.
@@ -105,28 +107,28 @@ class AwardsSearch(QueryBuilder["Award"]):
     def _validate_single_award_type_category(self, new_codes: set[str]) -> None:
         """
         Validate that only one category of award types is present.
-        
+
         Args:
             new_codes: New award type codes being added
-            
+
         Raises:
             ValidationError: If mixing award type categories
         """
         existing_codes = self._get_award_type_codes()
         all_codes = existing_codes | new_codes
-        
+
         if not all_codes:
             return
-        
+
         # Check how many categories are represented using the config mapping
         categories_present = 0
         category_names = []
-        
+
         for category_name, codes in AWARD_TYPE_GROUPS.items():
             if all_codes & frozenset(codes.keys()):
                 categories_present += 1
                 category_names.append(category_name)
-        
+
         if categories_present > 1:
             raise ValidationError(
                 f"Cannot mix different award type categories: {', '.join(category_names)}. "
@@ -136,15 +138,15 @@ class AwardsSearch(QueryBuilder["Award"]):
     def count(self) -> int:
         """
         Get the total count of results without fetching all items.
-        
+
         Returns:
             The total number of matching awards for the selected award type category.
         """
         logger.debug(f"{self.__class__.__name__}.count() called")
-        
-        endpoint = '/v2/search/spending_by_award_count/'
+
+        endpoint = "/v2/search/spending_by_award_count/"
         final_filters = self._aggregate_filters()
-        
+
         # The 'award_type_codes' filter is required by the API.
         if "award_type_codes" not in final_filters:
             raise ValidationError(
@@ -155,91 +157,102 @@ class AwardsSearch(QueryBuilder["Award"]):
         payload = {
             "filters": final_filters,
         }
-        
+
         from ..logging_config import log_query_execution
-        log_query_execution(logger, 'AwardsSearch.count', len(self._filter_objects), endpoint)
-        
+
+        log_query_execution(
+            logger, "AwardsSearch.count", len(self._filter_objects), endpoint
+        )
+
         # Send the request to the count endpoint
         response = self._client._make_request("POST", endpoint, json=payload)
-        
+
         # Get the award type codes to determine which category to count
         award_type_codes = self._get_award_type_codes()
-        
+
         # Determine the category based on award type codes
         category = self._get_award_type_category(award_type_codes)
-        
+
         # Extract count from the appropriate category
         results = response.get("results", {})
         total = results.get(category, 0)
-        
+
         logger.info(f"{self.__class__.__name__}.count() = {total} ({category})")
         return total
-    
+
     def _get_award_type_category(self, award_type_codes: set[str]) -> str:
         """
         Determine the award type category based on the award type codes.
-        
+
         Args:
             award_type_codes: Set of award type codes
-            
+
         Returns:
             The category name as used in the count endpoint response
         """
         # Map config category names to API response names
         category_mapping = {
             "contracts": "contracts",
-            "idvs": "idvs", 
+            "idvs": "idvs",
             "loans": "loans",
             "grants": "grants",
             "direct_payments": "direct_payments",
-            "other_assistance": "other"
+            "other_assistance": "other",
         }
-        
+
         for category_name, codes in AWARD_TYPE_GROUPS.items():
             if award_type_codes & frozenset(codes.keys()):
                 return category_mapping[category_name]
-        
+
         # Fail hard if no valid award type category is found
-        raise ValidationError(
-            "No valid award type category found. "
-        )
+        raise ValidationError("No valid award type category found. ")
 
     def _get_fields(self) -> list[str]:
         """
         Determines the list of fields to request based on award type filters.
-        
+
         Returns different field sets depending on the award type codes:
         - Contracts (A, B, C, D): Include contract-specific fields
-        - IDV (IDV_A, IDV_B, etc.): Include IDV-specific fields  
+        - IDV (IDV_A, IDV_B, etc.): Include IDV-specific fields
         - Loans (07, 08): Include loan-specific fields
         - Grants/Assistance (02, 03, 04, 05, 06, 09, 10, 11, -1): Include assistance fields
         """
         # Start with base fields from Award model
         base_fields = Award.SEARCH_FIELDS.copy()
-        
+
         # Get award type codes from filters
         award_types = self._get_award_type_codes()
         additional_fields = []
-        
+
         # Check each category and add appropriate fields based on model
         for category_name, codes in AWARD_TYPE_GROUPS.items():
             if award_types & frozenset(codes.keys()):
                 if category_name == "contracts":
                     # Use Contract.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend([f for f in Contract.SEARCH_FIELDS if f not in base_fields])
+                    additional_fields.extend(
+                        [f for f in Contract.SEARCH_FIELDS if f not in base_fields]
+                    )
                 elif category_name == "idvs":
                     # Use IDV.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend([f for f in IDV.SEARCH_FIELDS if f not in base_fields])
+                    additional_fields.extend(
+                        [f for f in IDV.SEARCH_FIELDS if f not in base_fields]
+                    )
                 elif category_name == "loans":
                     # Use Loan.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend([f for f in Loan.SEARCH_FIELDS if f not in base_fields])
+                    additional_fields.extend(
+                        [f for f in Loan.SEARCH_FIELDS if f not in base_fields]
+                    )
                 elif category_name in ["grants", "direct_payments", "other_assistance"]:
                     # Use Grant.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend([f for f in Grant.SEARCH_FIELDS if f not in base_fields])
-        
+                    additional_fields.extend(
+                        [f for f in Grant.SEARCH_FIELDS if f not in base_fields]
+                    )
+
         # Combine base fields with additional fields, removing duplicates
         all_fields = base_fields + additional_fields
-        return list(dict.fromkeys(all_fields))  # Remove duplicates while preserving order
+        return list(
+            dict.fromkeys(all_fields)
+        )  # Remove duplicates while preserving order
 
     # ==========================================================================
     # Filter Methods
@@ -277,35 +290,46 @@ class AwardsSearch(QueryBuilder["Award"]):
 
         Returns:
             A new `AwardsSearch` instance with the filter applied.
-        
+
         Raises:
             ValidationError: If string dates are not in valid "YYYY-MM-DD" format.
         """
-        
+
         # Parse string dates if needed
         if isinstance(start_date, str):
             try:
                 start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
             except ValueError:
-                raise ValidationError(f"Invalid start_date format: '{start_date}'. Expected 'YYYY-MM-DD'.")
-        
+                raise ValidationError(
+                    f"Invalid start_date format: '{start_date}'. Expected 'YYYY-MM-DD'."
+                )
+
         if isinstance(end_date, str):
             try:
                 end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
             except ValueError:
-                raise ValidationError(f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'.")
-        
+                raise ValidationError(
+                    f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'."
+                )
+
         # If convenience flag is set, use NEW_AWARDS_ONLY date type
         # and override any provided date_type
         if new_awards_only:
             date_type = AwardDateType.NEW_AWARDS_ONLY
         clone = self._clone()
         clone._filter_objects.append(
-            TimePeriodFilter(start_date=start_date, end_date=end_date, date_type=date_type)
+            TimePeriodFilter(
+                start_date=start_date, end_date=end_date, date_type=date_type
+            )
         )
         return clone
 
-    def for_fiscal_year(self, year: int, new_awards_only: bool = False, date_type: Optional[AwardDateType] = None) -> AwardsSearch:
+    def for_fiscal_year(
+        self,
+        year: int,
+        new_awards_only: bool = False,
+        date_type: Optional[AwardDateType] = None,
+    ) -> AwardsSearch:
         """
         Adds a time period filter for a single US government fiscal year
         (October 1 to September 30).
@@ -320,7 +344,12 @@ class AwardsSearch(QueryBuilder["Award"]):
         """
         start_date = datetime.date(year - 1, 10, 1)
         end_date = datetime.date(year, 9, 30)
-        return self.in_time_period(start_date=start_date, end_date=end_date, new_awards_only=new_awards_only, date_type=date_type)
+        return self.in_time_period(
+            start_date=start_date,
+            end_date=end_date,
+            new_awards_only=new_awards_only,
+            date_type=date_type,
+        )
 
     def with_place_of_performance_scope(self, scope: LocationScope) -> AwardsSearch:
         """
@@ -350,7 +379,9 @@ class AwardsSearch(QueryBuilder["Award"]):
         """
         clone = self._clone()
         clone._filter_objects.append(
-            LocationFilter(key="place_of_performance_locations", locations=list(locations))
+            LocationFilter(
+                key="place_of_performance_locations", locations=list(locations)
+            )
         )
         return clone
 
@@ -404,7 +435,9 @@ class AwardsSearch(QueryBuilder["Award"]):
             A new `AwardsSearch` instance with the filter applied.
         """
         clone = self._clone()
-        clone._filter_objects.append(LocationScopeFilter(key="recipient_scope", scope=scope))
+        clone._filter_objects.append(
+            LocationScopeFilter(key="recipient_scope", scope=scope)
+        )
         return clone
 
     def with_recipient_locations(self, *locations: Location) -> AwardsSearch:
@@ -448,13 +481,13 @@ class AwardsSearch(QueryBuilder["Award"]):
 
         Returns:
             A new `AwardsSearch` instance with the filter applied.
-            
+
         Raises:
             ValidationError: If mixing different award type categories.
         """
         new_codes = set(award_codes)
         self._validate_single_award_type_category(new_codes)
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             SimpleListFilter(key="award_type_codes", values=list(award_codes))
@@ -464,7 +497,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     def contracts(self) -> AwardsSearch:
         """
         Filter to search for contract awards only (types A, B, C, D).
-        
+
         Returns:
             A new `AwardsSearch` instance configured for contract awards.
         """
@@ -473,7 +506,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     def idvs(self) -> AwardsSearch:
         """
         Filter to search for IDV awards only (types IDV_A, IDV_B, etc.).
-        
+
         Returns:
             A new `AwardsSearch` instance configured for IDV awards.
         """
@@ -482,7 +515,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     def loans(self) -> AwardsSearch:
         """
         Filter to search for loan awards only (types 07, 08).
-        
+
         Returns:
             A new `AwardsSearch` instance configured for loan awards.
         """
@@ -491,7 +524,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     def grants(self) -> AwardsSearch:
         """
         Filter to search for grant and assistance awards only (types 02, 03, 04, 05).
-        
+
         Returns:
             A new `AwardsSearch` instance configured for grant/assistance awards.
         """
@@ -500,7 +533,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     def direct_payments(self) -> AwardsSearch:
         """
         Filter to search for direct payment awards only (types 06, 10).
-        
+
         Returns:
             A new `AwardsSearch` instance configured for direct payment awards.
         """
@@ -509,7 +542,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     def other(self) -> AwardsSearch:
         """
         Filter to search for other assistance awards only (types 09, 11, -1).
-        
+
         Returns:
             A new `AwardsSearch` instance configured for other assistance awards.
         """
@@ -526,7 +559,9 @@ class AwardsSearch(QueryBuilder["Award"]):
             A new `AwardsSearch` instance with the filter applied.
         """
         clone = self._clone()
-        clone._filter_objects.append(SimpleListFilter(key="award_ids", values=list(award_ids)))
+        clone._filter_objects.append(
+            SimpleListFilter(key="award_ids", values=list(award_ids))
+        )
         return clone
 
     def with_award_amounts(self, *amounts: AwardAmount) -> AwardsSearch:
@@ -579,7 +614,9 @@ class AwardsSearch(QueryBuilder["Award"]):
         require_list = [[code] for code in require] if require else []
         exclude_list = [[code] for code in exclude] if exclude else []
         clone._filter_objects.append(
-            TieredCodeFilter(key="naics_codes", require=require_list, exclude=exclude_list)
+            TieredCodeFilter(
+                key="naics_codes", require=require_list, exclude=exclude_list
+            )
         )
         return clone
 

@@ -9,28 +9,28 @@ from ..utils.formatter import to_float
 
 class Loan(Award):
     """Loan award type."""
-    
+
     TYPE_FIELDS = [
         "fain",
-        "uri", 
+        "uri",
         "total_subsidy_cost",
         "total_loan_value",
         "cfda_info",
         "cfda_number",
         "primary_cfda_info",
-        "sai_number"
+        "sai_number",
     ]
-    
+
     SEARCH_FIELDS = Award.SEARCH_FIELDS + [
         "Issued Date",
         "Loan Value",
-        "Subsidy Cost", 
+        "Subsidy Cost",
         "SAI Number",
         "CFDA Number",
         "Assistance Listings",
-        "primary_assistance_listing"
+        "primary_assistance_listing",
     ]
-    
+
     @property
     def fain(self) -> Optional[str]:
         """
@@ -47,17 +47,19 @@ class Loan(Award):
     def uri(self) -> Optional[str]:
         """The uri of the award"""
         return self._lazy_get("uri")
-    
+
     @property
     def total_subsidy_cost(self) -> Optional[float]:
         """The total of the original_loan_subsidy_cost from associated transactions"""
-        return to_float(self._lazy_get("Subsidy Cost", "total_subsidy_cost", default=None))
+        return to_float(
+            self._lazy_get("Subsidy Cost", "total_subsidy_cost", default=None)
+        )
 
     @property
     def total_loan_value(self) -> Optional[float]:
         """The total of the face_value_loan_guarantee from associated transactions"""
         return to_float(self._lazy_get("Loan Value", "total_loan_value", default=None))
-    
+
     @property
     def cfda_info(self) -> List[Dict[str, Any]]:
         """Catalog of Federal Domestic Assistance information for loans."""
@@ -72,7 +74,7 @@ class Loan(Award):
     def primary_cfda_info(self) -> Optional[Dict[str, Any]]:
         """Primary CFDA program information."""
         return self.get_value(["primary_cfda_info", "primary_assistance_listing"])
-    
+
     @property
     def sai_number(self) -> Optional[str]:
         """System for Award Identification (SAI) number for loans."""

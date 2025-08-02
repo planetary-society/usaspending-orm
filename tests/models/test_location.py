@@ -1,4 +1,5 @@
 """Tests for Location model."""
+
 import json
 import pytest
 from pathlib import Path
@@ -94,10 +95,7 @@ class TestLocationDualSourceFields:
 
     def test_state_code_priority(self):
         """Test that standard state_code takes priority."""
-        data = {
-            "state_code": "TX",
-            "Place of Performance State Code": "CA"
-        }
+        data = {"state_code": "TX", "Place of Performance State Code": "CA"}
         location = Location(data)
         assert location.state_code == "TX"
 
@@ -115,7 +113,7 @@ class TestLocationDualSourceFields:
         """Test that location_country_code takes priority."""
         data = {
             "location_country_code": "MEX",
-            "Place of Performance Country Code": "CAN"
+            "Place of Performance Country Code": "CAN",
         }
         location = Location(data)
         assert location.country_code == "MEX"
@@ -170,19 +168,12 @@ class TestLocationConvenienceMethods:
 
     def test_formatted_address_full(self, recipient_location):
         """Test formatted address with all components."""
-        expected = (
-            "301 SPARKMAN DR NW\n"
-            "HUNTSVILLE, AL, 35805\n"
-            "UNITED STATES"
-        )
+        expected = "301 SPARKMAN DR NW\nHUNTSVILLE, AL, 35805\nUNITED STATES"
         assert recipient_location.formatted_address == expected
 
     def test_formatted_address_minimal(self):
         """Test formatted address with minimal data."""
-        data = {
-            "address_line1": "123 Main St",
-            "city_name": "Austin"
-        }
+        data = {"address_line1": "123 Main St", "city_name": "Austin"}
         location = Location(data)
         assert location.formatted_address == "123 Main St\nAustin"
 
@@ -194,15 +185,10 @@ class TestLocationConvenienceMethods:
             "address_line3": "Building A",
             "city_name": "Austin",
             "state_code": "TX",
-            "zip5": "78701"
+            "zip5": "78701",
         }
         location = Location(data)
-        expected = (
-            "123 Main St\n"
-            "Suite 200\n"
-            "Building A\n"
-            "Austin, TX, 78701"
-        )
+        expected = "123 Main St\nSuite 200\nBuilding A\nAustin, TX, 78701"
         assert location.formatted_address == expected
 
     def test_formatted_address_empty(self):
@@ -254,13 +240,17 @@ class TestLocationWithPlaceOfPerformanceData:
         assert place_of_performance_location.zip5 == "35805"
         assert place_of_performance_location.zip4 == "1912"
 
-    def test_place_of_performance_null_address_lines(self, place_of_performance_location):
+    def test_place_of_performance_null_address_lines(
+        self, place_of_performance_location
+    ):
         """Test that null address lines are handled correctly."""
         assert place_of_performance_location.address_line1 is None
         assert place_of_performance_location.address_line2 is None
         assert place_of_performance_location.address_line3 is None
 
-    def test_place_of_performance_formatted_address(self, place_of_performance_location):
+    def test_place_of_performance_formatted_address(
+        self, place_of_performance_location
+    ):
         """Test formatted address for place of performance location."""
         # Since address lines are null, formatted address should only have city/state/zip
         expected = "HUNTSVILLE, AL, 35805\nUNITED STATES"

@@ -15,6 +15,7 @@ from .loan import Loan
 from .recipient import Recipient
 from .location import Location
 from .transaction import Transaction
+from .funding import Funding
 from .period_of_performance import PeriodOfPerformance
 from .award_factory import create_award
 
@@ -26,25 +27,23 @@ from .district_spending import DistrictSpending
 __all__ = [
     # Base classes
     "BaseModel",
-    "ClientAwareModel", 
+    "ClientAwareModel",
     "LazyRecord",
-
     # Core models
     "Award",
-    "Contract", 
+    "Contract",
     "Grant",
     "IDV",
     "Loan",
     "Recipient",
     "Location",
     "Transaction",
+    "Funding",
     "PeriodOfPerformance",
-    
     # Spending models
     "Spending",
-    "RecipientSpending", 
+    "RecipientSpending",
     "DistrictSpending",
-    
     # Factory
     "create_award",
 ]

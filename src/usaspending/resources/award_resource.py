@@ -15,33 +15,35 @@ logger = USASpendingLogger.get_logger(__name__)
 
 class AwardResource(BaseResource):
     """Resource for award-related operations.
-    
+
     Provides access to award search and retrieval endpoints.
     """
-    
-    def get(self, award_id: str) -> "Award":
-        """Retrieve a single award by ID.
-        
+
+    def get(self, generated_award_id: str) -> "Award":
+        """Retrieve a single award by the system's internally generated
+        award entry ID (e.g. "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-")
+
         Args:
-            award_id: Unique award identifier
-            
+            generated_award_id: Unique award identifier
+
         Returns:
             Award model instance
-            
+
         Raises:
-            : If award_id is invalid
+            : If generated_award_id is invalid
             APIError: If award not found
         """
-        logger.debug(f"Retrieving award by ID: {award_id}")
+        logger.debug(f"Retrieving award by ID: {generated_award_id}")
         from ..queries.award_query import AwardQuery
-        return AwardQuery(self._client).get_by_id(award_id)
-    
+
+        return AwardQuery(self._client).get_by_id(generated_award_id)
+
     def search(self) -> AwardsSearch:
         """Create a new award search query builder.
-        
+
         Returns:
             AwardSearch query builder for chaining filters
-            
+
         Example:
             >>> awards = client.awards.search()
             ...     .for_agency("NASA")
@@ -51,4 +53,5 @@ class AwardResource(BaseResource):
         """
         logger.debug("Creating new AwardsSearch query builder")
         from ..queries.awards_search import AwardsSearch
+
         return AwardsSearch(self._client)

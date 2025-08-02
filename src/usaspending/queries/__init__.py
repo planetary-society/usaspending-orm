@@ -46,17 +46,19 @@ from .award_query import AwardQuery
 from .awards_search import AwardsSearch
 from .spending_by_recipients_search import SpendingByRecipientsSearch
 from .transactions_search import TransactionsSearch
+from .funding_search import FundingSearch
 
 __all__ = [
     # Core query classes
     "QueryBuilder",
-    "AwardQuery", 
+    "AwardQuery",
     "AwardsSearch",
     "SpendingByRecipientsSearch",
     "TransactionsSearch",
+    "FundingSearch",
     "USASpendingError",
     "APIError",
-    "HTTPError", 
+    "HTTPError",
     "ValidationError",
     "RateLimitError",
     "ConfigurationError",
