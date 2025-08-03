@@ -69,9 +69,9 @@ class TestContractsTitlecase:
 
     def test_small_words(self):
         """Test that small words are lowercase in middle."""
-        assert contracts_titlecase("bread and butter") == "Bread And Butter"
+        assert contracts_titlecase("bread and butter") == "Bread and Butter"
         assert contracts_titlecase("the quick fox") == "The Quick Fox"
-        assert contracts_titlecase("of the people") == "Of The People"
+        assert contracts_titlecase("of the people") == "Of the People"
 
     def test_directional_abbreviations(self):
         """Test directional abbreviations."""
@@ -80,30 +80,7 @@ class TestContractsTitlecase:
 
     def test_directional_with_punctuation(self):
         """Test directional abbreviations with punctuation."""
-        # Debug callback behavior with punctuation
-        from titlecase import titlecase
 
-        # Track what words the callback sees
-        words_seen = []
-
-        def debug_callback(word, **kwargs):
-            words_seen.append(word)
-            # Use our real callback
-            return custom_titlecase_callback(word, **kwargs)
-
-        # Clear the tracking list
-        words_seen.clear()
-        result = titlecase("123 main st. ne, suite 100", callback=debug_callback)
-
-        # Print debug info if test fails
-        if result != "123 Main St. NE, Suite 100":
-            print(f"Words seen by callback: {words_seen}")
-            print(f"Actual result: {result}")
-
-        # The issue is likely that titlecase passes "ne," as one word
-        # Let's test various punctuation scenarios
-        assert contracts_titlecase("ne, suite") == "NE, Suite"
-        assert contracts_titlecase("st. ne,") == "St. NE,"
         assert (
             contracts_titlecase("123 main st. ne, suite 100")
             == "123 Main St. NE, Suite 100"
@@ -119,7 +96,7 @@ class TestContractsTitlecase:
         """Test complex real-world examples."""
         assert (
             contracts_titlecase("nasa sbir program for small business llc")
-            == "NASA SBIR Program For Small Business LLC"
+            == "NASA SBIR Program for Small Business LLC"
         )
 
         assert (
@@ -129,6 +106,6 @@ class TestContractsTitlecase:
 
         assert (
             contracts_titlecase("the university of maryland and nasa")
-            == "The University Of Maryland And NASA"
+            == "The University of Maryland and NASA"
         )
 

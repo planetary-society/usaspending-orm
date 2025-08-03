@@ -6,18 +6,14 @@
 - NASA
 - ESA
 - USA
-- US
 - UK
 - SBIR
 - STTR
-- ISS
 - TDM
 - TDRS
 - FY
-- SCaN
 - EPSCoR
 - STEM
-- OSIRIS-REx
 - JAXA
 - JPL
 - JSC
@@ -46,6 +42,9 @@
 - QA
 - PI
 - COTS
+- SETI
+- SLS
+- ISS
 
 # Business suffixes
 - LLC
@@ -67,6 +66,78 @@
 - GmbH
 - B.V.
 - N.V.
+
+# NASA programs and projects
+- PDS
+- PDART
+- MDAP
+- MEP
+- MEPAG
+
+# Mission names and acronyms
+- Artemis
+- Orion
+- ISS
+- SpaceX
+- Falcon 9
+- OSIRIS-REx
+- OSIRIS-APEX
+- Perseverance
+- Mars 2020
+- Curiosity
+- MSL
+- MER
+- MAVEN
+- Mars Reconnaissance Orbiter
+- MRO
+- Mars Odyssey
+- Mars Express
+- ODY
+- VERITAS
+- DAVINCI
+- Psyche
+- Europa Clipper
+- Dragonfly
+- DART
+- Hubble
+- Chandra
+- Spitzer
+- Kepler
+- TESS
+- WFIRST
+- LRO
+- SOFIA
+- Juno
+- Cassini
+- New Horizons
+- Voyager
+- Parker Solar Probe
+- PSP
+- STS
+
+# Names and proper nouns
+- Pluto
+- Neptune
+- Triton
+- Saturn
+- Titan
+- Enceladus
+- Jupiter
+- Europa
+- Ganymede
+- Callisto
+- Io
+- Eris
+- Ceres
+- Vesta
+- Mars
+- Phobos
+- Deimos
+- Earth
+- the Moon
+- Venus
+- Mercury
+- the Sun
 
 # Directional abbreviations
 - Dr

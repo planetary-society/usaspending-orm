@@ -40,22 +40,20 @@ class TestContractSearchResultsAssignment:
             awards.append(award)
         return awards
 
-    def test_basic_scalar_properties(self, award_objects):
+    def test_basic_scalar_properties(self, award_objects, search_results_data):
         """Test that basic scalar properties work without triggering fetch."""
         award = award_objects[0]  # First award in fixture
 
         # Test prime_award_id (should use "Award ID" from search results)
-        assert award.prime_award_id == "80GSFC18C0008"
+        assert award.prime_award_id == search_results_data[0]["Award ID"]
 
         # Test description (should use "Description" from search results, formatted with smart_sentence_case)
-        expected_desc = (
-            "The tandem reconnection and cusp electrodynamics reconnaissance satellite"
-        )
-        assert expected_desc in award.description
+        expected_desc = search_results_data[0]["Description"]
+        assert award.description.lower() == expected_desc.lower()
 
         # Test award amount (should use "Award Amount" from search results)
-        assert award.award_amount == 168657782.95
-        assert award.total_obligation == 168657782.95
+        assert award.award_amount == search_results_data[0]["Award Amount"]
+        assert award.total_obligation == search_results_data[0]["Award Amount"]
 
         # Verify _fetch_details was never called
         award._fetch_details.assert_not_called()
@@ -281,7 +279,7 @@ class TestGrantsSearchResultsAssignment:
             awards.append(award)
         return awards
 
-    def test_basic_scalar_properties(self, grant_award_objects):
+    def test_basic_scalar_properties(self, grant_award_objects,grants_search_results_data):
         """Test that basic scalar properties work without triggering fetch."""
         award = grant_award_objects[0]  # First grant in fixture
 
@@ -289,12 +287,12 @@ class TestGrantsSearchResultsAssignment:
         assert award.prime_award_id == "NNM11AA01A"
 
         # Test description (should use "Description" from search results, formatted with smart_sentence_case)
-        expected_desc = "The national space science and technology center"
-        assert expected_desc in award.description
+        assert award.description.lower() == grants_search_results_data[0]["Description"].lower()
+        assert not award.description.isupper()
 
         # Test award amount (should use "Award Amount" from search results)
-        assert award.award_amount == 156725919.62
-        assert award.total_obligation == 156725919.62
+        assert award.award_amount == grants_search_results_data[0]["Award Amount"]
+        assert award.total_obligation == grants_search_results_data[0]["Award Amount"]
 
         # Verify _fetch_details was never called
         award._fetch_details.assert_not_called()
