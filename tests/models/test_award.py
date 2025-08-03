@@ -137,6 +137,43 @@ class TestAwardFetchDetails:
         # Should only fetch once (check request history)
         assert mock_usa_client.get_request_count("/v2/awards/CONT_AWD_123/") == 1
 
+    def test_fetch_details_with_generated_internal_id(self, mock_usa_client, award_fixture_data):
+        """Test that _fetch_details works with generated_internal_id field from search API."""
+        # Set up fixture response
+        mock_usa_client.set_fixture_response(
+            "/v2/awards/CONT_AWD_123/", "awards/contract"
+        )
+
+        # Create award with generated_internal_id (as returned by search API)
+        award = Award({"generated_internal_id": "CONT_AWD_123"}, mock_usa_client)
+
+        # This should work now with our fix
+        result = award._fetch_details()
+
+        # Verify the result
+        assert result == award_fixture_data
+        assert mock_usa_client.get_request_count("/v2/awards/CONT_AWD_123/") == 1
+
+    def test_lazy_loading_with_generated_internal_id(self, mock_usa_client, award_fixture_data):
+        """Test that lazy loading works when award has generated_internal_id."""
+        # Set up fixture response with type information
+        award_fixture_data_with_type = award_fixture_data.copy()
+        award_fixture_data_with_type["type"] = "D"
+        mock_usa_client.set_response(
+            "/v2/awards/CONT_AWD_123/", 
+            award_fixture_data_with_type
+        )
+
+        # Create award with generated_internal_id (as returned by search API)
+        award = Award({"generated_internal_id": "CONT_AWD_123"}, mock_usa_client)
+
+        # Access a property that triggers lazy loading
+        award_type = award.type
+
+        # Verify it worked
+        assert award_type == "D"
+        assert mock_usa_client.get_request_count("/v2/awards/CONT_AWD_123/") == 1
+
 
 class TestAwardPropertiesWithRealData:
     """Test Award model properties using real fixture data."""

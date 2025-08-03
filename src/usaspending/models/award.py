@@ -72,7 +72,7 @@ class Award(LazyRecord):
 
     def _fetch_details(self) -> Optional[Dict[str, Any]]:
         """Fetch full award details from the awards resource."""
-        award_id = self.get_value(["generated_unique_award_id"])
+        award_id = self.generated_unique_award_id
         if not award_id:
             raise ValidationError(
                 "Cannot lazy-load Award data. Property `generated_unique_award_id` is required to fetch details."
