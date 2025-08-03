@@ -144,15 +144,40 @@ class AwardsSearch(QueryBuilder["Award"]):
         """
         logger.debug(f"{self.__class__.__name__}.count() called")
 
-        endpoint = "/v2/search/spending_by_award_count/"
+        # Aggregate filters to prepare for the count request
         final_filters = self._aggregate_filters()
-
+        
         # The 'award_type_codes' filter is required by the API.
         if "award_type_codes" not in final_filters:
             raise ValidationError(
                 "A filter for 'award_type_codes' is required. "
                 "Use the .with_award_types() method."
             )
+        
+        # Make the API call to count awards by type
+        results = self.count_awards_by_type()
+
+        # Get the award type codes to determine which category to count
+        award_type_codes = self._get_award_type_codes()
+
+        # Determine the category based on award type codes
+        category = self._get_award_type_category(award_type_codes)
+
+        # Extract the count for the specific category
+        total = results.get(category, 0)
+
+        logger.info(f"{self.__class__.__name__}.count() = {total} ({category})")
+        return total
+
+    def count_awards_by_type(self) -> dict[str, int]:
+        """ Shared logic that calls the awards count endpoint.
+        
+        Returns:
+            A dictionary mapping award type categories to their result counts
+            for the matching filter set.
+        """
+        endpoint = "/v2/search/spending_by_award_count/"
+        final_filters = self._aggregate_filters()
 
         payload = {
             "filters": final_filters,
@@ -161,24 +186,14 @@ class AwardsSearch(QueryBuilder["Award"]):
         from ..logging_config import log_query_execution
 
         log_query_execution(
-            logger, "AwardsSearch.count", len(self._filter_objects), endpoint
+            logger, "AwardsSearch._count_awards_by_type", len(self._filter_objects), endpoint
         )
 
         # Send the request to the count endpoint
         response = self._client._make_request("POST", endpoint, json=payload)
-
-        # Get the award type codes to determine which category to count
-        award_type_codes = self._get_award_type_codes()
-
-        # Determine the category based on award type codes
-        category = self._get_award_type_category(award_type_codes)
-
-        # Extract count from the appropriate category
         results = response.get("results", {})
-        total = results.get(category, 0)
-
-        logger.info(f"{self.__class__.__name__}.count() = {total} ({category})")
-        return total
+        
+        return results
 
     def _get_award_type_category(self, award_type_codes: set[str]) -> str:
         """
