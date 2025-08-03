@@ -79,7 +79,7 @@ def get_past_fiscal_years(num_years: int = 3) -> List[int]:
 
 def to_float(x: Any) -> Optional[float]:
     try:
-        return float(x) if x is not None else None
+        return float(x)
     except (TypeError, ValueError):
         return x
 
