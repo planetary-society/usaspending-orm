@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import Mock
 
 from usaspending.models.recipient import Recipient
 from usaspending.models.location import Location

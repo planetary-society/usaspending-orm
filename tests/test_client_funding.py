@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
 
-from usaspending.client import USASpending
 from usaspending.models.funding import Funding
 from usaspending.models.award import Award
 
@@ -123,17 +121,6 @@ class TestClientFunding:
         """Test pagination of funding results."""
         # Load fixture data
         fixture_data = load_fixture("awards/award_funding_grant.json")
-
-        # Create two pages of results
-        page1_data = {
-            "results": fixture_data["results"][:5],
-            "page_metadata": {"page": 1, "hasNext": True, "hasPrevious": False},
-        }
-
-        page2_data = {
-            "results": fixture_data["results"][5:],
-            "page_metadata": {"page": 2, "hasNext": False, "hasPrevious": True},
-        }
 
         # Set up mock to return paginated results
         # We need enough responses for both count() and the actual iteration

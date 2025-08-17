@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
 from usaspending.models.funding import Funding
-
 
 class TestFundingModel:
     """Test Funding model functionality."""
@@ -168,7 +165,7 @@ class TestFundingModel:
         funding = Funding(data)
         
         try:
-            repr_str = repr(funding)    
+            repr(funding)
         except Exception as e:
             assert False, f"Repr with missing data failed with exception: {e}"
 

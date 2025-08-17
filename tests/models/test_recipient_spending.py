@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from usaspending.models import RecipientSpending, Spending, Recipient
+from usaspending.models import RecipientSpending, Recipient
 from usaspending.queries.spending_search import SpendingSearch
 from usaspending.utils.formatter import contracts_titlecase, round_to_millions
 from tests.conftest import load_json_fixture
