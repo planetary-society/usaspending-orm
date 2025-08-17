@@ -51,3 +51,40 @@
   - `limit`: Results per page (max 5000)
   - `sort`: Sort field
   - `order`: Sort order
+
+  ### Downloads
+  - **Endpoints**:
+    - `/api/v2/download/contract/`
+    - `/api/v2/download/assistance/`
+    - `/api/v2/download/idv/`
+  - **Method**: POST
+  - **Documentation**:
+    - https://github.com/fedspendingtransparency/usaspending-api/blob/7e9f7970940f0aa78e0c02941e6373ae81f8519f/usaspending_api/api_contracts/contracts/v2/download/contract.md
+    - https://github.com/fedspendingtransparency/usaspending-api/blob/7e9f7970940f0aa78e0c02941e6373ae81f8519f/usaspending_api/api_contracts/contracts/v2/download/assistance.md
+    - https://github.com/fedspendingtransparency/usaspending-api/blob/7e9f7970940f0aa78e0c02941e6373ae81f8519f/usaspending_api/api_contracts/contracts/v2/download/idv.md
+  - **Purpose**: Creates a new download job for the requested award and returns a link to a zipped file containing contract award data.
+  - **Key Parameters**:
+    - `award_id`: (required, string) The internal generated award id from USASpending.gov
+    - `file_format` (optional, enum[string]) The format of the file(s) in the zip file containing the data (csv, tsv, pstxt) 
+  - **Response**: JSON object with the following parameters:
+    - `status_url` (required, string) The endpoint used to get the status of a download.
+    - `file_name` (required, string) Is the name of the zipfile containing CSVs that will be generated (file_name is timestamp followed by _transactions or _awards).
+    - `file_url` (required, string) The URL for the file.
+    - `download_request` (required, object) The JSON object used when processing the download.
+
+
+  ### Download Status
+  - **Endpoint**: `/api/v2/download/status{?file_name}`
+  - **Method**: GET
+  - **Documentation**: https://github.com/fedspendingtransparency/usaspending-api/blob/7e9f7970940f0aa78e0c02941e6373ae81f8519f/usaspending_api/api_contracts/contracts/v2/download/status.md
+  - **Purpose**: Gets the current status of a download job.
+  - **Key Parameter**: `file_name` (required, string) Taken from the `file_name` field of a download endpoint response.
+  - **Response**: JSON object with the following parameters:
+    -`file_name` (required, string) Is the name of the zipfile containing CSVs that will be generated (file_name is -`timestamp` followed by _transactions or _awards).
+    -`message` (required, string, nullable) A human readable error message if the status is failed, otherwise it is null.
+    -`seconds_elapsed` (required, string, nullable) Is the time taken to genereate the file (if status is finished or failed), or time taken so far (if running).
+    -`status` (required, enum[string]) A string representing the current state of the CSV generation request (failed, finished, ready, running).
+    -`total_columns` (required, number, nullable) Is the number of columns in the CSV, or null if not finished.
+    -`total_rows` (required, number, nullable) Is the number of rows in the CSV, or null if not finished.
+    -`total_size` (required, number, nullable) Is the estimated file size of the CSV in kilobytes, or null if not finished.
+    -`file_url` (required, string) The URL for the file.

@@ -3,7 +3,6 @@
 
 class USASpendingError(Exception):
     """Base exception for all USASpending client errors."""
-
     pass
 
 
@@ -44,3 +43,10 @@ class ConfigurationError(USASpendingError):
     """Raised when client configuration is invalid."""
 
     pass
+
+class DownloadError(USASpendingError):
+    """Raised when an award download process fails, times out, or encounters issues during file processing."""
+    def __init__(self, message: str, file_name: str = None, status: str = None):
+        super().__init__(message)
+        self.file_name = file_name
+        self.status = status

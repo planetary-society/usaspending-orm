@@ -10,15 +10,18 @@ from .recipient import Recipient
 from .location import Location
 from .period_of_performance import PeriodOfPerformance
 from .agency import Agency
+from .download import AwardType, FileFormat
+
 from ..exceptions import ValidationError
 
-
 from ..utils.formatter import smart_sentence_case, to_float, to_date
+
 
 if TYPE_CHECKING:
     from ..client import USASpending
     from ..queries.transactions_search import TransactionsSearch
     from ..queries.funding_search import FundingSearch
+    from ..download.job import DownloadJob
 
 
 class Award(LazyRecord):
@@ -416,3 +419,74 @@ class Award(LazyRecord):
         recipient_name = self.recipient.name if self.recipient else "?"
         award_id = self.prime_award_id or self.generated_unique_award_id or "?"
         return f"<Award {award_id} → {recipient_name}>"
+
+    @property
+    def _download_type(self) -> Optional[AwardType]:
+        """
+        The type required by the download API ('contract' or 'assistance'). 
+        This must be implemented by model subclasses
+        """
+        from .contract import Contract
+        from .grant import Grant
+        from .idv import IDV
+
+        if isinstance(self, Contract):
+            return "contract"
+        elif isinstance(self, Grant):
+            return "assistance"
+        elif isinstance(self, IDV):
+            return "idv"
+        else:
+            raise(NotImplementedError)
+        
+
+    def download(self, file_format: FileFormat = "csv", destination_dir: Optional[str] = None) -> "DownloadJob":
+        """
+        Queue a download job for this award's detailed data.
+
+        This utilizes the USASpending bulk download API, which queues the request 
+        and processes it asynchronously.
+
+        Args:
+            file_format: The format of the file(s) in the zip file containing the data
+            destination_dir: Directory where the file will be saved (defaults to CWD).
+
+        Returns:
+            A DownloadJob object. Use job.wait_for_completion() to block until finished.
+        
+        Raises:
+            ConfigurationError: If the Award instance lacks a client reference.
+            ValidationError: If the award ID or download type is missing/invalid.
+
+        Example:
+            >>> contract = client.awards.get("CONT_AWD_123...")
+            >>> job = contract.download(destination_dir="./data")
+            >>> print(f"Job queued: {job.file_name}. Waiting...")
+            >>> extracted_files = job.wait_for_completion(timeout=600)
+            >>> print(f"Download complete. Files: {extracted_files}")
+        """
+        # Import inside method to avoid potential circular dependencies at the top level
+        from ..exceptions import ConfigurationError, ValidationError
+
+        if not self._client:
+            raise ConfigurationError("Award instance requires a client reference (USASpending) to perform downloads.")
+
+        # Use the unique ID which is required by the download API
+        # Accessing the property might trigger a lazy load if the ID wasn't present initially.
+        award_id = self.generated_unique_award_id
+        download_type = self._download_type
+
+        if not award_id:
+            # If it's still None after access, raise error.
+            raise ValidationError("Cannot download award data without a 'generated_unique_award_id'. Ensure the award object is fully loaded.")
+        
+        if not download_type:
+             # Safety check in case a subclass doesn't implement _download_type or the implementation returns None
+            raise ValidationError(f"Download is not supported or implemented for award type: {self.__class__.__name__}.")
+
+        # Access the DownloadManager via the client's download resource.
+        # We route the call through the appropriate method on the resource.
+        if download_type == "contract":
+            return self._client.downloads.contract(award_id, file_format, destination_dir)
+        elif download_type == "assistance":
+            return self._client.downloads.assistance(award_id, file_format, destination_dir)

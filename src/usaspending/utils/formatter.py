@@ -83,6 +83,12 @@ def to_float(x: Any) -> Optional[float]:
     except (TypeError, ValueError):
         return x
 
+def to_int(x: Any) -> Optional[int]:
+    try:
+        return int(x)
+    except (TypeError, ValueError):
+        return x
+
 
 # --- Configuration ---
 # Set of acronyms and initialisms to always keep uppercase.

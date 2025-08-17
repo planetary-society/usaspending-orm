@@ -1,0 +1,42 @@
+{
+    "status_url": "https://api.usaspending.gov/api/v2/download/status?file_name=ASST_80NSSC24K0522_2025-08-17_H05M53S58016610.zip",
+    "file_name": "ASST_80NSSC24K0522_2025-08-17_H05M53S58016610.zip",
+    "file_url": "https://files.usaspending.gov/generated_downloads/ASST_80NSSC24K0522_2025-08-17_H05M53S58016610.zip",
+    "download_request": {
+        "account_level": "treasury_account",
+        "assistance_id": "80NSSC24K0522",
+        "award_id": 74737340,
+        "download_types": [
+            "assistance_federal_account_funding",
+            "assistance_transactions",
+            "sub_grants"
+        ],
+        "file_format": "csv",
+        "filters": {
+            "award_id": 74737340,
+            "award_type_codes": [
+                "03",
+                "04",
+                "08",
+                "-1",
+                "09",
+                "11",
+                "05",
+                "07",
+                "06",
+                "02",
+                "10"
+            ]
+        },
+        "include_data_dictionary": true,
+        "include_file_description": {
+            "destination": "AssistanceAwardSummary_download_readme.txt",
+            "source": "/data-act/backend/usaspending_api/data/AssistanceSummary_download_readme.txt"
+        },
+        "is_for_assistance": true,
+        "is_for_contract": false,
+        "is_for_idv": false,
+        "limit": 500000,
+        "request_type": "assistance"
+    }
+}

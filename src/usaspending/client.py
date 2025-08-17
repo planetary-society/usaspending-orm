@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from .resources.recipients_resource import RecipientsResource
     from .resources.spending_resource import SpendingResource
     from .resources.funding_resource import FundingResource
+    from .resources.download_resource import DownloadResource
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
@@ -98,6 +99,15 @@ class USASpending:
             self._resources["awards"] = AwardResource(self)
         return self._resources["awards"]
 
+    @property
+    def downloads(self) -> "DownloadResource":
+        """
+        Access download operations for detailed award data.
+        
+        Allows queuing, monitoring, and retrieval of bulk award files.
+        """
+        return DownloadResource(self)
+    
     @property
     def recipients(self) -> "RecipientsResource":
         """Access recipient endpoints."""
