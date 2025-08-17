@@ -23,8 +23,7 @@ def main():
         epilog="This CLI tool queues a download job, waits for completion, downloads the zip file, and extracts the contents."
     )
 
-    parser.add_argument("award_id", help="The unique award identifier (e.g., CONT_AWD_..., ASST_NON_..., IDV_...)")
-    parser.add_argument("-t", "--type", choices=["contract", "assistance", "idv"], required=True, help="The type of the award.")
+    parser.add_argument("award_id", help="The unique award identifier (e.g., PIIN/FAIN/etc.)")
     parser.add_argument("-o", "--output-dir", help="The directory to save and extract the files (defaults to current directory).")
     parser.add_argument("-f", "--format", choices=["csv", "tsv", "pstxt"], default="csv", help="The format of the files (default: csv).")
     parser.add_argument("--timeout", type=int, default=1800, help="Maximum time in seconds to wait (default: 1800s/30min).")
@@ -42,18 +41,15 @@ def main():
     try:
         # Initialize client (assuming default configuration handling)
         client = USASpending()
-
-        logger.info("--- Starting USASpending Award Download CLI ---")
-        logger.info(f"Parameters: ID={args.award_id}, Type={args.type}, Format={args.format}")
-
-        # 1. Queue the download
-        if args.type == "contract":
-            job = client.downloads.contract(args.award_id, file_format=args.format, destination_dir=args.output_dir)
-        elif args.type == "assistance":
-            job = client.downloads.assistance(args.award_id, file_format=args.format, destination_dir=args.output_dir)
-        else:  # idv
-            job = client.downloads.idv(args.award_id, file_format=args.format, destination_dir=args.output_dir)
         
+        # Get award data
+        award = client.awards.find_by_award_id(args.award_id)
+        
+        logger.info("--- Starting USASpending Award Download CLI ---")
+        logger.info(f"Parameters: Award ID={args.award_id}, Type={award.category}, Format={args.format}")
+
+        job = award.download(file_format=args.format, destination_dir=args.output_dir)
+
         logger.info(f"Job successfully queued. Tracking File: {job.file_name}")
 
         # 2. Wait for completion (blocking operation)
