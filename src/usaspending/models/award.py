@@ -490,3 +490,7 @@ class Award(LazyRecord):
             return self._client.downloads.contract(award_id, file_format, destination_dir)
         elif download_type == "assistance":
             return self._client.downloads.assistance(award_id, file_format, destination_dir)
+        elif download_type == "idv":
+            return self._client.downloads.idv(award_id, file_format, destination_dir)
+        else:
+            raise NotImplementedError

@@ -50,6 +50,20 @@ class DownloadResource(BaseResource):
         """
         return self._manager.queue_download("assistance", award_id, file_format, destination_dir)
 
+    def idv(self, award_id: str, file_format: FileFormat = "csv", destination_dir: Optional[str] = None) -> DownloadJob:
+        """
+        Queue a download job for IDV (Indefinite Delivery Vehicle) award data.
+
+        Args:
+            award_id: The unique award identifier (e.g., IDV_...).
+            file_format: Format of the file (csv, tsv, pstxt).
+            destination_dir: Directory where the file will be saved (defaults to CWD).
+
+        Returns:
+            A DownloadJob object. Use job.wait_for_completion() to block until finished.
+        """
+        return self._manager.queue_download("idv", award_id, file_format, destination_dir)
+
     def status(self, file_name: str) -> DownloadStatus:
         """
         Check the status of a specific download job directly via the API.

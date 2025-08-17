@@ -1,10 +1,8 @@
 # src/usaspending/download/manager.py
 
 from __future__ import annotations
-import requests
 import zipfile
 import os
-from urllib.parse import urljoin
 from typing import TYPE_CHECKING, Optional, List
 
 from ..exceptions import APIError, DownloadError
@@ -20,7 +18,7 @@ logger = USASpendingLogger.get_logger(__name__)
 class DownloadManager:
     """Handles the core logic for queuing, monitoring, downloading, and processing award data."""
 
-    BASE_ENDPOINT = "/api/v2/download/"
+    BASE_ENDPOINT = "/v2/download/"
 
     def __init__(self, client: USASpending):
         self._client = client
@@ -74,48 +72,27 @@ class DownloadManager:
 
     def download_file(self, file_url: str, destination_path: str, file_name: str) -> None:
         """
-        Downloads the zipped file from the provided URL using streaming and the client's retry mechanism.
+        Downloads the zipped file from the provided URL using the client's binary download method.
+        
+        This delegates to the client's _download_binary_file method which handles:
+        - Session management with proper headers
+        - Retry logic with exponential backoff
+        - Streaming for large files
+        - Cleanup of partial downloads on failure
         """
-        # Construct the full URL using urljoin.
-        base_url = self._client.config.api_base_url
-        download_url = urljoin(base_url, file_url)
-
-        logger.info(f"Downloading file from {download_url} to {destination_path}")
-
-        # Utilize the client's retry handler for robust downloading
-        retry_handler = self._client._retry_handler
-        # Use a potentially longer timeout for file downloads
-        http_timeout = 600 # 10 minutes
-
-        # Define the download operation for the RetryHandler
-        def download_operation():
-            # Use standard requests session for the download itself.
-            # stream=True is crucial for large files.
-            response = requests.get(download_url, stream=True, timeout=http_timeout)
-            # This will raise HTTPError on failure codes (e.g., 503, 504), triggering the retry.
-            response.raise_for_status() 
-
-            try:
-                with open(destination_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-            except IOError as e:
-                raise DownloadError(f"Error writing file to disk: {e}", file_name=file_name) from e
-
+        logger.info(f"Initiating download of {file_name}")
+        
         try:
-            # Execute the download with retries
-            retry_handler.execute(download_operation)
-            logger.info(f"Successfully downloaded {destination_path}")
-
+            # Use the client's binary download method for consistency
+            self._client._download_binary_file(file_url, destination_path)
+            
         except Exception as e:
-            logger.error(f"Failed to download file {file_name} after retries: {e}")
-            # Clean up partial file if it exists
-            if os.path.exists(destination_path):
-                try:
-                    os.remove(destination_path)
-                except OSError:
-                    pass
-            raise DownloadError(f"Failed to download file from {download_url}", file_name=file_name) from e
+            # Log with file_name context
+            logger.error(f"Failed to download file {file_name}: {e}")
+            # Ensure the exception includes the file_name
+            if hasattr(e, 'file_name') and not e.file_name:
+                e.file_name = file_name
+            raise
 
     def unzip_file(self, zip_path: str, extract_dir: str) -> List[str]:
         """

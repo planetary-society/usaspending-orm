@@ -7,7 +7,7 @@ from enum import Enum
 from ..utils.formatter import to_float, to_int
 from .base_model import BaseModel
 
-AwardType = Literal["contract", "assistance"]
+AwardType = Literal["contract", "assistance", "idv"]
 FileFormat = Literal["csv", "tsv", "pstxt"]
 
 class DownloadState(Enum):

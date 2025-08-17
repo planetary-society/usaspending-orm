@@ -409,6 +409,115 @@ class MockUSASpendingClient(USASpending):
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
 
+    def _make_uncached_request(
+        self,
+        method: str,
+        endpoint: str,
+        json: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Pass through to _make_request since caching is disabled in tests."""
+        return self._make_request(method, endpoint, json=json, params=params, **kwargs)
+
+    def _download_binary_file(self, file_url: str, destination_path: str) -> None:
+        """Mock implementation of binary file download.
+        
+        For testing, we just create an empty file at the destination.
+        Real download testing would be done in integration tests.
+        """
+        import os
+        os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+        with open(destination_path, 'wb') as f:
+            f.write(b'Mock download content')
+
+    def mock_download_queue(
+        self, 
+        download_type: str, 
+        award_id: str, 
+        response_data: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Mock download queue response.
+        
+        Args:
+            download_type: "contract", "assistance", or "idv"
+            award_id: Award identifier
+            response_data: Custom response data, or None to use fixture default
+        """
+        if response_data is None:
+            # Load default from fixture
+            import json
+            from copy import deepcopy
+            fixture_path = self._fixture_dir / "download_assistance.json"
+            with open(fixture_path) as f:
+                response_data = deepcopy(json.load(f))
+            
+            # Customize for the specific request
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_H%M%S%f")
+            file_name = f"{download_type.upper()}_{award_id}_{timestamp}.zip"
+            response_data["file_name"] = file_name
+            response_data["file_url"] = f"https://files.usaspending.gov/generated_downloads/{file_name}"
+            response_data["status_url"] = f"https://api.usaspending.gov/api/v2/download/status?file_name={file_name}"
+            
+            # Update download_request fields
+            response_data["download_request"]["award_id"] = award_id
+            response_data["download_request"]["request_type"] = download_type
+            response_data["download_request"]["is_for_contract"] = download_type == "contract"
+            response_data["download_request"]["is_for_assistance"] = download_type == "assistance"
+            response_data["download_request"]["is_for_idv"] = download_type == "idv"
+        
+        endpoint = f"/v2/download/{download_type}/"
+        self.set_response(endpoint, response_data)
+
+    def mock_download_status(
+        self,
+        file_name: str,
+        status: str = "finished",
+        custom_data: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Mock download status response.
+        
+        Args:
+            file_name: Name of file to check status for
+            status: Status to return ("ready", "running", "finished", "failed")
+            custom_data: Complete custom response, or None to use template
+        """
+        if custom_data is not None:
+            response_data = custom_data
+        else:
+            # Load and customize fixture template
+            import json
+            from copy import deepcopy
+            fixture_path = self._fixture_dir / "download_status.json"
+            with open(fixture_path) as f:
+                response_data = deepcopy(json.load(f))
+            
+            response_data["file_name"] = file_name
+            response_data["status"] = status
+            response_data["file_url"] = f"https://files.usaspending.gov/generated_downloads/{file_name}"
+            
+            # Adjust fields based on status
+            if status == "ready":
+                response_data["seconds_elapsed"] = None
+                response_data["total_size"] = None
+                response_data["total_columns"] = None
+                response_data["total_rows"] = None
+            elif status == "running":
+                response_data["seconds_elapsed"] = "5.123"
+                response_data["total_size"] = None
+                response_data["total_columns"] = None
+                response_data["total_rows"] = None
+            elif status == "failed":
+                response_data["message"] = "Download failed: Internal server error"
+                response_data["file_url"] = None
+                response_data["seconds_elapsed"] = "10.456"
+                response_data["total_size"] = None
+                response_data["total_columns"] = None
+                response_data["total_rows"] = None
+        
+        self.set_response("/v2/download/status", response_data)
+
     # Convenience methods for common scenarios
 
     def mock_award_search(

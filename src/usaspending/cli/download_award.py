@@ -23,8 +23,8 @@ def main():
         epilog="This CLI tool queues a download job, waits for completion, downloads the zip file, and extracts the contents."
     )
 
-    parser.add_argument("award_id", help="The unique award identifier (e.g., CONT_AWD_..., ASST_NON_...)")
-    parser.add_argument("-t", "--type", choices=["contract", "assistance"], required=True, help="The type of the award.")
+    parser.add_argument("award_id", help="The unique award identifier (e.g., CONT_AWD_..., ASST_NON_..., IDV_...)")
+    parser.add_argument("-t", "--type", choices=["contract", "assistance", "idv"], required=True, help="The type of the award.")
     parser.add_argument("-o", "--output-dir", help="The directory to save and extract the files (defaults to current directory).")
     parser.add_argument("-f", "--format", choices=["csv", "tsv", "pstxt"], default="csv", help="The format of the files (default: csv).")
     parser.add_argument("--timeout", type=int, default=1800, help="Maximum time in seconds to wait (default: 1800s/30min).")
@@ -49,8 +49,10 @@ def main():
         # 1. Queue the download
         if args.type == "contract":
             job = client.downloads.contract(args.award_id, file_format=args.format, destination_dir=args.output_dir)
-        else:
+        elif args.type == "assistance":
             job = client.downloads.assistance(args.award_id, file_format=args.format, destination_dir=args.output_dir)
+        else:  # idv
+            job = client.downloads.idv(args.award_id, file_format=args.format, destination_dir=args.output_dir)
         
         logger.info(f"Job successfully queued. Tracking File: {job.file_name}")
 
