@@ -1,4 +1,10 @@
 # src/usaspending/download/manager.py
+"""
+This module defines the DownloadManager class, responsible for orchestrating the
+download process of award data from the USASpending API. It handles queuing
+download requests, checking their status, downloading the completed files,
+and extracting their contents.
+"""
 
 from __future__ import annotations
 import zipfile

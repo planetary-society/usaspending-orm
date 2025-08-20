@@ -1,4 +1,9 @@
 # src/usaspending/download/job.py
+"""
+This module defines the DownloadJob class, which encapsulates the lifecycle of a single
+award data download task from the USASpending API. It handles polling for status updates,
+downloading the completed file, and extracting its contents.
+"""
 
 from __future__ import annotations
 import time
@@ -17,6 +22,35 @@ logger = USASpendingLogger.get_logger(__name__)
 class DownloadJob:
     """
     Represents a single award data download task, managing its lifecycle (polling, downloading, extraction).
+
+    This class is designed to be instantiated by the `DownloadManager` after a download
+    request has been successfully queued with the USASpending API. It provides methods
+    to monitor the status of the download job, wait for its completion, and process
+    the downloaded data (downloading the zip file and extracting its contents).
+
+    Attributes:
+        file_name (str): The unique identifier for the download job, typically a filename
+                         provided by the USASpending API.
+        destination_dir (str): The local directory where the downloaded zip file will be
+                               saved and its contents extracted. Defaults to the current
+                               working directory if not specified.
+        request_details (Optional[Dict[str, Any]]): A dictionary containing details of
+                                                    the original download request, as
+                                                    returned by the API.
+        state (DownloadState): The current state of the download job (e.g., PENDING,
+                               RUNNING, FINISHED, FAILED). This is a read-only property.
+        status_details (Optional[DownloadStatus]): A `DownloadStatus` object containing
+                                                   the latest detailed status information
+                                                   retrieved from the API. This is a
+                                                   read-only property.
+        error_message (Optional[str]): A message describing the error if the job
+                                       transitions to a FAILED state. This is a
+                                       read-only property.
+        result_files (Optional[List[str]]): A list of absolute paths to the files
+                                            extracted from the downloaded zip archive
+                                            upon successful completion. This is a
+                                            read-only property.
+
     """
     
     DEFAULT_POLL_INTERVAL = 30 # seconds
