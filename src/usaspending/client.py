@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from .resources.spending_resource import SpendingResource
     from .resources.funding_resource import FundingResource
     from .resources.download_resource import DownloadResource
+    from .resources.subawards_resource import SubAwardsResource
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
@@ -147,6 +148,15 @@ class USASpending:
 
             self._resources["funding"] = FundingResource(self)
         return self._resources["funding"]
+
+    @property
+    def subawards(self) -> "SubAwardsResource":
+        """Access subaward endpoints."""
+        if "subawards" not in self._resources:
+            from .resources.subawards_resource import SubAwardsResource
+
+            self._resources["subawards"] = SubAwardsResource(self)
+        return self._resources["subawards"]
 
     @cachier.cachier()
     def _make_request(

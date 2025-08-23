@@ -1,12 +1,14 @@
 """Grant award model for USASpending data."""
 
 from __future__ import annotations
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from functools import cached_property
 
 from .award import Award
 from ..utils.formatter import to_float
 
+if TYPE_CHECKING:
+    from ..queries.subawards_search import SubAwardsSearch
 
 class Grant(Award):
     """Grant and assistance award types."""
@@ -98,3 +100,23 @@ class Grant(Award):
     def transaction_obligated_amount(self) -> Optional[float]:
         """Transaction-level obligated amount."""
         return to_float(self._lazy_get("transaction_obligated_amount", default=None))
+
+    @property
+    def subawards(self) -> "SubAwardsSearch":
+        """Get subawards query builder for this grant award with appropriate award type filters.
+
+        Returns a SubAwardsSearch object that can be further filtered and chained.
+        Automatically applies grant award type filters.
+
+        Examples:
+            >>> grant.subawards.count()  # Get count without loading all data
+            >>> grant.subawards.limit(10).all()  # Get first 10 subawards
+            >>> list(grant.subawards)  # Iterate through all subawards
+        """
+        from ..config import GRANT_CODES
+        
+        # Grant subawards use grant award types only
+        # Note: Due to validation in AwardsSearch, we cannot mix grant/direct_payment/other categories
+        return (self._client.subawards
+                .for_award(self.generated_unique_award_id)
+                .with_award_types(*GRANT_CODES))

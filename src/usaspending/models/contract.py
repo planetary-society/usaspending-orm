@@ -1,12 +1,14 @@
 """Contract award model for USASpending data."""
 
 from __future__ import annotations
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 from functools import cached_property
 
 from .award import Award
 from ..utils.formatter import to_float
 
+if TYPE_CHECKING:
+    from ..queries.subawards_search import SubAwardsSearch
 
 class Contract(Award):
     """Contract award type including definitive contracts and purchase orders."""
@@ -107,3 +109,21 @@ class Contract(Award):
     def latest_transaction_contract_data(self) -> Optional[Dict[str, Any]]:
         """Latest contract transaction data with procurement-specific details."""
         return self._lazy_get("latest_transaction_contract_data")
+
+    @property
+    def subawards(self) -> "SubAwardsSearch":
+        """Get subawards query builder for this contract award with appropriate award type filters.
+
+        Returns a SubAwardsSearch object that can be further filtered and chained.
+        Automatically applies contract award type filters.
+
+        Examples:
+            >>> contract.subawards.count()  # Get count without loading all data
+            >>> contract.subawards.limit(10).all()  # Get first 10 subawards
+            >>> list(contract.subawards)  # Iterate through all subawards
+        """
+        from ..config import CONTRACT_CODES
+        
+        return (self._client.subawards
+                .for_award(self.generated_unique_award_id)
+                .with_award_types(*CONTRACT_CODES))

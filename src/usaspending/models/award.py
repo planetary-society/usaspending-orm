@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from ..client import USASpending
     from ..queries.transactions_search import TransactionsSearch
     from ..queries.funding_search import FundingSearch
+    from ..queries.subawards_search import SubAwardsSearch
     from ..download.job import DownloadJob
 
 
@@ -394,6 +395,15 @@ class Award(LazyRecord):
             >>> list(award.funding.limit(10))  # Iterate through first 10 funding records
         """
         return self._client.funding.for_award(self.generated_unique_award_id)
+
+    @property
+    def subawards(self) -> "SubAwardsSearch":
+        """Get subawards query builder for this award.
+
+        Returns a SubAwardsSearch object that can be further filtered and chained.
+        Implemented in subclasses
+        """
+        raise NotImplementedError()
 
     @cached_property
     def transactions_count(self) -> int:
