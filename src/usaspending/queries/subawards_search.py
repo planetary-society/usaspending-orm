@@ -62,7 +62,7 @@ class SubAwardsSearch(AwardsSearch):
         if self._award_id:
             if "filters" not in payload:
                 payload["filters"] = {}
-            payload["filters"]["prime_award_generated_internal_id"] = self._award_id
+            payload["filters"]["award_unique_id"] = self._award_id
         
         return payload
 
