@@ -19,7 +19,7 @@ class RecipientQuery(SingleResourceBase):
     @property
     def _endpoint(self) -> str:
         """Base endpoint for single recipient retrieval."""
-        return "/v2/recipients/"
+        return "/v2/recipient/"
 
     def get_by_id(self, recipient_id: str) -> "Recipient":
         """Filter by unique recipient identifier."""
