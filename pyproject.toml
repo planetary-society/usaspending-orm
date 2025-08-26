@@ -1,6 +1,6 @@
 [project]
 name = "usaspending"
-version = "0.2.0"
+version = "0.3.0"
 description = ""
 authors = [
     {name = "Casey Dreier",email = "casey.dreier@planetary.org"}
