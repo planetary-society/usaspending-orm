@@ -133,7 +133,7 @@ class TestAwardSubawardsIntegration:
         assert payload["spending_level"] == "subawards"
         
         # Verify the award filter is included
-        assert payload["filters"]["prime_award_generated_internal_id"] == "CONT_AWD_123_456"
+        assert payload["filters"]["award_unique_id"] == "CONT_AWD_123_456"
         
         # Verify contract award types are automatically applied
         assert set(payload["filters"]["award_type_codes"]) == {"A", "B", "C", "D"}
@@ -199,8 +199,8 @@ class TestAwardSubawardsIntegration:
         chained_search._award_id = "CONT_AWD_123_456"
         
         # Define the mock subaward objects outside the lambda
-        mock_subaward_1 = SubAward({"internal_id": "Z1", "Sub-Award ID": "Z1", "Sub-Award Amount": 1000})
-        mock_subaward_2 = SubAward({"internal_id": "Z2", "Sub-Award ID": "Z2", "Sub-Award Amount": 2000})
+        mock_subaward_1 = SubAward({"internal_id": "Z1", "Sub-Award ID": "Z1", "Sub-Award Amount": 1000}, mock_usa_client)
+        mock_subaward_2 = SubAward({"internal_id": "Z2", "Sub-Award ID": "Z2", "Sub-Award Amount": 2000}, mock_usa_client)
         chained_search.__iter__ = lambda self: iter([mock_subaward_1, mock_subaward_2])
         
         # Mock the for_award method to return our base search

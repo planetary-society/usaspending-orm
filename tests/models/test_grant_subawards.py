@@ -78,7 +78,7 @@ class TestGrantSubawardsIntegration:
         assert payload["spending_level"] == "subawards"
         
         # Verify the award filter is included
-        assert payload["filters"]["prime_award_generated_internal_id"] == "ASST_AWD_123_456"
+        assert payload["filters"]["award_unique_id"] == "ASST_AWD_123_456"
 
     def test_grant_subawards_can_be_chained(self, mock_usa_client):
         """Test that grant.subawards can be chained with additional filters."""

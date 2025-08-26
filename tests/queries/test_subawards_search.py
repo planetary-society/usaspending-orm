@@ -41,14 +41,14 @@ class TestSubAwardsSearch:
         assert payload["filters"]["award_type_codes"] == ["A", "B", "C"]
 
     def test_build_payload_with_award_filter(self, mock_usa_client):
-        """Test that payload includes prime_award_generated_internal_id when filtering by award."""
+        """Test that payload includes award_unique_id when filtering by award."""
         search = (SubAwardsSearch(mock_usa_client)
                  .with_award_types("A", "B", "C")
                  .for_award("CONT_AWD_123_456"))
         
         payload = search._build_payload(page=1)
         
-        assert payload["filters"]["prime_award_generated_internal_id"] == "CONT_AWD_123_456"
+        assert payload["filters"]["award_unique_id"] == "CONT_AWD_123_456"
         assert payload["subawards"] is True
         assert payload["spending_level"] == "subawards"
 

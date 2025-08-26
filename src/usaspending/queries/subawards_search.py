@@ -129,6 +129,9 @@ class SubAwardsSearch(AwardsSearch):
                 f"{self.__class__.__name__}.count() = {total} subawards for award {self._award_id}"
             )
             return total
+        
+        # Fall back to parent implementation for general subaward counting
+        return super().count()
     
     def count_awards_by_type(self) -> Dict[str, int]:
         """

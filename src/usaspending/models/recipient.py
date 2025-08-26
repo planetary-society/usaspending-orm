@@ -44,7 +44,7 @@ class Recipient(LazyRecord):
         super().__init__(raw, client)
 
     def _fetch_details(self) -> Optional[Dict[str, Any]]:
-        """Fetch full recipient details from the recipients resource."""
+        """Fetch full recipient details from the API."""
         recipient_id = self.recipient_id
         if not recipient_id:
             logger.error(
@@ -52,9 +52,10 @@ class Recipient(LazyRecord):
             )
             return None
         try:
-            # Use the recipients resource to get full recipient data
-            full_recipient = self._client.recipients.get(recipient_id)
-            return full_recipient.raw
+            # Make direct API call to avoid circular dependency
+            endpoint = f"/v2/recipients/{recipient_id}/"
+            response = self._client._make_request("GET", endpoint)
+            return response
         except Exception as e:
             # If fetch fails, return None to avoid breaking the application
             logger.error(f"Failed to fetch recipient details for {recipient_id}: {e}")
