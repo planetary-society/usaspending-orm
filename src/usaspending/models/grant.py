@@ -64,22 +64,30 @@ class Grant(Award):
     @property
     def cfda_info(self) -> List[Dict[str, Any]]:
         """Catalog of Federal Domestic Assistance information for grants."""
-        return self.get_value(["cfda_info", "Assistance Listings"], default=[])
+        return self._lazy_get("cfda_info", "Assistance Listings", default=[])
 
     @property
     def cfda_number(self) -> Optional[str]:
         """Primary CFDA number for grants."""
-        return self.get_value(["cfda_number", "CFDA Number"])
+        primary_info = self._lazy_get("primary_cfda_info", "primary_assistance_listing")
+        if primary_info:
+            return primary_info.get("cfda_number")
+
+        cfda_list = self._lazy_get("cfda_info", "Assistance Listings")
+        if cfda_list:
+            return cfda_list[0].get("cfda_number")
+
+        return self._lazy_get("cfda_number", "CFDA Number")
 
     @property
     def primary_cfda_info(self) -> Optional[Dict[str, Any]]:
         """Primary CFDA program information."""
-        return self.get_value(["primary_cfda_info", "primary_assistance_listing"])
+        return self._lazy_get("primary_cfda_info", "primary_assistance_listing")
 
     @property
     def sai_number(self) -> Optional[str]:
         """System for Award Identification (SAI) number for grants."""
-        return self.get_value(["sai_number", "SAI Number"])
+        return self._lazy_get("sai_number", "SAI Number")
 
     @cached_property
     def funding_opportunity(self) -> Optional[Dict[str, Any]]:

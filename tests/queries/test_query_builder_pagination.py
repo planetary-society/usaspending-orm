@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from usaspending.queries.awards_search import AwardsSearch
+from tests.mocks.mock_client import MockUSASpendingClient
 
 
 @pytest.fixture
@@ -23,7 +24,7 @@ class TestLimitFunctionality:
         """Test that limit() stops iteration at the specified number of items."""
         # Mock 3 pages with 10 items each using add_response_sequence
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 {
                     "results": [{"Award ID": f"{i}"} for i in range(10)],
@@ -46,12 +47,12 @@ class TestLimitFunctionality:
 
         assert len(results) == 15
         # Should have fetched 2 pages to get 15 items
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 2
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 2
 
     def test_limit_less_than_page_size(self, awards_search, mock_usa_client):
         """Test limit when it's less than a single page."""
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [{"Award ID": f"{i}"} for i in range(100)],
                 "page_metadata": {"hasNext": True},
@@ -63,12 +64,12 @@ class TestLimitFunctionality:
         results = list(search)
 
         assert len(results) == 5
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 1
 
     def test_limit_exact_page_boundary(self, awards_search, mock_usa_client):
         """Test limit that matches exactly with page boundaries."""
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 {
                     "results": [{"Award ID": f"{i}"} for i in range(100)],
@@ -86,13 +87,13 @@ class TestLimitFunctionality:
         results = list(search)
 
         assert len(results) == 100
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 1
 
     def test_limit_with_smaller_page_size(self, awards_search, mock_usa_client):
         """Test limit with custom page size."""
         # Set page size to 20
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 {
                     "results": [{"Award ID": f"{i}"} for i in range(20)],
@@ -115,13 +116,13 @@ class TestLimitFunctionality:
 
         assert len(results) == 50
         # Should fetch 3 pages (20 + 20 + 10)
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 3
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 3
 
     def test_limit_zero_returns_empty(self, awards_search, mock_usa_client):
         """Test that limit(0) returns no results."""
         # Even if API has results, limit(0) should return nothing
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {"results": [{"Award ID": "1"}], "page_metadata": {"hasNext": True}},
         )
 
@@ -131,15 +132,15 @@ class TestLimitFunctionality:
         assert len(results) == 0
         # Should make one call to count endpoint (from __len__), but not the search endpoint
         assert (
-            mock_usa_client.get_request_count("/v2/search/spending_by_award_count/")
+            mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT)
             == 1
         )
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 0
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 0
 
     def test_no_limit_fetches_all(self, awards_search, mock_usa_client):
         """Test that no limit fetches all available results."""
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 {
                     "results": [{"Award ID": f"{i}"} for i in range(100)],
@@ -160,7 +161,7 @@ class TestLimitFunctionality:
         results = list(awards_search)
 
         assert len(results) == 250
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 3
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 3
 
 
 class TestMaxPagesWithLimit:
@@ -171,7 +172,7 @@ class TestMaxPagesWithLimit:
     ):
         """Test that limit stops iteration even if max_pages would allow more."""
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 {
                     "results": [{"Award ID": f"{i}"} for i in range(100)],
@@ -194,12 +195,12 @@ class TestMaxPagesWithLimit:
 
         assert len(results) == 150
         # Should stop after 2 pages (100 + 50)
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 2
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 2
 
     def test_max_pages_stops_before_limit(self, awards_search, mock_usa_client):
         """Test that max_pages can stop iteration before limit is reached."""
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 {
                     "results": [{"Award ID": f"{i}"} for i in range(100)],
@@ -217,7 +218,7 @@ class TestMaxPagesWithLimit:
         results = list(search)
 
         assert len(results) == 200  # 2 pages * 100 items
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 2
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 2
 
 
 class TestFirstMethodWithLimit:
@@ -226,7 +227,7 @@ class TestFirstMethodWithLimit:
     def test_first_uses_limit_one(self, awards_search, mock_usa_client):
         """Test that first() effectively sets limit to 1."""
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [{"Award ID": "1"}, {"Award ID": "2"}, {"Award ID": "3"}],
                 "page_metadata": {"hasNext": True},
@@ -238,12 +239,12 @@ class TestFirstMethodWithLimit:
         assert result is not None
         assert result._data["Award ID"] == "1"
         # Should only iterate once
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 1
 
     def test_first_with_existing_limit(self, awards_search, mock_usa_client):
         """Test that first() overrides any existing limit."""
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {"results": [{"Award ID": "1"}], "page_metadata": {"hasNext": True}},
         )
 
@@ -260,7 +261,7 @@ class TestPageSizeFunctionality:
     def test_page_size_changes_request_limit(self, awards_search, mock_usa_client):
         """Test that page_size affects the API request limit parameter."""
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {"results": [], "page_metadata": {"hasNext": False}},
         )
 
@@ -268,14 +269,14 @@ class TestPageSizeFunctionality:
         list(search)
 
         # Check that the payload had limit=50
-        last_request = mock_usa_client.get_last_request("/v2/search/spending_by_award/")
+        last_request = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.AWARD_SEARCH)
         payload = last_request["json"]
         assert payload["limit"] == 50
 
     def test_page_size_capped_at_100(self, awards_search, mock_usa_client):
         """Test that page_size is capped at API maximum of 100."""
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {"results": [], "page_metadata": {"hasNext": False}},
         )
 
@@ -283,7 +284,7 @@ class TestPageSizeFunctionality:
         list(search)
 
         # Check that the payload had limit=100 (capped)
-        last_request = mock_usa_client.get_last_request("/v2/search/spending_by_award/")
+        last_request = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.AWARD_SEARCH)
         payload = last_request["json"]
         assert payload["limit"] == 100
 
@@ -292,7 +293,7 @@ class TestPageSizeFunctionality:
     ):
         """Test that effective page size is min(page_size, total_limit)."""
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {"results": [], "page_metadata": {"hasNext": False}},
         )
 
@@ -301,7 +302,7 @@ class TestPageSizeFunctionality:
         list(search1)
 
         last_request1 = mock_usa_client.get_last_request(
-            "/v2/search/spending_by_award/"
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH
         )
         payload1 = last_request1["json"]
         assert payload1["limit"] == 10  # Should use limit, not page_size
@@ -310,7 +311,7 @@ class TestPageSizeFunctionality:
         # Need to re-add count endpoint after reset
         mock_usa_client.mock_award_count(contracts=1000)
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {"results": [], "page_metadata": {"hasNext": False}},
         )
 
@@ -319,7 +320,7 @@ class TestPageSizeFunctionality:
         list(search2)
 
         last_request2 = mock_usa_client.get_last_request(
-            "/v2/search/spending_by_award/"
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH
         )
         payload2 = last_request2["json"]
         assert payload2["limit"] == 100  # Should use page_size, not limit
@@ -328,7 +329,7 @@ class TestPageSizeFunctionality:
         # Need to re-add count endpoint after reset
         mock_usa_client.mock_award_count(contracts=1000)
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {"results": [], "page_metadata": {"hasNext": False}},
         )
 
@@ -337,7 +338,7 @@ class TestPageSizeFunctionality:
         list(search3)
 
         last_request3 = mock_usa_client.get_last_request(
-            "/v2/search/spending_by_award/"
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH
         )
         payload3 = last_request3["json"]
         assert payload3["limit"] == 30  # Should use limit, not page_size
@@ -349,19 +350,19 @@ class TestEmptyResults:
     def test_empty_first_page(self, awards_search, mock_usa_client):
         """Test handling when first page returns no results."""
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {"results": [], "page_metadata": {"hasNext": False}},
         )
 
         results = list(awards_search.limit(10))
 
         assert len(results) == 0
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 1
 
     def test_empty_page_stops_iteration(self, awards_search, mock_usa_client):
         """Test that an empty page stops iteration even if hasNext is True."""
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 {"results": [{"Award ID": "1"}], "page_metadata": {"hasNext": True}},
                 {
@@ -374,4 +375,4 @@ class TestEmptyResults:
         results = list(awards_search)
 
         assert len(results) == 1
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 2
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 2

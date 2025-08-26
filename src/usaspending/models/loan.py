@@ -3,11 +3,12 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, List
 
+from .grant import Grant
 from .award import Award
 from ..utils.formatter import to_float
 
 
-class Loan(Award):
+class Loan(Grant):
     """Loan award type."""
 
     TYPE_FIELDS = [
@@ -63,19 +64,19 @@ class Loan(Award):
     @property
     def cfda_info(self) -> List[Dict[str, Any]]:
         """Catalog of Federal Domestic Assistance information for loans."""
-        return self.get_value(["cfda_info", "Assistance Listings"], default=[])
+        return self._lazy_get("cfda_info", "Assistance Listings", default=[])
 
     @property
     def cfda_number(self) -> Optional[str]:
         """Primary CFDA number for loans."""
-        return self.get_value(["cfda_number", "CFDA Number"])
+        return self._lazy_get("cfda_number", "CFDA Number")
 
     @property
     def primary_cfda_info(self) -> Optional[Dict[str, Any]]:
         """Primary CFDA program information."""
-        return self.get_value(["primary_cfda_info", "primary_assistance_listing"])
+        return self._lazy_get("primary_cfda_info", "primary_assistance_listing")
 
     @property
     def sai_number(self) -> Optional[str]:
         """System for Award Identification (SAI) number for loans."""
-        return self.get_value(["sai_number", "SAI Number"])
+        return self._lazy_get("sai_number", "SAI Number")

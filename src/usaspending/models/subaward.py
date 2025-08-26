@@ -215,4 +215,22 @@ class SubAward(ClientAwareModel):
         """String representation of SubAward."""
         return f"<SubAward {self.sub_award_id or '?'} {self.sub_awardee_name or '?'} ${self.sub_award_amount or 0:,.2f}>"
         
-    
+    @property
+    def name(self) -> Optional[str]:
+        """Alias for sub_awardee_name."""
+        return self.sub_awardee_name
+
+    @property
+    def amount(self) -> Optional[float]:
+        """Alias for sub_award_amount."""
+        return self.sub_award_amount
+
+    @property
+    def description(self) -> Optional[str]:
+        """Alias for sub_award_description."""
+        return self.sub_award_description
+
+    @property
+    def award_date(self) -> Optional[datetime]:
+        """Alias for sub_award_date."""
+        return self.sub_award_date

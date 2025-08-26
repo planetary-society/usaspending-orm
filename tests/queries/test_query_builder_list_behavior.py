@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from usaspending.queries.awards_search import AwardsSearch
+from tests.mocks.mock_client import MockUSASpendingClient
 
 
 @pytest.fixture
@@ -19,7 +20,7 @@ class TestLenMethod:
         """Test that len() returns the same value as count()."""
         # Mock the count endpoint
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/",
+            MockUSASpendingClient.Endpoints.AWARD_COUNT,
             {
                 "results": {
                     "contracts": 42  # 42 contract awards
@@ -33,7 +34,7 @@ class TestLenMethod:
 
         # Should have called the count endpoint twice
         assert (
-            mock_usa_client.get_request_count("/v2/search/spending_by_award_count/")
+            mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT)
             == 2
         )
 
@@ -41,7 +42,7 @@ class TestLenMethod:
         """Test that len() works with filtered queries."""
         # Mock the count endpoint
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 15}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 15}}
         )
 
         filtered_search = awards_search.for_agency("DOD")
@@ -55,13 +56,13 @@ class TestGetItemMethod:
         """Test accessing items by positive index."""
         # Mock count
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 250}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 250}}
         )
 
         # Mock the specific page that contains index 42
         # With page_size=100, index 42 is on page 1 (indices 0-99)
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [{"Award ID": f"AWARD-{i}"} for i in range(100)],
                 "page_metadata": {"hasNext": True},
@@ -72,18 +73,18 @@ class TestGetItemMethod:
         assert result._data["Award ID"] == "AWARD-42"
 
         # Should have fetched only one page
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 1
 
     def test_negative_index(self, awards_search, mock_usa_client):
         """Test accessing items by negative index."""
         # Mock count - total 250 items
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 250}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 250}}
         )
 
         # For index -1 (last item), that's index 249, which is on page 3
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [
                     {"Award ID": f"AWARD-{200 + i}"} for i in range(50)
@@ -99,7 +100,7 @@ class TestGetItemMethod:
         """Test that out-of-bounds indices raise IndexError."""
         # Mock count
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 10}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 10}}
         )
 
         with pytest.raises(IndexError) as exc_info:
@@ -114,12 +115,12 @@ class TestGetItemMethod:
         """Test simple slice operations."""
         # Mock count
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 250}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 250}}
         )
 
         # Request items [5:8] - all on page 1
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [{"Award ID": f"AWARD-{i}"} for i in range(100)],
                 "page_metadata": {"hasNext": True},
@@ -136,12 +137,12 @@ class TestGetItemMethod:
         """Test slice that spans multiple pages."""
         # Mock count
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 250}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 250}}
         )
 
         # Request items [95:105] - spans pages 1 and 2
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 {
                     "results": [{"Award ID": f"AWARD-{i}"} for i in range(100)],
@@ -161,19 +162,19 @@ class TestGetItemMethod:
         assert results[-1]._data["Award ID"] == "AWARD-104"
 
         # Should have fetched two pages
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 2
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 2
 
     def test_slice_with_step(self, awards_search, mock_usa_client):
         """Test slice with step parameter."""
         # Mock count
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 250}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 250}}
         )
 
         # For [0:10:2], we need to fetch items 0, 2, 4, 6, 8
         # All are on page 1
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [{"Award ID": f"AWARD-{i}"} for i in range(100)],
                 "page_metadata": {"hasNext": True},
@@ -192,12 +193,12 @@ class TestGetItemMethod:
         """Test slice with negative indices."""
         # Mock count
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 100}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 100}}
         )
 
         # [-5:] means last 5 items (indices 95-99)
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [{"Award ID": f"AWARD-{i}"} for i in range(100)],
                 "page_metadata": {"hasNext": False},
@@ -213,7 +214,7 @@ class TestGetItemMethod:
         """Test slice that returns empty list."""
         # Mock count
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 100}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 100}}
         )
 
         # Slice with start >= stop returns empty list
@@ -224,7 +225,7 @@ class TestGetItemMethod:
         assert results == []
 
         # No API calls should be made for empty slices
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 0
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 0
 
     def test_invalid_key_type(self, awards_search, mock_usa_client):
         """Test that invalid key types raise TypeError."""
@@ -244,12 +245,12 @@ class TestIntegration:
         """Test that indexing works with filtered queries."""
         # Mock count for filtered query
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 50}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 50}}
         )
 
         # Mock results
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [{"Award ID": f"DOD-AWARD-{i}"} for i in range(50)],
                 "page_metadata": {"hasNext": False},
@@ -274,7 +275,7 @@ class TestIntegration:
         """Test that custom page size is respected."""
         # Mock count
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award_count/", {"results": {"contracts": 100}}
+            MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 100}}
         )
 
         # Set custom page size
@@ -282,7 +283,7 @@ class TestIntegration:
 
         # Mock response for page with 20 items
         mock_usa_client.set_response(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
                 "results": [{"Award ID": f"AWARD-{i}"} for i in range(20)],
                 "page_metadata": {"hasNext": True},
@@ -294,5 +295,5 @@ class TestIntegration:
         assert item._data["Award ID"] == "AWARD-15"
 
         # Check the request was made with correct page size
-        last_request = mock_usa_client.get_last_request("/v2/search/spending_by_award/")
+        last_request = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.AWARD_SEARCH)
         assert last_request["json"]["limit"] == 20

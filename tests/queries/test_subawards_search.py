@@ -11,6 +11,7 @@ import pytest
 from usaspending.exceptions import ValidationError
 from usaspending.models.subaward import SubAward
 from usaspending.queries.subawards_search import SubAwardsSearch
+from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestSubAwardsSearch:
@@ -125,32 +126,29 @@ class TestSubAwardsSearch:
 
     def test_count_with_award_id(self, mock_usa_client):
         """Test count method uses efficient endpoint when award_id is set."""
-        mock_usa_client._make_request = MagicMock(return_value={"subawards": 7})
-        
+        # Set up the specific endpoint response
+        endpoint = MockUSASpendingClient.Endpoints.SUBWARD_COUNT.format(award_id="CONT_AWD_123")
+        mock_usa_client.set_response(endpoint, {"subawards": 7})
+
         search = SubAwardsSearch(mock_usa_client).for_award("CONT_AWD_123")
         count = search.count()
-        
+
         assert count == 7
-        mock_usa_client._make_request.assert_called_once_with(
-            "GET", "/v2/awards/count/subaward/CONT_AWD_123/"
+        # Verify the correct endpoint was called
+        mock_usa_client.assert_called_with(
+            endpoint=endpoint, method="GET"
         )
 
     def test_count_without_award_id(self, mock_usa_client):
         """Test count method falls back to parent implementation without award_id."""
         search = SubAwardsSearch(mock_usa_client).with_award_types("A", "B")
-        
-        # Mock the API response for the count endpoint (parent class count)
-        mock_usa_client._make_request = MagicMock(return_value={
-            "aggregations": {
-                "contracts": 5,
-                "idvs": 0,
-                "grants": 0,
-                "direct_payments": 0,
-                "loans": 0,
-                "other": 0
-            }
-        })
-        
+
+        # Mock the iterator to return 5 items
+        mock_usa_client.set_paginated_response(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
+            [{"internal_id": i} for i in range(5)]
+        )
+
         count = search.count()
         assert count == 5
 

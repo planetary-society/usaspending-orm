@@ -113,14 +113,14 @@ class Award(LazyRecord):
     @property
     def prime_award_id(self) -> str:
         """Primary award identifier (PIID, FAIN, URI, etc.)."""
-        return str(self.get_value(["Award ID", "piid", "fain", "uri"], default=""))
+        return str(self._lazy_get("Award ID", "piid", "fain", "uri", default=""))
 
     @property
     def generated_unique_award_id(self) -> Optional[str]:
         """USASpending-generated unique award identifier."""
-        return self.get_value(["generated_unique_award_id", "generated_internal_id"])
+        return self._lazy_get("generated_unique_award_id", "generated_internal_id")
 
-    @property
+    @cached_property
     def parent_award(self) -> Optional[Award]:
         """Reference to parent award for child awards."""
         data = self._lazy_get("parent_award")
@@ -140,8 +140,9 @@ class Award(LazyRecord):
         acronyms, or other information that is not plain English such as that required
         by OMB policies (CARES Act, etc).
         """
-        if isinstance(self.get_value(["description", "Description"]), str):
-            return smart_sentence_case(self.get_value(["description", "Description"]))
+        desc = self._lazy_get("description", "Description")
+        if isinstance(desc, str):
+            return smart_sentence_case(desc)
         return None
 
     @property
@@ -156,7 +157,7 @@ class Award(LazyRecord):
     @property
     def type_description(self) -> Optional[str]:
         """The plain text description of the type of the award"""
-        return self.get_value(["type_description", "Award Type"], default="")
+        return self._lazy_get("type_description", "Award Type", default="")
 
     @property
     def total_obligation(self) -> float:
@@ -182,8 +183,8 @@ class Award(LazyRecord):
     def base_obligation_date(self) -> Optional[datetime]:
         """Base obligation date for the award."""
         return to_date(
-            self.get_value(
-                ["base_obligation_date", "Base Obligation Date"], default=None
+            self._lazy_get(
+                "base_obligation_date", "Base Obligation Date", default=None
             )
         )
 
@@ -224,28 +225,28 @@ class Award(LazyRecord):
     @property
     def recipient_uei(self) -> Optional[str]:
         """Recipient Unique Entity Identifier (UEI)."""
-        return self.get_value(["recipient_uei", "Recipient UEI"])
+        return self._lazy_get("recipient_uei", "Recipient UEI")
 
     @property
     def covid19_obligations(self) -> float:
         """COVID-19 related obligations amount."""
         return to_float(
-            self.get_value(["covid19_obligations", "COVID-19 Obligations"], default=0)
+            self._lazy_get("covid19_obligations", "COVID-19 Obligations", default=0)
         )
 
     @property
     def covid19_outlays(self) -> float:
         """COVID-19 related outlays amount."""
         return to_float(
-            self.get_value(["covid19_outlays", "COVID-19 Outlays"], default=0)
+            self._lazy_get("covid19_outlays", "COVID-19 Outlays", default=0)
         )
 
     @property
     def infrastructure_obligations(self) -> float:
         """Infrastructure related obligations amount."""
         return to_float(
-            self.get_value(
-                ["infrastructure_obligations", "Infrastructure Obligations"], default=0
+            self._lazy_get(
+                "infrastructure_obligations", "Infrastructure Obligations", default=0
             )
         )
 
@@ -253,8 +254,8 @@ class Award(LazyRecord):
     def infrastructure_outlays(self) -> float:
         """Infrastructure related outlays amount."""
         return to_float(
-            self.get_value(
-                ["infrastructure_outlays", "Infrastructure Outlays"], default=0
+            self._lazy_get(
+                "infrastructure_outlays", "Infrastructure Outlays", default=0
             )
         )
 
@@ -263,8 +264,8 @@ class Award(LazyRecord):
         """Potential total value of the award."""
         return (
             to_float(
-                self.get_value(
-                    ["Award Amount", "Loan Amount"], default=self.total_obligation
+                self._lazy_get(
+                    "Award Amount", "Loan Amount", default=self.total_obligation
                 )
             )
             or 0.0
@@ -273,30 +274,36 @@ class Award(LazyRecord):
     @property
     def award_amount(self) -> float:
         """Base award amount."""
-        return to_float(self.get_value(["Award Amount", "Loan Amount"])) or 0.0
+        return to_float(self._lazy_get("Award Amount", "Loan Amount")) or 0.0
 
     @cached_property
     def period_of_performance(self) -> Optional[PeriodOfPerformance]:
         """Award period of performance dates."""
-        if isinstance(self.get_value(["period_of_performance"]), dict):
+        if "period_of_performance" in self._data and isinstance(self._data["period_of_performance"], dict):
             return PeriodOfPerformance(self._data["period_of_performance"])
 
         # Award search results return Period of Performance information in a flat structure
         # We need to assign these values to a PeriodOfPerformance object
         # to maintain consistency.
         date_keys = ["Start Date", "End Date", "Last Modified Date"]
-        if any(self.get_value([k]) for k in date_keys):
+        if any(k in self._data for k in date_keys):
             return PeriodOfPerformance(
                 {
-                    "start_date": self.get_value(
-                        ["Start Date", "Period of Performance Start Date"]
+                    "start_date": self._data.get(
+                        "Start Date", self._data.get("Period of Performance Start Date")
                     ),
-                    "end_date": self.get_value(
-                        ["End Date", "Period of Performance Current End Date"]
+                    "end_date": self._data.get(
+                        "End Date", self._data.get("Period of Performance Current End Date")
                     ),
-                    "last_modified_date": self.get_value(["Last Modified Date"]),
+                    "last_modified_date": self._data.get("Last Modified Date"),
                 }
             )
+
+        # If no data, trigger fetch
+        self._ensure_details()
+        if "period_of_performance" in self._data and isinstance(self._data["period_of_performance"], dict):
+            return PeriodOfPerformance(self._data["period_of_performance"])
+
         return PeriodOfPerformance({})
 
     @cached_property
@@ -317,57 +324,42 @@ class Award(LazyRecord):
     @cached_property
     def recipient(self) -> Optional[Recipient]:
         """Award recipient with lazy loading."""
-        # First check if we already have recipient data
-        if isinstance(self.get_value(["recipient"]), dict):
-            data = self._data.get("recipient")
-            return Recipient(data, self._client) if data else None
+        # First check if we already have a nested recipient object
+        if "recipient" in self._data and isinstance(self._data["recipient"], dict):
+            return Recipient(self._data["recipient"], self._client)
 
-        # Check if we have fallback fields before calling API
-        recipient_keys = [
-            "Recipient Name",
-            "Recipient DUNS Number",
-            "recipient_id",
-            "recipient_hash",
-        ]
-        if any(self.get_value([k]) for k in recipient_keys):
-            recipient = Recipient(
-                {
-                    "recipient_name": self.get_value(["Recipient Name"]),
-                    "recipient_unique_id": self.get_value(["Recipient DUNS Number"]),
-                    "recipient_id": self.get_value(["recipient_id"]),
-                    "recipient_hash": self.get_value(["recipient_hash"]),
-                },
-                client=self._client,
-            )
-
-            # Add location if available to avoid separate API call
-            if isinstance(self.get_value(["Recipient Location"]), dict):
-                location_data = self._data.get("Recipient Location")
-                recipient_location = (
-                    Location(location_data, self._client) if location_data else None
-                )
-                recipient.location = recipient_location
-
+        # Then, check for flat recipient fields from search results
+        recipient_keys = ["Recipient Name", "recipient_id", "Recipient Location"]
+        if any(key in self._data for key in recipient_keys):
+            recipient_data = {
+                "recipient_name": self._data.get("Recipient Name"),
+                "recipient_unique_id": self._data.get("Recipient DUNS Number"),
+                "recipient_id": self._data.get("recipient_id"),
+                "recipient_hash": self._data.get("recipient_hash"),
+                "recipient_uei": self._data.get("Recipient UEI"),
+            }
+            recipient = Recipient(recipient_data, self._client)
+            if "Recipient Location" in self._data and isinstance(self._data["Recipient Location"], dict):
+                recipient.location = Location(self._data["Recipient Location"], self._client)
             return recipient
 
-        # Only call API if we don't have enough info in the Award entry itself
-        self._ensure_details()  # loads the full Award detail
-        if isinstance(self.get_value(["recipient"]), dict):
-            data = self._data.get("recipient")
-            return Recipient(data, self._client) if data else None
+        # If no recipient data is available locally, trigger a fetch
+        self._ensure_details()
+        if "recipient" in self._data and isinstance(self._data["recipient"], dict):
+            return Recipient(self._data["recipient"], self._client)
 
         return None
 
     @cached_property
     def funding_agency(self) -> Optional[Agency]:
         """Funding agency information."""
-        data = self._data.get("funding_agency")
+        data = self._lazy_get("funding_agency")
         return Agency(data, self._client) if data else None
 
     @cached_property
     def awarding_agency(self) -> Optional[Agency]:
         """Awarding agency information."""
-        data = self._data.get("awarding_agency")
+        data = self._lazy_get("awarding_agency")
         return Agency(data, self._client) if data else None
 
     @property

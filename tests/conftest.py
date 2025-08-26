@@ -114,3 +114,21 @@ def loan_fixture_data():
 def top_recipients_response():
     """Load the top recipients response fixture."""
     return load_json_fixture("top_recipients_response.json")
+
+
+@pytest.fixture
+def search_results_contracts_data():
+    """Load the search results fixture data for contracts."""
+    return load_json_fixture("awards/search_results_contracts.json")["results"]
+
+
+@pytest.fixture
+def search_results_grants_data():
+    """Load the search results fixture data for grants."""
+    return load_json_fixture("awards/search_results_grants.json")["results"]
+
+
+@pytest.fixture
+def search_results_idvs_data():
+    """Load the search results fixture data for IDVs."""
+    return load_json_fixture("awards/search_results_idvs.json")["results"]

@@ -56,20 +56,22 @@ class IDV(Award):
     @property
     def contract_award_type(self) -> Optional[str]:
         """Contract award type description."""
-        return self.get_value(["contract_award_type", "Contract Award Type"])
+        return self._lazy_get("contract_award_type", "Contract Award Type", "type_description")
 
     @property
     def naics_code(self) -> Optional[str]:
         """NAICS industry classification code."""
-        naics_data = self.get_value(["naics", "NAICS"])
+        naics_data = self._lazy_get("naics", "NAICS")
         if isinstance(naics_data, dict):
             return naics_data.get("code")
+        if self.naics_hierarchy and isinstance(self.naics_hierarchy.get("base_code"), dict):
+            return self.naics_hierarchy["base_code"].get("code")
         return None
 
     @property
     def naics_description(self) -> Optional[str]:
         """NAICS industry classification description."""
-        naics_data = self.get_value(["naics", "NAICS"])
+        naics_data = self._lazy_get("naics", "NAICS")
         if isinstance(naics_data, dict):
             return naics_data.get("description")
         return None
@@ -77,15 +79,17 @@ class IDV(Award):
     @property
     def psc_code(self) -> Optional[str]:
         """Product/Service Code (PSC) for contracts."""
-        psc_data = self.get_value(["psc", "PSC"])
+        psc_data = self._lazy_get("psc", "PSC")
         if isinstance(psc_data, dict):
             return psc_data.get("code")
+        if self.psc_hierarchy and isinstance(self.psc_hierarchy.get("base_code"), dict):
+            return self.psc_hierarchy["base_code"].get("code")
         return None
 
     @property
     def psc_description(self) -> Optional[str]:
         """Product/Service Code (PSC) description."""
-        psc_data = self.get_value(["psc", "PSC"])
+        psc_data = self._lazy_get("psc", "PSC")
         if isinstance(psc_data, dict):
             return psc_data.get("description")
         return None

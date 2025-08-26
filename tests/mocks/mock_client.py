@@ -16,6 +16,26 @@ from .response_builder import ResponseBuilder
 
 
 class MockUSASpendingClient(USASpending):
+    class Endpoints:
+        """A collection of API endpoint constants."""
+        AWARD_SEARCH = "/v2/search/spending_by_award/"
+        AWARD_COUNT = "/v2/search/spending_by_award_count/"
+        AWARD_DETAIL = "/v2/awards/{award_id}/"
+        AWARD_FUNDING = "/v2/awards/funding/"
+        SUBWARD_COUNT = "/v2/awards/count/subaward/{award_id}/"
+        TRANSACTION_COUNT = "/v2/awards/count/transaction/{award_id}/"
+        TRANSACTIONS = "/v2/transactions/"
+
+        RECIPIENT_DETAIL = "/v2/recipients/{recipient_id}/"
+
+        DOWNLOAD_ASSISTANCE = "/v2/download/assistance/"
+        DOWNLOAD_CONTRACT = "/v2/download/contract/"
+        DOWNLOAD_IDV = "/v2/download/idv/"
+        DOWNLOAD_STATUS = "/v2/download/status"
+
+        SPENDING_BY_RECIPIENT = "/api/v2/search/spending_by_category/recipient/"
+        SPENDING_BY_DISTRICT = "/api/v2/search/spending_by_category/district/"
+
     """Mock USASpending client for testing.
 
     This class provides a comprehensive mocking system for the USASpending API,

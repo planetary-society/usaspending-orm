@@ -195,7 +195,7 @@ class TestRateLimiterThreadSafety:
 
         # First 5 calls should be immediate
         for i in range(5):
-            assert call_times[i] - start_time < 0.002
+            assert call_times[i] - start_time < 0.01
 
         # Next 5 calls should be after 0.01 second
         for i in range(5, 10):

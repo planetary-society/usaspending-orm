@@ -6,6 +6,7 @@ import pytest
 
 from usaspending.queries.spending_search import SpendingSearch
 from usaspending.exceptions import ValidationError
+from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestSpendingSearchCount:
@@ -46,7 +47,7 @@ class TestSpendingSearchCount:
 
         # Set up mock to return the district fixture data
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/district/", district_fixture
+            MockUSASpendingClient.Endpoints.SPENDING_BY_DISTRICT, district_fixture
         )
 
         search = SpendingSearch(mock_usa_client).by_district()
@@ -93,7 +94,7 @@ class TestSpendingSearchCount:
 
         # Set up mock to return different responses for each page
         mock_usa_client.add_response_sequence(
-            "/api/v2/search/spending_by_category/recipient/",
+            MockUSASpendingClient.Endpoints.SPENDING_BY_RECIPIENT,
             [page1_response, page2_response, page3_response],
         )
 
@@ -117,7 +118,7 @@ class TestSpendingSearchCount:
         }
 
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/district/", empty_response
+            MockUSASpendingClient.Endpoints.SPENDING_BY_DISTRICT, empty_response
         )
 
         search = SpendingSearch(mock_usa_client).by_district().spending_level("awards")
@@ -154,7 +155,7 @@ class TestSpendingSearchCount:
 
         # Set up mock to return the fixture data twice (once for count, once for iteration)
         mock_usa_client.add_response_sequence(
-            "/api/v2/search/spending_by_category/district/",
+            MockUSASpendingClient.Endpoints.SPENDING_BY_DISTRICT,
             [district_fixture, district_fixture],
         )
 
@@ -166,7 +167,7 @@ class TestSpendingSearchCount:
         # Reset mock for iteration
         mock_usa_client.reset()
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/district/", district_fixture
+            MockUSASpendingClient.Endpoints.SPENDING_BY_DISTRICT, district_fixture
         )
 
         # Iterate and count items
@@ -195,7 +196,7 @@ class TestSpendingSearchCountWithLimits:
         }
 
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/recipient/", response
+            MockUSASpendingClient.Endpoints.SPENDING_BY_RECIPIENT, response
         )
 
         search = SpendingSearch(mock_usa_client).by_recipient().limit(5)
@@ -229,7 +230,7 @@ class TestSpendingSearchCountWithLimits:
         }
 
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/district/", response
+            MockUSASpendingClient.Endpoints.SPENDING_BY_DISTRICT, response
         )
 
         search = SpendingSearch(mock_usa_client).by_district().limit(10)
@@ -265,7 +266,7 @@ class TestSpendingSearchCountWithLimits:
         }
 
         mock_usa_client.add_response_sequence(
-            "/api/v2/search/spending_by_category/recipient/",
+            MockUSASpendingClient.Endpoints.SPENDING_BY_RECIPIENT,
             [page1_response, page2_response],
         )
 
@@ -293,7 +294,7 @@ class TestSpendingSearchCountWithLimits:
 
         # Set up responses for both count and iteration
         mock_usa_client.add_response_sequence(
-            "/api/v2/search/spending_by_category/recipient/", [response, response]
+            MockUSASpendingClient.Endpoints.SPENDING_BY_RECIPIENT, [response, response]
         )
 
         search = SpendingSearch(mock_usa_client).by_recipient().limit(5)
@@ -304,7 +305,7 @@ class TestSpendingSearchCountWithLimits:
         # Reset mock and get iteration count
         mock_usa_client.reset()
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/recipient/", response
+            MockUSASpendingClient.Endpoints.SPENDING_BY_RECIPIENT, response
         )
 
         items = list(search.limit(5))  # Create new search with same limit

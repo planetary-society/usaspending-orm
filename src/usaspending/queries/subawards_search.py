@@ -131,7 +131,15 @@ class SubAwardsSearch(AwardsSearch):
             return total
         
         # Fall back to parent implementation for general subaward counting
-        return super().count()
+        # This is inefficient, but it's the only way to get the count
+        # without a dedicated endpoint for subaward searches.
+        # The parent's count() method will iterate through all pages.
+        # return super().count()
+        # For now, let's just iterate and count
+        count = 0
+        for _ in self:
+            count += 1
+        return count
     
     def count_awards_by_type(self) -> Dict[str, int]:
         """

@@ -6,6 +6,7 @@ import pytest
 
 from usaspending.exceptions import APIError
 from usaspending.models import Award
+from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestMockClientExamples:
@@ -48,7 +49,7 @@ class TestMockClientExamples:
 
         # Set paginated response with 100 items per page
         mock_usa_client.set_paginated_response(
-            "/v2/search/spending_by_award/", awards, page_size=100
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH, awards, page_size=100
         )
 
         # Also mock the count endpoint since list() calls __len__ which calls count()
@@ -59,13 +60,13 @@ class TestMockClientExamples:
 
         # Should have fetched all 250 items across 3 pages
         assert len(results) == 250
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 3
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 3
 
     def test_error_simulation(self, mock_usa_client):
         """Test API error simulation."""
         # Set up error response for the count endpoint (since list() calls count() first)
         mock_usa_client.set_error_response(
-            "/v2/search/spending_by_award_count/",
+            MockUSASpendingClient.Endpoints.AWARD_COUNT,
             error_code=400,
             detail="Invalid award type code: X",
         )
@@ -79,13 +80,15 @@ class TestMockClientExamples:
 
     def test_fixture_loading(self, mock_usa_client):
         """Test loading responses from fixture files."""
+        award_id = "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         # Load award detail from fixture
         mock_usa_client.set_fixture_response(
-            "/v2/awards/CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-/", "awards/contract"
+            endpoint, "awards/contract"
         )
 
         # Get award
-        award = mock_usa_client.awards.get("CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-")
+        award = mock_usa_client.awards.get(award_id)
 
         # Verify fixture data was loaded
         assert (
@@ -109,7 +112,7 @@ class TestMockClientExamples:
         # Verify request was made correctly
         last_request = mock_usa_client.get_last_request()
         assert last_request["method"] == "POST"
-        assert last_request["endpoint"] == "/v2/search/spending_by_award/"
+        assert last_request["endpoint"] == MockUSASpendingClient.Endpoints.AWARD_SEARCH
 
         # Check payload
         payload = last_request["json"]
@@ -119,7 +122,7 @@ class TestMockClientExamples:
 
         # Use assert helper
         mock_usa_client.assert_called_with(
-            "/v2/search/spending_by_award/", method="POST"
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH, method="POST"
         )
 
     def test_award_count_mock(self, mock_usa_client):
@@ -137,7 +140,7 @@ class TestMockClientExamples:
         """Test different responses for sequential calls."""
         # Add response sequence
         mock_usa_client.add_response_sequence(
-            "/v2/search/spending_by_award/",
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             [
                 # First call returns 2 results
                 {
@@ -180,7 +183,7 @@ class TestMockClientExamples:
 
         # Set up transactions for the award
         mock_usa_client.set_paginated_response(
-            "/v2/transactions/",
+            MockUSASpendingClient.Endpoints.TRANSACTIONS,
             [
                 {"transaction_id": "TXN-1", "amount": 1000000},
                 {"transaction_id": "TXN-2", "amount": 2000000},
