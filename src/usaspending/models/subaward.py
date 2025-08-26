@@ -3,12 +3,18 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 from functools import cached_property
 from ..utils.formatter import contracts_titlecase, smart_sentence_case, to_float, to_date
-from .base_model import BaseModel
+from .base_model import ClientAwareModel
 from .recipient import Recipient
+from .location import Location
+from .award import Award
+from .agency import Agency
+from ..client import USASpending
 
-class SubAward(BaseModel):
+class SubAward(ClientAwareModel):
     """Model representing a subaward from USASpending data."""
-    
+    def __init__(self, data: Dict[str, Any], client: Optional[USASpending] = None):
+        super().__init__(data, client)
+
     # Contract Subaward fields
     CONTRACT_SUBAWARD_FIELDS = [
         "Awarding Agency",
@@ -59,10 +65,6 @@ class SubAward(BaseModel):
         "internal_id",
         "subaward_description_sorted"
     ]
-    
-    def __init__(self, data: Dict[str, Any], client=None):
-        super().__init__(data)
-
 
     # Helper methods
     @property
@@ -79,6 +81,52 @@ class SubAward(BaseModel):
     def description(self) -> Optional[str]:
         """Description of the subaward."""
         return self.sub_award_description
+    
+    @property
+    def award_date(self) -> Optional[datetime]:
+        """Date of the subaward."""
+        return self.sub_award_date
+    
+    @cached_property
+    def place_of_performance(self) -> Optional[Location]:
+        """Place of performance details for the subaward."""
+        pop_data = self.raw.get("Sub-Award Primary Place of Performance")
+        if pop_data:
+            return Location(pop_data)
+        else:
+            return None
+ 
+    @cached_property
+    def recipient(self) -> Optional[Recipient]:
+        """Sub-award recipient and location."""
+        recipient = Recipient(
+            {
+                "recipient_name": self.get_value(["Sub-Awardee Name"]),
+                "recipient_unique_id": self.get_value(["sub_award_recipient_id"]),
+                "recipient_uei": self.get_value(["Sub-Recipient UEI"]),
+            },
+            client=self._client,
+        )
+
+        # Add location if available to avoid separate API call
+        if isinstance(self.get_value(["Sub-Recipient Location"]), dict):
+            location_data = self._data.get("Sub-Recipient Location")
+            recipient_location = (
+                Location(location_data) if location_data else None
+            )
+            recipient.location = recipient_location
+
+        return recipient
+    
+    @cached_property
+    def parent_award(self) -> Optional[Award]:
+        if self.prime_award_generated_internal_id:
+            return Award(
+                {"generated_unique_award_id": self.prime_award_generated_internal_id},
+                client=self._client,
+            )
+        else:
+            return None
     
     @property
     def id(self) -> Optional[str]:
@@ -125,12 +173,6 @@ class SubAward(BaseModel):
     def prime_award_id(self) -> Optional[str]:
         """Prime award identifier (PIID/FAIN/URI)."""
         return self.raw.get("Prime Award ID")
-
-    @cached_property
-    def recipient(self) -> Optional[Recipient]:
-        recipient = Recipient(self.sub_recipient_uei, client=self._client)
-        return recipient
-
 
     @property
     def prime_recipient_name(self) -> Optional[str]:

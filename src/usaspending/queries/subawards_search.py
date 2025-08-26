@@ -87,9 +87,9 @@ class SubAwardsSearch(AwardsSearch):
         
         for category_name, codes in AWARD_TYPE_GROUPS.items():
             if award_types & frozenset(codes.keys()):
-                if category_name in ["contracts", "idvs"]:
+                if category_name in ["contracts"]:
                     is_contract = True
-                elif category_name in ["grants", "direct_payments", "other_assistance", "loans"]:
+                elif category_name in ["grants"]:
                     is_grant = True
         
         # Return appropriate field set
@@ -129,9 +129,6 @@ class SubAwardsSearch(AwardsSearch):
                 f"{self.__class__.__name__}.count() = {total} subawards for award {self._award_id}"
             )
             return total
-        
-        # Fall back to parent implementation for general counts
-        return super().count()
     
     def count_awards_by_type(self) -> Dict[str, int]:
         """
