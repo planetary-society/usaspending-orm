@@ -65,27 +65,6 @@ class SubAward(ClientAwareModel):
         "internal_id",
         "subaward_description_sorted"
     ]
-
-    # Helper methods
-    @property
-    def name(self) -> Optional[str]:
-        """Name of the subaward."""
-        return self.sub_awardee_name
-    
-    @property
-    def amount(self) -> Optional[float]:
-        """Amount of the subaward."""
-        return self.sub_award_amount
-    
-    @property
-    def description(self) -> Optional[str]:
-        """Description of the subaward."""
-        return self.sub_award_description
-    
-    @property
-    def award_date(self) -> Optional[datetime]:
-        """Date of the subaward."""
-        return self.sub_award_date
     
     @cached_property
     def place_of_performance(self) -> Optional[Location]:
@@ -190,6 +169,11 @@ class SubAward(ClientAwareModel):
         """Description of the subaward."""
         desc = self.raw.get("Sub-Award Description")
         return smart_sentence_case(desc) if desc else None
+    
+    @property
+    def subaward_description_sorted(self) -> Optional[str]:
+        """Sorted version of the subaward description for API internal use."""
+        return self.raw.get("subaward_description_sorted")
     
     @property
     def sub_recipient_uei(self) -> Optional[str]:
