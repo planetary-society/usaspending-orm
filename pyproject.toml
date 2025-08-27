@@ -6,7 +6,7 @@ authors = [
     {name = "Casey Dreier",email = "casey.dreier@planetary.org"}
 ]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
     "requests (>=2.32.4,<3.0.0)",
     "cachier (>=4.1.0,<5.0.0)",

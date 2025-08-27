@@ -1,13 +1,23 @@
 """Agency model for USASpending data."""
 
 from __future__ import annotations
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from functools import cached_property
-
+from dataclasses import dataclass
+from ..utils.formatter import to_float, to_int
 from .lazy_record import LazyRecord
 
 if TYPE_CHECKING:
     from ..client import USASpending
+
+# Create data class for def_codes
+@dataclass
+class DefCode:
+    code: str
+    public_law: str
+    title: Optional[str] = None
+    urls: Optional[List[str]] = None
+    disaster: Optional[str] = None
 
 
 class Agency(LazyRecord):
@@ -80,6 +90,28 @@ class Agency(LazyRecord):
             return self.subtier_agency.abbreviation
         return None
 
+    @property
+    def total_obligations(self) -> Optional[float]:
+        """Total obligations for this agency across all awards."""
+        obligations = self.get_value("total_obligations","obligations")
+        return to_float(obligations)
+    
+    def obligations(self) -> Optional[float]:
+        if ("obligations" or "total_obligations") in self.raw:
+            return self.get_value("total_obligations","obligations")
+        else:
+            pass
+    
+    def transaction_count(self) -> Optional[int]:
+        """Total transaction count for this agency across all awards."""
+        count = self._lazy_get("transaction_count")
+        return to_int(count)
+    
+    def new_award_count(self) -> Optional[int]:
+        """Total new award count for this agency across all awards."""
+        count = self._lazy_get("new_award_count")
+        return to_int(count)
+    
     def __repr__(self) -> str:
         """String representation of Agency."""
         name = self.name or "?"

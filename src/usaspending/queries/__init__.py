@@ -47,6 +47,8 @@ from .awards_search import AwardsSearch
 from .spending_by_recipients_search import SpendingByRecipientsSearch
 from .transactions_search import TransactionsSearch
 from .funding_search import FundingSearch
+from .spending_search import SpendingSearch
+from .subawards_search import SubAwardsSearch
 
 __all__ = [
     # Core query classes
@@ -56,6 +58,8 @@ __all__ = [
     "SpendingByRecipientsSearch",
     "TransactionsSearch",
     "FundingSearch",
+    "SpendingSearch",
+    "SubAwardsSearch",
     "USASpendingError",
     "APIError",
     "HTTPError",

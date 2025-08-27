@@ -10,7 +10,32 @@ from .award import Award
 from ..client import USASpending
 
 class SubAward(ClientAwareModel):
-    """Model representing a subaward from USASpending data."""
+    """Model representing a subaward from USASpending data.
+    
+    Subawards are secondary awards issued by prime recipients of federal contracts
+    or grants to other entities (subrecipients) to carry out part of the federal
+    program or project. They represent the flow of federal funds from prime 
+    recipients to subrecipients.
+    
+    Key characteristics:
+    - Issued by prime recipients, not directly by federal agencies
+    - Subject to federal regulations and oversight requirements
+    - Must be reported when exceeding $30,000 (per FFATA requirements)
+    - Include both contract subawards (subcontracts) and grant subawards
+    
+    Subawards enable prime recipients to delegate portions of work while 
+    maintaining overall responsibility for the federal award's success.
+    They extend the reach of federal funding through multiple tiers of
+    organizations.
+    
+    Example:
+        >>> # Find subawards for a specific prime award
+        >>> subawards = client.subawards.search()
+        ...     .for_prime_award_piid("80NSSC21C0123")
+        ...     .limit(10)
+        >>> for subaward in subawards:
+        ...     print(f"{subaward.sub_awardee_name}: ${subaward.sub_award_amount:,.2f}")
+    """
     def __init__(self, data: Dict[str, Any], client: Optional[USASpending] = None):
         super().__init__(data, client)
 

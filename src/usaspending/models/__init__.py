@@ -18,6 +18,8 @@ from .transaction import Transaction
 from .funding import Funding
 from .period_of_performance import PeriodOfPerformance
 from .award_factory import create_award
+from .agency import Agency
+from .subaward import SubAward
 
 # Spending models
 from .spending import Spending
@@ -40,6 +42,8 @@ __all__ = [
     "Transaction",
     "Funding",
     "PeriodOfPerformance",
+    "Agency",
+    "SubAward",
     # Spending models
     "Spending",
     "RecipientSpending",

@@ -9,7 +9,30 @@ from .location import Location
 from ..utils.formatter import to_float
     
 class IDV(Award):
-    """Indefinite Delivery Vehicle (IDV) award type."""
+    """Indefinite Delivery Vehicle (IDV) award type.
+    
+    IDVs are contract vehicles that provide for an indefinite quantity of supplies 
+    or services during a fixed period of time. They establish broad parameters and 
+    terms for ordering supplies/services, with specific orders placed against them 
+    via delivery orders or task orders.
+    
+    Common IDV types include:
+    - GWAC (Government-Wide Acquisition Contract)
+    - IDC (Indefinite Delivery Contract)  
+    - FSS (Federal Supply Schedule)
+    - BOA (Basic Ordering Agreement)
+    - BPA (Blanket Purchase Agreement)
+    
+    IDVs serve as parent contracts that streamline procurement by pre-negotiating
+    terms, conditions, and pricing for future orders. They reduce administrative 
+    costs and enable faster acquisition of recurring needs.
+    
+    Example:
+        >>> # Find all IDVs for an agency
+        >>> idvs = client.awards.search().idvs().for_agency("NASA").all()
+        >>> for idv in idvs:
+        ...     print(f"{idv.piid}: {idv.recipient_name} - ${idv.total_obligation:,.2f}")
+    """
 
     TYPE_FIELDS = [
         "piid",

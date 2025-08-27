@@ -50,7 +50,7 @@ class _Config:
             **kwargs: Configuration keys and their new values.
 
         Raises:
-            ValueError: If any provided configuration value is invalid.
+            ConfigurationError: If any provided configuration value is invalid.
         """
         for key, value in kwargs.items():
             if hasattr(self, key):
@@ -65,6 +65,7 @@ class _Config:
 
         self.validate()
         self._apply_cachier_settings()
+        self._apply_logging_settings()
 
     def _apply_cachier_settings(self):
         """Applies the current caching settings to the cachier library."""
