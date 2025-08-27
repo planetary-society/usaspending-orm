@@ -7,7 +7,6 @@ unique to that award type.
 
 from __future__ import annotations
 
-import pytest
 
 from .test_award_common import AwardTestingMixin
 from usaspending.models import Contract, Grant, IDV, Loan

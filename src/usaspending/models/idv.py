@@ -1,15 +1,12 @@
 """IDV (Indefinite Delivery Vehicle) award model for USASpending data."""
 
 from __future__ import annotations
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional
 from functools import cached_property
 
 from .award import Award
 from .location import Location
 from ..utils.formatter import to_float
-
-if TYPE_CHECKING:
-    from ..queries.subawards_search import SubAwardsSearch
     
 class IDV(Award):
     """Indefinite Delivery Vehicle (IDV) award type."""

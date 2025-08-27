@@ -2,7 +2,7 @@
 
 import pytest
 from usaspending.models.download import DownloadState
-from usaspending.exceptions import DownloadError, APIError
+from usaspending.exceptions import DownloadError
 from tests.mocks.mock_client import MockUSASpendingClient
 
 

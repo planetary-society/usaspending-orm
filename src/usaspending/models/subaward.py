@@ -7,7 +7,6 @@ from .base_model import ClientAwareModel
 from .recipient import Recipient
 from .location import Location
 from .award import Award
-from .agency import Agency
 from ..client import USASpending
 
 class SubAward(ClientAwareModel):
