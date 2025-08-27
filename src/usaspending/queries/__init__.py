@@ -10,6 +10,10 @@ Award Queries:
     AwardQuery: Single award retrieval operations
     AwardsSearch: Complex award search with filtering and chaining
     
+Agency Queries:
+    AgencyQuery: Single agency retrieval operations
+    AgencyAwardSummary: Agency award summary data retrieval
+    
 Recipient Queries:
     SpendingByRecipientsSearch: Recipient search with filtering and chaining
 
@@ -44,6 +48,8 @@ from ..exceptions import (
 from .query_builder import QueryBuilder
 from .award_query import AwardQuery
 from .awards_search import AwardsSearch
+from .agency_query import AgencyQuery
+from .agency_award_summary import AgencyAwardSummary
 from .spending_by_recipients_search import SpendingByRecipientsSearch
 from .transactions_search import TransactionsSearch
 from .funding_search import FundingSearch
@@ -55,6 +61,8 @@ __all__ = [
     "QueryBuilder",
     "AwardQuery",
     "AwardsSearch",
+    "AgencyQuery",
+    "AgencyAwardSummary",
     "SpendingByRecipientsSearch",
     "TransactionsSearch",
     "FundingSearch",

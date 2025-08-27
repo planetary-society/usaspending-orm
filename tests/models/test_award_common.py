@@ -99,14 +99,14 @@ class AwardTestingMixin:
         funding_agency = award.funding_agency
         if "funding_agency" in fixture_data and fixture_data["funding_agency"]:
             assert isinstance(funding_agency, Agency)
-            assert funding_agency.id == fixture_data["funding_agency"]["id"]
+            assert funding_agency.name == fixture_data["funding_agency"]["toptier_agency"]["name"]
         else:
             assert funding_agency is None
 
         awarding_agency = award.awarding_agency
         if "awarding_agency" in fixture_data and fixture_data["awarding_agency"]:
             assert isinstance(awarding_agency, Agency)
-            assert awarding_agency.id == fixture_data["awarding_agency"]["id"]
+            assert awarding_agency.name == fixture_data["awarding_agency"]["toptier_agency"]["name"]
         else:
             assert awarding_agency is None
 

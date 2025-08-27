@@ -10,6 +10,7 @@ from .recipient import Recipient
 from .location import Location
 from .period_of_performance import PeriodOfPerformance
 from .agency import Agency
+from .subtier_agency import SubTierAgency
 from .download import AwardType, FileFormat
 
 from ..exceptions import ValidationError
@@ -354,13 +355,59 @@ class Award(LazyRecord):
     def funding_agency(self) -> Optional[Agency]:
         """Funding agency information."""
         data = self._lazy_get("funding_agency")
-        return Agency(data, self._client) if data else None
+        if not data:
+            return None
+            
+        # Extract toptier data and merge with top-level agency fields
+        toptier_data = data.get("toptier_agency", {})
+        agency_data = {
+            "agency_id": data.get("id"),
+            "has_agency_page": data.get("has_agency_page"),
+            "office_agency_name": data.get("office_agency_name"),
+            **toptier_data  # Merge toptier fields (name, code, abbreviation, slug)
+        }
+        
+        subtier_data = data.get("subtier_agency")
+        return Agency(agency_data, self._client, subtier_data)
 
     @cached_property
     def awarding_agency(self) -> Optional[Agency]:
         """Awarding agency information."""
         data = self._lazy_get("awarding_agency")
-        return Agency(data, self._client) if data else None
+        if not data:
+            return None
+            
+        # Extract toptier data and merge with top-level agency fields
+        toptier_data = data.get("toptier_agency", {})
+        agency_data = {
+            "id": data.get("id"),
+            "has_agency_page": data.get("has_agency_page"),
+            "office_agency_name": data.get("office_agency_name"),
+            **toptier_data  # Merge toptier fields (name, code, abbreviation, slug)
+        }
+        
+        subtier_data = data.get("subtier_agency")
+        return Agency(agency_data, self._client, subtier_data)
+
+    @cached_property
+    def funding_subtier_agency(self) -> Optional[SubTierAgency]:
+        """Funding subtier agency information."""
+        data = self._lazy_get("funding_agency")
+        if not data:
+            return None
+            
+        subtier_data = data.get("subtier_agency")
+        return SubTierAgency(subtier_data, self._client) if subtier_data else None
+
+    @cached_property
+    def awarding_subtier_agency(self) -> Optional[SubTierAgency]:
+        """Awarding subtier agency information."""
+        data = self._lazy_get("awarding_agency")
+        if not data:
+            return None
+            
+        subtier_data = data.get("subtier_agency")
+        return SubTierAgency(subtier_data, self._client) if subtier_data else None
 
     @property
     def transactions(self) -> "TransactionsSearch":

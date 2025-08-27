@@ -1,383 +1,207 @@
-"""Tests for Agency model functionality."""
+"""Tests for the restructured Agency model functionality."""
 
 from __future__ import annotations
 
+from usaspending.models.agency import Agency
 
-from usaspending.models.agency import Agency, AgencyTier
 
+class TestAgencyNewStructure:
+    """Test Agency model with new clean structure."""
 
-class TestAgencyInitialization:
-    """Test Agency model initialization."""
-
-    def test_init_with_dict_data(self, mock_usa_client):
-        """Test Agency initialization with dictionary data."""
+    def test_agency_with_toptier_data_only(self, mock_usa_client):
+        """Test Agency with just toptier data and top-level fields."""
         data = {
             "id": 862,
             "has_agency_page": True,
             "office_agency_name": "NASA GODDARD SPACE FLIGHT CENTER",
-        }
-        agency = Agency(data, mock_usa_client)
-
-        assert agency._data["id"] == 862
-        assert agency._data["has_agency_page"] is True
-        assert agency._data["office_agency_name"] == "NASA GODDARD SPACE FLIGHT CENTER"
-        assert agency._client is not None
-
-
-class TestAgencyBasicProperties:
-    """Test basic Agency properties."""
-
-    def test_id_property(self, mock_usa_client):
-        """Test agency ID property."""
-        data = {"id": 862, "has_agency_page": True}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.id == 862
-        assert isinstance(agency.id, int)
-
-    def test_id_property_none(self, mock_usa_client):
-        """Test ID property when not present."""
-        data = {"has_agency_page": True}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.id is None
-
-    def test_has_agency_page_property(self, mock_usa_client):
-        """Test has_agency_page property."""
-        data = {"id": 862, "has_agency_page": True}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.has_agency_page is True
-        assert isinstance(agency.has_agency_page, bool)
-
-    def test_has_agency_page_default_false(self, mock_usa_client):
-        """Test has_agency_page defaults to False."""
-        data = {"id": 862}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.has_agency_page is False
-
-    def test_office_agency_name_property(self, mock_usa_client):
-        """Test office agency name property."""
-        data = {"id": 862, "office_agency_name": "NASA JOHNSON SPACE CENTER"}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.office_agency_name == "NASA JOHNSON SPACE CENTER"
-
-    def test_office_agency_name_none(self, mock_usa_client):
-        """Test office agency name when not present."""
-        data = {"id": 862}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.office_agency_name is None
-
-
-class TestAgencyTierProperties:
-    """Test Agency tier-related properties."""
-
-    def test_toptier_agency_property(self, mock_usa_client):
-        """Test toptier agency property returns AgencyTier."""
-        toptier_data = {
             "name": "National Aeronautics and Space Administration",
             "code": "080",
             "abbreviation": "NASA",
-            "slug": "national-aeronautics-and-space-administration",
+            "slug": "national-aeronautics-and-space-administration"
         }
-        data = {"id": 862, "toptier_agency": toptier_data}
+        
         agency = Agency(data, mock_usa_client)
+        
+        # Test direct data access
+        assert agency.agency_id == 862
+        assert agency.has_agency_page is True
+        assert agency.office_agency_name == "NASA GODDARD SPACE FLIGHT CENTER"
+        assert agency.name == "National Aeronautics and Space Administration"
+        assert agency.code == "080"
+        assert agency.abbreviation == "NASA"
+        assert agency.slug == "national-aeronautics-and-space-administration"
+        
+        # Agency now represents toptier data directly
+        # No toptier_agency or subtier_agency properties needed
 
-        toptier = agency.toptier_agency
-        assert isinstance(toptier, AgencyTier)
-        assert toptier.name == "National Aeronautics and Space Administration"
-        assert toptier.code == "080"
-        assert toptier.abbreviation == "NASA"
-        assert toptier.slug == "national-aeronautics-and-space-administration"
-
-    def test_toptier_agency_cached(self, mock_usa_client):
-        """Test toptier agency property is cached."""
-        toptier_data = {"name": "NASA", "code": "080"}
-        data = {"id": 862, "toptier_agency": toptier_data}
-        agency = Agency(data, mock_usa_client)
-
-        toptier1 = agency.toptier_agency
-        toptier2 = agency.toptier_agency
-
-        assert toptier1 is toptier2  # Same instance (cached)
-
-    def test_subtier_agency_property(self, mock_usa_client):
-        """Test subtier agency property returns AgencyTier."""
+    def test_agency_with_subtier_data(self, mock_usa_client):
+        """Test Agency with both toptier and subtier data."""
+        toptier_data = {
+            "id": 862,
+            "has_agency_page": True,
+            "office_agency_name": "NASA GODDARD SPACE FLIGHT CENTER",
+            "name": "National Aeronautics and Space Administration",
+            "code": "080",
+            "abbreviation": "NASA",
+            "slug": "national-aeronautics-and-space-administration"
+        }
+        
         subtier_data = {
             "name": "National Aeronautics and Space Administration",
             "code": "8000",
-            "abbreviation": "NASA",
+            "abbreviation": "NASA"
         }
-        data = {"id": 862, "subtier_agency": subtier_data}
-        agency = Agency(data, mock_usa_client)
+        
+        agency = Agency(toptier_data, mock_usa_client, subtier_data)
+        
+        # Test toptier data
+        assert agency.name == "National Aeronautics and Space Administration"
+        assert agency.code == "080"
+        assert agency.abbreviation == "NASA"
+        
+        # With the new structure, Agency only handles toptier data directly
+        # Subtier data would be handled separately by SubTierAgency if needed
+        # The subtier data is passed to constructor but not exposed as a property
 
-        subtier = agency.subtier_agency
-        assert isinstance(subtier, AgencyTier)
-        assert subtier.name == "National Aeronautics and Space Administration"
-        assert subtier.code == "8000"
-        assert subtier.abbreviation == "NASA"
-
-    def test_subtier_agency_cached(self, mock_usa_client):
-        """Test subtier agency property is cached."""
-        subtier_data = {"name": "NASA", "code": "8000"}
-        data = {"id": 862, "subtier_agency": subtier_data}
-        agency = Agency(data, mock_usa_client)
-
-        subtier1 = agency.subtier_agency
-        subtier2 = agency.subtier_agency
-
-        assert subtier1 is subtier2  # Same instance (cached)
-
-    def test_toptier_agency_none(self, mock_usa_client):
-        """Test toptier agency when not present."""
-        data = {"id": 862}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.toptier_agency is None
-
-    def test_subtier_agency_none(self, mock_usa_client):
-        """Test subtier agency when not present."""
-        data = {"id": 862}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.subtier_agency is None
-
-
-class TestAgencyConvenienceProperties:
-    """Test Agency convenience properties that prioritize toptier over subtier."""
-
-    def test_name_property_prefers_toptier(self, mock_usa_client):
-        """Test name property prefers toptier over subtier."""
+    def test_agency_with_minimal_required_data(self, mock_usa_client):
+        """Test Agency with minimal required data."""
         data = {
             "id": 862,
-            "toptier_agency": {"name": "Toptier Name", "code": "080"},
-            "subtier_agency": {"name": "Subtier Name", "code": "8000"},
+            "name": "NASA",
+            "code": "080"
         }
+        
         agency = Agency(data, mock_usa_client)
-
-        assert agency.name == "Toptier Name"
-
-    def test_name_property_falls_back_to_subtier(self, mock_usa_client):
-        """Test name property falls back to subtier when no toptier."""
-        data = {"id": 862, "subtier_agency": {"name": "Subtier Name", "code": "8000"}}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.name == "Subtier Name"
-
-    def test_name_property_falls_back_to_office_name(self, mock_usa_client):
-        """Test name property falls back to office name when no tiers."""
-        data = {"id": 862, "office_agency_name": "Office Name"}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.name == "Office Name"
-
-    def test_code_property_prefers_toptier(self, mock_usa_client):
-        """Test code property prefers toptier over subtier."""
-        data = {
-            "id": 862,
-            "toptier_agency": {"name": "NASA", "code": "080"},
-            "subtier_agency": {"name": "NASA", "code": "8000"},
-        }
-        agency = Agency(data, mock_usa_client)
-
+        
+        assert agency.agency_id == 862
+        assert agency.name == "NASA"
         assert agency.code == "080"
 
-    def test_code_property_falls_back_to_subtier(self, mock_usa_client):
-        """Test code property falls back to subtier when no toptier."""
-        data = {"id": 862, "subtier_agency": {"name": "NASA", "code": "8000"}}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.code == "8000"
-
-    def test_code_property_none_when_no_tiers(self, mock_usa_client):
-        """Test code property returns None when no tier data."""
-        data = {"id": 862, "office_agency_name": "Office Name"}
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.code is None
-
-    def test_abbreviation_property_prefers_toptier(self, mock_usa_client):
-        """Test abbreviation property prefers toptier over subtier."""
-        data = {
-            "id": 862,
-            "toptier_agency": {"name": "NASA", "abbreviation": "NASA-TOP"},
-            "subtier_agency": {"name": "NASA", "abbreviation": "NASA-SUB"},
-        }
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.abbreviation == "NASA-TOP"
-
-    def test_abbreviation_property_falls_back_to_subtier(self, mock_usa_client):
-        """Test abbreviation property falls back to subtier when no toptier."""
-        data = {
-            "id": 862,
-            "subtier_agency": {"name": "NASA", "abbreviation": "NASA-SUB"},
-        }
-        agency = Agency(data, mock_usa_client)
-
-        assert agency.abbreviation == "NASA-SUB"
-
-
-class TestAgencyTierClass:
-    """Test AgencyTier helper class."""
-
-    def test_agency_tier_initialization(self):
-        """Test AgencyTier initialization."""
+    def test_agency_string_representation(self, mock_usa_client):
+        """Test Agency string representation."""
         data = {
             "name": "National Aeronautics and Space Administration",
-            "code": "080",
-            "abbreviation": "NASA",
-            "slug": "national-aeronautics-and-space-administration",
+            "code": "080"
         }
-        tier = AgencyTier(data)
-
-        assert tier._data == data
-        assert tier.name == "National Aeronautics and Space Administration"
-        assert tier.code == "080"
-        assert tier.abbreviation == "NASA"
-        assert tier.slug == "national-aeronautics-and-space-administration"
-
-    def test_agency_tier_properties_none(self):
-        """Test AgencyTier properties when not present."""
-        data = {}
-        tier = AgencyTier(data)
-
-        assert tier.name is None
-        assert tier.code is None
-        assert tier.abbreviation is None
-        assert tier.slug is None
-
-    def test_agency_tier_repr(self):
-        """Test AgencyTier string representation."""
-        data = {"name": "NASA", "code": "080"}
-        tier = AgencyTier(data)
-
-        repr_str = repr(tier)
-        assert repr_str == "<AgencyTier 080: NASA>"
-
-    def test_agency_tier_repr_with_missing_data(self):
-        """Test AgencyTier string representation with missing data."""
-        data = {"name": "NASA"}
-        tier = AgencyTier(data)
-
-        repr_str = repr(tier)
-        assert repr_str == "<AgencyTier ?: NASA>"
-
-
-class TestAgencyStringRepresentation:
-    """Test Agency string representation."""
-
-    def test_agency_repr_with_toptier(self, mock_usa_client):
-        """Test Agency string representation with toptier data."""
-        data = {
-            "id": 862,
-            "toptier_agency": {
-                "name": "National Aeronautics and Space Administration",
-                "code": "080",
-            },
-        }
+        
         agency = Agency(data, mock_usa_client)
-
+        
         repr_str = repr(agency)
         assert repr_str == "<Agency 080: National Aeronautics and Space Administration>"
 
-    def test_agency_repr_with_subtier_only(self, mock_usa_client):
-        """Test Agency string representation with subtier data only."""
-        data = {"id": 862, "subtier_agency": {"name": "NASA", "code": "8000"}}
-        agency = Agency(data, mock_usa_client)
-
-        repr_str = repr(agency)
-        assert repr_str == "<Agency 8000: NASA>"
-
-    def test_agency_repr_with_office_name_only(self, mock_usa_client):
-        """Test Agency string representation with office name only."""
-        data = {"id": 862, "office_agency_name": "NASA GODDARD SPACE FLIGHT CENTER"}
-        agency = Agency(data, mock_usa_client)
-
-        repr_str = repr(agency)
-        assert repr_str == "<Agency ?: NASA GODDARD SPACE FLIGHT CENTER>"
-
-    def test_agency_repr_with_minimal_data(self, mock_usa_client):
-        """Test Agency string representation with minimal data."""
+    def test_agency_with_minimal_data(self, mock_usa_client):
+        """Test Agency with minimal data."""
         data = {"id": 862}
+        
         agency = Agency(data, mock_usa_client)
-
+        
+        assert agency.agency_id == 862
+        assert agency.name is None
+        assert agency.code is None
+        
+        # String representation with missing data
         repr_str = repr(agency)
         assert repr_str == "<Agency ?: ?>"
 
 
-class TestAgencyRealFixtureDataIntegration:
-    """Test Agency with real fixture data."""
+class TestAgencyObligationMethodsNewStructure:
+    """Test Agency obligation methods with new structure."""
 
-    def test_agency_with_contract_fixture_data(self, mock_usa_client):
-        """Test Agency with real contract fixture agency data."""
-        # This simulates the agency data structure from contract fixture
-        agency_data = {
+    def test_obligations_method_existing_data(self, mock_usa_client):
+        """Test obligations method returns existing data when no filters."""
+        data = {"id": 862, "total_obligations": 1000000.50, "code": "080"}
+        agency = Agency(data, mock_usa_client)
+        
+        assert agency.obligations() == 1000000.50
+        assert isinstance(agency.obligations(), float)
+
+    def test_contract_obligations_with_minimal_data(self, mock_usa_client):
+        """Test contract obligations returns None when no data is available."""
+        data = {"id": 862, "code": "080"}
+        agency = Agency(data, mock_usa_client)
+        
+        # Should return None when no award summary data is available
+        assert agency.contract_obligations() is None
+
+    def test_get_toptier_code_new_structure(self, mock_usa_client):
+        """Test _get_toptier_code with new structure."""
+        data = {"code": "080", "id": 862}
+        agency = Agency(data, mock_usa_client)
+        
+        assert agency.code == "080"
+
+    def test_get_toptier_code_with_toptier_code_field(self, mock_usa_client):
+        """Test _get_toptier_code prefers toptier_code field."""
+        data = {"toptier_code": "080", "id": 862}
+        agency = Agency(data, mock_usa_client)
+        
+        assert agency.code == "080"
+
+
+class TestAgencyLazyLoadingNewStructure:
+    """Test Agency lazy loading with new structure."""
+
+    def test_agency_lazy_loading_simple(self, mock_usa_client, agency_fixture_data):
+        """Test lazy loading works with new structure."""
+        # Start with minimal data
+        minimal_data = {
             "id": 862,
-            "has_agency_page": True,
-            "toptier_agency": {
-                "name": "National Aeronautics and Space Administration",
-                "code": "080",
-                "abbreviation": "NASA",
-                "slug": "national-aeronautics-and-space-administration",
-            },
-            "subtier_agency": {
-                "name": "National Aeronautics and Space Administration",
-                "code": "8000",
-                "abbreviation": "NASA",
-            },
-            "office_agency_name": "NASA GODDARD SPACE FLIGHT CENTER",
+            "code": "080"
         }
+        
+        agency = Agency(minimal_data, mock_usa_client)
+        
+        # Mock the full agency response
+        endpoint = "/v2/agency/080/"
+        mock_usa_client.set_fixture_response(endpoint, "agency")
+        
+        # Access a lazy-loaded property
+        mission = agency.mission
+        
+        # Should have fetched the full data
+        assert mission == agency_fixture_data["mission"]
 
-        agency = Agency(agency_data, mock_usa_client)
+    def test_agency_with_minimal_data_lazy_loading(self, mock_usa_client):
+        """Test that agency with minimal data can still attempt lazy loading."""
+        data = {"id": 862, "code": "080"}
+        agency = Agency(data, mock_usa_client)
+        
+        # Should return None for lazy-loaded properties when no fixture is set
+        assert agency.mission is None
+        # _fetch_details may return data from the mock client
+        result = agency._fetch_details()
+        assert result is not None  # Mock client returns data
 
-        # Test all properties work with real structure
-        assert agency.id == 862
+
+class TestAgencyIntegrationWithFixtures:
+    """Test Agency with real fixture data using new structure."""
+
+    def test_agency_from_award_fixture(self, contract_fixture_data, mock_usa_client):
+        """Test creating Agency from award fixture data."""
+        # Extract the award agency data
+        award_agency_data = contract_fixture_data["funding_agency"]
+        
+        # Create Agency using new structure
+        toptier_data = award_agency_data.get("toptier_agency", {})
+        agency_data = {
+            "id": award_agency_data.get("id"),
+            "has_agency_page": award_agency_data.get("has_agency_page"),
+            "office_agency_name": award_agency_data.get("office_agency_name"),
+            **toptier_data
+        }
+        
+        subtier_data = award_agency_data.get("subtier_agency")
+        agency = Agency(agency_data, mock_usa_client, subtier_data)
+        
+        # Test the data
+        assert agency.agency_id == 862
         assert agency.has_agency_page is True
-        assert (
-            agency.name == "National Aeronautics and Space Administration"
-        )  # From toptier
-        assert agency.code == "080"  # From toptier
-        assert agency.abbreviation == "NASA"  # From toptier
-        assert agency.office_agency_name == "NASA GODDARD SPACE FLIGHT CENTER"
-
-        # Test tier objects
-        assert isinstance(agency.toptier_agency, AgencyTier)
-        assert isinstance(agency.subtier_agency, AgencyTier)
-        assert (
-            agency.toptier_agency.slug
-            == "national-aeronautics-and-space-administration"
-        )
-        assert agency.subtier_agency.code == "8000"
-
-    def test_agency_with_idv_fixture_data(self, mock_usa_client):
-        """Test Agency with real IDV fixture agency data."""
-        # This simulates the agency data structure from IDV fixture
-        agency_data = {
-            "id": 862,
-            "has_agency_page": True,
-            "toptier_agency": {
-                "name": "National Aeronautics and Space Administration",
-                "code": "080",
-                "abbreviation": "NASA",
-                "slug": "national-aeronautics-and-space-administration",
-            },
-            "subtier_agency": {
-                "name": "National Aeronautics and Space Administration",
-                "code": "8000",
-                "abbreviation": "NASA",
-            },
-            "office_agency_name": "NASA JOHNSON SPACE CENTER",
-        }
-
-        agency = Agency(agency_data, mock_usa_client)
-
-        # Test office name difference from contract fixture
-        assert agency.office_agency_name == "NASA JOHNSON SPACE CENTER"
-        # Other properties should be the same
-        assert agency.id == 862
         assert agency.name == "National Aeronautics and Space Administration"
         assert agency.code == "080"
+        assert agency.abbreviation == "NASA"
+        assert agency.slug == "national-aeronautics-and-space-administration"
+        assert agency.office_agency_name == "NASA GODDARD SPACE FLIGHT CENTER"
+        
+        # Agency now only handles toptier data directly
+        # Subtier data would need to be handled separately via SubTierAgency if needed
+        # The agency constructor received subtier_data but doesn't expose it as a property

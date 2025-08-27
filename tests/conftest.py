@@ -132,3 +132,15 @@ def search_results_grants_data():
 def search_results_idvs_data():
     """Load the search results fixture data for IDVs."""
     return load_json_fixture("awards/search_results_idvs.json")["results"]
+
+
+@pytest.fixture
+def agency_fixture_data():
+    """Load the agency fixture data."""
+    return load_json_fixture("agency.json")
+
+
+@pytest.fixture
+def agency_award_summary_fixture_data():
+    """Load the agency award summary fixture data."""
+    return load_json_fixture("agency_award_summary.json")
