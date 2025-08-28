@@ -49,6 +49,8 @@ from .query_builder import QueryBuilder
 from .award_query import AwardQuery
 from .awards_search import AwardsSearch
 from .agency_query import AgencyQuery
+from .funding_agencies_search import FundingAgenciesSearch
+from .awarding_agencies_search import AwardingAgenciesSearch
 from .agency_award_summary import AgencyAwardSummary
 from .sub_agency_query import SubAgencyQuery
 from .spending_by_recipients_search import SpendingByRecipientsSearch
@@ -63,6 +65,8 @@ __all__ = [
     "AwardQuery",
     "AwardsSearch",
     "AgencyQuery",
+    "FundingAgenciesSearch",
+    "AwardingAgenciesSearch",
     "AgencyAwardSummary",
     "SubAgencyQuery",
     "SpendingByRecipientsSearch",

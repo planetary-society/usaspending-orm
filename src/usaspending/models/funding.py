@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 
 from .base_model import BaseModel
 from ..utils.formatter import to_float, round_to_millions
 
+if TYPE_CHECKING:
+    from .agency import Agency
 
 class Funding(BaseModel):
     """Represents federal account funding data for an award."""
@@ -65,6 +67,15 @@ class Funding(BaseModel):
     def funding_agency_slug(self) -> Optional[str]:
         """URL-friendly funding agency identifier."""
         return self.get_value("funding_agency_slug")
+
+    @property
+    def funding_agency(self) -> Optional["Agency"]:
+        """Retrieve the full Agency object for the funding agency."""
+        name = self.funding_agency_name
+        if name:
+            return self._client.agencies.find_all_funding_agencies_by_name(name).toptier()[0]
+        else:
+            return None
 
     @property
     def awarding_agency_name(self) -> Optional[str]:

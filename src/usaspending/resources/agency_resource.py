@@ -8,6 +8,8 @@ from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
     from ..models.agency import Agency
+    from ..queries.funding_agencies_search import FundingAgenciesSearch
+    from ..queries.awarding_agencies_search import AwardingAgenciesSearch
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -47,3 +49,55 @@ class AgencyResource(BaseResource):
         from ..queries.agency_query import AgencyQuery
 
         return AgencyQuery(self._client).find_by_id(toptier_code, fiscal_year)
+    
+    def find_all_funding_agencies_by_name(self, name: str) -> "FundingAgenciesSearch":
+        """Search for funding agencies and offices by name.
+        
+        Args:
+            name: Search text to match against agency/office names
+            
+        Returns:
+            FundingAgenciesSearch query builder for iteration and filtering
+            
+        Example:
+            >>> # Get all matches (agencies, subtiers, offices)
+            >>> all_results = list(client.agencies.find_all_funding_agencies_by_name("NASA"))
+            >>> 
+            >>> # Get only toptier agencies
+            >>> agencies = list(client.agencies.find_all_funding_agencies_by_name("NASA").toptier())
+            >>> 
+            >>> # Get only subtier agencies  
+            >>> subtiers = list(client.agencies.find_all_funding_agencies_by_name("NASA").subtier())
+            >>> 
+            >>> # Get only offices
+            >>> offices = list(client.agencies.find_all_funding_agencies_by_name("NASA").office())
+        """
+        from ..queries.funding_agencies_search import FundingAgenciesSearch
+        
+        return FundingAgenciesSearch(self._client).with_search_text(name)
+    
+    def find_all_awarding_agencies_by_name(self, name: str) -> "AwardingAgenciesSearch":
+        """Search for funding agencies and offices by name.
+        
+        Args:
+            name: Search text to match against agency/office names
+            
+        Returns:
+            AwardingAgenciesSearch query builder for iteration and filtering
+            
+        Example:
+            >>> # Get all matches (agencies, subtiers, offices)
+            >>> all_results = list(client.agencies.find_all_funding_agencies_by_name("NASA"))
+            >>> 
+            >>> # Get only toptier agencies
+            >>> agencies = list(client.agencies.find_all_funding_agencies_by_name("NASA").toptier())
+            >>> 
+            >>> # Get only subtier agencies  
+            >>> subtiers = list(client.agencies.find_all_funding_agencies_by_name("NASA").subtier())
+            >>> 
+            >>> # Get only offices
+            >>> offices = list(client.agencies.find_all_funding_agencies_by_name("NASA").office())
+        """
+        from ..queries.awarding_agencies_search import AwardingAgenciesSearch
+        
+        return AwardingAgenciesSearch(self._client).with_search_text(name)

@@ -20,6 +20,8 @@ class MockUSASpendingClient(USASpending):
         """A collection of API endpoint constants."""
         AGENCY = "/v2/agency//{award_id/}/"
         AGENCY_SUBAGENCIES = "/v2/agency//{award_id/}/sub_agency/"
+        AGENCY_AUTOCOMPLETE = "/v2/autocomplete/funding_agency_office/"
+        AWARDING_AGENCY_AUTOCOMPLETE = "/v2/autocomplete/awarding_agency_office/"
         AWARD_SEARCH = "/v2/search/spending_by_award/"
         AWARD_COUNT = "/v2/search/spending_by_award_count/"
         AWARD_DETAIL = "/v2/awards/{award_id}/"
