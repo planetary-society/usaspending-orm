@@ -46,7 +46,6 @@ from .queries import (
     AwardsSearch,
     TransactionsSearch,
     SpendingSearch,
-    SpendingByRecipientsSearch,
     FundingSearch,
     SubAwardsSearch,
 )
@@ -96,7 +95,6 @@ __all__ = [
     "AwardsSearch",
     "TransactionsSearch",
     "SpendingSearch",
-    "SpendingByRecipientsSearch",
     "FundingSearch",
     "SubAwardsSearch",
     # Filters

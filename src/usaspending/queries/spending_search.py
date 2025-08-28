@@ -61,9 +61,9 @@ class SpendingSearch(QueryBuilder["Spending"]):
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
         if self._category == "recipient":
-            return "/api/v2/search/spending_by_category/recipient/"
+            return "/v2/search/spending_by_category/recipient/"
         elif self._category == "district":
-            return "/api/v2/search/spending_by_category/district/"
+            return "/v2/search/spending_by_category/district/"
         else:
             raise ValidationError(
                 "Category must be set. Use .by_recipient() or .by_district() method."

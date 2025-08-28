@@ -47,13 +47,13 @@ class TestCategorySelection:
         """Test endpoint property with recipient category."""
         search = SpendingSearch(mock_usa_client).by_recipient()
 
-        assert search._endpoint == "/api/v2/search/spending_by_category/recipient/"
+        assert search._endpoint == mock_usa_client.Endpoints.SPENDING_BY_RECIPIENT
 
     def test_endpoint_with_district_category(self, mock_usa_client):
         """Test endpoint property with district category."""
         search = SpendingSearch(mock_usa_client).by_district()
 
-        assert search._endpoint == "/api/v2/search/spending_by_category/district/"
+        assert search._endpoint == mock_usa_client.Endpoints.SPENDING_BY_DISTRICT
 
     def test_endpoint_without_category_raises_error(self, mock_usa_client):
         """Test endpoint property without category raises ValidationError."""

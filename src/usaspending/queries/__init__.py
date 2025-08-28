@@ -53,7 +53,6 @@ from .funding_agencies_search import FundingAgenciesSearch
 from .awarding_agencies_search import AwardingAgenciesSearch
 from .agency_award_summary import AgencyAwardSummary
 from .sub_agency_query import SubAgencyQuery
-from .spending_by_recipients_search import SpendingByRecipientsSearch
 from .transactions_search import TransactionsSearch
 from .funding_search import FundingSearch
 from .spending_search import SpendingSearch
@@ -69,7 +68,6 @@ __all__ = [
     "AwardingAgenciesSearch",
     "AgencyAwardSummary",
     "SubAgencyQuery",
-    "SpendingByRecipientsSearch",
     "TransactionsSearch",
     "FundingSearch",
     "SpendingSearch",

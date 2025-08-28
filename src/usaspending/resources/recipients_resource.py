@@ -7,7 +7,7 @@ from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
-    from ..queries.spending_by_recipients_search import SpendingByRecipientsSearch
+    from ..queries.spending_search import SpendingSearch
     from ..models.recipient import Recipient
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -37,13 +37,20 @@ class RecipientsResource(BaseResource):
 
         return RecipientQuery(self._client).find_by_id(recipient_id)
 
-    def search(self) -> SpendingByRecipientsSearch:
+    def search(self) -> "SpendingSearch":
         """Create a new recipient search query builder.
 
         Returns:
-            SpendingByRecipientsSearch query builder for chaining filters
+            SpendingSearch query builder configured for recipient searches
+        
+        Example:
+            >>> recipients = client.recipients.search()
+            ...     .for_agency("NASA")
+            ...     .with_recipient_types("small_business")
+            ...     .for_fiscal_year(2024)
+            ...     .limit(10)
         """
-        logger.debug("Creating new SpendingByRecipientsSearch query builder")
-        from ..queries import SpendingByRecipientsSearch
+        logger.debug("Creating new SpendingSearch query builder for recipient searches")
+        from ..queries.spending_search import SpendingSearch
 
-        return SpendingByRecipientsSearch(self._client)
+        return SpendingSearch(self._client).by_recipient()

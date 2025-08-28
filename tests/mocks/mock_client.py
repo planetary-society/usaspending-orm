@@ -37,8 +37,8 @@ class MockUSASpendingClient(USASpending):
         DOWNLOAD_IDV = "/v2/download/idv/"
         DOWNLOAD_STATUS = "/v2/download/status"
 
-        SPENDING_BY_RECIPIENT = "/api/v2/search/spending_by_category/recipient/"
-        SPENDING_BY_DISTRICT = "/api/v2/search/spending_by_category/district/"
+        SPENDING_BY_RECIPIENT = "/v2/search/spending_by_category/recipient/"
+        SPENDING_BY_DISTRICT = "/v2/search/spending_by_category/district/"
 
     """Mock USASpending client for testing.
 

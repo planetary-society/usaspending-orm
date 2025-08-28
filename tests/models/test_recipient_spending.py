@@ -106,7 +106,7 @@ class TestRecipientSpendingCount:
 
         # Set up mock to return the modified fixture data
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/recipient/", modified_fixture
+            mock_usa_client.Endpoints.SPENDING_BY_RECIPIENT, modified_fixture
         )
 
         # Create a spending search for recipients
@@ -136,7 +136,7 @@ class TestRecipientSpendingCount:
 
         # Set up mock to return the modified fixture data
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/recipient/", modified_fixture
+            mock_usa_client.Endpoints.SPENDING_BY_RECIPIENT, modified_fixture
         )
 
         # Create a spending search with a limit
@@ -164,7 +164,7 @@ class TestRecipientSpendingCount:
 
         # Set up mock to return the modified fixture data
         mock_usa_client.set_response(
-            "/api/v2/search/spending_by_category/recipient/", modified_fixture
+            mock_usa_client.Endpoints.SPENDING_BY_RECIPIENT, modified_fixture
         )
 
         # Create a spending search and get first few results
