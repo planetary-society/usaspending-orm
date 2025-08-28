@@ -397,7 +397,15 @@ class Award(LazyRecord):
             return None
             
         subtier_data = data.get("subtier_agency")
-        return SubTierAgency(subtier_data, self._client) if subtier_data else None
+        if not subtier_data:
+            return None
+        
+        # Include office_agency_name from the full agency data
+        enhanced_subtier_data = subtier_data.copy()
+        if "office_agency_name" in data:
+            enhanced_subtier_data["office_agency_name"] = data["office_agency_name"]
+        
+        return SubTierAgency(enhanced_subtier_data, self._client)
 
     @cached_property
     def awarding_subtier_agency(self) -> Optional[SubTierAgency]:
@@ -407,7 +415,15 @@ class Award(LazyRecord):
             return None
             
         subtier_data = data.get("subtier_agency")
-        return SubTierAgency(subtier_data, self._client) if subtier_data else None
+        if not subtier_data:
+            return None
+        
+        # Include office_agency_name from the full agency data
+        enhanced_subtier_data = subtier_data.copy()
+        if "office_agency_name" in data:
+            enhanced_subtier_data["office_agency_name"] = data["office_agency_name"]
+        
+        return SubTierAgency(enhanced_subtier_data, self._client)
 
     @property
     def transactions(self) -> "TransactionsSearch":

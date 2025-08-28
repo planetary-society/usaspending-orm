@@ -144,3 +144,9 @@ def agency_fixture_data():
 def agency_award_summary_fixture_data():
     """Load the agency award summary fixture data."""
     return load_json_fixture("agency_award_summary.json")
+
+
+@pytest.fixture
+def agency_subagencies_fixture_data():
+    """Load the agency sub-agencies fixture data."""
+    return load_json_fixture("agency_subagencies.json")

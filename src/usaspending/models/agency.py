@@ -3,7 +3,6 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from dataclasses import dataclass
-from functools import cached_property
 from ..utils.formatter import to_float, to_int
 from .lazy_record import LazyRecord
 from ..logging_config import USASpendingLogger
@@ -19,6 +18,7 @@ from ..config import (
 if TYPE_CHECKING:
     from ..client import USASpending
     from ..queries.awards_search import AwardsSearch
+    from .subtier_agency import SubTierAgency
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -173,6 +173,49 @@ class Agency(LazyRecord):
         """
         from ..queries.filters import AgencyTier, AgencyType
         return self._client.awards.search().for_agency(self.name,AgencyType.AWARDING,AgencyTier.TOPTIER)
+    
+    @property
+    def subagencies(self) -> List["SubTierAgency"]:
+        """Get list of sub-agencies for this agency.
+        
+        Returns:
+            List of SubTierAgency instances
+        """
+        # Get toptier code
+        toptier_code = self.code
+        if not toptier_code:
+            return []
+        
+        try:
+            from ..queries.sub_agency_query import SubAgencyQuery
+            from .subtier_agency import SubTierAgency
+            
+            query = SubAgencyQuery(self._client)
+            
+            # Use fiscal year from this agency if available
+            fiscal_year = self.fiscal_year
+            
+            response = query.get_subagencies(
+                toptier_code=toptier_code,
+                fiscal_year=fiscal_year,
+                limit=100  # Default to maximum
+            )
+            
+            # Transform results into SubTierAgency objects
+            subagencies = []
+            results = response.get("results", [])
+            for result in results:
+                if isinstance(result, dict):
+                    subagency = SubTierAgency(result, self._client)
+                    subagencies.append(subagency)
+            
+            return subagencies
+            
+        except Exception as e:
+            logger.debug(
+                f"Could not fetch sub-agencies for {toptier_code}: {e}"
+            )
+            return []
     
     def obligations(
         self,

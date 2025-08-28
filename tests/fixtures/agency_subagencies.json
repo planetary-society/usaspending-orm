@@ -1,0 +1,116 @@
+{
+    "toptier_code": "080",
+    "fiscal_year": 2025,
+    "page_metadata": {
+        "page": 1,
+        "total": 1,
+        "limit": 100,
+        "next": null,
+        "previous": null,
+        "hasNext": false,
+        "hasPrevious": false
+    },
+    "results": [
+        {
+            "abbreviation": "NASA",
+            "name": "National Aeronautics and Space Administration",
+            "total_obligations": 17275121376.15,
+            "transaction_count": 29818,
+            "new_award_count": 5465,
+            "children": [
+                {
+                    "code": "80JSC0",
+                    "name": "NASA JOHNSON SPACE CENTER",
+                    "total_obligations": 3938738374.3,
+                    "transaction_count": 1899,
+                    "new_award_count": 210
+                },
+                {
+                    "code": "80MSFC",
+                    "name": "NASA MARSHALL SPACE FLIGHT CENTER",
+                    "total_obligations": 3140833781.78,
+                    "transaction_count": 1566,
+                    "new_award_count": 158
+                },
+                {
+                    "code": "80GSFC",
+                    "name": "NASA GODDARD SPACE FLIGHT CENTER",
+                    "total_obligations": 2687999630.34,
+                    "transaction_count": 2333,
+                    "new_award_count": 63
+                },
+                {
+                    "code": "80NM00",
+                    "name": "NASA MANAGEMENT OFFICE -- JPL",
+                    "total_obligations": 2067140809.28,
+                    "transaction_count": 1692,
+                    "new_award_count": 63
+                },
+                {
+                    "code": "80KSC0",
+                    "name": "NASA KENNEDY SPACE CENTER",
+                    "total_obligations": 1522433863.69,
+                    "transaction_count": 1258,
+                    "new_award_count": 87
+                },
+                {
+                    "code": "80NSSC",
+                    "name": "NASA SHARED SERVICES CENTER",
+                    "total_obligations": 1513548089.0,
+                    "transaction_count": 14628,
+                    "new_award_count": 3879
+                },
+                {
+                    "code": "80TECH",
+                    "name": "NASA IT PROCUREMENT OFFICE",
+                    "total_obligations": 786421723.91,
+                    "transaction_count": 1760,
+                    "new_award_count": 447
+                },
+                {
+                    "code": "80GRC0",
+                    "name": "NASA GLENN RESEARCH CENTER",
+                    "total_obligations": 484906047.42,
+                    "transaction_count": 1159,
+                    "new_award_count": 94
+                },
+                {
+                    "code": "80ARC0",
+                    "name": "NASA AMES RESEARCH CENTER",
+                    "total_obligations": 360423884.45,
+                    "transaction_count": 903,
+                    "new_award_count": 85
+                },
+                {
+                    "code": "80LARC",
+                    "name": "NASA LANGLEY RESEARCH CENTER",
+                    "total_obligations": 306823745.37,
+                    "transaction_count": 1018,
+                    "new_award_count": 134
+                },
+                {
+                    "code": "80HQTR",
+                    "name": "NASA HEADQUARTERS",
+                    "total_obligations": 210008100.71,
+                    "transaction_count": 718,
+                    "new_award_count": 183
+                },
+                {
+                    "code": "80AFRC",
+                    "name": "NASA ARMSTRONG FLIGHT RESEARCH CNTR",
+                    "total_obligations": 147270540.16,
+                    "transaction_count": 440,
+                    "new_award_count": 53
+                },
+                {
+                    "code": "80SSC0",
+                    "name": "NASA STENNIS SPACE CENTER",
+                    "total_obligations": 108572785.74,
+                    "transaction_count": 444,
+                    "new_award_count": 21
+                }
+            ]
+        }
+    ],
+    "messages": []
+}
