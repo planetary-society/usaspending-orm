@@ -87,16 +87,16 @@ class AgencyResource(BaseResource):
             
         Example:
             >>> # Get all matches (agencies, subtiers, offices)
-            >>> all_results = list(client.agencies.find_all_funding_agencies_by_name("NASA"))
+            >>> all_results = list(client.agencies.find_all_awarding_agencies_by_name("NASA"))
             >>> 
             >>> # Get only toptier agencies
-            >>> agencies = list(client.agencies.find_all_funding_agencies_by_name("NASA").toptier())
+            >>> agencies = list(client.agencies.find_all_awarding_agencies_by_name("NASA").toptier())
             >>> 
             >>> # Get only subtier agencies  
-            >>> subtiers = list(client.agencies.find_all_funding_agencies_by_name("NASA").subtier())
+            >>> subtiers = list(client.agencies.find_all_awarding_agencies_by_name("NASA").subtier())
             >>> 
             >>> # Get only offices
-            >>> offices = list(client.agencies.find_all_funding_agencies_by_name("NASA").office())
+            >>> offices = list(client.agencies.find_all_awarding_agencies_by_name("NASA").office())
         """
         from ..queries.awarding_agencies_search import AwardingAgenciesSearch
         
