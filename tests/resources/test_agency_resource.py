@@ -19,8 +19,8 @@ class TestAgencyResourceInitialization:
         assert resource.client is mock_usa_client
 
 
-class TestAgencyResourceGet:
-    """Test AgencyResource.get() method."""
+class TestAgencyResourceFindByToptierCode:
+    """Test AgencyResource.find_by_toptier_code() method."""
 
     @pytest.fixture
     def agency_resource(self, mock_usa_client):
@@ -38,7 +38,7 @@ class TestAgencyResourceGet:
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Call the method
-        agency = agency_resource.get(toptier_code)
+        agency = agency_resource.find_by_toptier_code(toptier_code)
         
         # Verify return value
         assert isinstance(agency, Agency)
@@ -64,7 +64,7 @@ class TestAgencyResourceGet:
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Call the method
-        agency = agency_resource.get(toptier_code, fiscal_year=fiscal_year)
+        agency = agency_resource.find_by_toptier_code(toptier_code, fiscal_year=fiscal_year)
         
         # Verify return value
         assert isinstance(agency, Agency)
@@ -85,7 +85,7 @@ class TestAgencyResourceGet:
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
-        agency = agency_resource.get(toptier_code)
+        agency = agency_resource.find_by_toptier_code(toptier_code)
         
         # Test all major properties using fixture data
         assert agency.fiscal_year == agency_fixture_data["fiscal_year"]
@@ -109,12 +109,12 @@ class TestAgencyResourceGet:
     def test_get_agency_empty_toptier_code_raises_validation_error(self, agency_resource):
         """Test that empty toptier_code raises ValidationError."""
         with pytest.raises(ValidationError, match="toptier_code is required"):
-            agency_resource.get("")
+            agency_resource.find_by_toptier_code("")
 
     def test_get_agency_invalid_toptier_code_raises_validation_error(self, agency_resource):
         """Test that invalid toptier_code raises ValidationError."""
         with pytest.raises(ValidationError, match="Invalid toptier_code"):
-            agency_resource.get("ABC")  # Non-numeric
+            agency_resource.find_by_toptier_code("ABC")  # Non-numeric
 
     def test_get_agency_api_error_propagates(self, agency_resource, mock_usa_client):
         """Test that API errors are propagated."""
@@ -129,7 +129,7 @@ class TestAgencyResourceGet:
         from usaspending.exceptions import HTTPError
         
         with pytest.raises(HTTPError, match="Agency not found"):
-            agency_resource.get(toptier_code)
+            agency_resource.find_by_toptier_code(toptier_code)
 
 
 class TestAgencyResourceClientIntegration:
@@ -155,14 +155,14 @@ class TestAgencyResourceClientIntegration:
     def test_client_agencies_get_integration(
         self, mock_usa_client, agency_fixture_data
     ):
-        """Test integration: client.agencies.get() works end-to-end."""
+        """Test integration: client.agencies.find_by_toptier_code() works end-to-end."""
         toptier_code = agency_fixture_data["toptier_code"]
         endpoint = f"/v2/agency/{toptier_code}/"
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Call through client
-        agency = mock_usa_client.agencies.get(toptier_code)
+        agency = mock_usa_client.agencies.find_by_toptier_code(toptier_code)
         
         # Verify it works
         assert isinstance(agency, Agency)
@@ -172,7 +172,7 @@ class TestAgencyResourceClientIntegration:
     def test_client_agencies_get_with_fiscal_year_integration(
         self, mock_usa_client, agency_fixture_data
     ):
-        """Test integration: client.agencies.get() with fiscal_year works end-to-end."""
+        """Test integration: client.agencies.find_by_toptier_code() with fiscal_year works end-to-end."""
         toptier_code = agency_fixture_data["toptier_code"]
         fiscal_year = 2023
         endpoint = f"/v2/agency/{toptier_code}/"
@@ -180,7 +180,7 @@ class TestAgencyResourceClientIntegration:
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Call through client with fiscal_year
-        agency = mock_usa_client.agencies.get(toptier_code, fiscal_year=fiscal_year)
+        agency = mock_usa_client.agencies.find_by_toptier_code(toptier_code, fiscal_year=fiscal_year)
         
         # Verify it works
         assert isinstance(agency, Agency)
@@ -200,7 +200,7 @@ class TestAgencyResourceUsagePatterns:
             mock_usa_client.set_fixture_response(endpoint, "agency")
             
             # Common usage: get current fiscal year data
-            agency = mock_usa_client.agencies.get("080")
+            agency = mock_usa_client.agencies.find_by_toptier_code("080")
             
             assert agency.name == agency_fixture_data["name"]
             assert agency.abbreviation == agency_fixture_data["abbreviation"]
@@ -213,7 +213,7 @@ class TestAgencyResourceUsagePatterns:
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Common usage: get specific fiscal year data
-        agency = mock_usa_client.agencies.get(toptier_code, fiscal_year=2023)
+        agency = mock_usa_client.agencies.find_by_toptier_code(toptier_code, fiscal_year=2023)
         
         assert agency.toptier_code == toptier_code
         assert isinstance(agency.messages, list)
@@ -224,7 +224,7 @@ class TestAgencyResourceUsagePatterns:
         endpoint = f"/v2/agency/{toptier_code}/"
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
-        agency = mock_usa_client.agencies.get(toptier_code)
+        agency = mock_usa_client.agencies.find_by_toptier_code(toptier_code)
         
         # Common usage: access agency details
         assert agency.mission == agency_fixture_data["mission"]

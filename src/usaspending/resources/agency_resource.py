@@ -20,7 +20,7 @@ class AgencyResource(BaseResource):
     Provides access to agency overview and detail endpoints.
     """
 
-    def get(self, toptier_code: str, fiscal_year: Optional[int] = None) -> "Agency":
+    def find_by_toptier_code(self, toptier_code: str, fiscal_year: Optional[int] = None) -> "Agency":
         """Retrieve agency overview for a specific toptier code and fiscal year.
 
         Args:
@@ -35,10 +35,10 @@ class AgencyResource(BaseResource):
             APIError: If agency not found
 
         Example:
-            >>> agency = client.agencies.get("080")  # Get NASA for current fiscal year
+            >>> agency = client.agencies.find_by_toptier_code("080")  # Get NASA for current fiscal year
             >>> print(agency.name, agency.mission)
             >>> 
-            >>> agency_2023 = client.agencies.get("080", fiscal_year=2023)  # Get NASA for FY 2023
+            >>> agency_2023 = client.agencies.find_by_toptier_code("080", fiscal_year=2023)  # Get NASA for FY 2023
             >>> print(agency_2023.fiscal_year, agency_2023.def_codes)
         """
         logger.debug(
