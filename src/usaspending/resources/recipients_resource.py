@@ -1,13 +1,13 @@
 """Recipient resource implementation."""
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
-    from ..queries.spending_search import SpendingSearch
+    from ..queries.recipients_search import RecipientsSearch
     from ..models.recipient import Recipient
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -19,7 +19,7 @@ class RecipientsResource(BaseResource):
     Provides access to recipient search and retrieval endpoints.
     """
 
-    def find_by_recipient_id(self, recipient_id: str) -> "Recipient":
+    def find_by_recipient_id(self, recipient_id: str) -> Optional["Recipient"]:
         """Retrieve a single recipient by ID.
 
         Args:
@@ -37,20 +37,65 @@ class RecipientsResource(BaseResource):
 
         return RecipientQuery(self._client).find_by_id(recipient_id)
 
-    def search(self) -> "SpendingSearch":
+    def search(self) -> "RecipientsSearch":
         """Create a new recipient search query builder.
 
         Returns:
-            SpendingSearch query builder configured for recipient searches
+            RecipientsSearch query builder for recipient searches
         
         Example:
             >>> recipients = client.recipients.search()
-            ...     .for_agency("NASA")
-            ...     .with_recipient_types("small_business")
-            ...     .for_fiscal_year(2024)
+            ...     .with_keyword("california")
+            ...     .with_award_type("contracts")
+            ...     .order_by("amount", "desc")
             ...     .limit(10)
         """
-        logger.debug("Creating new SpendingSearch query builder for recipient searches")
-        from ..queries.spending_search import SpendingSearch
+        logger.debug("Creating new RecipientsSearch query builder for recipient searches")
+        from ..queries.recipients_search import RecipientsSearch
 
-        return SpendingSearch(self._client).by_recipient()
+        return RecipientsSearch(self._client)
+
+    def find_by_duns(self, duns: str) -> Optional["Recipient"]:
+        """Retrieve a single recipient by DUNS number.
+
+        Args:
+            duns: Unique DUNS identifier
+
+        Returns:
+            Recipient model instance or None if not found
+
+        Raises:
+            ValidationError: If duns is invalid
+        """
+        logger.debug(f"Searching recipient by DUNS: {duns}")
+        from ..queries.recipients_search import RecipientsSearch
+        recipients = RecipientsSearch(self._client).with_keyword(duns).limit(4)
+        # Return the parent recipient if available, otherwise first result
+        for r in recipients:
+            if "-P" in r.recipient_id:
+                return r
+        # Return first result if no parent found (avoids hanging len() call)
+        return recipients.first()
+        
+    def find_by_uei(self, uei: str) -> Optional["Recipient"]:
+        """Retrieve a single recipient by UEI number.
+
+        Args:
+            uei: Unique Entity Identifier
+
+        Returns:
+            Recipient model instance or None if not found
+
+        Raises:
+            ValidationError: If uei is invalid
+        """
+        logger.debug(f"Searching recipient by UEI: {uei}")
+        from ..queries.recipients_search import RecipientsSearch
+        recipients = RecipientsSearch(self._client).with_keyword(uei).limit(4)
+        # Return the parent recipient if available, otherwise first result
+        for r in recipients:
+            if "-P" in r.recipient_id:
+                return r
+        # Return first result if no parent found (avoids hanging len() call)
+        return recipients.first()
+        

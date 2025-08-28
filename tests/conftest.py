@@ -156,3 +156,9 @@ def agency_subagencies_fixture_data():
 def agency_autocomplete_fixture():
     """Load agency autocomplete fixture data."""
     return load_json_fixture("agency_autocomplete.json")
+
+
+@pytest.fixture
+def recipients_search_fixture_data():
+    """Load the recipients search fixture data."""
+    return load_json_fixture("recipients_search.json")

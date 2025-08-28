@@ -31,6 +31,8 @@ class MockUSASpendingClient(USASpending):
         TRANSACTIONS = "/v2/transactions/"
 
         RECIPIENT_DETAIL = "/v2/recipients/{recipient_id}/"
+        RECIPIENT_SEARCH = "/v2/recipient/"
+        RECIPIENT_COUNT = "/v2/recipient/count/"
 
         DOWNLOAD_ASSISTANCE = "/v2/download/assistance/"
         DOWNLOAD_CONTRACT = "/v2/download/contract/"
@@ -631,3 +633,35 @@ class MockUSASpendingClient(USASpending):
                 },
             }
             self.set_response("/v2/transactions/", response)
+
+    def mock_recipient_search(
+        self, recipients: List[Dict[str, Any]], page_size: int = 50
+    ) -> None:
+        """Set up mock responses for recipient search.
+
+        Args:
+            recipients: List of recipient data
+            page_size: Results per page
+        """
+        # Ensure recipients have required fields
+        for recipient in recipients:
+            if "id" not in recipient:
+                recipient["id"] = f"RECIPIENT-{id(recipient)}"
+            if "name" not in recipient:
+                recipient["name"] = "Test Recipient"
+            if "amount" not in recipient:
+                recipient["amount"] = 1000000.0
+
+        self.set_paginated_response(self.Endpoints.RECIPIENT_SEARCH, recipients, page_size, auto_count=False)
+
+        # Set up count endpoint
+        self.mock_recipient_count(len(recipients))
+
+    def mock_recipient_count(self, count: int) -> None:
+        """Set up mock response for recipient count.
+
+        Args:
+            count: Total number of recipients
+        """
+        response = {"count": count}
+        self.set_response(self.Endpoints.RECIPIENT_COUNT, response)
