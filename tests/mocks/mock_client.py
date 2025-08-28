@@ -344,12 +344,17 @@ class MockUSASpendingClient(USASpending):
             "/v2/search/spending_by_award/": "/v2/search/spending_by_award_count/",
             "/v2/transactions/": "/v2/awards/count/transaction/",  # Would need award_id
             "/search/spending_by_recipient/": "/search/spending_by_recipient_count/",  # If it existed
+            "/v2/recipient/": "/v2/recipient/count/",  # Recipients search count mapping
         }
 
         count_endpoint = count_endpoint_mapping.get(search_endpoint)
         if count_endpoint == "/v2/search/spending_by_award_count/":
             # For awards, default to contracts category for backward compatibility
             self.mock_award_count(contracts=total_count)
+        elif count_endpoint == "/v2/recipient/count/":
+            # For recipients, set up the count response with correct format
+            response = {"count": total_count}
+            self.set_response(count_endpoint, response)
         elif count_endpoint and "transaction" not in count_endpoint:
             # For other endpoints, set up a generic count response
             # This could be enhanced based on specific endpoint needs
@@ -652,10 +657,9 @@ class MockUSASpendingClient(USASpending):
             if "amount" not in recipient:
                 recipient["amount"] = 1000000.0
 
-        self.set_paginated_response(self.Endpoints.RECIPIENT_SEARCH, recipients, page_size, auto_count=False)
+        self.set_paginated_response(self.Endpoints.RECIPIENT_SEARCH, recipients, page_size)
 
-        # Set up count endpoint
-        self.mock_recipient_count(len(recipients))
+        # Count endpoint is now automatically set up by _auto_setup_count_endpoint()
 
     def mock_recipient_count(self, count: int) -> None:
         """Set up mock response for recipient count.

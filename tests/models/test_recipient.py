@@ -171,7 +171,7 @@ class TestRecipientProperties:
 
         # Mock the endpoint to return data with no name
         mock_usa_client.set_response(
-            "/v2/recipients/test-123/",
+            "/v2/recipient/test-123/",
             {"recipient_id": "test-123"},  # No name field
         )
 
@@ -207,7 +207,7 @@ class TestRecipientProperties:
 
         # Mock endpoint to return no name
         mock_usa_client.set_response(
-            "/v2/recipients/test-123/", {"recipient_id": "test-123"}
+            "/v2/recipient/test-123/", {"recipient_id": "test-123"}
         )
 
         repr_str = repr(recipient)
@@ -226,14 +226,17 @@ class TestRecipientParentRelationships:
     def test_parent_property(self, mock_usa_client, recipient_data):
         """Test parent property creates Recipient instance."""
         recipient = Recipient(recipient_data, mock_usa_client)
-
-        parent = recipient.parent
-
-        assert isinstance(parent, Recipient)
-        assert parent._data["recipient_id"] == recipient_data["parent_id"]
-        assert parent._data["name"] == recipient_data["parent_name"]
-        assert parent._data["duns"] == recipient_data["parent_duns"]
-        assert parent._data["uei"] == recipient_data["parent_uei"]
+        
+        if recipient_data.get("parent_id") and recipient_data.get("parent_id") == recipient_data.get("recipient_id"):
+            # If parent_id is same as recipient_id, parent should be None
+            assert recipient.parent is None
+        else:
+            parent = recipient.parent
+            assert isinstance(parent, Recipient)
+            assert parent._data["recipient_id"] == recipient_data["parent_id"]
+            assert parent._data["name"] == recipient_data["parent_name"]
+            assert parent._data["duns"] == recipient_data["parent_duns"]
+            assert parent._data["uei"] == recipient_data["parent_uei"]
 
     def test_parent_property_with_no_parent(self, mock_usa_client):
         """Test parent property when no parent exists."""
@@ -242,9 +245,17 @@ class TestRecipientParentRelationships:
         recipient = Recipient(data, mock_usa_client)
 
         # Mock endpoint to return data with no parent_id
-        mock_usa_client.set_response("/v2/recipients/test-123/", data)
+        mock_usa_client.set_response("/v2/recipient/test-123/", data)
 
         assert recipient.parent is None
+
+    def test_parent_property_ignores_same_parentage(self, mock_usa_client):
+        """Sometimes a recipient lists itself as a parent - ignore this."""
+        data = {"recipient_id": "test-123", "name": "Test Recipient", "parent_id": "test-123"}
+        recipient = Recipient(data, mock_usa_client)
+
+        assert recipient.parent is None
+
 
     def test_parents_property(self, mock_usa_client, recipient_data):
         """Test parents property returns list of Recipients."""
@@ -259,6 +270,14 @@ class TestRecipientParentRelationships:
             == recipient_data["parents"][0]["parent_id"]
         )
         assert parents[0]._data["name"] == recipient_data["parents"][0]["parent_name"]
+
+    def test_parents_property_ignores_same_parentage(self, mock_usa_client):
+        """Sometimes a recipient lists itself as a parent - ignore these."""
+        parents = [{"parent_id": "test-123", "parent_name": "Test Parent"},{"parent_id": "test-456", "parent_name": "Another Parent"}]
+        data = {"recipient_id": "test-123", "name": "Test Recipient", "parents": parents}
+        recipient = Recipient(data, mock_usa_client)
+
+        assert len(recipient.parents) == 1
 
     def test_parents_property_empty(self, mock_usa_client):
         """Test parents property when no parents data."""
@@ -296,7 +315,7 @@ class TestRecipientLocation:
         recipient = Recipient(data, mock_usa_client)
 
         # Mock endpoint to return data with no location
-        mock_usa_client.set_response("/v2/recipients/test-123/", data)
+        mock_usa_client.set_response("/v2/recipient/test-123/", data)
 
         assert recipient.location is None
 
@@ -353,14 +372,14 @@ class TestRecipientLazyLoading:
 
         # Set up the mock response for recipient GET
         mock_usa_client.set_fixture_response(
-            f"/v2/recipients/{recipient_id}/", "recipient_university"
+            f"/v2/recipient/{recipient_id}/", "recipient_university"
         )
 
         # Create recipient with minimal data (no name field)
         recipient = Recipient({"recipient_id": recipient_id}, mock_usa_client)
 
         # Verify no API calls yet
-        assert mock_usa_client.get_request_count(f"/v2/recipients/{recipient_id}/") == 0
+        assert mock_usa_client.get_request_count(f"/v2/recipient/{recipient_id}/") == 0
 
         # Access a field that should trigger lazy load
         name = recipient.name
@@ -369,7 +388,7 @@ class TestRecipientLazyLoading:
         assert name == contracts_titlecase(recipient_data["name"])
 
         # Verify the endpoint was called
-        assert mock_usa_client.get_request_count(f"/v2/recipients/{recipient_id}/") == 1
+        assert mock_usa_client.get_request_count(f"/v2/recipient/{recipient_id}/") == 1
 
     def test_lazy_load_caches_data(self, mock_usa_client, recipient_data):
         """Test that lazy loading only happens once."""
@@ -377,7 +396,7 @@ class TestRecipientLazyLoading:
 
         # Set up the mock response
         mock_usa_client.set_fixture_response(
-            f"/v2/recipients/{recipient_id}/", "recipient_university"
+            f"/v2/recipient/{recipient_id}/", "recipient_university"
         )
 
         # Create recipient with minimal data
@@ -386,18 +405,18 @@ class TestRecipientLazyLoading:
         # First access triggers lazy load
         duns1 = recipient.duns
         assert duns1 == recipient_data["duns"]
-        assert mock_usa_client.get_request_count(f"/v2/recipients/{recipient_id}/") == 1
+        assert mock_usa_client.get_request_count(f"/v2/recipient/{recipient_id}/") == 1
 
         # Second access should use cached data
         duns2 = recipient.duns
         assert duns2 == recipient_data["duns"]
         # Should still be 1 - no additional API call
-        assert mock_usa_client.get_request_count(f"/v2/recipients/{recipient_id}/") == 1
+        assert mock_usa_client.get_request_count(f"/v2/recipient/{recipient_id}/") == 1
 
         # Access different field - should still use cached data
         uei = recipient.uei
         assert uei == recipient_data["uei"]
-        assert mock_usa_client.get_request_count(f"/v2/recipients/{recipient_id}/") == 1
+        assert mock_usa_client.get_request_count(f"/v2/recipient/{recipient_id}/") == 1
 
     def test_lazy_load_updates_existing_data(self, mock_usa_client, recipient_data):
         """Test that lazy load merges with existing data."""
@@ -405,7 +424,7 @@ class TestRecipientLazyLoading:
 
         # Set up the mock response
         mock_usa_client.set_fixture_response(
-            f"/v2/recipients/{recipient_id}/", "recipient_university"
+            f"/v2/recipient/{recipient_id}/", "recipient_university"
         )
 
         # Create recipient with some initial data
@@ -434,7 +453,7 @@ class TestRecipientLazyLoading:
 
         # Set up error response
         mock_usa_client.set_error_response(
-            f"/v2/recipients/{recipient_id}/", 404, "Not Found", "Recipient not found"
+            f"/v2/recipient/{recipient_id}/", 404, "Not Found", "Recipient not found"
         )
 
         # Create recipient
@@ -445,12 +464,12 @@ class TestRecipientLazyLoading:
         assert name is None
 
         # Should have tried to fetch
-        assert mock_usa_client.get_request_count(f"/v2/recipients/{recipient_id}/") == 1
+        assert mock_usa_client.get_request_count(f"/v2/recipient/{recipient_id}/") == 1
 
         # Should not try again on subsequent access
         name2 = recipient.name
         assert name2 is None
-        assert mock_usa_client.get_request_count(f"/v2/recipients/{recipient_id}/") == 1
+        assert mock_usa_client.get_request_count(f"/v2/recipient/{recipient_id}/") == 1
 
     def test_no_lazy_load_for_existing_fields(self, mock_usa_client, recipient_data):
         """Test no API call when field already exists."""

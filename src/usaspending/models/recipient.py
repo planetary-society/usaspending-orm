@@ -111,23 +111,30 @@ class Recipient(LazyRecord):
     @cached_property
     def parent(self) -> Optional["Recipient"]:
         pid = self._lazy_get("parent_id")
-        if not pid:
+        
+        # Don't load a parent if parent id is missing or
+        # the parent recipient_id is theh same as the current one
+        if not pid or pid == self.recipient_id:
             return None
-        return Recipient(
-            {
-                "recipient_id": pid,
-                "name": self.get_value("parent_name"),
-                "duns": self.get_value("parent_duns"),
-                "uei": self.get_value("parent_uei"),
-            },
-            client=self._client,
-        )
+        else:
+            return Recipient(
+                {
+                    "recipient_id": pid,
+                    "name": self.get_value("parent_name"),
+                    "duns": self.get_value("parent_duns"),
+                    "uei": self.get_value("parent_uei"),
+                },
+                client=self._client,
+            )
 
     @cached_property
     def parents(self) -> List["Recipient"]:
         plist = []
         for p in self.get_value("parents", default=[]):
             if isinstance(p, dict):
+                # Skip if parent_id is missing or the same as current recipient_id
+                if not p.get("parent_id") or p.get("parent_id") == self.recipient_id:
+                    continue
                 plist.append(
                     Recipient(
                         {
