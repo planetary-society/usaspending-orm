@@ -15,7 +15,7 @@ logger = USASpendingLogger.get_logger(__name__)
 class SubAgencyQuery(SingleResourceBase):
     """Retrieve sub-agency data from the USAspending API.
     
-    This query class handles fetching paginated sub-agency information including
+    This query class handles fetching sub-agency information including
     transaction counts and obligations filtered by fiscal year, agency type,
     and award type codes.
     """

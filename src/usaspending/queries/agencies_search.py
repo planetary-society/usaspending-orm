@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Dict, Any, List, TYPE_CHECKING, Iterator
 from ..exceptions import ValidationError
 from ..models.agency import Agency
+from ..models.subtier_agency import SubTierAgency
 from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
 
@@ -34,18 +35,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
         raise NotImplementedError("Subclasses must implement _endpoint")
     
     def _clone(self) -> AgenciesSearch:
-        """Create immutable copy for chaining."""
-        clone = AgenciesSearch(self._client)
-        clone._search_text = self._search_text
-        clone._limit = self._limit
-        clone._result_type = self._result_type
-        # Copy parent attributes
-        clone._filters = self._filters.copy()
-        clone._filter_objects = self._filter_objects.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        return clone
+        raise NotImplementedError("Subclasses must implement _clone")
     
     def _build_payload(self, page: int) -> Dict[str, Any]:
         """Build request payload."""
@@ -127,29 +117,12 @@ class AgenciesSearch(QueryBuilder[Agency]):
             return Agency(agency_data, self._client)
             
         elif result_type == "subtier":
-            # Extract toptier agency from subtier result
-            toptier = data.get("toptier_agency", {})
-            agency_data = {
-                "code": toptier.get("code"),
-                "toptier_code": toptier.get("code"),
-                "name": toptier.get("name"),
-                "abbreviation": toptier.get("abbreviation")
-            }
             # Include subtier data
-            return Agency(agency_data, self._client, subtier_data=data)
+            return SubTierAgency(data, self._client)
             
         elif result_type == "office":
-            # Extract toptier agency from office result
-            toptier = data.get("toptier_agency", {})
-            agency_data = {
-                "code": toptier.get("code"),
-                "toptier_code": toptier.get("code"),
-                "name": toptier.get("name"),
-                "abbreviation": toptier.get("abbreviation")
-            }
-            subtier = data.get("subtier_agency")
-            return Agency(agency_data, self._client, subtier_data=subtier)
-        
+            return SubTierAgency(data, self._client)
+                
         return None
     
     def count(self) -> int:

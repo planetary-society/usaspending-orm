@@ -5,6 +5,7 @@ from usaspending.queries.funding_agencies_search import FundingAgenciesSearch
 from usaspending.queries.awarding_agencies_search import AwardingAgenciesSearch
 from usaspending.exceptions import ValidationError
 from usaspending.models.agency import Agency
+from usaspending.models.subtier_agency import SubTierAgency
 from tests.mocks.mock_client import MockUSASpendingClient
 
 
@@ -68,7 +69,6 @@ class TestAgenciesSearchExecution:
         )
         
         assert len(results) == expected_total
-        assert all(isinstance(r, Agency) for r in results)
     
     def test_toptier_filter(self, mock_usa_client, agency_autocomplete_fixture, search_class, endpoint, resource_method):
         """Test filtering for toptier agencies only."""
@@ -80,6 +80,7 @@ class TestAgenciesSearchExecution:
         # Use fixture data for assertions
         expected_toptier = agency_autocomplete_fixture["results"]["toptier_agency"]
         assert len(results) == len(expected_toptier)
+        assert all(isinstance(r, Agency) for r in results)
         
         # Check first result matches fixture
         if expected_toptier:
@@ -99,13 +100,7 @@ class TestAgenciesSearchExecution:
         # Use fixture data for assertions
         expected_subtier = agency_autocomplete_fixture["results"]["subtier_agency"]
         assert len(results) == len(expected_subtier)
-        
-        # Verify agencies are extracted from subtier data
-        if expected_subtier:
-            first_result = results[0]
-            first_expected_toptier = expected_subtier[0]["toptier_agency"]
-            assert first_result.code == first_expected_toptier["code"]
-            assert first_result.name == first_expected_toptier["name"]
+        assert all(isinstance(r, SubTierAgency) for r in results)
     
     def test_office_filter(self, mock_usa_client, agency_autocomplete_fixture, search_class, endpoint, resource_method):
         """Test filtering for offices only."""
@@ -117,19 +112,7 @@ class TestAgenciesSearchExecution:
         # Use fixture data for assertions
         expected_offices = agency_autocomplete_fixture["results"]["office"]
         assert len(results) == len(expected_offices)
-        
-        # Check unique agencies from offices
-        if expected_offices:
-            # Get unique toptier codes from offices
-            unique_codes = set()
-            for office in expected_offices:
-                toptier = office.get("toptier_agency", {})
-                unique_codes.add(toptier.get("code"))
-            
-            # Results should have agencies for each unique code
-            result_codes = {r.code for r in results}
-            # Note: We may have fewer results due to deduplication
-            assert len(result_codes) <= len(unique_codes)
+        assert all(isinstance(r, SubTierAgency) for r in results)
     
     def test_no_search_text_raises_error(self, mock_usa_client, search_class, endpoint, resource_method):
         """Test that missing search text raises ValidationError."""
@@ -234,7 +217,6 @@ class TestAgenciesSearchResourceIntegration:
         )
         
         assert len(results) == expected_total
-        assert all(isinstance(r, Agency) for r in results)
     
     def test_resource_method_with_filters(self, mock_usa_client, agency_autocomplete_fixture, search_class, endpoint, resource_method):
         """Test that AgencyResource method supports chaining filters."""
