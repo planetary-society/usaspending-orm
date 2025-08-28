@@ -46,4 +46,4 @@ class AgencyResource(BaseResource):
         
         from ..queries.agency_query import AgencyQuery
 
-        return AgencyQuery(self._client).get_by_id(toptier_code, fiscal_year)
+        return AgencyQuery(self._client).find_by_id(toptier_code, fiscal_year)

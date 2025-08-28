@@ -22,7 +22,7 @@ class AwardQuery(SingleResourceBase):
         """Base endpoint for single award retrieval."""
         return "/v2/awards/"
 
-    def get_by_id(self, award_id: str) -> "Award":
+    def find_by_id(self, award_id: str) -> "Award":
         """Filter by unique award identifier."""
         if not award_id:
             raise ValidationError("award_id is required")

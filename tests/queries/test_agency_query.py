@@ -27,15 +27,15 @@ class TestAgencyQueryValidation:
         """Create an AgencyQuery instance."""
         return AgencyQuery(mock_usa_client)
 
-    def test_get_by_id_empty_toptier_code_raises_validation_error(self, agency_query):
+    def test_find_by_id_empty_toptier_code_raises_validation_error(self, agency_query):
         """Test that empty toptier_code raises ValidationError."""
         with pytest.raises(ValidationError, match="toptier_code is required"):
-            agency_query.get_by_id("")
+            agency_query.find_by_id("")
 
-    def test_get_by_id_none_toptier_code_raises_validation_error(self, agency_query):
+    def test_find_by_id_none_toptier_code_raises_validation_error(self, agency_query):
         """Test that None toptier_code raises ValidationError."""
         with pytest.raises(ValidationError, match="toptier_code is required"):
-            agency_query.get_by_id(None)
+            agency_query.find_by_id(None)
 
     @pytest.mark.parametrize("invalid_code", [
         "12",       # Too short
@@ -44,10 +44,10 @@ class TestAgencyQueryValidation:
         "08A",      # Mixed alphanumeric
         " ",        # Whitespace only
     ])
-    def test_get_by_id_invalid_toptier_code_format(self, agency_query, invalid_code):
+    def test_find_by_id_invalid_toptier_code_format(self, agency_query, invalid_code):
         """Test that invalid toptier_code formats raise ValidationError."""
         with pytest.raises(ValidationError, match="Invalid toptier_code"):
-            agency_query.get_by_id(invalid_code)
+            agency_query.find_by_id(invalid_code)
 
     @pytest.mark.parametrize("valid_code", [
         "080",      # 3 digits
@@ -55,14 +55,14 @@ class TestAgencyQueryValidation:
         "012",      # 3 digits starting with 0
         "0120",     # 4 digits starting with 0
     ])
-    def test_get_by_id_valid_toptier_code_format(self, agency_query, mock_usa_client, agency_fixture_data, valid_code):
+    def test_find_by_id_valid_toptier_code_format(self, agency_query, mock_usa_client, agency_fixture_data, valid_code):
         """Test that valid toptier_code formats are accepted."""
         # Setup mock response
         endpoint = f"/v2/agency/{valid_code}/"
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Should not raise validation error
-        result = agency_query.get_by_id(valid_code)
+        result = agency_query.find_by_id(valid_code)
         assert isinstance(result, Agency)
 
 
@@ -74,7 +74,7 @@ class TestAgencyQueryExecution:
         """Create an AgencyQuery instance."""
         return AgencyQuery(mock_usa_client)
 
-    def test_get_by_id_success_without_fiscal_year(
+    def test_find_by_id_success_without_fiscal_year(
         self, agency_query, mock_usa_client, agency_fixture_data
     ):
         """Test successful agency retrieval without fiscal year."""
@@ -85,7 +85,7 @@ class TestAgencyQueryExecution:
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Call the method
-        agency = agency_query.get_by_id(toptier_code)
+        agency = agency_query.find_by_id(toptier_code)
         
         # Verify return value
         assert isinstance(agency, Agency)
@@ -99,7 +99,7 @@ class TestAgencyQueryExecution:
         assert last_request["method"] == "GET"
         assert last_request["params"] is None
 
-    def test_get_by_id_success_with_fiscal_year(
+    def test_find_by_id_success_with_fiscal_year(
         self, agency_query, mock_usa_client, agency_fixture_data
     ):
         """Test successful agency retrieval with fiscal year."""
@@ -111,7 +111,7 @@ class TestAgencyQueryExecution:
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Call the method
-        agency = agency_query.get_by_id(toptier_code, fiscal_year=fiscal_year)
+        agency = agency_query.find_by_id(toptier_code, fiscal_year=fiscal_year)
         
         # Verify return value
         assert isinstance(agency, Agency)
@@ -123,7 +123,7 @@ class TestAgencyQueryExecution:
         assert last_request["method"] == "GET"
         assert last_request["params"] == {"fiscal_year": fiscal_year}
 
-    def test_get_by_id_strips_whitespace(
+    def test_find_by_id_strips_whitespace(
         self, agency_query, mock_usa_client, agency_fixture_data
     ):
         """Test that toptier_code whitespace is stripped."""
@@ -134,7 +134,7 @@ class TestAgencyQueryExecution:
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Call with whitespace around toptier_code
-        agency = agency_query.get_by_id(f"  {toptier_code}  ")
+        agency = agency_query.find_by_id(f"  {toptier_code}  ")
         
         # Verify the agency was retrieved successfully
         assert agency.toptier_code == toptier_code
@@ -143,7 +143,7 @@ class TestAgencyQueryExecution:
         last_request = mock_usa_client.get_last_request()
         assert last_request["endpoint"] == endpoint
 
-    def test_get_by_id_api_error_propagates(self, agency_query, mock_usa_client):
+    def test_find_by_id_api_error_propagates(self, agency_query, mock_usa_client):
         """Test that API errors are propagated."""
         toptier_code = "999"
         endpoint = f"/v2/agency/{toptier_code}/"
@@ -156,9 +156,9 @@ class TestAgencyQueryExecution:
         from usaspending.exceptions import HTTPError
         
         with pytest.raises(HTTPError, match="Agency not found"):
-            agency_query.get_by_id(toptier_code)
+            agency_query.find_by_id(toptier_code)
 
-    def test_get_by_id_400_error_as_api_error(self, agency_query, mock_usa_client):
+    def test_find_by_id_400_error_as_api_error(self, agency_query, mock_usa_client):
         """Test that 400 errors are raised as APIError."""
         toptier_code = "999"
         endpoint = f"/v2/agency/{toptier_code}/"
@@ -171,7 +171,7 @@ class TestAgencyQueryExecution:
         from usaspending.exceptions import APIError
         
         with pytest.raises(APIError, match="Invalid toptier_code format"):
-            agency_query.get_by_id(toptier_code)
+            agency_query.find_by_id(toptier_code)
 
 
 class TestAgencyQueryModelCreation:
@@ -191,7 +191,7 @@ class TestAgencyQueryModelCreation:
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
-        agency = agency_query.get_by_id(toptier_code)
+        agency = agency_query.find_by_id(toptier_code)
         
         assert agency._client is mock_usa_client
 
@@ -204,7 +204,7 @@ class TestAgencyQueryModelCreation:
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
-        agency = agency_query.get_by_id(toptier_code)
+        agency = agency_query.find_by_id(toptier_code)
         
         # Test key properties using fixture data (no hard-coded values)
         assert agency.fiscal_year == agency_fixture_data["fiscal_year"]

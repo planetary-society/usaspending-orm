@@ -3,6 +3,7 @@
 import pytest
 from usaspending.models.agency import Agency
 from usaspending.models.subtier_agency import SubTierAgency
+from usaspending.utils.formatter import contracts_titlecase
 
 
 class TestAgencySubagencies:
@@ -12,7 +13,7 @@ class TestAgencySubagencies:
         """Test that agency.subagencies returns SubTierAgency objects."""
         # Set up mock response
         mock_usa_client.set_response(
-            "/api/v2/agency/080/sub_agency/", 
+            "/v2/agency/080/sub_agency/", 
             agency_subagencies_fixture_data
         )
         
@@ -21,7 +22,7 @@ class TestAgencySubagencies:
             "code": "080",
             "toptier_code": "080",
             "name": "NASA",
-            "fiscal_year": 2025
+            "fiscal_year": agency_subagencies_fixture_data["fiscal_year"]
         }
         
         agency = Agency(agency_data, mock_usa_client)
@@ -29,7 +30,7 @@ class TestAgencySubagencies:
         
         # Verify API call was made
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/sub_agency/",
+            "/v2/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -37,26 +38,30 @@ class TestAgencySubagencies:
                 "sort": "total_obligations",
                 "page": 1,
                 "limit": 100,
-                "fiscal_year": 2025
+                "fiscal_year": agency_subagencies_fixture_data["fiscal_year"]
             }
         )
         
-        # Verify results
-        assert len(subagencies) == 1
+        # Verify results using fixture data
+        expected_results = agency_subagencies_fixture_data["results"]
+        assert len(subagencies) == len(expected_results)
         assert all(isinstance(sub, SubTierAgency) for sub in subagencies)
         
+        # Check first subagency against fixture data
         subagency = subagencies[0]
-        assert subagency.name == "National Aeronautics and Space Administration"
-        assert subagency.abbreviation == "NASA"
-        assert subagency.total_obligations == 17275121376.15
-        assert subagency.transaction_count == 29818
-        assert subagency.new_award_count == 5465
+        expected_subagency = expected_results[0]
+        # Names are transformed by contracts_titlecase in the model
+        assert subagency.name == contracts_titlecase(expected_subagency["name"])
+        assert subagency.abbreviation == expected_subagency["abbreviation"]
+        assert subagency.total_obligations == expected_subagency["total_obligations"]
+        assert subagency.transaction_count == expected_subagency["transaction_count"]
+        assert subagency.new_award_count == expected_subagency["new_award_count"]
 
     def test_subagencies_property_with_offices(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that subagencies have offices populated."""
         # Set up mock response
         mock_usa_client.set_response(
-            "/api/v2/agency/080/sub_agency/", 
+            "/v2/agency/080/sub_agency/", 
             agency_subagencies_fixture_data
         )
         
@@ -70,21 +75,25 @@ class TestAgencySubagencies:
         agency = Agency(agency_data, mock_usa_client)
         subagencies = agency.subagencies
         
-        assert len(subagencies) == 1
+        expected_results = agency_subagencies_fixture_data["results"]
+        assert len(subagencies) == len(expected_results)
         subagency = subagencies[0]
         
         # Check that offices are populated
         offices = subagency.offices
-        assert len(offices) == 13  # Should match fixture data
+        expected_children = expected_results[0]["children"]
+        assert len(offices) == len(expected_children)
         assert all(isinstance(office, SubTierAgency) for office in offices)
         
-        # Check first office details
+        # Check first office details against fixture data
         first_office = offices[0]
-        assert first_office.code == "80JSC0"
-        assert first_office.name == "NASA JOHNSON SPACE CENTER"
-        assert first_office.total_obligations == 3938738374.3
-        assert first_office.transaction_count == 1899
-        assert first_office.new_award_count == 210
+        expected_first_office = expected_children[0]
+        assert first_office.code == expected_first_office["code"]
+        # Names are transformed by contracts_titlecase in the model
+        assert first_office.name == contracts_titlecase(expected_first_office["name"])
+        assert first_office.total_obligations == expected_first_office["total_obligations"]
+        assert first_office.transaction_count == expected_first_office["transaction_count"]
+        assert first_office.new_award_count == expected_first_office["new_award_count"]
 
     def test_subagencies_property_no_code(self, mock_usa_client):
         """Test that subagencies returns empty list when agency has no code."""
@@ -102,7 +111,7 @@ class TestAgencySubagencies:
         """Test that subagencies returns empty list on API error."""
         # Mock API error
         mock_usa_client.set_error_response(
-            "/api/v2/agency/080/sub_agency/", 
+            "/v2/agency/080/sub_agency/", 
             error_code=500, 
             error_message="API Error"
         )
@@ -122,7 +131,7 @@ class TestAgencySubagencies:
         """Test that subagencies uses agency's fiscal year if available."""
         # Set up mock response
         mock_usa_client.set_response(
-            "/api/v2/agency/080/sub_agency/", 
+            "/v2/agency/080/sub_agency/", 
             agency_subagencies_fixture_data
         )
         
@@ -138,7 +147,7 @@ class TestAgencySubagencies:
         
         # Verify API was called with the agency's fiscal year
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/sub_agency/",
+            "/v2/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -150,13 +159,15 @@ class TestAgencySubagencies:
             }
         )
         
-        assert len(subagencies) == 1
+        # Verify results using fixture data
+        expected_results = agency_subagencies_fixture_data["results"]
+        assert len(subagencies) == len(expected_results)
 
     def test_subagencies_property_no_fiscal_year(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that subagencies works without fiscal year."""
         # Set up mock response
         mock_usa_client.set_response(
-            "/api/v2/agency/080/sub_agency/", 
+            "/v2/agency/080/sub_agency/", 
             agency_subagencies_fixture_data
         )
         
@@ -172,7 +183,7 @@ class TestAgencySubagencies:
         
         # Verify API was called without fiscal year
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/sub_agency/",
+            "/v2/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -183,7 +194,9 @@ class TestAgencySubagencies:
             }
         )
         
-        assert len(subagencies) == 1
+        # Verify results using fixture data
+        expected_results = agency_subagencies_fixture_data["results"]
+        assert len(subagencies) == len(expected_results)
 
     def test_subagencies_property_empty_results(self, mock_usa_client):
         """Test subagencies with empty API results."""
@@ -203,7 +216,7 @@ class TestAgencySubagencies:
             "messages": []
         }
         
-        mock_usa_client.set_response("/api/v2/agency/080/sub_agency/", empty_response)
+        mock_usa_client.set_response("/v2/agency/080/sub_agency/", empty_response)
         
         agency_data = {
             "code": "080",
@@ -223,7 +236,7 @@ class TestAgencySubagencies:
             "results": ["invalid", {"valid": "data"}, None]  # Mixed invalid data
         }
         
-        mock_usa_client.set_response("/api/v2/agency/080/sub_agency/", invalid_response)
+        mock_usa_client.set_response("/v2/agency/080/sub_agency/", invalid_response)
         
         agency_data = {
             "code": "080", 

@@ -35,7 +35,7 @@ class RecipientsResource(BaseResource):
         logger.debug(f"Retrieving recipient by ID: {recipient_id}")
         from ..queries.recipient_query import RecipientQuery
 
-        return RecipientQuery(self._client).get_by_id(recipient_id)
+        return RecipientQuery(self._client).find_by_id(recipient_id)
 
     def search(self) -> SpendingByRecipientsSearch:
         """Create a new recipient search query builder.

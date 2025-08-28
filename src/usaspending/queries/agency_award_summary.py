@@ -45,7 +45,7 @@ class AgencyAwardSummary(SingleResourceBase):
         """
         return f"{self._endpoint}{resource_id}/awards/"
 
-    def get_by_id(self, toptier_code: str) -> Dict[str, Any]:
+    def find_by_id(self, toptier_code: str) -> Dict[str, Any]:
         """Not used for award summary - use get_awards_summary instead.
         
         Raises:

@@ -23,7 +23,7 @@ class SingleResourceBase(ABC):
         pass
 
     @abstractmethod
-    def get_by_id(self, resource_id: str) -> Any:
+    def find_by_id(self, resource_id: str) -> Any:
         """Filter by unique resource identifier."""
         pass
 

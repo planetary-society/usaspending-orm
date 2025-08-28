@@ -256,9 +256,9 @@ class TestAgencyAwardSummaryExecution:
 class TestAgencyAwardSummaryNotImplemented:
     """Test methods that should not be used."""
     
-    def test_get_by_id_raises_not_implemented_error(self, mock_usa_client):
-        """Test that get_by_id raises NotImplementedError."""
+    def test_find_by_id_raises_not_implemented_error(self, mock_usa_client):
+        """Test that find_by_id raises NotImplementedError."""
         query = AgencyAwardSummary(mock_usa_client)
         
         with pytest.raises(NotImplementedError, match="Use get_awards_summary"):
-            query.get_by_id("080")
+            query.find_by_id("080")

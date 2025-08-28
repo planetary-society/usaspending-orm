@@ -33,7 +33,7 @@ class AgencyQuery(SingleResourceBase):
         """Base endpoint for single agency retrieval."""
         return "/v2/agency/"
 
-    def get_by_id(self, toptier_code: str, fiscal_year: Optional[int] = None) -> "Agency":
+    def find_by_id(self, toptier_code: str, fiscal_year: Optional[int] = None) -> "Agency":
         """Retrieve agency by toptier code and optional fiscal year.
         
         Args:

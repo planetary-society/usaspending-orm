@@ -21,7 +21,7 @@ class RecipientQuery(SingleResourceBase):
         """Base endpoint for single recipient retrieval."""
         return "/v2/recipient/"
 
-    def get_by_id(self, recipient_id: str) -> "Recipient":
+    def find_by_id(self, recipient_id: str) -> "Recipient":
         """Filter by unique recipient identifier."""
         if not recipient_id:
             raise ValidationError("recipient_id is required")

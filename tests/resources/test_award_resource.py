@@ -60,7 +60,7 @@ class TestAwardResource:
         with pytest.raises(ValidationError):
             award_resource.get("")
 
-        # None becomes "None" string, so it doesn't raise validation error in get_by_id
+        # None becomes "None" string, so it doesn't raise validation error in find_by_id
         # but would fail when trying to fetch from API
         # with pytest.raises(ValidationError):
         #     award_resource.get(None)

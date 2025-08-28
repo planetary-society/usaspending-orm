@@ -2,6 +2,7 @@
 
 import pytest
 from usaspending.models.subtier_agency import SubTierAgency
+from usaspending.utils.formatter import contracts_titlecase
 
 
 class TestSubTierAgency:
@@ -59,16 +60,16 @@ class TestSubTierAgency:
         assert len(offices) == 2
         assert all(isinstance(office, SubTierAgency) for office in offices)
         
-        # Test first office
+        # Test first office - names are transformed by contracts_titlecase
         assert offices[0].code == "80JSC0"
-        assert offices[0].name == "NASA JOHNSON SPACE CENTER"
+        assert offices[0].name == contracts_titlecase("NASA JOHNSON SPACE CENTER")
         assert offices[0].total_obligations == 3938738374.3
         assert offices[0].transaction_count == 1899
         assert offices[0].new_award_count == 210
         
         # Test second office
         assert offices[1].code == "80MSFC"
-        assert offices[1].name == "NASA MARSHALL SPACE FLIGHT CENTER"
+        assert offices[1].name == contracts_titlecase("NASA MARSHALL SPACE FLIGHT CENTER")
         assert offices[1].total_obligations == 3140833781.78
         assert offices[1].transaction_count == 1566
         assert offices[1].new_award_count == 158

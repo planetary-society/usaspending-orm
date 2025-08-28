@@ -36,7 +36,7 @@ class AwardResource(BaseResource):
         logger.debug(f"Retrieving award by ID: {generated_award_id}")
         from ..queries.award_query import AwardQuery
 
-        return AwardQuery(self._client).get_by_id(generated_award_id)
+        return AwardQuery(self._client).find_by_id(generated_award_id)
 
     def find_by_award_id(self, award_id: str) -> Optional["Award"]:
         """Find an award by its PIID or FAIN unique identifier.

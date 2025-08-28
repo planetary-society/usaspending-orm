@@ -32,7 +32,7 @@ class SubAgencyQuery(SingleResourceBase):
     @property
     def _endpoint(self) -> str:
         """Base endpoint for sub-agency retrieval."""
-        return "/v2/agency/"
+        return '/v2/agency//{award_id/}/sub_agency/'
     
     def _construct_endpoint(self, resource_id: str) -> str:
         """Construct the full endpoint URL for agency sub-agency.
@@ -43,9 +43,10 @@ class SubAgencyQuery(SingleResourceBase):
         Returns:
             Full endpoint path including /sub_agency/
         """
-        return f"{self._endpoint}{resource_id}/sub_agency/"
+        endpoint = self._endpoint.replace("/{award_id/}", resource_id)
+        return endpoint
 
-    def get_by_id(self, toptier_code: str) -> Dict[str, Any]:
+    def find_by_id(self, toptier_code: str) -> Dict[str, Any]:
         """Not used for sub-agency - use get_subagencies instead.
         
         Raises:
