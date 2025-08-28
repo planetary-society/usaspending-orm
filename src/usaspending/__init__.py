@@ -7,7 +7,7 @@ access to federal spending data through intuitive interfaces and smart defaults.
 from __future__ import annotations
 
 # Version information
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "Casey Dreier"
 __email__ = "casey.dreier@planetary.org"
 
