@@ -84,7 +84,7 @@ class Award(LazyRecord):
             )
         try:
             # Use the awards resource to get full award data
-            full_award = self._client.awards.get(award_id)
+            full_award = self._client.awards.find_by_generated_id(award_id)
             full_data = full_award.raw
 
             # If we're a base Award class and now have type information,
@@ -524,7 +524,7 @@ class Award(LazyRecord):
             ValidationError: If the award ID or download type is missing/invalid.
 
         Example:
-            >>> contract = client.awards.get("CONT_AWD_123...")
+            >>> contract = client.awards.find_by_generated_id("CONT_AWD_123...")
             >>> job = contract.download(destination_dir="./data")
             >>> print(f"Job queued: {job.file_name}. Waiting...")
             >>> extracted_files = job.wait_for_completion(timeout=600)

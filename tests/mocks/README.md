@@ -133,7 +133,7 @@ def test_with_fixture(mock_usa_client):
         "award"
     )
     
-    award = mock_usa_client.awards.get("CONT_AWD_123")
+    award = mock_usa_client.awards.find_by_generated_id("CONT_AWD_123")
     assert award.recipient.name == "The University of Iowa"  # From fixture
 ```
 

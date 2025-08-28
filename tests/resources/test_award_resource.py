@@ -9,7 +9,7 @@ from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestAwardResource:
-    """Tests for AwardResource.get() method."""
+    """Tests for AwardResource.find_by_generated_id() method."""
 
     @pytest.fixture
     def award_resource(self, mock_usa_client):
@@ -28,7 +28,7 @@ class TestAwardResource:
         )
 
         # Call the method
-        award = award_resource.get(award_id)
+        award = award_resource.find_by_generated_id(award_id)
 
         # Verify return value
         assert isinstance(award, Award)
@@ -47,7 +47,7 @@ class TestAwardResource:
             endpoint, "awards/contract"
         )
 
-        award = award_resource.get(f"  {award_id}  ")
+        award = award_resource.find_by_generated_id(f"  {award_id}  ")
 
         # Verify the award was retrieved successfully
         assert (
@@ -58,9 +58,9 @@ class TestAwardResource:
     def test_get_award_empty_id_raises_validation_error(self, award_resource):
         """Test that empty award_id raises ValidationError."""
         with pytest.raises(ValidationError):
-            award_resource.get("")
+            award_resource.find_by_generated_id("")
 
-        # None becomes "None" string, so it doesn't raise validation error in find_by_id
+        # None becomes "None" string, so it doesn't raise validation error in find_by_generated_id
         # but would fail when trying to fetch from API
         # with pytest.raises(ValidationError):
         #     award_resource.get(None)
@@ -83,7 +83,7 @@ class TestAwardResource:
         from usaspending.exceptions import HTTPError
 
         with pytest.raises(HTTPError, match="Award not found"):
-            award_resource.get(award_id)
+            award_resource.find_by_generated_id(award_id)
 
     def test_award_model_initialization_with_client(
         self, award_fixture_data, mock_usa_client

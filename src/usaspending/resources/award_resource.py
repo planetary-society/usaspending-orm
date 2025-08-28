@@ -19,7 +19,7 @@ class AwardResource(BaseResource):
     Provides access to award search and retrieval endpoints.
     """
 
-    def get(self, generated_award_id: str) -> "Award":
+    def find_by_generated_id(self, generated_award_id: str) -> "Award":
         """Retrieve a single award by the system's internally generated
         award entry ID (e.g. "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-")
 
@@ -36,7 +36,7 @@ class AwardResource(BaseResource):
         logger.debug(f"Retrieving award by ID: {generated_award_id}")
         from ..queries.award_query import AwardQuery
 
-        return AwardQuery(self._client).find_by_id(generated_award_id)
+        return AwardQuery(self._client).find_by_generated_id(generated_award_id)
 
     def find_by_award_id(self, award_id: str) -> Optional["Award"]:
         """Find an award by its PIID or FAIN unique identifier.

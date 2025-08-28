@@ -88,7 +88,7 @@ class TestMockClientExamples:
         )
 
         # Get award
-        award = mock_usa_client.awards.get(award_id)
+        award = mock_usa_client.awards.find_by_generated_id(award_id)
 
         # Verify fixture data was loaded
         assert (
@@ -196,7 +196,7 @@ class TestMockClientExamples:
         assert len(awards) == 1
 
         # 2. Get award detail
-        award = mock_usa_client.awards.get("CONT_AWD_123")
+        award = mock_usa_client.awards.find_by_generated_id("CONT_AWD_123")
         assert award.recipient.name == "SpaceX"
         assert award.total_obligation == 5000000000.0
 

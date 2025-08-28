@@ -22,7 +22,7 @@ Example:
     >>> client = USASpending()
     >>> 
     >>> # Single award retrieval
-    >>> award = client.awards.get("CONT_AWD_123")
+    >>> award = client.awards.find_by_generated_id("CONT_AWD_123")
     >>> 
     >>> # Complex award search
     >>> awards = client.awards.search()\\

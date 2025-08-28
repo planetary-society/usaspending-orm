@@ -24,6 +24,10 @@ class AwardQuery(SingleResourceBase):
 
     def find_by_id(self, award_id: str) -> "Award":
         """Filter by unique award identifier."""
+        return self.find_by_generated_id(award_id)
+
+    def find_by_generated_id(self, award_id: str) -> "Award":
+        """Filter by USASpending's internally generated unique award identifier."""
         if not award_id:
             raise ValidationError("award_id is required")
 
