@@ -19,18 +19,18 @@ class RecipientsResource(BaseResource):
     Provides access to recipient search and retrieval endpoints.
     """
 
-    def get(self, recipient_id: str) -> "Recipient":
-        """Retrieve a single award by ID.
+    def find_by_recipient_id(self, recipient_id: str) -> "Recipient":
+        """Retrieve a single recipient by ID.
 
         Args:
-            recipient_id: Unique award identifier
+            recipient_id: Unique recipient identifier
 
         Returns:
-            Award model instance
+            Recipient model instance
 
         Raises:
-            : If recipient_id is invalid
-            APIError: If award not found
+            ValidationError: If recipient_id is invalid
+            APIError: If recipient not found
         """
         logger.debug(f"Retrieving recipient by ID: {recipient_id}")
         from ..queries.recipient_query import RecipientQuery
