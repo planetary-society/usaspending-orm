@@ -100,6 +100,15 @@ class Funding(BaseModel):
         return self.get_value("awarding_agency_slug")
 
     @property
+    def awarding_agency(self) -> Optional["Agency"]:
+        """Retrieve the full Agency object for the funding agency."""
+        name = self.awarding_agency_name
+        if name:
+            return self._client.agencies.find_all_awarding_agencies_by_name(name).toptier()[0]
+        else:
+            return None
+
+    @property
     def object_class(self) -> Optional[str]:
         """Object class code."""
         return self.get_value("object_class")
