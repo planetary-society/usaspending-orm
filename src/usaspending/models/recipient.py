@@ -53,7 +53,7 @@ class Recipient(LazyRecord):
             return None
         try:
             # Make direct API call to avoid circular dependency
-            endpoint = f"/v2/recipients/{recipient_id}/"
+            endpoint = f"/v2/recipient/{recipient_id}/"
             response = self._client._make_request("GET", endpoint)
             return response
         except Exception as e:
