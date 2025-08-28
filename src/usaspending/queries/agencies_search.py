@@ -1,7 +1,7 @@
 """Agencies search query implementation for funding agency/office autocomplete."""
 
 from __future__ import annotations
-from typing import Dict, Any, List, TYPE_CHECKING, Iterator
+from typing import Dict, Any, TYPE_CHECKING
 from ..exceptions import ValidationError
 from ..models.agency import Agency
 from ..models.subtier_agency import SubTierAgency

@@ -1,6 +1,5 @@
 """Tests for SubTierAgency model."""
 
-import pytest
 from usaspending.models.subtier_agency import SubTierAgency
 from usaspending.utils.formatter import contracts_titlecase
 

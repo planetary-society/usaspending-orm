@@ -5,7 +5,6 @@ import pytest
 from usaspending.queries.agency_query import AgencyQuery
 from usaspending.models.agency import Agency
 from usaspending.exceptions import ValidationError
-from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestAgencyQueryInitialization:

@@ -1,6 +1,5 @@
 """Tests for Agency model subagencies property integration."""
 
-import pytest
 from usaspending.models.agency import Agency
 from usaspending.models.subtier_agency import SubTierAgency
 from usaspending.utils.formatter import contracts_titlecase

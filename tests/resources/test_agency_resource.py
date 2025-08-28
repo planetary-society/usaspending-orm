@@ -5,7 +5,6 @@ import pytest
 from usaspending.resources.agency_resource import AgencyResource
 from usaspending.models.agency import Agency
 from usaspending.exceptions import ValidationError
-from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestAgencyResourceInitialization:
@@ -196,7 +195,7 @@ class TestAgencyResourceUsagePatterns:
     def test_get_nasa_current_fiscal_year(self, mock_usa_client, agency_fixture_data):
         """Test getting NASA for current fiscal year (common usage pattern)."""
         if agency_fixture_data["toptier_code"] == "080":  # NASA
-            endpoint = f"/v2/agency/080/"
+            endpoint = "/v2/agency/080/"
             mock_usa_client.set_fixture_response(endpoint, "agency")
             
             # Common usage: get current fiscal year data

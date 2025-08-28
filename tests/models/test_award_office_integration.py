@@ -1,6 +1,5 @@
 """Tests for Award model office integration with SubTierAgency."""
 
-import pytest
 from usaspending.models.award import Award
 from usaspending.models.subtier_agency import SubTierAgency
 

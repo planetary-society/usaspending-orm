@@ -7,7 +7,7 @@ from .agencies_search import AgenciesSearch
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    pass
 
 logger = USASpendingLogger.get_logger(__name__)
 
