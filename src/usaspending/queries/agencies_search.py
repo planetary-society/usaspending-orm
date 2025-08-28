@@ -33,10 +33,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
     def _endpoint(self) -> str:
         """API endpoint for agency autocomplete."""
         raise NotImplementedError("Subclasses must implement _endpoint")
-    
-    def _clone(self) -> AgenciesSearch:
-        raise NotImplementedError("Subclasses must implement _clone")
-    
+
     def _build_payload(self, page: int) -> Dict[str, Any]:
         """Build request payload."""
         if not self._search_text:
@@ -189,4 +186,10 @@ class AgenciesSearch(QueryBuilder[Agency]):
         """
         clone = self._clone()
         clone._result_type = "office"
+        return clone
+    
+    def _clone(self) -> AgenciesSearch:
+        """Create immutable copy for chaining."""
+        clone = super()._clone()
+        clone._search_text = self._search_text
         return clone
