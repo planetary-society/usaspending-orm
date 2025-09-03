@@ -351,10 +351,70 @@ class Award(LazyRecord):
 
         return None
 
+    def _load_agency_data(self, agency_type: str) -> Optional[Dict[str, Any]]:
+        """Load agency data from either nested or flat structure.
+        
+        Args:
+            agency_type: Either "funding" or "awarding"
+            
+        Returns:
+            Processed agency data dict or None if not available
+        """
+        if agency_type not in ["funding", "awarding"]:
+            raise ValueError(f"Invalid agency_type: {agency_type}")
+        
+        # Define field mappings based on agency type
+        if agency_type == "funding":
+            nested_key = "funding_agency"
+            flat_keys = ["Funding Agency", "Funding Agency Code",
+                        "Funding Sub Agency", "Funding Sub Agency Code"]
+            name_key = "Funding Agency"
+            code_key = "Funding Agency Code" 
+            sub_name_key = "Funding Sub Agency"
+            sub_code_key = "Funding Sub Agency Code"
+            # No funding_agency_id available in search results
+            id_key = None
+        else:  # awarding
+            nested_key = "awarding_agency"
+            flat_keys = ["Awarding Agency", "Awarding Agency Code",
+                        "Awarding Sub Agency", "Awarding Sub Agency Code"]
+            name_key = "Awarding Agency"
+            code_key = "Awarding Agency Code"
+            sub_name_key = "Awarding Sub Agency"
+            sub_code_key = "Awarding Sub Agency Code"
+            id_key = "awarding_agency_id"
+        
+        # First check if we have nested agency data (from full award details)
+        if self.raw.get(nested_key):
+            return self.raw.get(nested_key)
+        
+        # Then check for flat agency fields (from search results)
+        if any(key in self.raw for key in flat_keys):
+            data = {
+                "toptier_agency": {
+                    "name": self.raw.get(name_key),
+                    "code": self.raw.get(code_key),  # Agency code
+                    "abbreviation": self.raw.get(code_key),
+                },
+                "subtier_agency": {
+                    "name": self.raw.get(sub_name_key),
+                    "code": self.raw.get(sub_code_key),  # Subtier code
+                    "abbreviation": self.raw.get(sub_code_key),
+                },
+                "id": self.raw.get(id_key) if id_key else None,
+                "has_agency_page": False,  # Not available in search results
+                "office_agency_name": None,  # Not available in search results
+            }
+            return data
+        
+        # Finally try lazy loading
+        return self._lazy_get(nested_key)
+
     @cached_property
     def funding_agency(self) -> Optional[Agency]:
         """Funding agency information."""
-        data = self._lazy_get("funding_agency")
+        data = self._load_agency_data("funding")
+        
         if not data:
             return None
             
@@ -373,14 +433,15 @@ class Award(LazyRecord):
     @cached_property
     def awarding_agency(self) -> Optional[Agency]:
         """Awarding agency information."""
-        data = self._lazy_get("awarding_agency")
+        data = self._load_agency_data("awarding")
+        
         if not data:
             return None
             
         # Extract toptier data and merge with top-level agency fields
         toptier_data = data.get("toptier_agency", {})
         agency_data = {
-            "id": data.get("id"),
+            "agency_id": data.get("id"),
             "has_agency_page": data.get("has_agency_page"),
             "office_agency_name": data.get("office_agency_name"),
             **toptier_data  # Merge toptier fields (name, code, abbreviation, slug)
@@ -390,39 +451,45 @@ class Award(LazyRecord):
         return Agency(agency_data, self._client, subtier_data)
 
     @cached_property
-    def funding_subtier_agency(self) -> Optional[SubTierAgency]:
+    def funding_subtier_agency(self) -> Optional["SubTierAgency"]:
         """Funding subtier agency information."""
-        data = self._lazy_get("funding_agency")
+        data = self._load_agency_data("funding")
+        
         if not data:
             return None
-            
+        
         subtier_data = data.get("subtier_agency")
         if not subtier_data:
             return None
         
-        # Include office_agency_name from the full agency data
+        # Create a copy and add office_agency_name if available
         enhanced_subtier_data = subtier_data.copy()
-        if "office_agency_name" in data:
-            enhanced_subtier_data["office_agency_name"] = data["office_agency_name"]
-        
+        office_name = data.get("office_agency_name")
+        if office_name:
+            enhanced_subtier_data["office_agency_name"] = office_name
+            
+        from .subtier_agency import SubTierAgency
         return SubTierAgency(enhanced_subtier_data, self._client)
 
     @cached_property
-    def awarding_subtier_agency(self) -> Optional[SubTierAgency]:
+    def awarding_subtier_agency(self) -> Optional["SubTierAgency"]:
         """Awarding subtier agency information."""
-        data = self._lazy_get("awarding_agency")
+        data = self._load_agency_data("awarding")
+        
         if not data:
             return None
-            
+        
         subtier_data = data.get("subtier_agency")
         if not subtier_data:
             return None
         
-        # Include office_agency_name from the full agency data
+        # Create a copy and add office_agency_name if available
         enhanced_subtier_data = subtier_data.copy()
-        if "office_agency_name" in data:
-            enhanced_subtier_data["office_agency_name"] = data["office_agency_name"]
-        
+        office_name = data.get("office_agency_name")
+        if office_name:
+            enhanced_subtier_data["office_agency_name"] = office_name
+            
+        from .subtier_agency import SubTierAgency
         return SubTierAgency(enhanced_subtier_data, self._client)
 
     @property
