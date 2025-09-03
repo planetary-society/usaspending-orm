@@ -29,6 +29,8 @@ class SingleResourceBase(ABC):
 
     def _get_resource(self, resource_id: str) -> dict:
         """Retrieve a single resource by ID."""
+        if not resource_id or not isinstance(resource_id, str) or not resource_id.strip():
+            raise ValidationError("A non-empty resource_id string is required")
 
         # Clean recipient ID
         cleaned_resource_id = self._clean_resource_id(resource_id)
