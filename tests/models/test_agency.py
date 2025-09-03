@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import Mock
 from datetime import date
-from tests.mocks import MockUSASpendingClient
 from usaspending.models.agency import Agency
 
 

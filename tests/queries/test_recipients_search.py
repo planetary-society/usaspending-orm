@@ -4,7 +4,6 @@ import pytest
 
 from usaspending.queries.recipients_search import RecipientsSearch
 from usaspending.models.recipient import Recipient
-from usaspending.exceptions import ValidationError
 from tests.mocks.mock_client import MockUSASpendingClient
 
 

@@ -101,7 +101,7 @@ class Grant(Award):
 
     @property
     def total_funding(self) -> Optional[float]:
-        """A summation of this award's transactions' funding amount"""
+        """The sum of the federal action obligations and the Non-Federal funding amount."""
         return to_float(self._lazy_get("total_funding", default=None))
 
     @property
@@ -109,6 +109,20 @@ class Grant(Award):
         """Transaction-level obligated amount."""
         return to_float(self._lazy_get("transaction_obligated_amount", default=None))
 
+    @property
+    def total_subsidy_cost(self) -> Optional[float]:
+        """Total subsidy cost for this award."""
+        return to_float(self._lazy_get("total_subsidy_cost", default=None))
+
+    @property
+    def base_exercised_options(self) -> Optional[float]:
+        """The total amount obligated for the base and exercised options of this award."""
+        return to_float(self._lazy_get("base_exercised_options", default=None))
+    
+    @property
+    def base_and_all_options(self) -> Optional[float]:
+        """The total amount obligated for the base and all options of this award."""
+        return to_float(self._lazy_get("base_and_all_options", default=None))
     @property
     def subawards(self) -> "SubAwardsSearch":
         """Get subawards query builder for this grant award with appropriate award type filters.

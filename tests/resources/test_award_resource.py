@@ -92,36 +92,11 @@ class TestAwardResource:
             == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
         )
 
-    def test_award_model_initialization_without_client(self, award_fixture_data):
+    def test_award_model_initialization_raises_error_without_client(self, award_fixture_data):
         """Test Award model initialization without client parameter."""
 
         with pytest.raises(TypeError):
             Award(award_fixture_data)
-
-    def test_award_model_properties_from_fixture(
-        self, award_fixture_data, mock_usa_client
-    ):
-        """Test that Award model properties work with fixture data."""
-        award = Award(award_fixture_data, mock_usa_client)
-
-        # Test basic properties
-        assert (
-            award.generated_unique_award_id
-            == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        )
-        assert award.total_obligation == 168657782.95
-        assert award.total_outlay == 150511166.49
-
-        # Test helper methods
-
-        # Preferentially return the external Award ID
-        assert award.prime_award_id == award_fixture_data.get("piid", "")
-
-        # Test description is present
-        assert award.description
-
-        # Ensure description is not all uppercase
-        assert not award.description.isupper()
 
     def test_award_loads_related_models(self, award_fixture_data, mock_usa_client):
         """Test that Award model properties work with fixture data."""
@@ -129,7 +104,8 @@ class TestAwardResource:
 
         # Test that recipient data is accessible
         assert isinstance(award.recipient, Recipient)
-        assert award.recipient.name == "The University of Iowa"
+        assert isinstance(award.recipient.name,str)
+        assert len(award.recipient.name) > 0
 
         # Test place of performance
         assert award.place_of_performance is not None

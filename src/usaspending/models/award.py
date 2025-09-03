@@ -14,9 +14,8 @@ from .subtier_agency import SubTierAgency
 from .download import AwardType, FileFormat
 
 from ..exceptions import ValidationError
-
+from ..logging_config import USASpendingLogger
 from ..utils.formatter import smart_sentence_case, to_float, to_date
-
 
 if TYPE_CHECKING:
     from ..client import USASpending
@@ -25,6 +24,7 @@ if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
     from ..download.job import DownloadJob
 
+logger = USASpendingLogger.get_logger(__name__)
 
 class Award(LazyRecord):
     """Rich wrapper around a USAspending award record."""
@@ -32,9 +32,11 @@ class Award(LazyRecord):
     # Base fields common to all award types
     SEARCH_FIELDS = [
         "Award ID",
-        "Recipient Name",
-        "Recipent DUNS Number",
         "recipient_id",
+        "Recipient Name",
+        "Recipient DUNS Number",
+        "Recipient UEI",
+        "Recipient Location",
         "Awarding Agency",
         "Awarding Agency Code",
         "Awarding Sub Agency",
@@ -43,6 +45,10 @@ class Award(LazyRecord):
         "Funding Agency Code",
         "Funding Sub Agency",
         "Funding Sub Agency Code",
+        "Place of Performance City Code",
+        "Place of Performance State Code",
+        "Place of Performance Country Code",
+        "Place of Performance Zip5",
         "Description",
         "Last Modified Date",
         "Base Obligation Date",
@@ -53,8 +59,6 @@ class Award(LazyRecord):
         "COVID-19 Outlays",
         "Infrastructure Obligations",
         "Infrastructure Outlays",
-        "Recipient UEI",
-        "Recipient Location",
         "Primary Place of Performance",
     ]
 
@@ -108,57 +112,60 @@ class Award(LazyRecord):
             )
             raise
 
-    # Core scalar properties
+    # Core Award properties
     @property
     def id(self) -> Optional[int]:
         """Internal USASpending database ID for this award."""
-        return self._lazy_get("id")
-
-    @property
-    def award_identifier(self) -> str:
-        """Primary award identifier (PIID, FAIN, URI, etc.)."""
-        return str(self._lazy_get("Award ID", "piid", "fain", "uri", default=""))
+        return self._lazy_get("id","internal_id")
 
     @property
     def generated_unique_award_id(self) -> Optional[str]:
         """USASpending-generated unique award identifier."""
-        return self._lazy_get("generated_unique_award_id", "generated_internal_id")
+        # This cannot be lazy-loaded since it's required to fetch details
+        return self.get_value("generated_unique_award_id", "generated_internal_id")
 
-    @cached_property
-    def parent_award(self) -> Optional[Award]:
-        """Reference to parent award for child awards."""
-        data = self._lazy_get("parent_award")
-        return Award(data, self._client) if data else None
+    @property
+    def award_identifier(self) -> str:
+        """General-purpose award identifier, type-agnostic.
+        
+        Award-type specific values are implemented in subclasses.
+        
+        Returns:
+            (PIID, FAIN, URI): str
+        """
+        return str(self._lazy_get("Award ID", "piid", "fain", "uri", default=""))
 
     @property
     def category(self) -> str:
-        """A field that generalizes the award's type."""
-        return self._lazy_get("category", default="")
-
+        """Plain english description of the award type.
+        
+        Returns:
+            One of "contract", "grant", "idv", "loan", or "other" if unknown
         """
-        desc = self._lazy_get("description", "Description")
-        if isinstance(desc, str):
-            return smart_sentence_case(desc)
-        return None
+        return self._lazy_get("category", default="")
 
     @property
     def type(self) -> Optional[str]:
         """
-        The mechanism used to distribute funding. The federal government can distribute
-        funding in several forms. These award types include contracts, grants, loans,
-        and direct payments.
+        The subtype award code (e.g. "A", "B", "C", etc. for contracts.
+        See the Config file for mappings.
         """
         return self._lazy_get("type", default="")
-
+    
+    @property
+    def award_type_code(self) -> Optional[str]:
+        """ More expressive property name for `type` to avoid confusion with Python built-in."""
+        return self.type
+    
     @property
     def type_description(self) -> Optional[str]:
         """The plain text description of the type of the award"""
-        return self._lazy_get("type_description", "Award Type", default="")
+        return self._lazy_get("type_description", "Contract Award Type", "Award Type", default="")
 
     @property
     def description(self) -> str:
         """
-        A brief, plain English summary description of the contract, award, or modification.
+        A brief, plain English summary of the award.
         """
         desc = self._lazy_get("description", "Description")
         if isinstance(desc, str):
@@ -167,11 +174,25 @@ class Award(LazyRecord):
 
     @property
     def total_obligation(self) -> float:
-        """The amount of money the government is obligated to pay for the award"""
+        """The amount of money the government is obligated to pay for the award
+        
+        This is a system generated element providing the sum of all the amounts
+        entered in the "Action Obligation" field for a particular PIID and Agency.
+        
+        Example: Contract has 9 Modifications under "Transaction Number" as '1'
+        and 9 modifications with the same PIID under "Transaction Number" as '2'.
+        The base contracts and all the modifications have "Action Obligation" as $10
+        each. The value for the field "Total Obligated Amount" when the either of
+        the bases or the modification is retrieved through atom feeds will be $200
+        ($100 under Transaction Number 1 + $100 under Transaction Number 2). 
+        "Total Obligated Amount" is generated irrespective of the "Transaction Number"
+        on the Awards.
+        
+        """
         return to_float(self._lazy_get("total_obligation", "Award Amount")) or 0.0
 
     @property
-    def subaward_count(self) -> Optional[int]:
+    def subaward_count(self) -> int:
         """The number of subawards associated with this award."""
         return int(self._lazy_get("subaward_count", default=0))
 
@@ -182,23 +203,18 @@ class Award(LazyRecord):
 
     @property
     def date_signed(self) -> Optional[datetime]:
-        """The date the award was signed"""
-        return to_date(self._lazy_get("date_signed", default=None))
+        """The date the award was signed by the Government or a binding agreement was reached."""
+        return to_date(self._lazy_get("date_signed", "Base Obligation Date", default=None))
 
     @property
     def base_obligation_date(self) -> Optional[datetime]:
-        """Base obligation date for the award."""
-        return to_date(
-            self._lazy_get(
-                "base_obligation_date", "Base Obligation Date", default=None
-            )
-        )
+        return self.date_signed
 
     @property
     def total_account_outlay(self) -> Optional[float]:
         """The total amount of money that has been paid out for the award from the associated federal accounts"""
         return to_float(
-            self._lazy_get("total_account_outlay", "Total Outlays", default=None)
+            self._lazy_get("total_account_outlay", default=None)
         )
 
     @property
@@ -208,10 +224,12 @@ class Award(LazyRecord):
 
     @property
     def total_outlay(self) -> Optional[float]:
-        """Total amount paid out for this award."""
-        return to_float(
-            self._lazy_get("total_account_outlay", "Total Outlays", default=None)
-        )
+        return self._lazy_get("total_outlay", "Total Outlays", default=None)
+
+    @property
+    def total_account_obligation(self) -> Optional[float]:
+        """Total amount obligated for this award."""
+        return to_float(self._lazy_get("total_account_obligation", default=None))
 
     @property
     def account_outlays_by_defc(self) -> List[Dict[str, Any]]:
@@ -224,6 +242,13 @@ class Award(LazyRecord):
         return self._lazy_get("account_obligations_by_defc", default=[])
 
     @cached_property
+    def parent_award(self) -> Optional[Award]:
+        """Reference to parent award for child awards."""
+        data = self._lazy_get("parent_award")
+        from .award_factory import create_award
+        return create_award(data, self._client) if data else None
+
+    @cached_property
     def executive_details(self) -> Optional[Dict[str, Any]]:
         """Executive compensation details for the award recipient."""
         return self._lazy_get("executive_details")
@@ -231,7 +256,12 @@ class Award(LazyRecord):
     @property
     def recipient_uei(self) -> Optional[str]:
         """Recipient Unique Entity Identifier (UEI)."""
-        return self._lazy_get("recipient_uei", "Recipient UEI")
+        uei = self._lazy_get("recipient_uei", "Recipient UEI")
+        if not uei:
+            # Try nested recipient object if available
+            if self.recipient and self.recipient.uei:
+                uei = self.recipient.uei
+        return uei
 
     @property
     def covid19_obligations(self) -> float:
@@ -265,28 +295,69 @@ class Award(LazyRecord):
             )
         )
 
-    @property
-    def potential_value(self) -> float:
-        """Potential total value of the award."""
-        return (
-            to_float(
-                self._lazy_get(
-                    "Award Amount", "Loan Amount", default=self.total_obligation
-                )
-            )
-            or 0.0
-        )
 
+    # Helper properties properties. These often map to field names returned by
+    # the spending_by_award/Award Search results, or provide general access methods
+    # that are common across award types.
+    
     @property
     def award_amount(self) -> float:
-        """Base award amount."""
-        return to_float(self._lazy_get("Award Amount", "Loan Amount")) or 0.0
+        """General helper total obligated/loaned amount."""
+        return to_float(self._lazy_get("Award Amount", "Loan Amount", "total_obligation","total_funding")) or 0.0
+
+    @property
+    def start_date(self) -> Optional[datetime]:
+        start_date = self.get_value(["Start Date", "Base Obligation Date", "Period of Performance Start Date"])
+        if not start_date:
+            if self.period_of_performance and self.period_of_performance.start_date:
+                start_date = self.period_of_performance.start_date
+        return start_date
+
+    @property
+    def end_date(self) -> Optional[datetime]:
+        end_date = self.get_value(["End Date", "Period of Performance End Date"])
+        if not end_date:
+            if self.period_of_performance and self.period_of_performance.end_date:
+                end_date = self.period_of_performance.end_date
+        return end_date
+
+    @property
+    def usa_spending_url(self) -> str:
+        """Return the USASpending.gov public URL for this award."""
+        award_id = self.generated_unique_award_id
+        if award_id and isinstance(award_id, str):
+            return f"https://www.usaspending.gov/award/{award_id}/"
+        else:
+            return ""
+
+    # Properties that return complex objects and related award data
+    #
+    # Currently implemented are:
+    #
+    # Belongs To (one-to-one relationships):
+    # - parent_award (Award object: parent award if this is a child award)
+    # - recipient (Recipient object: details about the award recipient)
+    # - funding_agency (Agency object: details about the funding agency)
+    # - awarding_agency (Agency object: details about the awarding agency)
+    # - funding_subtier_agency (SubTierAgency object: details about the funding subtier agency)
+    # - awarding_subtier_agency (SubTierAgency object: details about the awarding subtier agency)
+    #
+    # Has One (one-to-one relationships):
+    # - period_of_performance (PlaceOfPerformance object: Start and End dates for award)
+    # - place_of_performance (Location object: location where the work is performed)
+    #
+    # Has Many (one-to-many relationships):
+    # - transactions (TransactionsSearch object: query builder for transactions associated with the award)
+    # - funding (FundingSearch object: query builder for treasury funding records (outlay and obligation) associated with the award)
+    # - subawards (SubAwardsSearch object: query builder for subawards associated with the award)
+    # - transactions_count (int: count of transactions associated with the award)
+    
 
     @cached_property
     def period_of_performance(self) -> Optional[PeriodOfPerformance]:
         """Award period of performance dates."""
-        if "period_of_performance" in self._data and isinstance(self._data["period_of_performance"], dict):
-            return PeriodOfPerformance(self._data["period_of_performance"])
+        if "period_of_performance" in self.raw and isinstance(self.raw.get("period_of_performance"), dict):
+            return PeriodOfPerformance(self.raw.get("period_of_performance"))
 
         # Award search results return Period of Performance information in a flat structure
         # We need to assign these values to a PeriodOfPerformance object
@@ -295,22 +366,16 @@ class Award(LazyRecord):
         if any(k in self._data for k in date_keys):
             return PeriodOfPerformance(
                 {
-                    "start_date": self._data.get(
-                        "Start Date", self._data.get("Period of Performance Start Date")
-                    ),
-                    "end_date": self._data.get(
-                        "End Date", self._data.get("Period of Performance Current End Date")
-                    ),
-                    "last_modified_date": self._data.get("Last Modified Date"),
+                    "start_date": self.get_value(["Start Date", "Base Obligation Date", "Period of Performance Start Date"]),
+                    "end_date": self.get_value(["End Date", "Period of Performance Current End Date"]),
+                    "last_modified_date": self.get_value("Last Modified Date"),
                 }
             )
 
         # If no data, trigger fetch
-        self._ensure_details()
-        if "period_of_performance" in self._data and isinstance(self._data["period_of_performance"], dict):
-            return PeriodOfPerformance(self._data["period_of_performance"])
+        self._ensure_details()        
+        return PeriodOfPerformance(self.get_value("period_of_performance"))
 
-        return PeriodOfPerformance({})
 
     @cached_property
     def place_of_performance(self) -> Optional[Location]:
@@ -531,32 +596,9 @@ class Award(LazyRecord):
         Implemented in subclasses
         """
         raise NotImplementedError()
+    
 
-    @cached_property
-    def transactions_count(self) -> int:
-        """Get all transactions associated with this award."""
-        # Use the transactions search to get all transactions for this award
-        return self._client.transactions.for_award(
-            self.generated_unique_award_id
-        ).count()
-
-    @property
-    def raw(self) -> Dict[str, Any]:
-        """Raw award data dictionary."""
-        return self._data
-
-    @property
-    def usa_spending_url(self) -> str:
-        """USASpending.gov URL for this award."""
-        award_id = self.generated_unique_award_id or ""
-        return f"https://www.usaspending.gov/award/{award_id}/"
-
-    def __repr__(self) -> str:
-        """String representation of Award."""
-        recipient_name = self.recipient.name if self.recipient else "?"
-        award_id = self.prime_award_id or self.generated_unique_award_id or "?"
-        return f"<Award {award_id} → {recipient_name}>"
-
+    # Downloading detailed award data
     @property
     def _download_type(self) -> Optional[AwardType]:
         """
@@ -602,21 +644,15 @@ class Award(LazyRecord):
             >>> extracted_files = job.wait_for_completion(timeout=600)
             >>> print(f"Download complete. Files: {extracted_files}")
         """
-        # Import inside method to avoid potential circular dependencies at the top level
-        from ..exceptions import ConfigurationError, ValidationError
 
-        if not self._client:
-            raise ConfigurationError("Award instance requires a client reference (USASpending) to perform downloads.")
-
-        # Use the unique ID which is required by the download API
-        # Accessing the property might trigger a lazy load if the ID wasn't present initially.
         award_id = self.generated_unique_award_id
-        download_type = self._download_type
-
+        
         if not award_id:
-            # If it's still None after access, raise error.
+            # If we don't have an award ID, we cannot proceed
             raise ValidationError("Cannot download award data without a 'generated_unique_award_id'. Ensure the award object is fully loaded.")
         
+        download_type = self._download_type
+
         if not download_type:
              # Safety check in case a subclass doesn't implement _download_type or the implementation returns None
             raise ValidationError(f"Download is not supported or implemented for award type: {self.__class__.__name__}.")
@@ -631,3 +667,9 @@ class Award(LazyRecord):
             return self._client.downloads.idv(award_id, file_format, destination_dir)
         else:
             raise NotImplementedError
+
+    def __repr__(self) -> str:
+        """String representation of Award."""
+        recipient_name = self.recipient.name if self.recipient else "?"
+        award_id = self.award_identifier or self.generated_unique_award_id or "?"
+        return f"<Award {award_id} → {recipient_name}>"

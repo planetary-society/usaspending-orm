@@ -70,8 +70,19 @@ class IDV(Award):
 
     @property
     def base_and_all_options(self) -> Optional[float]:
-        """The sum of the base_and_all_options_value from associated transactions"""
+        """
+        For IDVs, this is the mutually agreed upon total contract value including all options (if any)
+        AND the estimated value of all potential orders. For modifications enter the CHANGE, positive
+        or negative of these values, if any.
+        """
         return to_float(self._lazy_get("base_and_all_options", default=None))
+
+    @property
+    def base_exercised_options(self) -> Optional[float]:
+        """
+        The contract value for the base contract and any options that have been exercised.
+        """
+        return to_float(self._lazy_get("base_exercised_options", default=None))
 
     @property
     def contract_award_type(self) -> Optional[str]:

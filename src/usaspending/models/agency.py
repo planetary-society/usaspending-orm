@@ -131,14 +131,16 @@ class Agency(LazyRecord):
     
     @property
     def toptier_code(self) -> Optional[str]:
-        """Agency toptier code (3-4 digit string)."""
-        return self._lazy_get("toptier_code")
+        """
+        Agency toptier code (3-4 digit string).
+        This is the Treasury Account Fund Symbol (TAFS).
+        """
+        return self._lazy_get("toptier_code","code")
 
     @property
     def code(self) -> Optional[str]:
-        """Treasury agency code."""
-        code = self.get_value("code") or self.toptier_code
-        return code
+        """Alias for toptier_code."""
+        return self.toptier_code
 
     @property
     def name(self) -> Optional[str]:
@@ -382,7 +384,7 @@ class Agency(LazyRecord):
     @cached_property
     def contract_obligations(self) -> Optional[float]:
         """Get contract obligations for this agency.
-            
+
         Returns:
             Contract obligations amount or None if unavailable
         """

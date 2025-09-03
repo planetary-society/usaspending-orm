@@ -60,7 +60,7 @@ class Loan(Grant):
     def total_loan_value(self) -> Optional[float]:
         """The total of the face_value_loan_guarantee from associated transactions"""
         return to_float(self._lazy_get("Loan Value", "total_loan_value", default=None))
-
+    
     @property
     def cfda_info(self) -> List[Dict[str, Any]]:
         """Catalog of Federal Domestic Assistance information for loans."""

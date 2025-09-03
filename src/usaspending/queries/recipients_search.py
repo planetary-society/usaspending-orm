@@ -5,10 +5,8 @@ from __future__ import annotations
 from typing import Any, Optional, Literal, TYPE_CHECKING
 
 from usaspending.client import USASpending
-from usaspending.exceptions import ValidationError
 from usaspending.queries.query_builder import QueryBuilder
 from usaspending.logging_config import USASpendingLogger
-from usaspending.queries.filters import SimpleListFilter
 
 if TYPE_CHECKING:
     from usaspending.models.recipient import Recipient

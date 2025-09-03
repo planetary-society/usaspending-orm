@@ -42,25 +42,27 @@ def create_award(
     category = data_or_id.get("category", "").lower()
     award_type = data_or_id.get("type", "")
 
-    # Use category first (most reliable)
-    if category == "contract":
-        return Contract(data_or_id, client)
-    elif category == "idv":
-        return IDV(data_or_id, client)
-    elif category == "grant":
-        return Grant(data_or_id, client)
-    elif category == "loan":
-        return Loan(data_or_id, client)
+    award_class_map = {
+        "contract": Contract,
+        "idv": IDV,
+        "grant": Grant,
+        "loan": Loan,
+    }
 
-    # Fallback to type codes
-    if award_type in CONTRACT_CODES:
-        return Contract(data_or_id, client)
-    elif award_type in IDV_CODES:
-        return IDV(data_or_id, client)
-    elif award_type in GRANT_CODES:
-        return Grant(data_or_id, client)  # Grants handle all assistance types
-    elif award_type in LOAN_CODES:
-        return Loan(data_or_id, client)
+    # Determine class from category first (most reliable)
+    award_class = award_class_map.get(category)
 
-    # Default to base Award if type cannot be determined
-    return Award(data_or_id, client)
+    # Fallback to type codes if category doesn't match
+    if not award_class:
+        if award_type in CONTRACT_CODES:
+            award_class = Contract
+        elif award_type in IDV_CODES:
+            award_class = IDV
+        elif award_type in GRANT_CODES:
+            award_class = Grant
+        elif award_type in LOAN_CODES:
+            award_class = Loan
+
+    # Use the determined class or default to the base Award class
+    cls = award_class or Award
+    return cls(data_or_id, client)

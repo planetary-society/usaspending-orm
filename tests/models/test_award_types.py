@@ -32,7 +32,12 @@ class TestContract(AwardTestingMixin):
     def test_specific_properties_from_fixture(self, mock_usa_client, fixture_data):
         """Test contract-specific properties using fixture data."""
         contract = self.AWARD_MODEL(fixture_data, mock_usa_client)
-
+        
+        # Assert all expected fixture values have property accessors
+        for property in list(fixture_data.keys()):
+            assert hasattr(contract, property), f"Property getter `{property}` is not present"
+        
+        # Spot-check key properties
         assert contract.piid == fixture_data["piid"]
         assert contract.base_exercised_options == fixture_data["base_exercised_options"]
         assert contract.base_and_all_options == fixture_data["base_and_all_options"]
@@ -96,6 +101,11 @@ class TestGrant(AwardTestingMixin):
         """Test grant-specific properties using fixture data."""
         grant = self.AWARD_MODEL(fixture_data, mock_usa_client)
 
+        # Assert all expected fixture values have property accessors
+        for property in list(fixture_data.keys()):
+            assert hasattr(grant, property), f"Property getter `{property}` is not present"
+        
+        # Spot-check key properties
         assert grant.fain == fixture_data["fain"]
         assert grant.uri == fixture_data["uri"]
         assert grant.record_type == fixture_data["record_type"]
@@ -164,7 +174,12 @@ class TestIDV(AwardTestingMixin):
     def test_specific_properties_from_fixture(self, mock_usa_client, fixture_data):
         """Test IDV-specific properties using fixture data."""
         idv = self.AWARD_MODEL(fixture_data, mock_usa_client)
+        
+        # Assert all expected fixture values have property accessors
+        for property in list(fixture_data.keys()):
+            assert hasattr(idv, property), f"Property {property} is None"
 
+        # Spot-check key properties
         assert idv.piid == fixture_data["piid"]
         assert idv.base_and_all_options == fixture_data["base_and_all_options"]
         assert idv.contract_award_type == fixture_data["type_description"]
@@ -195,6 +210,10 @@ class TestLoan(AwardTestingMixin):
     def test_specific_properties_from_fixture(self, mock_usa_client, fixture_data):
         """Test loan-specific properties using fixture data."""
         loan = self.AWARD_MODEL(fixture_data, mock_usa_client)
+        
+        # Assert all expected fixture values have property accessors
+        for property in list(fixture_data.keys()):
+            assert hasattr(loan, property), f"Property {property} is None"
 
         assert loan.fain == fixture_data["fain"]
         # The 'uri' is None in the fixture, so we test that
