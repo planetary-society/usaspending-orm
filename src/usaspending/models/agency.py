@@ -3,7 +3,9 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from dataclasses import dataclass
-from ..utils.formatter import to_float, to_int
+from ..utils.formatter import to_float, to_int, to_date
+from datetime import date
+from functools import cached_property
 from .lazy_record import LazyRecord
 from ..logging_config import USASpendingLogger
 from ..config import (
@@ -87,11 +89,11 @@ class Agency(LazyRecord):
         fiscal_year: Optional[int] = None,
         agency_type: str = "awarding"
     ) -> Optional[Dict[str, Any]]:
-        """Fetch award summary data from the API.
+        """Fetch award summary data for a given agency code
         
         Args:
             award_type_codes: Optional list of award type codes to filter
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
+            fiscal_year: If none, defaults to the current fiscal year
             agency_type: "awarding" or "funding"
             
         Returns:
@@ -100,11 +102,8 @@ class Agency(LazyRecord):
         # Get toptier code
         toptier_code = self.code
         if not toptier_code:
+            logger.error("Cannot fetch agency award summaries without agency code.")
             return None
-        
-        # Use self.fiscal_year as default if no fiscal_year parameter provided
-        if fiscal_year is None:
-            fiscal_year = self.fiscal_year  # Will be None if not set
         
         try:
             from ..queries.agency_award_summary import AgencyAwardSummary
@@ -117,297 +116,11 @@ class Agency(LazyRecord):
                 award_type_codes=award_type_codes
             )
         except Exception as e:
-            logger.debug(
+            logger.error(
                 f"Could not fetch award summary for {toptier_code}: {e}"
             )
-            return None
+            return {}
 
-    @property
-    def has_agency_page(self) -> bool:
-        """Whether this agency has a dedicated page on USASpending.gov."""
-        return bool(self._lazy_get("has_agency_page", default=False))
-
-    @property
-    def office_agency_name(self) -> Optional[str]:
-        """Name of the specific office within the agency."""
-        return self._lazy_get("office_agency_name")
-
-    @property
-    def name(self) -> Optional[str]:
-        """Primary agency name."""
-        # Agency now contains toptier data directly
-        return self._lazy_get("name")
-
-    @property
-    def code(self) -> Optional[str]:
-        """Primary agency code."""
-        # Agency now contains toptier data directly
-        code = self.get_value("code")
-        if not code:
-            code = self.toptier_code
-        return code
-
-    @property
-    def abbreviation(self) -> Optional[str]:
-        """Primary agency abbreviation."""
-        # Agency now contains toptier data directly
-        return self._lazy_get("abbreviation")
-
-    @property
-    def slug(self) -> Optional[str]:
-        """URL slug for this agency."""
-        return self._lazy_get("slug")
-
-    @property
-    def total_obligations(self) -> Optional[float]:
-        """Total obligations for this agency across all awards."""
-        obligations = self.get_value("total_obligations","obligations")
-        return to_float(obligations)
-    
-    @property
-    def awards(self) -> "AwardsSearch":
-        """Get an AwardsSearch instance pre-filtered to this agency.
-        
-        Returns:
-            AwardsSearch instance
-        """
-        from ..queries.filters import AgencyTier, AgencyType
-        return self._client.awards.search().for_agency(self.name,AgencyType.AWARDING,AgencyTier.TOPTIER)
-    
-    @property
-    def subagencies(self) -> List["SubTierAgency"]:
-        """Get list of sub-agencies for this agency.
-        
-        Returns:
-            List of SubTierAgency instances
-        """
-        # Get toptier code
-        toptier_code = self.code
-        if not toptier_code:
-            return []
-        
-        try:
-            from ..queries.sub_agency_query import SubAgencyQuery
-            from .subtier_agency import SubTierAgency
-            
-            query = SubAgencyQuery(self._client)
-            
-            # Use fiscal year from this agency if available
-            fiscal_year = self.fiscal_year
-            
-            response = query.get_subagencies(
-                toptier_code=toptier_code,
-                fiscal_year=fiscal_year,
-                limit=100  # Default to maximum
-            )
-            
-            # Transform results into SubTierAgency objects
-            subagencies = []
-            results = response.get("results", [])
-            for result in results:
-                if isinstance(result, dict):
-                    subagency = SubTierAgency(result, self._client)
-                    subagencies.append(subagency)
-            
-            return subagencies
-            
-        except Exception as e:
-            logger.debug(
-                f"Could not fetch sub-agencies for {toptier_code}: {e}"
-            )
-            return []
-    
-    def obligations(
-        self,
-        fiscal_year: Optional[int] = None,
-        agency_type: str = "awarding",
-        award_type_codes: Optional[List[str]] = None
-    ) -> Optional[float]:
-        """Get obligations for this agency, optionally filtered.
-        
-        Args:
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
-            agency_type: "awarding" or "funding"
-            award_type_codes: Optional list of award type codes to filter
-            
-        Returns:
-            Obligations amount or None if unavailable
-        """
-        # If no filters and we have existing data, return it
-        if not any([fiscal_year, award_type_codes]) and agency_type == "awarding":
-            existing = self.get_value("total_obligations", "obligations")
-            if existing is not None:
-                return to_float(existing)
-        
-        # Fetch from award summary API
-        summary = self._get_award_summary(
-            award_type_codes=award_type_codes,
-            fiscal_year=fiscal_year,
-            agency_type=agency_type
-        )
-        return to_float(summary.get("obligations")) if summary else None
-    
-    def contract_obligations(
-        self, 
-        fiscal_year: Optional[int] = None,
-        agency_type: str = "awarding"
-    ) -> Optional[float]:
-        """Get contract obligations for this agency.
-        
-        Args:
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
-            agency_type: "awarding" or "funding"
-            
-        Returns:
-            Contract obligations amount or None if unavailable
-        """
-        summary = self._get_award_summary(
-            award_type_codes=list(CONTRACT_CODES),
-            fiscal_year=fiscal_year,
-            agency_type=agency_type
-        )
-        return to_float(summary.get("obligations")) if summary else None
-    
-    def grant_obligations(
-        self, 
-        fiscal_year: Optional[int] = None,
-        agency_type: str = "awarding"
-    ) -> Optional[float]:
-        """Get grant obligations for this agency.
-        
-        Args:
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
-            agency_type: "awarding" or "funding"
-            
-        Returns:
-            Grant obligations amount or None if unavailable
-        """
-        summary = self._get_award_summary(
-            award_type_codes=list(GRANT_CODES),
-            fiscal_year=fiscal_year,
-            agency_type=agency_type
-        )
-        return to_float(summary.get("obligations")) if summary else None
-    
-    def idv_obligations(
-        self, 
-        fiscal_year: Optional[int] = None,
-        agency_type: str = "awarding"
-    ) -> Optional[float]:
-        """Get Indefinite Delivery Vehicle (IDV) obligations for this agency.
-        
-        Args:
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
-            agency_type: "awarding" or "funding"
-            
-        Returns:
-            IDV obligations amount or None if unavailable
-        """
-        summary = self._get_award_summary(
-            award_type_codes=list(IDV_CODES),
-            fiscal_year=fiscal_year,
-            agency_type=agency_type
-        )
-        return to_float(summary.get("obligations")) if summary else None
-    
-    def loan_obligations(
-        self, 
-        fiscal_year: Optional[int] = None,
-        agency_type: str = "awarding"
-    ) -> Optional[float]:
-        """Get loan obligations for this agency.
-        
-        Args:
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
-            agency_type: "awarding" or "funding"
-            
-        Returns:
-            Loan obligations amount or None if unavailable
-        """
-        summary = self._get_award_summary(
-            award_type_codes=list(LOAN_CODES),
-            fiscal_year=fiscal_year,
-            agency_type=agency_type
-        )
-        return to_float(summary.get("obligations")) if summary else None
-    
-    def direct_payment_obligations(
-        self, 
-        fiscal_year: Optional[int] = None,
-        agency_type: str = "awarding"
-    ) -> Optional[float]:
-        """Get direct payment obligations for this agency.
-        
-        Args:
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
-            agency_type: "awarding" or "funding"
-            
-        Returns:
-            Direct payment obligations amount or None if unavailable
-        """
-        summary = self._get_award_summary(
-            award_type_codes=list(DIRECT_PAYMENT_CODES),
-            fiscal_year=fiscal_year,
-            agency_type=agency_type
-        )
-        return to_float(summary.get("obligations")) if summary else None
-    
-    def other_obligations(
-        self, 
-        fiscal_year: Optional[int] = None,
-        agency_type: str = "awarding"
-    ) -> Optional[float]:
-        """Get other assistance obligations for this agency.
-        
-        Args:
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
-            agency_type: "awarding" or "funding"
-            
-        Returns:
-            Other assistance obligations amount or None if unavailable
-        """
-        summary = self._get_award_summary(
-            award_type_codes=list(OTHER_CODES),
-            fiscal_year=fiscal_year,
-            agency_type=agency_type
-        )
-        return to_float(summary.get("obligations")) if summary else None
-    
-    def transaction_count(
-        self,
-        fiscal_year: Optional[int] = None,
-        agency_type: str = "awarding",
-        award_type_codes: Optional[List[str]] = None
-    ) -> Optional[int]:
-        """Get transaction count for this agency, optionally filtered.
-        
-        Args:
-            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
-            agency_type: "awarding" or "funding"
-            award_type_codes: Optional list of award type codes to filter
-            
-        Returns:
-            Transaction count or None if unavailable
-        """
-        # If no filters and we have existing data, return it
-        if not any([fiscal_year, award_type_codes]) and agency_type == "awarding":
-            existing = self._lazy_get("transaction_count")
-            if existing is not None:
-                return to_int(existing)
-        
-        # Fetch from award summary API
-        summary = self._get_award_summary(
-            award_type_codes=award_type_codes,
-            fiscal_year=fiscal_year,
-            agency_type=agency_type
-        )
-        return to_int(summary.get("transaction_count")) if summary else None
-    
-    def new_award_count(self) -> Optional[int]:
-        """Total new award count for this agency across all awards."""
-        count = self._lazy_get("new_award_count")
-        return to_int(count)
-    
     # Properties from full agency API endpoint
     
     @property
@@ -420,13 +133,36 @@ class Agency(LazyRecord):
     def toptier_code(self) -> Optional[str]:
         """Agency toptier code (3-4 digit string)."""
         return self._lazy_get("toptier_code")
+
+    @property
+    def code(self) -> Optional[str]:
+        """Treasury agency code."""
+        code = self.get_value("code") or self.toptier_code
+        return code
+
+    @property
+    def name(self) -> Optional[str]:
+        """Primary agency name."""
+        # Agency now contains toptier data directly
+        return self._lazy_get("name")
+    
+    @property
+    def abbreviation(self) -> Optional[str]:
+        """Primary agency abbreviation."""
+        # Agency now contains toptier data directly
+        return self._lazy_get("abbreviation")
+
+    @property
+    def id(self):
+        """Internal identifier from USASpending.gov """
+        return self.agency_id
     
     @property
     def agency_id(self) -> Optional[int]:
-        """Agency ID from the full API response."""
+        """Internal identifier from USASpending.gov"""
         agency_id = self._lazy_get("agency_id","id")
         return to_int(agency_id)
-    
+
     @property
     def icon_filename(self) -> Optional[str]:
         """Filename of the agency's icon/logo."""
@@ -457,7 +193,7 @@ class Agency(LazyRecord):
         """Number of subtier agencies under this agency."""
         count = self._lazy_get("subtier_agency_count")
         return to_int(count)
-    
+
     @property
     def messages(self) -> List[str]:
         """API messages related to this agency data."""
@@ -497,11 +233,256 @@ class Agency(LazyRecord):
                 result.append(def_code)
         
         return result
+
+    # Properties derived or related to the agency record
+    # These properties are not included in the agency detail API endpoint
+    # (generally, they come from a related agency properties in an award)
+    # so they cannot be lazy-loaded.
+    
+    @property
+    def has_agency_page(self) -> bool:
+        """Whether this agency has a dedicated page on USASpending.gov."""
+        return bool(self.get_value(["has_agency_page"], default=False))
+
+    @property
+    def office_agency_name(self) -> Optional[str]:
+        """Name of the specific office within the agency."""
+        return self.get_value("office_agency_name")
+    
+    @property
+    def slug(self) -> Optional[str]:
+        """URL slug for this agency."""
+        return self.get_value("slug")
+
+    @property
+    def obligations(self) -> Optional[float]:
+        """ Return current fiscal year's total obligations """
+        return self.total_obligations
+    
+    # Related and derived resources.
+    # Some of these properties are provided by search query
+    # results, others are helper methods that provide quick access
+    # to related award and transaction data.
+
+    @cached_property
+    def total_obligations(self) -> Optional[float]:
+        """ Return current fiscal year's total obligations """
+        obligations = self.get_value(["total_obligations","obligations"])
+        if not obligations:
+            # If not present, fetch from award summary
+            obligations = self.get_obligations()
+        return obligations
+    
+    @cached_property
+    def latest_action_date(self) -> Optional[date]:
+        """Date of the most recent action for this agency's awards."""
+        
+        # Check if value is present already (often provided in search results)
+        latest_action_date_string = self.get_value("latest_action_date")
+        
+        # If not, fetch from agency award summary endpoint
+        if not latest_action_date_string:
+            summary = self._get_award_summary()
+            latest_action_date_string = summary.get("latest_action_date")
+        
+        return to_date(latest_action_date_string)
+    
+    @cached_property
+    def transaction_count(self) -> Optional[int]:
+        """Total transaction count for this agency across all awards."""
+        
+        # Check if value is present already (often provided in search results)
+        transaction_count = self.get_value("transaction_count")
+        
+        # If not, fetch from agency award summary endpoint
+        if not transaction_count:    
+            transaction_count = self.get_transaction_count()
+        
+        return to_int(transaction_count)
+    
+    @property
+    def awards(self) -> "AwardsSearch":
+        """Get an AwardsSearch instance pre-filtered to the current agency as a top-tier "Awarding" agency.
+        
+        Returns:
+            AwardsSearch instance
+        """
+        from ..queries.filters import AgencyTier, AgencyType
+        return self._client.awards.search().for_agency(self.name,AgencyType.AWARDING,AgencyTier.TOPTIER)
+    
+    @property
+    def subagencies(self) -> List["SubTierAgency"]:
+        """Get list of sub-agencies for this agency.
+        
+        Returns:
+            List of SubTierAgency instances
+        """
+        # Get toptier code
+        toptier_code = self.code
+        if not toptier_code:
+            logger.error("Cannot fetch sub-agencies without agency code.")
+            return []
+        
+        try:
+            from ..queries.sub_agency_query import SubAgencyQuery
+            from .subtier_agency import SubTierAgency
+            
+            query = SubAgencyQuery(self._client)
+            
+            # Use fiscal year from this agency if available
+            fiscal_year = self.fiscal_year
+            
+            response = query.get_subagencies(
+                toptier_code=toptier_code,
+                fiscal_year=fiscal_year,
+                limit=100  # Default to maximum
+            )
+            
+            # Transform results into SubTierAgency objects
+            subagencies = []
+            results = response.get("results", [])
+            for result in results:
+                if isinstance(result, dict):
+                    subagency = SubTierAgency(result, self._client)
+                    subagencies.append(subagency)
+            
+            return subagencies
+            
+        except Exception as e:
+            logger.debug(
+                f"Could not fetch sub-agencies for {toptier_code}: {e}"
+            )
+            return []
+    
+    def get_obligations(
+        self,
+        fiscal_year: Optional[int] = None,
+        agency_type: str = "awarding",
+        award_type_codes: Optional[List[str]] = None
+    ) -> Optional[float]:
+        """Get obligations for this agency, optionally filtered.
+        
+        Args:
+            fiscal_year: Return obligation totals for a given fiscal year (defaults to current FY)
+            agency_type: "awarding" or "funding"
+            award_type_codes: Optional list of award type codes to filter
+            
+        Returns:
+            Obligations amount or None if unavailable
+        """
+        
+        # Fetch from award summary API
+        summary = self._get_award_summary(
+            award_type_codes=award_type_codes,
+            fiscal_year=fiscal_year,
+            agency_type=agency_type
+        )
+        return to_float(summary.get("obligations")) if summary else None
+    
+    @cached_property
+    def contract_obligations(self) -> Optional[float]:
+        """Get contract obligations for this agency.
+            
+        Returns:
+            Contract obligations amount or None if unavailable
+        """
+        summary = self._get_award_summary(
+            award_type_codes=list(CONTRACT_CODES)
+        )
+        return to_float(summary.get("obligations")) if summary else None
+
+    @cached_property    
+    def grant_obligations(self) -> Optional[float]:
+        """Get grant obligations for this agency in the current fiscal year.
+            
+        Returns:
+            Grant obligations amount or None if unavailable
+        """
+        summary = self._get_award_summary(
+            award_type_codes=list(GRANT_CODES)
+        )
+        return to_float(summary.get("obligations")) if summary else None
+    
+    @cached_property
+    def idv_obligations(self) -> Optional[float]:
+        """Get Indefinite Delivery Vehicle (IDV) obligations for this agency in the current fiscal year.
+        
+        Returns:
+            IDV obligations amount or None if unavailable
+        """
+        summary = self._get_award_summary(
+            award_type_codes=list(IDV_CODES)
+        )
+        return to_float(summary.get("obligations")) if summary else None
+    
+    @cached_property
+    def loan_obligations(self) -> Optional[float]:
+        """Get loan obligations for this agency for the current fiscal year
+
+        Returns:
+            Loan obligations amount or None if unavailable
+        """
+        summary = self._get_award_summary(
+            award_type_codes=list(LOAN_CODES)
+        )
+        return to_float(summary.get("obligations")) if summary else None
+    
+    @cached_property
+    def direct_payment_obligations(self) -> Optional[float]:
+        """Get direct payment obligations for this agency for the current fiscal year.
+            
+        Returns:
+            Direct payment obligations amount or None if unavailable
+        """
+        summary = self._get_award_summary(
+            award_type_codes=list(DIRECT_PAYMENT_CODES)
+        )
+        return to_float(summary.get("obligations")) if summary else None
+    
+    @cached_property
+    def other_obligations(self) -> Optional[float]:
+        """Get other assistance obligations for this agency.
+ 
+        Returns:
+            Other assistance obligations amount or None if unavailable
+        """
+        summary = self._get_award_summary(
+            award_type_codes=list(OTHER_CODES)
+        )
+        return to_float(summary.get("obligations")) if summary else None
+    
+    def get_transaction_count(
+        self,
+        fiscal_year: Optional[int] = None,
+        agency_type: str = "awarding",
+        award_type_codes: Optional[List[str]] = None
+    ) -> Optional[int]:
+        """Get transaction count for this agency, optionally filtered.
+        
+        Args:
+            fiscal_year: Override the agency's fiscal year (None uses self.fiscal_year)
+            agency_type: "awarding" or "funding"
+            award_type_codes: Optional list of award type codes to filter
+            
+        Returns:
+            Transaction count or None if unavailable
+        """
+        # If no filters and we have existing data, return it
+        if not any([fiscal_year, award_type_codes]) and agency_type == "awarding":
+            existing = self._lazy_get("transaction_count")
+            if existing is not None:
+                return to_int(existing)
+        
+        # Fetch from award summary API
+        summary = self._get_award_summary(
+            award_type_codes=award_type_codes,
+            fiscal_year=fiscal_year,
+            agency_type=agency_type
+        )
+        return to_int(summary.get("transaction_count")) if summary else None
     
     def __repr__(self) -> str:
         """String representation of Agency."""
         name = self.name or "?"
         code = self.code or "?"
         return f"<Agency {code}: {name}>"
-
-

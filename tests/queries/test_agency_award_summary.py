@@ -21,13 +21,13 @@ class TestAgencyAwardSummaryEndpoint:
     def test_base_endpoint(self, mock_usa_client):
         """Test base endpoint property."""
         query = AgencyAwardSummary(mock_usa_client)
-        assert query._endpoint == "/api/v2/agency/"
+        assert query._endpoint == "/agency/"
     
     def test_construct_endpoint(self, mock_usa_client):
         """Test endpoint construction with toptier_code."""
         query = AgencyAwardSummary(mock_usa_client)
         endpoint = query._construct_endpoint("080")
-        assert endpoint == "/api/v2/agency/080/awards/"
+        assert endpoint == "/agency/080/awards/"
 
 
 class TestAgencyAwardSummaryValidation:
@@ -69,14 +69,14 @@ class TestAgencyAwardSummaryValidation:
     def test_valid_toptier_codes_accepted(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test that valid toptier_codes are accepted."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         # 3-digit code
         result = query.get_awards_summary("080")
         assert result["toptier_code"] == "080"
         
         # 4-digit code
-        mock_usa_client.set_response("/api/v2/agency/1601/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/1601/awards/", agency_award_summary_fixture_data)
         result = query.get_awards_summary("1601")
         assert result["toptier_code"] == "080"  # Fixture data
     
@@ -90,7 +90,7 @@ class TestAgencyAwardSummaryValidation:
     def test_valid_agency_types_accepted(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test that valid agency_types are accepted."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         # Test awarding
         result = query.get_awards_summary("080", agency_type="awarding")
@@ -107,13 +107,13 @@ class TestAgencyAwardSummaryExecution:
     def test_get_awards_summary_basic(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test basic awards summary retrieval."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         result = query.get_awards_summary("080")
         
         # Verify API call was made correctly
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/awards/",
+            "/agency/080/awards/",
             "GET",
             params={"agency_type": "awarding"}
         )
@@ -129,13 +129,13 @@ class TestAgencyAwardSummaryExecution:
     def test_get_awards_summary_with_fiscal_year(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test awards summary with fiscal year parameter."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         result = query.get_awards_summary("080", fiscal_year=2024)
         
         # Verify API call was made with fiscal_year
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/awards/",
+            "/agency/080/awards/",
             "GET",
             params={"agency_type": "awarding", "fiscal_year": 2024}
         )
@@ -145,13 +145,13 @@ class TestAgencyAwardSummaryExecution:
     def test_get_awards_summary_with_agency_type(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test awards summary with agency_type parameter."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         result = query.get_awards_summary("080", agency_type="funding")
         
         # Verify API call was made with funding agency_type
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/awards/",
+            "/agency/080/awards/",
             "GET",
             params={"agency_type": "funding"}
         )
@@ -161,14 +161,14 @@ class TestAgencyAwardSummaryExecution:
     def test_get_awards_summary_with_award_type_codes_list(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test awards summary with award_type_codes as list."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         award_codes = list(CONTRACT_CODES)
         result = query.get_awards_summary("080", award_type_codes=award_codes)
         
         # Verify API call was made with award_type_codes
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/awards/",
+            "/agency/080/awards/",
             "GET",
             params={"agency_type": "awarding", "award_type_codes": award_codes}
         )
@@ -178,14 +178,14 @@ class TestAgencyAwardSummaryExecution:
     def test_get_awards_summary_with_award_type_codes_set(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test awards summary with award_type_codes as set."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         award_codes = GRANT_CODES  # This is a frozenset
         result = query.get_awards_summary("080", award_type_codes=award_codes)
         
         # Verify API call was made with converted list
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/awards/",
+            "/agency/080/awards/",
             "GET",
             params={"agency_type": "awarding", "award_type_codes": list(award_codes)}
         )
@@ -195,7 +195,7 @@ class TestAgencyAwardSummaryExecution:
     def test_get_awards_summary_with_all_parameters(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test awards summary with all parameters."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         award_codes = ["A", "B", "C"]
         result = query.get_awards_summary(
@@ -207,7 +207,7 @@ class TestAgencyAwardSummaryExecution:
         
         # Verify API call was made with all parameters
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/awards/",
+            "/agency/080/awards/",
             "GET",
             params={
                 "agency_type": "funding",
@@ -221,14 +221,14 @@ class TestAgencyAwardSummaryExecution:
     def test_get_awards_summary_filters_empty_award_codes(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test that empty/None award codes are filtered out."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         award_codes = ["A", "", None, "B", ""]
         result = query.get_awards_summary("080", award_type_codes=award_codes)
         
         # Should only include non-empty codes
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/awards/",
+            "/agency/080/awards/",
             "GET",
             params={"agency_type": "awarding", "award_type_codes": ["A", "B"]}
         )
@@ -238,14 +238,14 @@ class TestAgencyAwardSummaryExecution:
     def test_get_awards_summary_skips_empty_award_codes_list(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test that empty award codes list is not included in params."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response("/api/v2/agency/080/awards/", agency_award_summary_fixture_data)
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
         
         award_codes = ["", None, ""]  # All empty
         result = query.get_awards_summary("080", award_type_codes=award_codes)
         
         # Should not include award_type_codes param
         mock_usa_client.assert_called_with(
-            "/api/v2/agency/080/awards/",
+            "/agency/080/awards/",
             "GET",
             params={"agency_type": "awarding"}
         )
