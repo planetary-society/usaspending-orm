@@ -61,7 +61,7 @@ class Contract(Award):
     @property
     def contract_award_type(self) -> Optional[str]:
         """Contract award type description."""
-        return self._lazy_get("contract_award_type", "Contract Award Type", "type_description")
+        return self.type_description
 
     @property
     def naics_code(self) -> Optional[str]:

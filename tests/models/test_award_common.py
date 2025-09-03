@@ -11,7 +11,7 @@ from datetime import datetime
 from usaspending.models import Award, Recipient
 from usaspending.models.agency import Agency
 from usaspending.models.subaward import SubAward
-from usaspending.exceptions import ValidationError
+from usaspending.exceptions import ValidationError,HTTPError
 from tests.mocks.mock_client import MockUSASpendingClient
 
 
@@ -122,13 +122,15 @@ class AwardTestingMixin:
         assert last_request["json"]["award_id"] == award_id
         assert last_request["json"]["limit"] == 10
 
-    def test_fetch_details_handles_api_exception(self, mock_usa_client, fixture_data):
-        """Test _fetch_details handles API exceptions gracefully."""
+    def test_fetch_details_raises_exception(self, mock_usa_client, fixture_data):
+        """Test _fetch_details raises API exceptions if error."""
         award_id = fixture_data["generated_unique_award_id"]
         endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         mock_usa_client.set_error_response(endpoint, 500)
         award = self.AWARD_MODEL({"generated_unique_award_id": award_id}, mock_usa_client)
-        assert not award.description
+        with pytest.raises(HTTPError):
+            award.description
+        
         assert mock_usa_client.get_request_count(endpoint) == 1
 
     def test_subawards_property(self, mock_usa_client, fixture_data):

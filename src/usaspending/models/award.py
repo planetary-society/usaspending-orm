@@ -59,7 +59,7 @@ class Award(LazyRecord):
     ]
 
     def __init__(
-        self, data_or_id: Dict[str, Any] | str, client: Optional[USASpending] = None
+        self, data_or_id: Dict[str, Any] | str, client: USASpending
     ):
         """Initialize Award instance.
 
@@ -102,8 +102,11 @@ class Award(LazyRecord):
 
             return full_data
         except Exception:
-            # If fetch fails, return None to avoid breaking the application
-            return None
+            logger.error(
+                f"Failed to fetch full details for Award ID {award_id}. "
+                "Check if the ID is valid and the client is configured correctly."
+            )
+            raise
 
     # Core scalar properties
     @property
