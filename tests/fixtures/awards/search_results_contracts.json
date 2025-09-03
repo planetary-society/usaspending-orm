@@ -289,6 +289,78 @@
       },
       "awarding_agency_id": 862,
       "agency_slug": "national-aeronautics-and-space-administration"
+    },
+        {
+      "internal_id": 111952974,
+      "Award ID": "80GSFC18C0008",
+      "Award Amount": 172213419.67,
+      "Recipient Name": "THE UNIVERSITY OF IOWA",
+      "Recipent DUNS Number": null,
+      "recipient_id": "0b441d38-e3c0-de89-ee08-69fc9e6ee58a-C",
+      "Awarding Agency": "National Aeronautics and Space Administration",
+      "Awarding Agency Code": "080",
+      "Awarding Sub Agency": "National Aeronautics and Space Administration",
+      "Awarding Sub Agency Code": "8000",
+      "Funding Agency": "National Aeronautics and Space Administration",
+      "Funding Agency Code": "080",
+      "Funding Sub Agency": "National Aeronautics and Space Administration",
+      "Funding Sub Agency Code": "8000",
+      "Description": "THE TANDEM RECONNECTION AND CUSP ELECTRODYNAMICS RECONNAISSANCE SATELLITE (TRACERS) IS PROPOSED BY THE CONTRACTOR IN RESPONSE TO THE NATIONAL AERONAUTIC AND SPACE ADMINSTRATION'S (NASA) 2016 HELIOPHYSICS SMALL EXPLORER (SMEX) ANNOUNCEMENT OF OPPORTUNITY (AO). THIS STATEMENT OF WORK (SOW) DESCRIBES THE WORK TO BE CONDUCTED BY THE CONTRACTOR DURING THE PHASE A (TRACERS) PROJECT. THE CONTRACTOR SHALL PROVIDE THE NECESSARY PERSONNEL, MATERIALS, EQUIPMENT, AND FACILITIES TO PRODUCE THE TRACERS PHASE A CONCEPT STUDY REPORT (CSR) THAT ENCOMPASSES: 1. PRINCIPAL INVESTIGATOR PROGRAM OFFICE (PIPO). 2. INSTRUMENT SYSTEM ENGINEERING, INCLUDING INSTRUMENT MISSION ASSURANCE. 3. DESIGN OF A FLIGHT QUALIFIED TRACERS INSTRUMENT MEETING MISSION AND SCIENCE REQUIREMENTS. 4. DEVELOP PLANS IN SUPPORT OF INTEGRATION AND TEST OF THE TRACERS INSTRUMENT FLIGHT SYSTEM. 5. DEVELOP PLANS IN SUPPORT OF ESSENTIAL FIELD OPERATIONS. 6. DEVELOP PLANS IN SUPPORT OF LAUNCH OPERATIONS, FLIGHT OPERATIONS. 7. DEVELOP PLANS FOR AND LEAD THE TRACERS SCIENCE INVESTIGATION, AS WELL AS THE GENERATION OF RESULTING DATA PRODUCTS. THE CONTRACTOR SHALL PROVIDE A BRIEFING ON THE TRACERS SCIENCE AND SCIENCE IMPLEMENTATION PLAN AT THE PHASE A SITE VISIT. THE CONTRACTOR SHALL PROVIDE AN ORGANIZATION CHART DEFINING THE CONTRACTOR ROLES AND RESPONSIBILITIES, REPORTING PROCEDURES, AND LINES OF AUTHORITY. PARTICIPATE IN DEFINING THE RELATIONSHIPS BETWEEN THE CONTRACTOR PIPO AND THE NASA EXPLORERS PROGRAM OFFICE. THE CONTRACTOR SHALL DEVELOP A TRACERS INSTRUMENT SYSTEMS REQUIREMENTS DOCUMENT AND A TRACERS MISSION SYSTEMS REQUIREMENTS DOCUMENT. THE CONTRACTOR SHALL DEVELOP DETAILED BLOCK DIAGRAMS AND TECHNICAL DESCRIPTIONS OF ALL INSTRUMENT SYSTEMS. THE CONTRACTOR SHALL CONDUCT IN-DEPTH INSTRUMENT-LEVEL REVIEWS OF THE PROPOSED INSTRUMENT DESIGN. CONDUCT ESSENTIAL TRADE STUDIES, ANALYSES, MODELING AND SIMULATIONS TO ASSURE COMPLIANCE WITH INSTRUMENT REQUIREMENTS. THE CONTRACTOR SHALL LEAD THE SCIENCE TEAM. THE CONTRACTOR SHALL DEVELOP AN INSTRUMENT-LEVEL TEST PLAN AND PARTICIPATE IN PLANNING FOR INTEGRATION AND TEST. THE CONTRACTOR SHALL PREPARE A DETAILED INSTRUMENT DEVELOPMENT SCHEDULE COVERING ALL MISSION PHASES, LISTING MAJOR MILESTONES AND INCLUDING A DEFINED CRITICAL PATH AND SCHEDULE RESERVES. THE CONTRACTOR SHALL PREPARE UPDATED INSTRUMENT BUDGETS AND REVIEW AND APPROVE THE OVERALL TRACERS BUDGET. THE CONTRACTOR SHALL PREPARE AND SUBMIT THE CONCEPT STUDY REPORT.",
+      "Last Modified Date": "2025-08-19",
+      "Base Obligation Date": "2018-03-05",
+      "prime_award_recipient_id": null,
+      "generated_internal_id": "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-",
+      "def_codes": [
+        "Q"
+      ],
+      "COVID-19 Obligations": 0,
+      "COVID-19 Outlays": 0,
+      "Infrastructure Obligations": 0,
+      "Infrastructure Outlays": 0,
+      "Recipient UEI": "Z1H9VJS8NG16",
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "IA",
+        "state_name": "Iowa",
+        "city_name": "IOWA CITY",
+        "county_code": "103",
+        "county_name": "JOHNSON",
+        "address_line1": "105 JESSUP HALL",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "01",
+        "zip4": "1316",
+        "zip5": "52242",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "IA",
+        "state_name": "Iowa",
+        "city_name": "IOWA CITY",
+        "county_code": "103",
+        "county_name": "JOHNSON",
+        "congressional_code": "01",
+        "zip4": "522421316",
+        "zip5": "52242"
+      },
+      "Start Date": "2018-03-05",
+      "End Date": "2025-08-19",
+      "Total Outlays": 154805291.75,
+      "Contract Award Type": "DEFINITIVE CONTRACT",
+      "NAICS": {
+        "code": "541713",
+        "description": "RESEARCH AND DEVELOPMENT IN NANOTECHNOLOGY"
+      },
+      "PSC": {
+        "code": "AR11",
+        "description": "SPACE R&D SERVICES; SPACE FLIGHT, RESEARCH AND SUPPORTING ACTIVITIES; BASIC RESEARCH"
+      },
+      "awarding_agency_id": 862,
+      "agency_slug": "national-aeronautics-and-space-administration"
     }
   ],
   "page_metadata": {
@@ -297,6 +369,7 @@
     "last_record_unique_id": 131499581,
     "last_record_sort_value": "10167075939.0"
   },
+  
   "messages": [
     "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. "
   ]
