@@ -33,7 +33,7 @@ class SingleResourceBase(ABC):
         # Clean recipient ID
         cleaned_resource_id = self._clean_resource_id(resource_id)
 
-        if not resource_id:
+        if not cleaned_resource_id:
             raise ValidationError(
                 "No resource id found after cleaning. Original: %s. Cleaned: %s",
                 resource_id,

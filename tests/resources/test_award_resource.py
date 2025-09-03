@@ -60,16 +60,11 @@ class TestAwardResource:
         with pytest.raises(ValidationError):
             award_resource.find_by_generated_id("")
 
-        # None becomes "None" string, so it doesn't raise validation error in find_by_generated_id
-        # but would fail when trying to fetch from API
-        # with pytest.raises(ValidationError):
-        #     award_resource.get(None)
+        with pytest.raises(ValidationError):
+            award_resource.find_by_generated_id(None)
 
-        # Whitespace-only strings currently don't raise validation error due to bug
-        # in single_resource_base.py line 35 (checks resource_id instead of cleaned_resource_id)
-        # TODO: Fix this in the source code
-        # with pytest.raises(ValidationError):
-        #     award_resource.get("   ")
+        with pytest.raises(ValidationError):
+            award_resource.find_by_generated_id("   ")
 
     def test_get_award_api_error_propagates(self, award_resource, mock_usa_client):
         """Test that API errors are propagated."""
