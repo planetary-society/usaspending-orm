@@ -32,7 +32,7 @@ class AgencyAwardSummary(SingleResourceBase):
     @property
     def _endpoint(self) -> str:
         """Base endpoint for agency award summary retrieval."""
-        return "/api/v2/agency/"
+        return "/agency/"
     
     def _construct_endpoint(self, resource_id: str) -> str:
         """Construct the full endpoint URL for agency award summary.
