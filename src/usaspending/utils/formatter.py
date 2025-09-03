@@ -14,21 +14,40 @@ logger = USASpendingLogger.get_logger(__name__)
 def to_date(date_string: str) -> Optional[datetime]:
     """Convert date string to datetime object.
 
+    Supports multiple date formats:
+    - YYYY-MM-DD (date only)
+    - YYYY-MM-DDTHH:MM:SS (ISO datetime)
+    - YYYY-MM-DDTHH:MM:SS.ffffff (ISO datetime with microseconds)
+    - YYYY-MM-DDTHH:MM:SSZ (ISO datetime with UTC indicator)
+    - YYYY-MM-DDTHH:MM:SS+/-HH:MM (ISO datetime with timezone offset)
+
     Args:
-        date_string: Date string in YYYY-MM-DD format
+        date_string: Date string in any supported format
 
     Returns:
         datetime object or None if parsing fails
     """
-    try:
-        if not date_string:
-            return None
-        # Parse date string to datetime object
-        return datetime.strptime(date_string, "%Y-%m-%d")
-    except ValueError:
-        logger.warning(f"Could not parse date string: {date_string}")
-        # If parsing fails, return None
+    if not date_string:
         return None
+    
+    # Define formats to try, in order of likelihood
+    formats = [
+        "%Y-%m-%d",                 # Date only (original format)
+        "%Y-%m-%dT%H:%M:%S",        # ISO datetime without timezone
+        "%Y-%m-%dT%H:%M:%S.%f",     # ISO datetime with microseconds
+        "%Y-%m-%dT%H:%M:%SZ",       # ISO datetime with UTC indicator
+        "%Y-%m-%dT%H:%M:%S%z",      # ISO datetime with timezone offset
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_string, fmt)
+        except ValueError:
+            continue
+    
+    # If no format matched, log warning and return None
+    logger.warning(f"Could not parse date string: {date_string}")
+    return None
 
 
 def round_to_millions(amount: float) -> str:
