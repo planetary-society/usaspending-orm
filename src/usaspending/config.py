@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Optional
 from usaspending.logging_config import USASpendingLogger
 from usaspending.exceptions import ConfigurationError
+import os
 import cachier
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -28,7 +29,7 @@ class _Config:
         # Caching via cachier
         self.cache_enabled: bool = True
         self.cache_backend: str = "pickle"  # Default file-based backend for cachier
-        self.cache_dir: str = ".usaspending_cache"
+        self.cache_dir: str = os.path.join(os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache')), 'usaspending')
         self.cache_ttl: timedelta = timedelta(weeks=1)
 
         # Logging configuration
