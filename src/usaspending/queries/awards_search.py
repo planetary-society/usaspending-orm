@@ -94,6 +94,22 @@ class AwardsSearch(QueryBuilder["Award"]):
 
     def _transform_result(self, result: dict[str, Any]) -> Award:
         """Transforms a single API result item into an Award model."""
+        # Get award type codes from current filters
+        award_type_codes = self._get_award_type_codes()
+        
+        # If we're filtering for a single award type category, add it to the result
+        # This ensures the correct Award subclass is created even when the API
+        # response doesn't include explicit type information
+        if award_type_codes:
+            if award_type_codes.issubset(CONTRACT_CODES):
+                result["category"] = "contract"
+            elif award_type_codes.issubset(IDV_CODES):
+                result["category"] = "idv"
+            elif award_type_codes.issubset(GRANT_CODES):
+                result["category"] = "grant"
+            elif award_type_codes.issubset(LOAN_CODES):
+                result["category"] = "loan"
+        
         return create_award(result, self._client)
 
     def _get_award_type_codes(self) -> set[str]:
