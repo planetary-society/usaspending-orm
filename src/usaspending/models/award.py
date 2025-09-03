@@ -112,7 +112,7 @@ class Award(LazyRecord):
         return self._lazy_get("id")
 
     @property
-    def prime_award_id(self) -> str:
+    def award_identifier(self) -> str:
         """Primary award identifier (PIID, FAIN, URI, etc.)."""
         return str(self._lazy_get("Award ID", "piid", "fain", "uri", default=""))
 

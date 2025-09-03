@@ -51,7 +51,7 @@ class BaseTestAwardLazyLoading:
         award = award_from_search
         search_result = search_results_data[0]
 
-        assert award.prime_award_id == search_result["Award ID"]
+        assert award.award_identifier == search_result["Award ID"]
         assert award.description.lower() == search_result["Description"].lower()
         assert award.award_amount == search_result["Award Amount"]
         assert award.total_obligation == search_result["Award Amount"]
