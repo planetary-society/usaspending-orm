@@ -250,7 +250,7 @@ class TestRecipientsSearchCount:
 
     def test_count_returns_zero_for_empty_response(self, recipients_search, mock_usa_client):
         """Test count returns 0 when API returns no count."""
-        mock_usa_client.set_response("/v2/recipient/count/", {})
+        mock_usa_client.set_response("/recipient/count/", {})
         
         count = recipients_search.count()
         assert count == 0

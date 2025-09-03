@@ -52,7 +52,7 @@ class FundingSearch(QueryBuilder["Funding"]):
     @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
-        return "/v2/awards/funding/"
+        return "/awards/funding/"
 
     def _clone(self) -> FundingSearch:
         """Creates an immutable copy of the query builder."""

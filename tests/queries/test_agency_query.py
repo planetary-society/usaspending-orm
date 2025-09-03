@@ -15,7 +15,7 @@ class TestAgencyQueryInitialization:
         query = AgencyQuery(mock_usa_client)
         
         assert query._client is mock_usa_client
-        assert query._endpoint == "/v2/agency/"
+        assert query._endpoint == "/agency/"
 
 
 class TestAgencyQueryValidation:
@@ -57,7 +57,7 @@ class TestAgencyQueryValidation:
     def test_find_by_id_valid_toptier_code_format(self, agency_query, mock_usa_client, agency_fixture_data, valid_code):
         """Test that valid toptier_code formats are accepted."""
         # Setup mock response
-        endpoint = f"/v2/agency/{valid_code}/"
+        endpoint = f"/agency/{valid_code}/"
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Should not raise validation error
@@ -78,7 +78,7 @@ class TestAgencyQueryExecution:
     ):
         """Test successful agency retrieval without fiscal year."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         # Setup mock response
         mock_usa_client.set_fixture_response(endpoint, "agency")
@@ -104,7 +104,7 @@ class TestAgencyQueryExecution:
         """Test successful agency retrieval with fiscal year."""
         toptier_code = agency_fixture_data["toptier_code"]
         fiscal_year = 2023
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         # Setup mock response
         mock_usa_client.set_fixture_response(endpoint, "agency")
@@ -127,7 +127,7 @@ class TestAgencyQueryExecution:
     ):
         """Test that toptier_code whitespace is stripped."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         # Setup mock response
         mock_usa_client.set_fixture_response(endpoint, "agency")
@@ -145,7 +145,7 @@ class TestAgencyQueryExecution:
     def test_find_by_id_api_error_propagates(self, agency_query, mock_usa_client):
         """Test that API errors are propagated."""
         toptier_code = "999"
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         # Setup error response
         mock_usa_client.set_error_response(
@@ -160,7 +160,7 @@ class TestAgencyQueryExecution:
     def test_find_by_id_400_error_as_api_error(self, agency_query, mock_usa_client):
         """Test that 400 errors are raised as APIError."""
         toptier_code = "999"
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         # Setup 400 error response
         mock_usa_client.set_error_response(
@@ -186,7 +186,7 @@ class TestAgencyQueryModelCreation:
     ):
         """Test that created Agency model has client reference."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
@@ -199,7 +199,7 @@ class TestAgencyQueryModelCreation:
     ):
         """Test that Agency model contains data from fixture."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         

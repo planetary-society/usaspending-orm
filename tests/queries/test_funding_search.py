@@ -20,7 +20,7 @@ class TestFundingSearch:
         assert search._award_id is None
         assert search._sort_field == "reporting_fiscal_date"
         assert search._sort_order == "desc"
-        assert search._endpoint == "/v2/awards/funding/"
+        assert search._endpoint == "/awards/funding/"
 
     def test_for_award_required(self, mock_usa_client):
         """Test that award_id is required before building payload."""
@@ -187,7 +187,7 @@ class TestFundingSearch:
 
         # Set up mock to return all results from fixture
         mock_usa_client.set_paginated_response(
-            "/v2/awards/funding/", fixture_data["results"], page_size=100
+            "/awards/funding/", fixture_data["results"], page_size=100
         )
 
         search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
@@ -220,12 +220,12 @@ class TestFundingSearch:
         # Set up mock to return paginated fixture data
         # We need multiple responses because list() calls count() which consumes one response
         mock_usa_client.set_paginated_response(
-            "/v2/awards/funding/", fixture_data["results"], page_size=100
+            "/awards/funding/", fixture_data["results"], page_size=100
         )
 
         # Add another response for the actual iteration after count() consumes the first
         mock_usa_client.add_response_sequence(
-            "/v2/awards/funding/", [fixture_data], auto_count=False
+            "/awards/funding/", [fixture_data], auto_count=False
         )
 
         search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
@@ -248,7 +248,7 @@ class TestFundingSearch:
         fixture_data = load_fixture("awards/award_funding_grant.json")
 
         # Set up mock to return fixture data
-        mock_usa_client.set_response("/v2/awards/funding/", fixture_data)
+        mock_usa_client.set_response("/awards/funding/", fixture_data)
 
         search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
         first = search.first()
@@ -262,7 +262,7 @@ class TestFundingSearch:
         fixture_data = load_fixture("awards/award_funding_grant.json")
 
         # Set up mock to return fixture data
-        mock_usa_client.set_response("/v2/awards/funding/", fixture_data)
+        mock_usa_client.set_response("/awards/funding/", fixture_data)
 
         search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123").limit(5)
         results = search.all()

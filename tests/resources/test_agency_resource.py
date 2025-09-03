@@ -31,7 +31,7 @@ class TestAgencyResourceFindByToptierCode:
     ):
         """Test successful agency retrieval without fiscal year."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         # Setup mock response using fixture
         mock_usa_client.set_fixture_response(endpoint, "agency")
@@ -57,7 +57,7 @@ class TestAgencyResourceFindByToptierCode:
         """Test successful agency retrieval with fiscal year."""
         toptier_code = agency_fixture_data["toptier_code"]
         fiscal_year = 2023
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         # Setup mock response using fixture
         mock_usa_client.set_fixture_response(endpoint, "agency")
@@ -80,7 +80,7 @@ class TestAgencyResourceFindByToptierCode:
     ):
         """Test agency retrieval contains all fixture properties."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
@@ -118,7 +118,7 @@ class TestAgencyResourceFindByToptierCode:
     def test_get_agency_api_error_propagates(self, agency_resource, mock_usa_client):
         """Test that API errors are propagated."""
         toptier_code = "999"
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         # Set up error response
         mock_usa_client.set_error_response(
@@ -156,7 +156,7 @@ class TestAgencyResourceClientIntegration:
     ):
         """Test integration: client.agencies.find_by_toptier_code() works end-to-end."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
@@ -174,7 +174,7 @@ class TestAgencyResourceClientIntegration:
         """Test integration: client.agencies.find_by_toptier_code() with fiscal_year works end-to-end."""
         toptier_code = agency_fixture_data["toptier_code"]
         fiscal_year = 2023
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
@@ -195,7 +195,7 @@ class TestAgencyResourceUsagePatterns:
     def test_get_nasa_current_fiscal_year(self, mock_usa_client, agency_fixture_data):
         """Test getting NASA for current fiscal year (common usage pattern)."""
         if agency_fixture_data["toptier_code"] == "080":  # NASA
-            endpoint = "/v2/agency/080/"
+            endpoint = "/agency/080/"
             mock_usa_client.set_fixture_response(endpoint, "agency")
             
             # Common usage: get current fiscal year data
@@ -208,7 +208,7 @@ class TestAgencyResourceUsagePatterns:
     def test_get_agency_specific_fiscal_year(self, mock_usa_client, agency_fixture_data):
         """Test getting agency for specific fiscal year (common usage pattern)."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Common usage: get specific fiscal year data
@@ -220,7 +220,7 @@ class TestAgencyResourceUsagePatterns:
     def test_access_agency_mission_and_website(self, mock_usa_client, agency_fixture_data):
         """Test accessing agency mission and website (common usage pattern)."""
         toptier_code = agency_fixture_data["toptier_code"]
-        endpoint = f"/v2/agency/{toptier_code}/"
+        endpoint = f"/agency/{toptier_code}/"
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         agency = mock_usa_client.agencies.find_by_toptier_code(toptier_code)

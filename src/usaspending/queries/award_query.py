@@ -20,7 +20,7 @@ class AwardQuery(SingleResourceBase):
     @property
     def _endpoint(self) -> str:
         """Base endpoint for single award retrieval."""
-        return "/v2/awards/"
+        return "/awards/"
 
     def find_by_id(self, award_id: str) -> "Award":
         """Filter by unique award identifier."""

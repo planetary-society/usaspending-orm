@@ -31,7 +31,7 @@ class AgencyQuery(SingleResourceBase):
     @property
     def _endpoint(self) -> str:
         """Base endpoint for single agency retrieval."""
-        return "/v2/agency/"
+        return "/agency/"
 
     def find_by_id(self, toptier_code: str, fiscal_year: Optional[int] = None) -> "Agency":
         """Retrieve agency by toptier code and optional fiscal year.

@@ -152,7 +152,7 @@ class TestAgencyLazyLoadingNewStructure:
         agency = Agency(minimal_data, mock_usa_client)
         
         # Mock the full agency response
-        endpoint = "/v2/agency/080/"
+        endpoint = "/agency/080/"
         mock_usa_client.set_fixture_response(endpoint, "agency")
         
         # Access a lazy-loaded property

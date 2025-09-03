@@ -64,7 +64,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
-        return "/v2/search/spending_by_award/"
+        return "/search/spending_by_award/"
 
     def _clone(self) -> AwardsSearch:
         """Creates an immutable copy of the query builder."""
@@ -176,7 +176,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             A dictionary mapping award type categories to their result counts
             for the matching filter set.
         """
-        endpoint = "/v2/search/spending_by_award_count/"
+        endpoint = "/search/spending_by_award_count/"
         final_filters = self._aggregate_filters()
 
         payload = {

@@ -47,7 +47,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
     @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
-        return "/v2/recipient/"
+        return "/recipient/"
 
     def _clone(self) -> RecipientsSearch:
         """Creates an immutable copy of the query builder."""
@@ -103,7 +103,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
             payload["keyword"] = self._keyword
 
         # Make API request to count endpoint
-        count_endpoint = "/v2/recipient/count/"
+        count_endpoint = "/recipient/count/"
         response = self._client._make_request("POST", count_endpoint, json=payload)
         
         total_count = response.get("count", 0)

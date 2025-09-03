@@ -114,7 +114,7 @@ class SubAwardsSearch(AwardsSearch):
         
         # If we have an award_id filter, use the efficient count endpoint
         if self._award_id:
-            endpoint = f"/v2/awards/count/subaward/{self._award_id}/"
+            endpoint = f"/awards/count/subaward/{self._award_id}/"
             
             from ..logging_config import log_query_execution
             log_query_execution(logger, "SubAwardsSearch.count", 1, endpoint)
@@ -148,7 +148,7 @@ class SubAwardsSearch(AwardsSearch):
         Returns:
             A dictionary mapping award type categories to their subaward counts.
         """
-        endpoint = "/v2/search/spending_by_award_count/"
+        endpoint = "/search/spending_by_award_count/"
         final_filters = self._aggregate_filters()
         
         payload = {

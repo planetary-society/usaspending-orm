@@ -160,9 +160,9 @@ class TestTransaction:
         assert transaction.amt is None
 
     def test_with_mock_client_fixture_response(self, mock_usa_client):
-        mock_usa_client.set_fixture_response("/v2/transactions/", "awards/transactions")
+        mock_usa_client.set_fixture_response("/transactions/", "awards/transactions")
 
-        response = mock_usa_client._make_request("POST", "/v2/transactions/", {})
+        response = mock_usa_client._make_request("POST", "/transactions/", {})
         transactions = [Transaction(tx_data) for tx_data in response["results"]]
 
         assert len(transactions) == 3

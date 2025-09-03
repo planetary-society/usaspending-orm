@@ -27,7 +27,7 @@ class TestSubAgencyQueryEndpoint:
         """Test endpoint construction with toptier_code."""
         query = SubAgencyQuery(mock_usa_client)
         endpoint = query._construct_endpoint("080")
-        assert endpoint == "/v2/agency/080/sub_agency/"
+        assert endpoint == "/agency/080/sub_agency/"
 
 
 class TestSubAgencyQueryValidation:
@@ -69,14 +69,14 @@ class TestSubAgencyQueryValidation:
     def test_valid_toptier_codes_accepted(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that valid toptier_codes are accepted."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         # 3-digit code
         result = query.get_subagencies("080")
         assert result["toptier_code"] == "080"
         
         # 4-digit code  
-        mock_usa_client.set_response("/v2/agency/1601/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/1601/sub_agency/", agency_subagencies_fixture_data)
         result = query.get_subagencies("1601")
         assert result["toptier_code"] == "080"  # Fixture data
     
@@ -90,7 +90,7 @@ class TestSubAgencyQueryValidation:
     def test_valid_agency_types_accepted(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that valid agency_types are accepted."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         # Test awarding
         result = query.get_subagencies("080", agency_type="awarding")
@@ -110,7 +110,7 @@ class TestSubAgencyQueryValidation:
     def test_valid_order_accepted(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that valid order values are accepted."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         # Test asc
         result = query.get_subagencies("080", order="asc")
@@ -130,7 +130,7 @@ class TestSubAgencyQueryValidation:
     def test_valid_sort_accepted(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that valid sort values are accepted."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         valid_sorts = ["name", "total_obligations", "transaction_count", "new_award_count"]
         for sort_field in valid_sorts:
@@ -163,13 +163,13 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_basic(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test basic sub-agencies retrieval."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         result = query.get_subagencies("080")
         
         # Verify API call was made correctly
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -191,13 +191,13 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_with_fiscal_year(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test sub-agencies with fiscal year parameter."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         result = query.get_subagencies("080", fiscal_year=2024)
         
         # Verify API call was made with fiscal_year
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -214,13 +214,13 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_with_agency_type(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test sub-agencies with agency_type parameter."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         result = query.get_subagencies("080", agency_type="funding")
         
         # Verify API call was made with funding agency_type
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "funding",
@@ -236,14 +236,14 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_with_award_type_codes_list(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test sub-agencies with award_type_codes as list."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         award_codes = list(CONTRACT_CODES)
         result = query.get_subagencies("080", award_type_codes=award_codes)
         
         # Verify API call was made with award_type_codes
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -260,14 +260,14 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_with_award_type_codes_set(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test sub-agencies with award_type_codes as set."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         award_codes = GRANT_CODES  # This is a frozenset
         result = query.get_subagencies("080", award_type_codes=award_codes)
         
         # Verify API call was made with converted list
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -284,13 +284,13 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_with_pagination(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test sub-agencies with pagination parameters."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         result = query.get_subagencies("080", page=2, limit=50)
         
         # Verify API call was made with pagination
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -306,13 +306,13 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_with_sorting(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test sub-agencies with sorting parameters."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         result = query.get_subagencies("080", sort="name", order="asc")
         
         # Verify API call was made with sorting
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -328,7 +328,7 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_with_all_parameters(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test sub-agencies with all parameters."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         award_codes = ["A", "B", "C"]
         result = query.get_subagencies(
@@ -344,7 +344,7 @@ class TestSubAgencyQueryExecution:
         
         # Verify API call was made with all parameters
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "funding",
@@ -362,14 +362,14 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_filters_empty_award_codes(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that empty/None award codes are filtered out."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         award_codes = ["A", "", None, "B", ""]
         result = query.get_subagencies("080", award_type_codes=award_codes)
         
         # Should only include non-empty codes
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -386,14 +386,14 @@ class TestSubAgencyQueryExecution:
     def test_get_subagencies_skips_empty_award_codes_list(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that empty award codes list is not included in params."""
         query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", agency_subagencies_fixture_data)
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
         
         award_codes = ["", None, ""]  # All empty
         result = query.get_subagencies("080", award_type_codes=award_codes)
         
         # Should not include award_type_codes param
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",

@@ -18,29 +18,29 @@ from .response_builder import ResponseBuilder
 class MockUSASpendingClient(USASpending):
     class Endpoints:
         """A collection of API endpoint constants."""
-        AGENCY = "/v2/agency//{award_id/}/"
-        AGENCY_SUBAGENCIES = "/v2/agency//{award_id/}/sub_agency/"
-        AGENCY_AUTOCOMPLETE = "/v2/autocomplete/funding_agency_office/"
-        AWARDING_AGENCY_AUTOCOMPLETE = "/v2/autocomplete/awarding_agency_office/"
-        AWARD_SEARCH = "/v2/search/spending_by_award/"
-        AWARD_COUNT = "/v2/search/spending_by_award_count/"
-        AWARD_DETAIL = "/v2/awards/{award_id}/"
-        AWARD_FUNDING = "/v2/awards/funding/"
-        SUBWARD_COUNT = "/v2/awards/count/subaward/{award_id}/"
-        TRANSACTION_COUNT = "/v2/awards/count/transaction/{award_id}/"
-        TRANSACTIONS = "/v2/transactions/"
+        AGENCY = "/agency/{toptier_code}/"
+        AGENCY_SUBAGENCIES = "/agency/{toptier_code}/sub_agency/"
+        AGENCY_AUTOCOMPLETE = "/autocomplete/funding_agency_office/"
+        AWARDING_AGENCY_AUTOCOMPLETE = "/autocomplete/awarding_agency_office/"
+        AWARD_SEARCH = "/search/spending_by_award/"
+        AWARD_COUNT = "/search/spending_by_award_count/"
+        AWARD_DETAIL = "/awards/{award_id}/"
+        AWARD_FUNDING = "/awards/funding/"
+        SUBWARD_COUNT = "/awards/count/subaward/{award_id}/"
+        TRANSACTION_COUNT = "/awards/count/transaction/{award_id}/"
+        TRANSACTIONS = "/transactions/"
 
-        RECIPIENT_DETAIL = "/v2/recipients/{recipient_id}/"
-        RECIPIENT_SEARCH = "/v2/recipient/"
-        RECIPIENT_COUNT = "/v2/recipient/count/"
+        RECIPIENT_DETAIL = "/recipients/{recipient_id}/"
+        RECIPIENT_SEARCH = "/recipient/"
+        RECIPIENT_COUNT = "/recipient/count/"
 
-        DOWNLOAD_ASSISTANCE = "/v2/download/assistance/"
-        DOWNLOAD_CONTRACT = "/v2/download/contract/"
-        DOWNLOAD_IDV = "/v2/download/idv/"
-        DOWNLOAD_STATUS = "/v2/download/status"
+        DOWNLOAD_ASSISTANCE = "/download/assistance/"
+        DOWNLOAD_CONTRACT = "/download/contract/"
+        DOWNLOAD_IDV = "/download/idv/"
+        DOWNLOAD_STATUS = "/download/status"
 
-        SPENDING_BY_RECIPIENT = "/v2/search/spending_by_category/recipient/"
-        SPENDING_BY_DISTRICT = "/v2/search/spending_by_category/district/"
+        SPENDING_BY_RECIPIENT = "/search/spending_by_category/recipient/"
+        SPENDING_BY_DISTRICT = "/search/spending_by_category/district/"
 
     """Mock USASpending client for testing.
 
@@ -56,7 +56,7 @@ class MockUSASpendingClient(USASpending):
         ```python
         mock_client = MockUSASpendingClient()
         mock_client.set_paginated_response(
-            "/v2/search/spending_by_award/",
+            "/search/spending_by_award/",
             items=[{"Award ID": f"AWD-{i}"} for i in range(250)],
             page_size=100
         )
@@ -286,8 +286,8 @@ class MockUSASpendingClient(USASpending):
         # Also set error for corresponding count endpoint if requested
         if auto_count_error:
             count_endpoint_mapping = {
-                "/v2/search/spending_by_award/": "/v2/search/spending_by_award_count/",
-                "/v2/transactions/": "/v2/awards/count/transaction/",
+                "/search/spending_by_award/": "/search/spending_by_award_count/",
+                "/transactions/": "/awards/count/transaction/",
                 "/search/spending_by_recipient/": "/search/spending_by_recipient_count/",
             }
 
@@ -336,22 +336,22 @@ class MockUSASpendingClient(USASpending):
         """Automatically set up count endpoint for a search endpoint.
 
         Args:
-            search_endpoint: The search endpoint (e.g., "/v2/search/spending_by_award/")
+            search_endpoint: The search endpoint (e.g., "/search/spending_by_award/")
             total_count: Total number of items
         """
         # Map search endpoints to their count endpoints
         count_endpoint_mapping = {
-            "/v2/search/spending_by_award/": "/v2/search/spending_by_award_count/",
-            "/v2/transactions/": "/v2/awards/count/transaction/",  # Would need award_id
+            "/search/spending_by_award/": "/search/spending_by_award_count/",
+            "/transactions/": "/awards/count/transaction/",  # Would need award_id
             "/search/spending_by_recipient/": "/search/spending_by_recipient_count/",  # If it existed
-            "/v2/recipient/": "/v2/recipient/count/",  # Recipients search count mapping
+            "/recipient/": "/recipient/count/",  # Recipients search count mapping
         }
 
         count_endpoint = count_endpoint_mapping.get(search_endpoint)
-        if count_endpoint == "/v2/search/spending_by_award_count/":
+        if count_endpoint == "/search/spending_by_award_count/":
             # For awards, default to contracts category for backward compatibility
             self.mock_award_count(contracts=total_count)
-        elif count_endpoint == "/v2/recipient/count/":
+        elif count_endpoint == "/recipient/count/":
             # For recipients, set up the count response with correct format
             response = {"count": total_count}
             self.set_response(count_endpoint, response)
@@ -498,7 +498,7 @@ class MockUSASpendingClient(USASpending):
             response_data["download_request"]["is_for_assistance"] = download_type == "assistance"
             response_data["download_request"]["is_for_idv"] = download_type == "idv"
         
-        endpoint = f"/v2/download/{download_type}/"
+        endpoint = f"/download/{download_type}/"
         self.set_response(endpoint, response_data)
 
     def mock_download_status(
@@ -547,7 +547,7 @@ class MockUSASpendingClient(USASpending):
                 response_data["total_columns"] = None
                 response_data["total_rows"] = None
         
-        self.set_response("/v2/download/status", response_data)
+        self.set_response("/download/status", response_data)
 
     # Convenience methods for common scenarios
 
@@ -567,7 +567,7 @@ class MockUSASpendingClient(USASpending):
             if "Recipient Name" not in award:
                 award["Recipient Name"] = "Test Recipient"
 
-        self.set_paginated_response("/v2/search/spending_by_award/", awards, page_size)
+        self.set_paginated_response("/search/spending_by_award/", awards, page_size)
 
         # Also mock the count endpoint since __len__ now calls count()
         # Default to contracts category for backward compatibility
@@ -580,7 +580,7 @@ class MockUSASpendingClient(USASpending):
             **counts: Keyword args for contracts, grants, etc.
         """
         response = ResponseBuilder.count_response(**counts)
-        self.set_response("/v2/search/spending_by_award_count/", response)
+        self.set_response("/search/spending_by_award_count/", response)
 
     def mock_award_detail(self, award_id: str, **award_data) -> None:
         """Set up mock response for award detail.
@@ -592,7 +592,7 @@ class MockUSASpendingClient(USASpending):
         response = ResponseBuilder.award_detail_response(
             award_id=award_id, **award_data
         )
-        self.set_response(f"/v2/awards/{award_id}/", response)
+        self.set_response(f"/awards/{award_id}/", response)
 
     def mock_transactions_for_award(
         self,
@@ -608,7 +608,7 @@ class MockUSASpendingClient(USASpending):
             transactions: List of transaction data (overrides fixture)
         """
         if fixture_name:
-            self.set_fixture_response("/v2/transactions/", fixture_name)
+            self.set_fixture_response("/transactions/", fixture_name)
         elif transactions:
             response = {
                 "results": transactions,
@@ -622,7 +622,7 @@ class MockUSASpendingClient(USASpending):
                     "previous": None,
                 },
             }
-            self.set_response("/v2/transactions/", response)
+            self.set_response("/transactions/", response)
         else:
             # Default empty response
             response = {
@@ -637,7 +637,7 @@ class MockUSASpendingClient(USASpending):
                     "previous": None,
                 },
             }
-            self.set_response("/v2/transactions/", response)
+            self.set_response("/transactions/", response)
 
     def mock_recipient_search(
         self, recipients: List[Dict[str, Any]], page_size: int = 50

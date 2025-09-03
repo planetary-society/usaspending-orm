@@ -12,7 +12,7 @@ class TestAgencySubagencies:
         """Test that agency.subagencies returns SubTierAgency objects."""
         # Set up mock response
         mock_usa_client.set_response(
-            "/v2/agency/080/sub_agency/", 
+            "/agency/080/sub_agency/", 
             agency_subagencies_fixture_data
         )
         
@@ -29,7 +29,7 @@ class TestAgencySubagencies:
         
         # Verify API call was made
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -60,7 +60,7 @@ class TestAgencySubagencies:
         """Test that subagencies have offices populated."""
         # Set up mock response
         mock_usa_client.set_response(
-            "/v2/agency/080/sub_agency/", 
+            "/agency/080/sub_agency/", 
             agency_subagencies_fixture_data
         )
         
@@ -110,7 +110,7 @@ class TestAgencySubagencies:
         """Test that subagencies returns empty list on API error."""
         # Mock API error
         mock_usa_client.set_error_response(
-            "/v2/agency/080/sub_agency/", 
+            "/agency/080/sub_agency/", 
             error_code=500, 
             error_message="API Error"
         )
@@ -130,7 +130,7 @@ class TestAgencySubagencies:
         """Test that subagencies uses agency's fiscal year if available."""
         # Set up mock response
         mock_usa_client.set_response(
-            "/v2/agency/080/sub_agency/", 
+            "/agency/080/sub_agency/", 
             agency_subagencies_fixture_data
         )
         
@@ -146,7 +146,7 @@ class TestAgencySubagencies:
         
         # Verify API was called with the agency's fiscal year
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -166,7 +166,7 @@ class TestAgencySubagencies:
         """Test that subagencies works without fiscal year."""
         # Set up mock response
         mock_usa_client.set_response(
-            "/v2/agency/080/sub_agency/", 
+            "/agency/080/sub_agency/", 
             agency_subagencies_fixture_data
         )
         
@@ -182,7 +182,7 @@ class TestAgencySubagencies:
         
         # Verify API was called without fiscal year
         mock_usa_client.assert_called_with(
-            "/v2/agency/080/sub_agency/",
+            "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
@@ -215,7 +215,7 @@ class TestAgencySubagencies:
             "messages": []
         }
         
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", empty_response)
+        mock_usa_client.set_response("/agency/080/sub_agency/", empty_response)
         
         agency_data = {
             "code": "080",
@@ -235,7 +235,7 @@ class TestAgencySubagencies:
             "results": ["invalid", {"valid": "data"}, None]  # Mixed invalid data
         }
         
-        mock_usa_client.set_response("/v2/agency/080/sub_agency/", invalid_response)
+        mock_usa_client.set_response("/agency/080/sub_agency/", invalid_response)
         
         agency_data = {
             "code": "080", 

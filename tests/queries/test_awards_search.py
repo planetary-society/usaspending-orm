@@ -43,7 +43,7 @@ class TestAwardsSearchInitialization:
 
     def test_endpoint(self, awards_search):
         """Test that the correct endpoint is returned."""
-        assert awards_search._endpoint == "/v2/search/spending_by_award/"
+        assert awards_search._endpoint == "/search/spending_by_award/"
 
     def test_clone_immutability(self, awards_search):
         """Test that _clone creates a new instance with copied attributes."""
@@ -775,7 +775,7 @@ class TestPaginationAndIteration:
 
         assert len(results) == 2
         assert all(isinstance(r, Award) for r in results)
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
+        assert mock_usa_client.get_request_count("/search/spending_by_award/") == 1
 
     def test_iteration_multiple_pages(self, mock_usa_client):
         """Test iteration with multiple pages."""
@@ -787,7 +787,7 @@ class TestPaginationAndIteration:
         results = list(search)
 
         assert len(results) == 250
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 3
+        assert mock_usa_client.get_request_count("/search/spending_by_award/") == 3
 
     def test_iteration_with_max_pages(self, mock_usa_client):
         """Test iteration respects max_pages limit."""
@@ -799,7 +799,7 @@ class TestPaginationAndIteration:
         results = list(search)
 
         assert len(results) == 200
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 2
+        assert mock_usa_client.get_request_count("/search/spending_by_award/") == 2
 
     def test_first_method(self, mock_usa_client):
         """Test the first() method returns only the first result."""
@@ -815,7 +815,7 @@ class TestPaginationAndIteration:
         assert isinstance(result, Award)
         assert result._data["Award ID"] == "1"
         # Verify the request was made correctly
-        assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 1
+        assert mock_usa_client.get_request_count("/search/spending_by_award/") == 1
 
     def test_first_method_no_results(self, mock_usa_client):
         """Test first() returns None when no results."""
@@ -852,7 +852,7 @@ class TestPaginationAndIteration:
 
         # Verify the correct endpoint was called
         mock_usa_client.assert_called_with(
-            endpoint="/v2/search/spending_by_award_count/", method="POST"
+            endpoint="/search/spending_by_award_count/", method="POST"
         )
 
     def test_count_method_grants(self, mock_usa_client):
@@ -931,7 +931,7 @@ class TestPaginationAndIteration:
 
         # Verify 6 calls were made (one for each convenience method)
         assert (
-            mock_usa_client.get_request_count("/v2/search/spending_by_award_count/")
+            mock_usa_client.get_request_count("/search/spending_by_award_count/")
             == 6
         )
 
@@ -967,7 +967,7 @@ class TestErrorHandling:
         """Test that API errors are propagated correctly."""
         # Set up error response for count endpoint (called by __len__)
         mock_usa_client.set_error_response(
-            "/v2/search/spending_by_award_count/", error_code=400, detail="Bad request"
+            "/search/spending_by_award_count/", error_code=400, detail="Bad request"
         )
 
         search = mock_usa_client.awards.search().with_award_types("A")
@@ -1014,7 +1014,7 @@ class TestIntegrationScenarios:
         results = list(search)
 
         # Verify the request was made with correct filters
-        last_request = mock_usa_client.get_last_request("/v2/search/spending_by_award/")
+        last_request = mock_usa_client.get_last_request("/search/spending_by_award/")
         payload = last_request["json"]
 
         assert "award_type_codes" in payload["filters"]
@@ -1042,7 +1042,7 @@ class TestIntegrationScenarios:
         _ = search.all()
 
         # Verify filters were applied using request tracking
-        last_request = mock_usa_client.get_last_request("/v2/search/spending_by_award/")
+        last_request = mock_usa_client.get_last_request("/search/spending_by_award/")
         payload = last_request["json"]
         assert payload["filters"]["recipient_type_names"] == ["small_business"]
         assert payload["filters"]["recipient_locations"] == [

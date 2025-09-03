@@ -17,4 +17,4 @@ class FundingAgenciesSearch(AgenciesSearch):
     @property
     def _endpoint(self) -> str:
         """API endpoint for agency autocomplete."""
-        return "/v2/autocomplete/funding_agency_office/"
+        return "/autocomplete/funding_agency_office/"

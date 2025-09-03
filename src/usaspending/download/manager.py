@@ -24,7 +24,7 @@ logger = USASpendingLogger.get_logger(__name__)
 class DownloadManager:
     """Handles the core logic for queuing, monitoring, downloading, and processing award data."""
 
-    BASE_ENDPOINT = "/v2/download/"
+    BASE_ENDPOINT = "/download/"
 
     def __init__(self, client: USASpending):
         self._client = client

@@ -37,7 +37,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
-        return "/v2/transactions/"
+        return "/transactions/"
 
     def _clone(self) -> TransactionsSearch:
         """Creates an immutable copy of the query builder."""
@@ -87,7 +87,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             return count
 
         # No client-side filters, use the efficient API count endpoint
-        endpoint = f"/v2/awards/count/transaction/{self._award_id}/"
+        endpoint = f"/awards/count/transaction/{self._award_id}/"
 
         from ..logging_config import log_query_execution
 
