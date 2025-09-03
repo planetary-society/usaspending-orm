@@ -128,7 +128,7 @@ class AwardTestingMixin:
         endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         mock_usa_client.set_error_response(endpoint, 500)
         award = self.AWARD_MODEL({"generated_unique_award_id": award_id}, mock_usa_client)
-        assert award.description is None
+        assert not award.description
         assert mock_usa_client.get_request_count(endpoint) == 1
 
     def test_subawards_property(self, mock_usa_client, fixture_data):

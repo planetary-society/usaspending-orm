@@ -132,14 +132,6 @@ class Award(LazyRecord):
         """A field that generalizes the award's type."""
         return self._lazy_get("category", default="")
 
-    @property
-    def description(self) -> str:
-        """
-        For procurement awards: Per the FPDS data dictionary, a brief, summary
-        level, plain English, description of the contract, award, or modification.
-        Additional information: the description field may also include abbreviations,
-        acronyms, or other information that is not plain English such as that required
-        by OMB policies (CARES Act, etc).
         """
         desc = self._lazy_get("description", "Description")
         if isinstance(desc, str):
@@ -159,6 +151,16 @@ class Award(LazyRecord):
     def type_description(self) -> Optional[str]:
         """The plain text description of the type of the award"""
         return self._lazy_get("type_description", "Award Type", default="")
+
+    @property
+    def description(self) -> str:
+        """
+        A brief, plain English summary description of the contract, award, or modification.
+        """
+        desc = self._lazy_get("description", "Description")
+        if isinstance(desc, str):
+            return smart_sentence_case(desc)
+        return ""
 
     @property
     def total_obligation(self) -> float:
