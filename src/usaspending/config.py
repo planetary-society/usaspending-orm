@@ -23,8 +23,10 @@ class _Config:
         self.max_retries: int = 3
         self.retry_delay: float = 1.0
         self.retry_backoff: float = 2.0
-        self.rate_limit_calls: int = 30
-        self.rate_limit_period: int = 1
+        
+        # Global rate limit is 1000 calls per 300 seconds
+        self.rate_limit_calls: int = 1000
+        self.rate_limit_period: int = 300
 
         # Caching via cachier
         self.cache_enabled: bool = True
