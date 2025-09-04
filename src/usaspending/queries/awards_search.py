@@ -90,6 +90,12 @@ class AwardsSearch(QueryBuilder["Award"]):
             "limit": self._get_effective_page_size(),
             "page": page,
         }
+        
+        # Add sorting parameters if specified
+        if self._order_by:
+            payload["sort"] = self._order_by
+            payload["order"] = self._order_direction
+            
         return payload
 
     def _transform_result(self, result: dict[str, Any]) -> Award:
@@ -285,6 +291,47 @@ class AwardsSearch(QueryBuilder["Award"]):
             dict.fromkeys(all_fields)
         )  # Remove duplicates while preserving order
 
+    def order_by(self, field: str, direction: str = "desc") -> AwardsSearch:
+        """
+        Set the sort field and direction for the query results.
+        
+        Args:
+            field: The field name to sort by. Must be a valid field from the 
+                   current award type's SEARCH_FIELDS.
+            direction: The sort direction, either "asc" or "desc". Defaults to "desc".
+        
+        Returns:
+            A new AwardsSearch instance with the ordering applied.
+            
+        Raises:
+            ValidationError: If the field is not a valid search field for the current
+                           award type configuration.
+        """
+        # Get the valid fields for the current award type configuration
+        valid_fields = self._get_fields()
+        
+        # Validate that the field is in the list of valid fields
+        if field not in valid_fields:
+            # Build a helpful error message
+            award_types = self._get_award_type_codes()
+            if award_types:
+                # Determine which category we're searching
+                category_names = []
+                for category_name, codes in AWARD_TYPE_GROUPS.items():
+                    if award_types & frozenset(codes.keys()):
+                        category_names.append(category_name)
+                category_str = ", ".join(category_names) if category_names else "selected award types"
+            else:
+                category_str = "all award types (no type filter applied)"
+                
+            raise ValidationError(
+                f"Invalid sort field '{field}' for {category_str}. "
+                f"Valid fields are: {', '.join(sorted(valid_fields))}"
+            )
+        
+        # Call the parent class order_by method
+        return super().order_by(field, direction)
+    
     # ==========================================================================
     # Filter Methods
     # ==========================================================================

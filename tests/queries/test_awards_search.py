@@ -597,6 +597,198 @@ class TestPayloadBuilding:
         assert "Last Date to Order" not in fields
 
 
+class TestOrderByFunctionality:
+    """Test order_by method and payload generation."""
+    
+    def test_order_by_included_in_payload(self, awards_search):
+        """Test that sort and order parameters are included in payload when order_by is used."""
+        search = (awards_search
+                 .with_award_types("A", "B")
+                 .order_by("Award Amount", "desc"))
+        
+        payload = search._build_payload(page=1)
+        
+        assert "sort" in payload
+        assert payload["sort"] == "Award Amount"
+        assert "order" in payload
+        assert payload["order"] == "desc"
+    
+    def test_order_by_ascending(self, awards_search):
+        """Test order_by with ascending direction."""
+        search = (awards_search
+                 .with_award_types("A")
+                 .order_by("Award ID", "asc"))
+        
+        payload = search._build_payload(page=1)
+        
+        assert payload["sort"] == "Award ID"
+        assert payload["order"] == "asc"
+    
+    def test_order_by_default_direction(self, awards_search):
+        """Test order_by defaults to descending when direction not specified."""
+        search = (awards_search
+                 .with_award_types("A")
+                 .order_by("Recipient Name"))
+        
+        payload = search._build_payload(page=1)
+        
+        assert payload["sort"] == "Recipient Name"
+        assert payload["order"] == "desc"
+    
+    def test_no_order_by_no_sort_params(self, awards_search):
+        """Test that sort and order are not in payload when order_by is not used."""
+        search = awards_search.with_award_types("A", "B")
+        
+        payload = search._build_payload(page=1)
+        
+        assert "sort" not in payload
+        assert "order" not in payload
+    
+    def test_order_by_invalid_field_raises_error(self, awards_search):
+        """Test that order_by raises ValidationError for invalid field names."""
+        search = awards_search.with_award_types("A")
+        
+        with pytest.raises(ValidationError) as exc_info:
+            search.order_by("invalid_field_name")
+        
+        error_msg = str(exc_info.value)
+        assert "Invalid sort field 'invalid_field_name'" in error_msg
+        assert "contracts" in error_msg  # Should mention the category
+        assert "Valid fields are:" in error_msg
+    
+    def test_order_by_validates_contract_fields(self, awards_search):
+        """Test that contract-specific fields are accepted for contract awards."""
+        # These should all work without raising
+        search = awards_search.contracts()
+        
+        # Test base fields
+        search.order_by("Award ID")
+        search.order_by("Recipient Name")
+        search.order_by("Award Amount")
+        
+        # Test contract-specific fields
+        search.order_by("Contract Award Type")
+        search.order_by("NAICS")
+        search.order_by("PSC")
+        search.order_by("Start Date")
+        search.order_by("End Date")
+    
+    def test_order_by_validates_grant_fields(self, awards_search):
+        """Test that grant-specific fields are accepted for grant awards."""
+        search = awards_search.grants()
+        
+        # Test base fields
+        search.order_by("Award ID")
+        search.order_by("Recipient Name")
+        
+        # Test grant-specific fields
+        search.order_by("Award Type")
+        search.order_by("SAI Number")
+        search.order_by("CFDA Number")
+        search.order_by("Assistance Listings")
+    
+    def test_order_by_validates_loan_fields(self, awards_search):
+        """Test that loan-specific fields are accepted for loan awards."""
+        search = awards_search.loans()
+        
+        # Test loan-specific fields
+        search.order_by("Issued Date")
+        search.order_by("Loan Value")
+        search.order_by("Subsidy Cost")
+        search.order_by("SAI Number")
+    
+    def test_order_by_validates_idv_fields(self, awards_search):
+        """Test that IDV-specific fields are accepted for IDV awards."""
+        search = awards_search.idvs()
+        
+        # Test IDV-specific fields
+        search.order_by("Last Date to Order")
+        search.order_by("Contract Award Type")
+        search.order_by("NAICS")
+        search.order_by("PSC")
+    
+    def test_order_by_rejects_wrong_category_field(self, awards_search):
+        """Test that fields from wrong category are rejected."""
+        # Contract search should reject loan-specific field
+        search = awards_search.contracts()
+        
+        with pytest.raises(ValidationError) as exc_info:
+            search.order_by("Loan Value")
+        
+        error_msg = str(exc_info.value)
+        assert "Invalid sort field 'Loan Value' for contracts" in error_msg
+    
+    def test_order_by_case_sensitive(self, awards_search):
+        """Test that field names must match exactly (case-sensitive)."""
+        search = awards_search.contracts()
+        
+        # Should fail with lowercase
+        with pytest.raises(ValidationError):
+            search.order_by("award amount")
+        
+        # Should fail with different capitalization
+        with pytest.raises(ValidationError):
+            search.order_by("award Amount")
+        
+        # Should succeed with exact match
+        search.order_by("Award Amount")  # Should not raise
+    
+    def test_order_by_immutability(self, awards_search):
+        """Test that order_by returns a new instance."""
+        search1 = awards_search.contracts()
+        search2 = search1.order_by("Award Amount", "asc")
+        
+        # Should be different instances
+        assert search1 is not search2
+        
+        # Original should not have ordering
+        payload1 = search1._build_payload(1)
+        assert "sort" not in payload1
+        
+        # New instance should have ordering
+        payload2 = search2._build_payload(1)
+        assert payload2["sort"] == "Award Amount"
+        assert payload2["order"] == "asc"
+    
+    def test_order_by_chaining(self, awards_search):
+        """Test that order_by can be chained with other methods."""
+        search = (awards_search
+                 .for_agency("NASA")
+                 .contracts()
+                 .for_fiscal_year(2024)
+                 .order_by("Award Amount", "desc")
+                 .limit(10))
+        
+        payload = search._build_payload(1)
+        
+        # Should have all the filters and ordering
+        assert "agencies" in payload["filters"]
+        assert "award_type_codes" in payload["filters"]
+        assert "time_period" in payload["filters"]
+        assert payload["sort"] == "Award Amount"
+        assert payload["order"] == "desc"
+        assert payload["limit"] == 10
+    
+    def test_order_by_without_award_type_validates_fields(self, awards_search):
+        """Test order_by validation when no award type is set."""
+        # The award_type_codes filter is required by the API, but we can test
+        # that validation happens before payload generation
+        
+        # Should fail with type-specific field when no award type is set
+        with pytest.raises(ValidationError) as exc_info:
+            awards_search.order_by("Contract Award Type")
+        
+        error_msg = str(exc_info.value)
+        assert "Invalid sort field 'Contract Award Type'" in error_msg
+        assert "all award types (no type filter applied)" in error_msg
+        
+        # Base field should pass validation (even though payload would still fail without award types)
+        search = awards_search.order_by("Award ID")
+        # The order_by itself should succeed, even if _build_payload would fail
+        assert search._order_by == "Award ID"
+        assert search._order_direction == "desc"
+
+
 class TestAwardTypeHelperMethods:
     """Test the helper methods for award types."""
 
