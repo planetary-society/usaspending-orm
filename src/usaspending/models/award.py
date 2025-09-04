@@ -227,11 +227,6 @@ class Award(LazyRecord):
         return self._lazy_get("total_outlay", "Total Outlays", default=None)
 
     @property
-    def total_account_obligation(self) -> Optional[float]:
-        """Total amount obligated for this award."""
-        return to_float(self._lazy_get("total_account_obligation", default=None))
-
-    @property
     def account_outlays_by_defc(self) -> List[Dict[str, Any]]:
         """Outlays broken down by Disaster Emergency Fund Code (DEFC)."""
         return self._lazy_get("account_outlays_by_defc", default=[])
