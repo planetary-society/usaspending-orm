@@ -20,7 +20,7 @@ from usaspending.queries.filters import (
     AwardAmountFilter,
     AwardDateType,
     KeywordsFilter,
-    Location,
+    LocationSpec,
     LocationFilter,
     LocationScope,
     LocationScopeFilter,
@@ -348,7 +348,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         return clone
 
     def with_place_of_performance_locations(
-        self, *locations: Location
+        self, *locations: LocationSpec
     ) -> SpendingSearch:
         """
         Filter by one or more specific geographic places of performance.
@@ -438,7 +438,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_recipient_locations(self, *locations: Location) -> SpendingSearch:
+    def with_recipient_locations(self, *locations: LocationSpec) -> SpendingSearch:
         """
         Filter by one or more specific recipient locations.
 

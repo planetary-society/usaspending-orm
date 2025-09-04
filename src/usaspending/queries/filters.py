@@ -68,10 +68,9 @@ class AwardDateType(Enum):
     NEW_AWARDS_ONLY = "new_awards_only"
 
 
-# TODO: Consider making this a subclass of Location model or change the class name to avoid confusion
 @dataclass(frozen=True)
-class Location:
-    """Represents a standard location for Place of Performance or Recipient filters."""
+class LocationSpec:
+    """Represents a standard location specification for Place of Performance or Recipient filters."""
 
     country_code: str
     state_code: Optional[str] = None
@@ -166,7 +165,7 @@ class LocationFilter(BaseFilter):
     """Filter by one or more specific geographic locations."""
 
     key: Literal["place_of_performance_locations", "recipient_locations"]
-    locations: list[Location]
+    locations: list[LocationSpec]
 
     def to_dict(self) -> dict[str, list[dict[str, str]]]:
         return {self.key: [loc.to_dict() for loc in self.locations]}

@@ -13,7 +13,7 @@ from usaspending.queries.filters import (
     AwardAmountFilter,
     AwardDateType,
     KeywordsFilter,
-    Location,
+    LocationSpec,
     LocationFilter,
     SimpleListFilter,
     TieredCodeFilter,
@@ -137,7 +137,7 @@ def test_location_filter_for_state():
     Tests that LocationFilter serializes a simple state location.
     """
     # Arrange
-    location = Location(country_code="USA", state_code="VA")
+    location = LocationSpec(country_code="USA", state_code="VA")
     location_filter = LocationFilter(
         key="place_of_performance_locations", locations=[location]
     )

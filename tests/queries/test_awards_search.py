@@ -15,7 +15,7 @@ from usaspending.queries.filters import (
     AgencyType,
     AwardAmount,
     AwardDateType,
-    Location,
+    LocationSpec,
     LocationScope,
     CONTRACT_CODES,
     IDV_CODES,
@@ -233,8 +233,8 @@ class TestFilterMethods:
 
     def test_with_place_of_performance_locations(self, awards_search):
         """Test the with_place_of_performance_locations filter method."""
-        loc1 = Location(country_code="USA", state_code="CA", city_name="Los Angeles")
-        loc2 = Location(country_code="USA", state_code="TX")
+        loc1 = LocationSpec(country_code="USA", state_code="CA", city_name="Los Angeles")
+        loc2 = LocationSpec(country_code="USA", state_code="TX")
 
         result = awards_search.with_place_of_performance_locations(loc1, loc2)
 
@@ -281,7 +281,7 @@ class TestFilterMethods:
 
     def test_with_recipient_locations(self, awards_search):
         """Test the with_recipient_locations filter method."""
-        loc = Location(country_code="CAN", state_code="ON", city_name="Toronto")
+        loc = LocationSpec(country_code="CAN", state_code="ON", city_name="Toronto")
 
         result = awards_search.with_recipient_locations(loc)
 
@@ -1029,7 +1029,7 @@ class TestIntegrationScenarios:
         """Test query for small business grants with location filters."""
         mock_usa_client.mock_award_search([])  # Empty results
 
-        ca_location = Location(country_code="USA", state_code="CA")
+        ca_location = LocationSpec(country_code="USA", state_code="CA")
 
         search = (
             mock_usa_client.awards.search()

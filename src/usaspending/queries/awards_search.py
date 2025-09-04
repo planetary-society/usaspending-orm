@@ -21,7 +21,7 @@ from usaspending.queries.filters import (
     AwardAmountFilter,
     AwardDateType,
     KeywordsFilter,
-    Location,
+    LocationSpec,
     LocationFilter,
     LocationScope,
     LocationScopeFilter,
@@ -398,12 +398,12 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_place_of_performance_locations(self, *locations: Location) -> AwardsSearch:
+    def with_place_of_performance_locations(self, *locations: LocationSpec) -> AwardsSearch:
         """
         Filter by one or more specific geographic places of performance.
 
         Args:
-            *locations: One or more `Location` objects.
+            *locations: One or more `LocationSpec` objects.
 
         Returns:
             A new `AwardsSearch` instance with the filter applied.
@@ -471,12 +471,12 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_recipient_locations(self, *locations: Location) -> AwardsSearch:
+    def with_recipient_locations(self, *locations: LocationSpec) -> AwardsSearch:
         """
         Filter by one or more specific recipient locations.
 
         Args:
-            *locations: One or more `Location` objects.
+            *locations: One or more `LocationSpec` objects.
 
         Returns:
             A new `AwardsSearch` instance with the filter applied.
