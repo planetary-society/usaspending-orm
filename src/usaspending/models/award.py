@@ -122,7 +122,7 @@ class Award(LazyRecord):
     def generated_unique_award_id(self) -> Optional[str]:
         """USASpending-generated unique award identifier."""
         # This cannot be lazy-loaded since it's required to fetch details
-        return self.get_value("generated_unique_award_id", "generated_internal_id")
+        return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
     @property
     def award_identifier(self) -> str:
@@ -350,7 +350,6 @@ class Award(LazyRecord):
     # - transactions (TransactionsSearch object: query builder for transactions associated with the award)
     # - funding (FundingSearch object: query builder for treasury funding records (outlay and obligation) associated with the award)
     # - subawards (SubAwardsSearch object: query builder for subawards associated with the award)
-    # - transactions_count (int: count of transactions associated with the award)
     
 
     @cached_property
