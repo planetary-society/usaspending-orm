@@ -15,7 +15,9 @@ logger = USASpendingLogger.get_logger(__name__)
 if TYPE_CHECKING:
     from ..client import USASpending
 
-# TODO: Add logic to self-categorize recipient type based on FPDS categories
+# FUTURE: Add logic to self-categorize recipient type based on FPDS categories
+# This would enhance the Recipient model by automatically determining the recipient
+# type (corporation, university, government, etc.) based on FPDS category codes
 
 
 class Recipient(LazyRecord):
