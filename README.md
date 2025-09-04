@@ -1,70 +1,89 @@
-# USASpending Python Wrapper
+# USASpending ORM
 
-An opinionated Python client for the USAspending.gov API that simplifies federal spending data analysis through intuitive abstractions and smart defaults.
+An opinionated Python wrapper for the USAspending.gov API that applies an object-relational mapping layer to simplify standardize access to the underlying data. Loosely inspired by ActiveRecord's ORM.
 
-## Overview
-
-USASpending Python Wrapper provides a streamlined interface to the USAspending.gov API, focusing on the most common use cases while hiding the complexity of the underlying API. Rather than exposing every endpoint and parameter, this library offers a curated subset of functionality that covers the majority of real-world needs.
+The library includes built-in rate-limiting that adheres to the API published standards, default caching via the `cachier` python library.
 
 ## Key Features
 
-**🎯 Opinionated Design** - Pre-configured with sensible defaults for common federal spending analysis tasks. No need to understand the entire USAspending API surface.
+**🔗 ORM-Style Chained Interface** - Maps USAspending API endpoints to Python objects. Navigate complex data relationships (e.g., `award.recipient.location`) with a clean, intuitive syntax.
 
-**🔄 Lazy Loading** - Data is fetched only when needed, minimizing API calls and improving performance. Related objects (awards → recipients → locations) are loaded transparently.
+**🔎 Search Awards and Recipients** - Construct complex queries in the spirit of SQLAlchemy/ActiveRecord syntax with a clean, chainable interface. Filter by agencies, award types, fiscal years, and more without wrestling with raw API parameters.
 
-**📊 Rich Data Models** - Work with intuitive Python objects instead of raw JSON. Navigate relationships naturally without manual ID lookups.
+**⚡️ Smart Caching & Rate Limiting** - Out-of-the-box file caching speeds up repeated requests, while automatic rate limiting ensures your application stays within the API's usage limits.
 
-**🏛️ Geographic Analysis** - Built-in support for state and congressional district analysis. Easily aggregate spending by location with automatic political boundary awareness.
+**📄 No pagination** - Seamlessly iterate through thousands of records. The library handles the underlying pagination, letting you treat large result sets like simple Python lists.
 
-**🚀 NASA-Focused** - Special support for NASA spending analysis including subaccount breakdowns (Science, Exploration, Space Operations, etc.) and agency-specific helpers.
+**🛡️ Resilient Data Handling** - Normalizes inconsistent property names and gracefully handles missing fields, saving you from common data-wrangling headaches.
 
-**💾 Smart Caching** - Automatic caching reduces redundant API calls while keeping data fresh. Configurable cache policies for different use cases.
+**🥩 Raw API Output is Still There** - Access the raw API JSON values and structure via the `.raw` property on any ORM class object.
 
-**🔁 Automatic Retry** - Resilient to transient failures with exponential backoff and rate limit handling. Your scripts keep running even when the API hiccups.
+## Usage
 
-## Philosophy
+No API key is required to use the USASpending.gov API resource. Just install, import, configure, and use.
 
-This library takes an opinionated stance on how to work with federal spending data:
+### Load and configure the client
+```python
+>>> from usaspending import USASpending
+>>> client = USASpending()
+```
 
-- **Convention over Configuration** - Most users want to analyze recent spending by agencies in specific locations. The API is optimized for these patterns.
+### Load a single award
+```python
+>>> award = client.awards.find_by_award_id("80GSFC18C0008")
+>>> award.category
+'contract'
+>>> award.total_obligation
+145020.0
+```
 
-- **Pareto Principle** - 80% of use cases need only 20% of the API's functionality. We focus on that crucial 20%.
+### Access properties and queries via chainged associations
+```python
+>>> print(award.recipient.location.full_address)
+105 Jessup Hall
+Iowa City, IA, 52242
+United States
 
-- **Fail Gracefully** - Government data is messy. The library handles missing fields, inconsistent formats, and API quirks automatically.
+>>> award.subawards.count()
+100
 
-- **Performance by Default** - Lazy loading, intelligent caching, and automatic pagination work together seamlessly.
+>>> award.subawards[2].recipient.place_of_performance.district
+'AL-03'
+```
 
-## Target Audience
+### Search for awards using the full filter set from the API
+```python
+>>> award_query = client.awards.search() \
+...             .for_agency("National Aeronautics and Space Administration") \ # Limit to awarding agency
+...             .contracts() \ # Contract awards only
+...             .for_fiscal_year(2022) # For a given fiscal year
 
-USASpending Python Wrapper is ideal for:
+>>> award_query.count()
+11358
 
-- Policy analysts tracking federal spending in specific states or districts
-- Researchers studying government contractor relationships
-- Journalists investigating federal procurement patterns
-- Citizens monitoring local federal investments
-- Organizations analyzing agency-specific spending trends
+>>> award_query.order_by("Award Amount","desc").first().total_obligation
+22163800679.69
+```
 
-## What This Library Doesn't Do
+### Custom Configuration
 
-In keeping with its opinionated nature, USASpending Python Wrapper intentionally omits:
+You can customize the library's behavior before creating a client instance:
 
-- Advanced transaction-level analysis
-- Bulk data exports
-- Every possible API filter combination
-- Real-time spending alerts
-- Historical data beyond recent fiscal years
-
-For these advanced use cases, consider using the official USAspending API directly.
-
-## Design Principles
-
-**Simplicity First** - Common tasks should be trivial. Complex tasks should be possible.
-
-**Intuitive Navigation** - Follow the money through natural object relationships.
-
-**Defensive Programming** - Gracefully handle the inconsistencies inherent in government data.
-
-**Minimal Configuration** - Start analyzing data immediately with zero configuration.
+```python
+>>> from usaspending import USASpending, config
+>>> 
+>>> # Configure settings before creating the client
+>>> config.configure(
+...     logging_level="DEBUG",  # Increase log verbosity (default: "INFO")
+...     cache_dir="/tmp/usaspending_cache",  # Custom cache location
+...     cache_ttl=86400,  # Cache for 24 hours (default: 1 week in seconds)
+...     max_retries=5,  # Increase retry attempts (default: 3)
+...     timeout=60  # Longer timeout for slow connections (default: 30)
+... )
+>>> 
+>>> # Now create the client with your configuration
+>>> client = USASpending()
+```
 
 ## Project Status
 
@@ -72,12 +91,8 @@ USASpending Python Wrapper is under active development. The API is stabilizing b
 
 ## Contributing
 
-We welcome contributions that align with the library's opinionated philosophy. Before adding new features, consider whether they serve common use cases or add complexity for edge cases.
+We welcome contributions to improve and expand the implementation and functionality.
 
 ## License
 
-MIT License - Use freely in your federal spending analysis projects.
-
----
-
-*USASpending Python Wrapper is an independent project and is not affiliated with or endorsed by USAspending.gov or the U.S. Department of the Treasury.*
+MIT License
