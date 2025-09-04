@@ -17,7 +17,6 @@ class USASpendingLogger:
     def configure(
         self,
         level: str = "INFO",
-        debug_mode: bool = False,
         log_format: Optional[str] = None,
         log_file: Optional[str] = None,
     ) -> None:
@@ -26,7 +25,6 @@ class USASpendingLogger:
 
         Args:
             level: Base logging level (DEBUG, INFO, WARNING, ERROR)
-            debug_mode: Enable verbose debug logging for API calls and internals
             log_format: Custom log format string
             log_file: Optional file to write logs to (in addition to console)
         """
@@ -35,13 +33,7 @@ class USASpendingLogger:
 
         # Set root logger level
         root_logger = logging.getLogger("usaspending")
-
-        # Set level based on debug mode
-        if debug_mode:
-            root_logger.setLevel(logging.DEBUG)
-            level = "DEBUG"
-        else:
-            root_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
+        root_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
 
         # Remove existing handlers
         for handler in root_logger.handlers[:]:
@@ -49,7 +41,7 @@ class USASpendingLogger:
 
         # Create formatter
         if not log_format:
-            if debug_mode:
+            if level.upper() == "DEBUG":
                 log_format = (
                     "%(asctime)s - %(name)s - %(levelname)s - "
                     "%(filename)s:%(lineno)d - %(funcName)s() - %(message)s"
@@ -71,15 +63,14 @@ class USASpendingLogger:
             root_logger.addHandler(file_handler)
 
         # Configure specific loggers for different components
+        is_debug = level.upper() == "DEBUG"
         component_levels = {
-            "usaspending.client": logging.DEBUG if debug_mode else logging.INFO,
-            "usaspending.queries": logging.DEBUG if debug_mode else logging.INFO,
-            "usaspending.models": logging.DEBUG if debug_mode else logging.WARNING,
-            "usaspending.utils.rate_limit": logging.DEBUG
-            if debug_mode
-            else logging.WARNING,
-            "usaspending.utils.retry": logging.DEBUG if debug_mode else logging.WARNING,
-            "usaspending.cache": logging.DEBUG if debug_mode else logging.WARNING,
+            "usaspending.client": logging.DEBUG if is_debug else logging.INFO,
+            "usaspending.queries": logging.DEBUG if is_debug else logging.INFO,
+            "usaspending.models": logging.DEBUG if is_debug else logging.WARNING,
+            "usaspending.utils.rate_limit": logging.DEBUG if is_debug else logging.WARNING,
+            "usaspending.utils.retry": logging.DEBUG if is_debug else logging.WARNING,
+            "usaspending.cache": logging.DEBUG if is_debug else logging.WARNING,
         }
 
         for logger_name, logger_level in component_levels.items():
@@ -93,7 +84,7 @@ class USASpendingLogger:
 
         # Log configuration
         config_logger = self.get_logger("usaspending.config")
-        config_logger.info(f"Logging configured - Level: {level}, Debug: {debug_mode}")
+        config_logger.info(f"Logging configured - Level: {level}")
         if log_file:
             config_logger.info(f"Logging to file: {log_file}")
 

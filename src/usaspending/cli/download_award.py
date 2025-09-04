@@ -35,7 +35,7 @@ def main():
 
     # Configure logging
     log_level = "DEBUG" if args.verbose else "INFO"
-    USASpendingLogger.configure(level=log_level, debug_mode=args.verbose)
+    USASpendingLogger.configure(level=log_level)
     logger = USASpendingLogger.get_logger("usaspending.cli.download")
 
     try:

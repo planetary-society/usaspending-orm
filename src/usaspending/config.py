@@ -30,17 +30,17 @@ class _Config:
 
         # Caching via cachier
         self.cache_enabled: bool = True
-        self.cache_backend: str = "pickle"  # Default file-based backend for cachier
+        self.cache_backend: str = "file"  # Default file-based backend for cachier
         self.cache_dir: str = os.path.join(os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache')), 'usaspending')
         self.cache_ttl: timedelta = timedelta(weeks=1)
 
         # Logging configuration
-        self.logging_level: str = "DEBUG"
-        self.debug_mode: bool = True
+        self.logging_level: str = "INFO"
         self.log_file: Optional[str] = None
 
         # Apply the initial default settings when the object is created
         self._apply_cachier_settings()
+        self._apply_logging_settings()
 
     def configure(self, **kwargs):
         """
@@ -91,7 +91,6 @@ class _Config:
         # This is the logic moved from your client file
         USASpendingLogger.configure(
             level=self.logging_level,
-            debug_mode=self.debug_mode,
             log_file=self.log_file,
         )
 
@@ -257,33 +256,3 @@ BUSINESS_CATEGORIES = frozenset(
         "individuals": "Individuals",
     }
 )
-
-# List of CFO CGACS (Common Government-wide Accounting Classification)
-# for all U.S. government agencies.
-CFO_CGACS_MAPPING = {
-    "012": "Department of Agriculture",
-    "013": "Department of Commerce",
-    "097": "Department of Defense",
-    "091": "Department of Education",
-    "089": "Department of Energy",
-    "075": "Department of Health and Human Services",
-    "070": "Department of Homeland Security",
-    "086": "Department of Housing and Urban Development",
-    "015": "Department of Justice",
-    "1601": "Department of Labor",
-    "019": "Department of State",
-    "014": "Department of the Interior",
-    "020": "Department of the Treasury",
-    "069": "Department of Transportation",
-    "036": "Department of Veterans Affairs",
-    "068": "Environmental Protection Agency",
-    "047": "General Services Administration",
-    "080": "National Aeronautics and Space Administration",
-    "049": "National Science Foundation",
-    "031": "Nuclear Regulatory Commission",
-    "024": "Office of Personnel Management",
-    "073": "Small Business Administration",
-    "028": "Social Security Administration",
-    "072": "Agency for International Development",
-}
-CFO_CGACS = list(CFO_CGACS_MAPPING.keys())
