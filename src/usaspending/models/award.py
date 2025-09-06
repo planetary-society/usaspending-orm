@@ -65,18 +65,22 @@ class Award(LazyRecord):
     def __init__(
         self, data_or_id: Dict[str, Any] | str, client: USASpending
     ):
-        """Initialize Award instance.
+        """
+        Initialize Award instance.
 
         Args:
-            data_or_id: Award data dictionary or unique award ID string
-            client: Optional USASpending client instance
+            data_or_id (Dict[str, Any] | str): Either a dictionary containing award data (must include 'generated_unique_award_id'), or a string representing the unique award identifier. If a dictionary is provided with additional properties, those will be used to populate the instance.
+            client (USASpending): USASpending client instance.
+
+        Raises:
+            ValidationError: If data_or_id is not a dict or string, or if required keys are missing.
         """
         if isinstance(data_or_id, dict):
             raw = data_or_id.copy()
         elif isinstance(data_or_id, str):
             raw = {"generated_unique_award_id": data_or_id}
         else:
-            raise ValidationError("Award expects a dict or an award_id string")
+            raise ValidationError("Award expects a dict with the generated_unique_award_id key present, or a string of the same id.")
         super().__init__(raw, client)
 
     def _fetch_details(self) -> Optional[Dict[str, Any]]:
@@ -115,21 +119,49 @@ class Award(LazyRecord):
     # Core Award properties
     @property
     def id(self) -> Optional[int]:
-        """Internal USASpending database ID for this award."""
+        """
+        Internal USASpending database ID for this award.
+        
+        Returns:
+            Optional[int]: Internal USASpending database ID.
+        """
         return self._lazy_get("id","internal_id")
 
     @property
     def generated_unique_award_id(self) -> Optional[str]:
-        """USASpending-generated unique award identifier."""
+        """
+        The award identifier used accross USASpending and its Broker systems to uniquely identify Award records.
+        
+        The code is created by combining various identifiers of award type, awarding
+        agency codes, and other standard identifiers:
+        
+        Procurement Award ID Formats (FPDS):
+        `upper('CONT_AWD' + '_' + Coalesce(<piid>,'-NONE-') + '_' +  Coalesce(<agency_id>,'-NONE-') + '_' + Coalesce(<parent_award_id>,'-NONE-') + '_' +  Coalesce(<referenced_idv_agency_iden>,'-NONE-'))`
+        `upper('CONT_IDV' + '_' + Coalesce(<piid>,'-NONE-') + '_' +  Coalesce(<agency_id>,'-NONE-'))`
+        
+        Assistance Award ID Formats (FABS)
+        `upper('ASST_AGG' + '_' +  Coalesce(<uri>,'-NONE-') + '_' +  Coalesce(<awarding_sub_tier_agency_c>,'-NONE-'))`
+        `upper('ASST_NON' + '_' +  Coalesce(<fain>,'-NONE-') + '_' +  Coalesce(<awarding_sub_tier_agency_c>,'-NONE-'))`
+        
+        Returns:
+            Optional[str]: The generated unique award id
+        
+        """
         # This cannot be lazy-loaded since it's required to fetch details
         return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
     @property
     def award_identifier(self) -> str:
-        """General-purpose award identifier, type-agnostic.
-        
-        Award-type specific values are implemented in subclasses.
-        
+        """
+        General-purpose award identifier, type-agnostic.
+
+        Specific property getters for PIID, FAIN, and URI are implemented in subclasses such as Contract, Grant, and IDV.
+        Use this property for a unified identifier, and refer to subclass documentation for type-specific identifiers.
+
+        Example:
+            contract = Contract(...)
+            print(contract.award_identifier)  # Returns PIID for contracts
+
         Returns:
             (PIID, FAIN, URI): str
         """
@@ -137,29 +169,46 @@ class Award(LazyRecord):
 
     @property
     def category(self) -> str:
-        """Plain english description of the award type.
-        
+        """
+        Returns a plain English description of the award type.
+
         Returns:
-            One of "contract", "grant", "idv", "loan", or "other" if unknown
+            str: One of "contract", "grant", "idv", "loan", or "other" if unknown.
         """
         return self._lazy_get("category", default="")
 
     @property
     def type(self) -> Optional[str]:
         """
-        The subtype award code (e.g. "A", "B", "C", etc. for contracts.
-        See the Config file for mappings.
+        Returns the award's subtype code.
+        
+        See `award_types.py` for all valid codes.
+        
+        Returns:
+            str: The award subtype code.
         """
         return self._lazy_get("type", default="")
     
     @property
     def award_type_code(self) -> Optional[str]:
-        """ More expressive property name for `type` to avoid confusion with Python built-in."""
+        """ More expressive property name for `type` to avoid confusion with Python built-in method.
+        
+        Returns:
+            str: The award subtype code.
+        """
         return self.type
     
     @property
     def type_description(self) -> Optional[str]:
-        """The plain text description of the type of the award"""
+        """
+        Returns the plain text description of the type of the award.
+
+        This method retrieves a description for the award type using a lazy getter,
+        prioritizing "Contract Award Type" and "Award Type" keys.
+
+        Returns:
+            Optional[str]: The description of the award type, or an empty string if not available.
+        """
         return self._lazy_get("type_description", "Contract Award Type", "Award Type", default="")
 
     @property
