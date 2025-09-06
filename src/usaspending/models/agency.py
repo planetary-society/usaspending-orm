@@ -8,7 +8,7 @@ from datetime import date
 from functools import cached_property
 from .lazy_record import LazyRecord
 from ..logging_config import USASpendingLogger
-from ..config import (
+from .award_types import (
     CONTRACT_CODES,
     GRANT_CODES,
     IDV_CODES,

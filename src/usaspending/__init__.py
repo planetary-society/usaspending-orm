@@ -7,7 +7,13 @@ access to federal spending data through intuitive interfaces and smart defaults.
 from __future__ import annotations
 
 # Version information
-__version__ = "0.4.0"
+try:
+    from importlib.metadata import version
+    __version__ = version("usaspending")
+except ImportError:
+    # Fallback for development/editable installs
+    __version__ = "unknown"
+
 __author__ = "Casey Dreier"
 __email__ = "casey.dreier@planetary.org"
 

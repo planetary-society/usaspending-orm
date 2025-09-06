@@ -135,7 +135,7 @@ class Grant(Award):
             >>> grant.subawards.limit(10).all()  # Get first 10 subawards
             >>> list(grant.subawards)  # Iterate through all subawards
         """
-        from ..config import GRANT_CODES
+        from .award_types import GRANT_CODES
         
         # Grant subawards use grant award types only
         # Note: Due to validation in AwardsSearch, we cannot mix grant/direct_payment/other categories

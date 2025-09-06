@@ -3,7 +3,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
-from ..config import CONTRACT_CODES, IDV_CODES, GRANT_CODES, LOAN_CODES
+from .award_types import get_category_for_code
 from ..exceptions import ValidationError
 
 if TYPE_CHECKING:
@@ -53,15 +53,19 @@ def create_award(
     award_class = award_class_map.get(category)
 
     # Fallback to type codes if category doesn't match
-    if not award_class:
-        if award_type in CONTRACT_CODES:
-            award_class = Contract
-        elif award_type in IDV_CODES:
-            award_class = IDV
-        elif award_type in GRANT_CODES:
-            award_class = Grant
-        elif award_type in LOAN_CODES:
-            award_class = Loan
+    if not award_class and award_type:
+        code_category = get_category_for_code(award_type)
+        if code_category:
+            # Map config category names to award class names
+            category_map = {
+                "contracts": "contract",
+                "idvs": "idv", 
+                "grants": "grant",
+                "loans": "loan",
+            }
+            mapped_category = category_map.get(code_category)
+            if mapped_category:
+                award_class = award_class_map.get(mapped_category)
 
     # Use the determined class or default to the base Award class
     cls = award_class or Award

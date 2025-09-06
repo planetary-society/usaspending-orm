@@ -27,6 +27,22 @@ from .spending import Spending
 from .recipient_spending import RecipientSpending
 from .district_spending import DistrictSpending
 
+# Award type constants
+from .award_types import (
+    AWARD_TYPE_GROUPS,
+    AWARD_TYPE_DESCRIPTIONS,
+    CONTRACT_CODES,
+    IDV_CODES,
+    LOAN_CODES,
+    GRANT_CODES,
+    DIRECT_PAYMENT_CODES,
+    OTHER_CODES,
+    ALL_AWARD_CODES,
+    get_category_for_code,
+    is_valid_award_type,
+    get_description,
+)
+
 __all__ = [
     # Base classes
     "BaseModel",
@@ -52,4 +68,17 @@ __all__ = [
     "DistrictSpending",
     # Factory
     "create_award",
+    # Award type constants
+    "AWARD_TYPE_GROUPS",
+    "AWARD_TYPE_DESCRIPTIONS",
+    "CONTRACT_CODES",
+    "IDV_CODES",
+    "LOAN_CODES",
+    "GRANT_CODES",
+    "DIRECT_PAYMENT_CODES",
+    "OTHER_CODES",
+    "ALL_AWARD_CODES",
+    "get_category_for_code",
+    "is_valid_award_type",
+    "get_description",
 ]

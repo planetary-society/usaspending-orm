@@ -31,9 +31,9 @@ from usaspending.queries.filters import (
     TreasuryAccountComponentsFilter,
 )
 
-# Import award type codes from config
+# Import award type codes from models
 # These are defined by USASpending.gov and represent different categories of awards
-from ..config import (
+from ..models.award_types import (
     CONTRACT_CODES,
     IDV_CODES,
     LOAN_CODES,
@@ -41,6 +41,7 @@ from ..config import (
     DIRECT_PAYMENT_CODES,
     OTHER_CODES,
     AWARD_TYPE_GROUPS,
+    get_category_for_code,
 )
 
 logger = USASpendingLogger.get_logger(__name__)

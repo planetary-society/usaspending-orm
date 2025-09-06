@@ -17,6 +17,8 @@ from usaspending.queries.filters import (
     AwardDateType,
     LocationSpec,
     LocationScope,
+)
+from usaspending.models.award_types import (
     CONTRACT_CODES,
     IDV_CODES,
     LOAN_CODES,

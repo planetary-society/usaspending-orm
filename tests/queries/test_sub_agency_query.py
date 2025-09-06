@@ -3,7 +3,7 @@
 import pytest
 from usaspending.queries.sub_agency_query import SubAgencyQuery
 from usaspending.exceptions import ValidationError
-from usaspending.config import CONTRACT_CODES, GRANT_CODES
+from usaspending.models.award_types import CONTRACT_CODES, GRANT_CODES
 
 
 class TestSubAgencyQueryInitialization:

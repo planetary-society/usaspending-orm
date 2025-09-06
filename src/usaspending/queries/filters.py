@@ -7,33 +7,6 @@ from enum import Enum
 from typing import Any, ClassVar, Literal, Optional
 
 # ==============================================================================
-# Award Type Code Constants
-# ==============================================================================
-
-# Contract award type codes
-CONTRACT_CODES = frozenset({"A", "B", "C", "D"})
-
-# IDV award type codes
-IDV_CODES = frozenset(
-    {"IDV_A", "IDV_B", "IDV_B_A", "IDV_B_B", "IDV_B_C", "IDV_C", "IDV_D", "IDV_E"}
-)
-
-# Loan award type codes
-LOAN_CODES = frozenset({"07", "08"})
-
-# Grant award type codes
-GRANT_CODES = frozenset({"02", "03", "04", "05"})
-
-# Direct payment award type codes
-DIRECT_PAYMENT_CODES = frozenset({"06", "10"})
-
-# Other award type codes that do not fit into the above categories
-OTHER_CODES = frozenset({"09", "11", "-1"})
-
-# All valid award type codes
-ALL_AWARD_CODES = CONTRACT_CODES | IDV_CODES | LOAN_CODES | GRANT_CODES
-
-# ==============================================================================
 # Helper Enums and Dataclasses
 # ==============================================================================
 

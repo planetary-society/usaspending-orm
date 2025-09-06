@@ -134,7 +134,7 @@ class Contract(Award):
             >>> contract.subawards.limit(10).all()  # Get first 10 subawards
             >>> list(contract.subawards)  # Iterate through all subawards
         """
-        from ..config import CONTRACT_CODES
+        from .award_types import CONTRACT_CODES
         
         return (self._client.subawards
                 .for_award(self.generated_unique_award_id)

@@ -8,7 +8,7 @@ from ..exceptions import ValidationError
 from ..models.subaward import SubAward
 from .awards_search import AwardsSearch
 from ..logging_config import USASpendingLogger
-from ..config import AWARD_TYPE_GROUPS
+from ..models.award_types import AWARD_TYPE_GROUPS, get_category_for_code
 
 if TYPE_CHECKING:
     from ..client import USASpending
@@ -85,12 +85,13 @@ class SubAwardsSearch(AwardsSearch):
         is_contract = False
         is_grant = False
         
-        for category_name, codes in AWARD_TYPE_GROUPS.items():
-            if award_types & frozenset(codes.keys()):
-                if category_name in ["contracts"]:
-                    is_contract = True
-                elif category_name in ["grants"]:
-                    is_grant = True
+        # Check each award type code to determine categories
+        for award_type in award_types:
+            category = get_category_for_code(award_type)
+            if category == "contracts":
+                is_contract = True
+            elif category == "grants":
+                is_grant = True
         
         # Return appropriate field set
         if is_contract and not is_grant:
