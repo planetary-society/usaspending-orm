@@ -4,7 +4,7 @@ import re
 import yaml
 from pathlib import Path
 
-from ..config import BUSINESS_CATEGORIES
+from ..models.recipient_business_categories import BUSINESS_CATEGORY_DESCRIPTIONS
 from titlecase import titlecase
 from ..logging_config import USASpendingLogger
 
@@ -459,7 +459,7 @@ def contracts_titlecase(text):
 def get_business_category_display_names(business_category_list):
     business_category_display_name_list = []
     for business_category in business_category_list:
-        display_name = BUSINESS_CATEGORIES.get(business_category)
+        display_name = BUSINESS_CATEGORY_DESCRIPTIONS.get(business_category)
         if display_name:
             business_category_display_name_list.append(display_name)
     return business_category_display_name_list
