@@ -8,13 +8,13 @@ The library includes built-in rate-limiting that adheres to the API published st
 
 **🔗 ORM-Style Chained Interface** - Maps USAspending API endpoints to Python objects. Navigate complex data relationships (e.g., `award.recipient.location`) with a clean, intuitive syntax.
 
-**🔎 Search Awards and Recipients** - Construct complex queries in the spirit of SQLAlchemy/ActiveRecord syntax with a clean, chainable interface. Filter by agencies, award types, fiscal years, and more without wrestling with raw API parameters.
+**🔎 Comprehensive Award Search** - Construct complex queries in the spirit of SQLAlchemy/ActiveRecord syntax with a clean, chainable interface. Filter by agencies, award types, fiscal years, and more without wrestling with raw API parameters.
 
 **⚡️ Smart Caching & Rate Limiting** - Out-of-the-box file caching speeds up repeated requests, while automatic rate limiting ensures your application stays within the API's usage limits.
 
-**📄 No pagination** - Seamlessly iterate through thousands of records. The library handles the underlying pagination, letting you treat large result sets like simple Python lists.
+**📄 Transparent pagination** - Seamlessly iterate through thousands of records. The library handles the underlying pagination, letting you treat large result sets like simple Python lists.
 
-**🛡️ Resilient Data Handling** - Normalizes inconsistent property names and gracefully handles missing fields, saving you from common data-wrangling headaches.
+**🛡️ Data Normalization and Casting** - Normalizes inconsistent property names and gracefully handles missing fields via lazy-loading of attributes. Casts values to proper types.
 
 **🥩 Raw API Output is Still There** - Access the raw API JSON values and structure via the `.raw` property on any ORM class object.
 
@@ -34,10 +34,10 @@ No API key is required to use the USASpending.gov API resource. Just install, im
 >>> award.category
 'contract'
 >>> award.total_obligation
-145020.0
+Decimal('172213419.67')
 ```
 
-### Access properties and queries via chainged associations
+### Access properties and queries via chained object associations
 ```python
 >>> print(award.recipient.location.full_address)
 105 Jessup Hall
@@ -53,16 +53,17 @@ United States
 
 ### Search for awards using the full filter set from the API
 ```python
+# Search for all active contracts for NASA in FY 2022
 >>> award_query = client.awards.search() \
-...             .for_agency("National Aeronautics and Space Administration") \ # Limit to awarding agency
-...             .contracts() \ # Contract awards only
-...             .for_fiscal_year(2022) # For a given fiscal year
+...             .for_agency("National Aeronautics and Space Administration") \ 
+...             .contracts() \
+...             .for_fiscal_year(2022)
 
 >>> award_query.count()
 11358
 
 >>> award_query.order_by("Award Amount","desc").first().total_obligation
-22163800679.69
+Decimal(22163800679.69)
 ```
 
 ### Custom Configuration
@@ -76,7 +77,7 @@ You can customize the library's behavior before creating a client instance:
 >>> config.configure(
 ...     logging_level="DEBUG",  # Increase log verbosity (default: "INFO")
 ...     cache_dir="/tmp/usaspending_cache",  # Custom cache location
-...     cache_ttl=86400,  # Cache for 24 hours (default: 1 week in seconds)
+...     cache_ttl=86400,  # Cache for 24 hours (default: 1 week)
 ...     max_retries=5,  # Increase retry attempts (default: 3)
 ...     timeout=60  # Longer timeout for slow connections (default: 30)
 ... )
