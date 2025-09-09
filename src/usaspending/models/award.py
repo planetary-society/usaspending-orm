@@ -153,6 +153,52 @@ class Award(LazyRecord):
         # This cannot be lazy-loaded since it's required to fetch details
         return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
+    def _derived_award_identifier(self) -> Optional[str]:
+        """
+        Extract the award identifier (PIID, FAIN, or URI) from generated_unique_award_id.
+        
+        Parses the generated ID format to extract the original identifier:
+        - CONT_AWD_<piid>_<agency>_<parent>_<ref> -> returns piid
+        - CONT_IDV_<piid>_<agency> -> returns piid  
+        - ASST_NON_<fain>_<agency> -> returns fain
+        - ASST_AGG_<uri>_<agency> -> returns uri
+        
+        Returns:
+            The extracted identifier or None if not found or is "-NONE-"
+        """
+        gen_id = self.generated_unique_award_id
+        if not gen_id:
+            return None
+        
+        try:
+            parts = gen_id.split('_')
+            
+            # Validate minimum parts based on format
+            if len(parts) < 3:
+                return None
+                
+            prefix = '_'.join(parts[:2])  # e.g., "CONT_AWD" or "ASST_NON"
+            
+            # Validate expected number of parts for each format
+            if prefix == 'CONT_AWD' and len(parts) != 6:
+                return None
+            elif prefix == 'CONT_IDV' and len(parts) != 4:
+                return None
+            elif prefix in ('ASST_NON', 'ASST_AGG') and len(parts) != 4:
+                return None
+            elif prefix not in ('CONT_AWD', 'CONT_IDV', 'ASST_NON', 'ASST_AGG'):
+                return None
+            
+            identifier = parts[2]  # The actual ID is always the 3rd segment
+            
+            # Don't return placeholder values
+            if identifier == '-NONE-' or not identifier:
+                return None
+                
+            return identifier
+        except (IndexError, AttributeError):
+            return None
+
     @property
     def award_identifier(self) -> str:
         """General-purpose award identifier, type-agnostic.
@@ -167,7 +213,9 @@ class Award(LazyRecord):
             contract = Contract(...)
             print(contract.award_identifier)  # Returns PIID for contracts
         """
-        return str(self._lazy_get("Award ID", "piid", "fain", "uri", default=""))
+        # Derive from generated_unique_award_id
+        derived_award_id = self._derived_award_identifier()
+        return derived_award_id if derived_award_id else ""
 
     @property
     def category(self) -> str:
