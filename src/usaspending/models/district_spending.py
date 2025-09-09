@@ -7,7 +7,7 @@ from typing import Optional, TYPE_CHECKING
 from .spending import Spending
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 
 class DistrictSpending(Spending):
@@ -17,12 +17,12 @@ class DistrictSpending(Spending):
     district-specific parsing and display logic.
     """
 
-    def __init__(self, data: dict, client: Optional["USASpending"] = None):
+    def __init__(self, data: dict, client: Optional["USASpendingClient"] = None):
         """Initialize DistrictSpending model.
 
         Args:
             data: Raw district spending data from API
-            client: USASpending client instance
+            client: USASpendingClient client instance
         """
         super().__init__(data, client)
 

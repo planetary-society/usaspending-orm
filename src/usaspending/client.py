@@ -28,24 +28,24 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class USASpending:
+class USASpendingClient:
     """Main client for USASpending API.
 
     This client provides a centralized interface to the USASpending.gov API
     with automatic retry, rate limiting, and caching capabilities.
 
     Example:
-        >>> client = USASpending()
+        >>> client = USASpendingClient()
         >>> awards = client.awards.search().for_agency("NASA").limit(10)
         >>> for award in awards:
         ...     print(f"{award.recipient_name}: ${award.amount:,.2f}")
     """
 
     def __init__(self):
-        """Initialize USASpending client."""
+        """Initialize USASpendingClient."""
 
         logger.debug(
-            f"Initializing USASpending client with base URL: {config.base_url}"
+            f"Initializing USASpendingClient with base URL: {config.base_url}"
         )
 
         # Initialize HTTP session

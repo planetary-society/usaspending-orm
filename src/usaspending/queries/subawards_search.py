@@ -11,7 +11,7 @@ from ..logging_config import USASpendingLogger
 from ..models.award_types import AWARD_TYPE_GROUPS, get_category_for_code
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -23,7 +23,7 @@ class SubAwardsSearch(AwardsSearch):
     filter logic while specializing for subawards.
     """
 
-    def __init__(self, client: "USASpending"):
+    def __init__(self, client: "USASpendingClient"):
         """
         Initializes the SubAwardsSearch query builder.
 

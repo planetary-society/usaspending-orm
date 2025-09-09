@@ -7,7 +7,7 @@ from .award_types import get_category_for_code
 from ..exceptions import ValidationError
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
     from .award import Award
 
 

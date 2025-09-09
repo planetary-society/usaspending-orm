@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from .single_resource_base import SingleResourceBase
 from ..exceptions import ValidationError
-from ..client import USASpending
+from ..client import USASpendingClient
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ logger = USASpendingLogger.get_logger(__name__)
 class RecipientQuery(SingleResourceBase):
     """Retrieve a single-recipient"""
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         super().__init__(client)
 
     @property

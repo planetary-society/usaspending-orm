@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Optional, Dict, Any
 from .single_resource_base import SingleResourceBase
 from ..exceptions import ValidationError
-from ..client import USASpending
+from ..client import USASpendingClient
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
@@ -19,11 +19,11 @@ class AgencyQuery(SingleResourceBase):
     specific fiscal year using the agency's toptier code.
     """
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         """Initialize AgencyQuery with client.
         
         Args:
-            client: USASpending client instance
+            client: USASpendingClient client instance
         """
         super().__init__(client)
         logger.debug("AgencyQuery initialized with client: %s", client)

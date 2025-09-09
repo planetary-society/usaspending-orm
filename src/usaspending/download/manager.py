@@ -16,7 +16,7 @@ from ..logging_config import USASpendingLogger
 from ..models.download import DownloadStatus, AwardType, FileFormat
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
     from .job import DownloadJob
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -26,7 +26,7 @@ class DownloadManager:
 
     BASE_ENDPOINT = "/download/"
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         self._client = client
 
     def queue_download(self, download_type: AwardType, award_id: str, file_format: FileFormat, destination_dir: Optional[str]) -> DownloadJob:

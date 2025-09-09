@@ -11,14 +11,14 @@ from ..download.job import DownloadJob
 from ..models.download import DownloadStatus
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
 class DownloadResource(BaseResource):
     """Resource for award data download operations."""
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         super().__init__(client)
         self._manager = DownloadManager(client)
 

@@ -8,7 +8,7 @@ from ..utils.formatter import to_decimal, round_to_millions
 from .recipient import Recipient
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 
 class RecipientSpending(Recipient):
@@ -18,12 +18,12 @@ class RecipientSpending(Recipient):
     fields like recipient_id and UEI.
     """
 
-    def __init__(self, data: dict, client: Optional["USASpending"] = None):
+    def __init__(self, data: dict, client: Optional["USASpendingClient"] = None):
         """Initialize RecipientSpending model.
 
         Args:
             data: Raw recipient spending data from API
-            client: USASpending client instance
+            client: USASpendingClient client instance
         """
         super().__init__(data, client)
 

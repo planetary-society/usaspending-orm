@@ -13,7 +13,7 @@ if __name__ == "__main__":
         sys.path.insert(0, project_root)
 
 # Import necessary components from the library
-from usaspending.client import USASpending
+from ..client import USASpendingClient
 from usaspending.exceptions import DownloadError
 from usaspending.logging_config import USASpendingLogger
 

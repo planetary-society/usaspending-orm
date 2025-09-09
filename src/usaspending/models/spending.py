@@ -8,7 +8,7 @@ from ..utils.formatter import to_decimal
 from .base_model import BaseModel
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 
 class Spending(BaseModel):
@@ -18,12 +18,12 @@ class Spending(BaseModel):
     This model provides access to spending data with amounts, names, codes, and outlays.
     """
 
-    def __init__(self, data: dict, client: Optional["USASpending"] = None):
+    def __init__(self, data: dict, client: Optional["USASpendingClient"] = None):
         """Initialize Spending model.
 
         Args:
             data: Raw spending data from API
-            client: USASpending client instance
+            client: USASpendingClient client instance
         """
         super().__init__(data)
         self._client = client

@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Optional, Dict, Any, List
 from .single_resource_base import SingleResourceBase
 from ..exceptions import ValidationError
-from ..client import USASpending
+from ..client import USASpendingClient
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
@@ -20,11 +20,11 @@ class SubAgencyQuery(SingleResourceBase):
     and award type codes.
     """
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         """Initialize SubAgencyQuery with client.
         
         Args:
-            client: USASpending client instance
+            client: USASpendingClient client instance
         """
         super().__init__(client)
         logger.debug("SubAgencyQuery initialized with client: %s", client)

@@ -20,7 +20,7 @@ from ..logging_config import USASpendingLogger, log_query_execution
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -34,7 +34,7 @@ class QueryBuilder(ABC, Generic[T]):
     - Use max_pages() to limit the number of API requests made
     """
 
-    def __init__(self, client: "USASpending"):
+    def __init__(self, client: "USASpendingClient"):
         self._client = client
         self._filters: Dict[str, Any] = {}
         self._filter_objects: list[BaseFilter] = []

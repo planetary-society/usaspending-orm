@@ -8,14 +8,14 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from usaspending.client import USASpending
+from usaspending import USASpendingClient
 from usaspending.config import config
 from usaspending.exceptions import APIError, HTTPError
 
 from .response_builder import ResponseBuilder
 
 
-class MockUSASpendingClient(USASpending):
+class MockUSASpendingClient(USASpendingClient):
     class Endpoints:
         """A collection of API endpoint constants."""
         AGENCY = "/agency/{toptier_code}/"

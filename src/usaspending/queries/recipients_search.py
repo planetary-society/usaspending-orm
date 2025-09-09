@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Literal, TYPE_CHECKING
 
-from usaspending.client import USASpending
+from ..client import USASpendingClient
 from usaspending.queries.query_builder import QueryBuilder
 from usaspending.logging_config import USASpendingLogger
 
@@ -29,7 +29,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
     Supports filtering by keyword, award type, and sorting by various fields.
     """
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         """
         Initializes the RecipientsSearch query builder.
 

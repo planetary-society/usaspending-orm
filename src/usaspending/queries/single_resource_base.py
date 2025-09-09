@@ -1,5 +1,5 @@
 from ..exceptions import ValidationError
-from ..client import USASpending
+from ..client import USASpendingClient
 from typing import Any
 from abc import ABC, abstractmethod
 from ..logging_config import USASpendingLogger
@@ -13,7 +13,7 @@ class SingleResourceBase(ABC):
     anything with a simple GET request, generally.
     """
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         self._client = client
 
     @property

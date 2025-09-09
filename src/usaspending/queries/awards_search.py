@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import Any, Optional, Union
 
-from usaspending.client import USASpending
+from ..client import USASpendingClient
 from usaspending.exceptions import ValidationError
 from usaspending.models.award_factory import create_award
 from usaspending.models import Award
@@ -53,7 +53,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     filtering on award data. This class follows a fluent interface pattern.
     """
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         """
         Initializes the AwardsSearch query builder.
 

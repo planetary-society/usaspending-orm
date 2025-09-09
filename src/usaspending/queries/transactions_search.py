@@ -11,7 +11,7 @@ from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -22,7 +22,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     on transaction data. This class follows a fluent interface pattern.
     """
 
-    def __init__(self, client: "USASpending"):
+    def __init__(self, client: "USASpendingClient"):
         """
         Initializes the TransactionsSearch query builder.
 

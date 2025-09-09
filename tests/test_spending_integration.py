@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from usaspending.client import USASpending
+from usaspending import USASpendingClient
 from usaspending.resources.spending_resource import SpendingResource
 from usaspending.queries.spending_search import SpendingSearch
 
@@ -12,14 +12,14 @@ class TestSpendingIntegration:
 
     def test_client_has_spending_property(self):
         """Test that USASpending client has spending property."""
-        client = USASpending()
+        client = USASpendingClient()
 
         assert hasattr(client, "spending")
         assert isinstance(client.spending, SpendingResource)
 
     def test_spending_search_method_chaining(self):
         """Test spending search method chaining."""
-        client = USASpending()
+        client = USASpendingClient()
 
         # Test recipient search chaining
         recipient_search = client.spending.search().by_recipient().for_agency("NASA")
@@ -37,7 +37,7 @@ class TestSpendingIntegration:
 
     def test_spending_search_complex_chaining(self):
         """Test complex spending search method chaining."""
-        client = USASpending()
+        client = USASpendingClient()
 
         search = (
             client.spending.search()

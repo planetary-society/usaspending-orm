@@ -8,7 +8,7 @@ from .base_model import ClientAwareModel
 from .recipient import Recipient
 from .location import Location
 from .award import Award
-from ..client import USASpending
+from ..client import USASpendingClient
 
 class SubAward(ClientAwareModel):
     """Model representing a subaward from USASpending data.

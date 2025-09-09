@@ -1,9 +1,9 @@
-# usaspendingapi/models/base.py
+# usaspending/models/base_model.py
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from weakref import ref
 
 if TYPE_CHECKING:
-    from usaspending.client import USASpending
+    from ..client import USASpendingClient
 
 
 class BaseModel:
@@ -39,11 +39,11 @@ class BaseModel:
 class ClientAwareModel(BaseModel):
     """Base class for all models that need API client access."""
 
-    def __init__(self, data: Dict[str, Any], client: "USASpending"):
+    def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
         super().__init__(data)
         self._client_ref = ref(client)  # Weak reference prevents circular refs
 
     @property
-    def _client(self) -> Optional["USASpending"]:
+    def _client(self) -> Optional["USASpendingClient"]:
         """Get client instance if still alive."""
         return self._client_ref() if self._client_ref else None

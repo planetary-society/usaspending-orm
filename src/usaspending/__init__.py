@@ -18,7 +18,7 @@ __author__ = "Casey Dreier"
 __email__ = "casey.dreier@planetary.org"
 
 # Core client and configuration
-from .client import USASpending
+from .client import USASpendingClient
 from .config import config
 
 # Exception classes for error handling
@@ -75,7 +75,7 @@ __all__ = [
     "__author__",
     "__email__",
     # Core
-    "USASpending",
+    "USASpendingClient",
     "config",
     # Exceptions
     "USASpendingError",

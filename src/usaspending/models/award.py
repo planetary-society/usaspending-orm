@@ -19,7 +19,7 @@ from ..logging_config import USASpendingLogger
 from ..utils.formatter import smart_sentence_case, to_decimal, to_date
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
     from ..queries.transactions_search import TransactionsSearch
     from ..queries.funding_search import FundingSearch
     from ..queries.subawards_search import SubAwardsSearch
@@ -64,14 +64,14 @@ class Award(LazyRecord):
     ]
 
     def __init__(
-        self, data_or_id: Dict[str, Any] | str, client: USASpending
+        self, data_or_id: Dict[str, Any] | str, client: USASpendingClient
     ):
         """
         Initialize Award instance.
 
         Args:
             data_or_id (Dict[str, Any] | str): Either a dictionary containing award data (must include 'generated_unique_award_id'), or a string representing the unique award identifier. If a dictionary is provided with additional properties, those will be used to populate the instance.
-            client (USASpending): USASpending client instance.
+            client (USASpendingClient): USASpendingClient client instance.
 
         Raises:
             ValidationError: If data_or_id is not a dict or string, or if required keys are missing.

@@ -9,7 +9,7 @@ from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -22,7 +22,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
     subtier, or office).
     """
     
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         """Initialize AgenciesSearch with client."""
         super().__init__(client)
         self._search_text = ""

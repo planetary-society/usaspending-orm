@@ -19,7 +19,7 @@ from .award_types import (
 )
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
     from ..queries.awards_search import AwardsSearch
     from .subtier_agency import SubTierAgency
 
@@ -42,12 +42,12 @@ class Agency(LazyRecord):
     For subtier agency information, use the SubTierAgency model separately.
     """
 
-    def __init__(self, data: Dict[str, Any], client: USASpending, subtier_data: Optional[Dict[str, Any]] = None):
+    def __init__(self, data: Dict[str, Any], client: USASpendingClient, subtier_data: Optional[Dict[str, Any]] = None):
         """Initialize Agency instance.
 
         Args:
             data: Toptier agency data merged with top-level agency fields
-            client: USASpending client instance
+            client: USASpendingClient client instance
             subtier_data: Optional subtier agency data for subtier_agency property
         """
         super().__init__(data, client)

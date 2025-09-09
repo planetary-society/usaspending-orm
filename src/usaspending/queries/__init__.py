@@ -18,7 +18,7 @@ Recipient Queries:
     SpendingByRecipientsSearch: Recipient search with filtering and chaining
 
 Example:
-    >>> from usaspending.client import USASpending
+    >>> from ..client import USASpendingClient
     >>> client = USASpending()
     >>> 
     >>> # Single award retrieval

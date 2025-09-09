@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import Any, Optional, Union, Literal
 
-from usaspending.client import USASpending
+from ..client import USASpendingClient
 from usaspending.exceptions import ValidationError
 from usaspending.models.spending import Spending
 from usaspending.models.recipient_spending import RecipientSpending
@@ -45,7 +45,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
     spending levels (transactions, awards, subawards).
     """
 
-    def __init__(self, client: USASpending):
+    def __init__(self, client: USASpendingClient):
         """
         Initializes the SpendingSearch query builder.
 

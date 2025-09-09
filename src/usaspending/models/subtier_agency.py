@@ -8,7 +8,7 @@ from ..utils.formatter import to_decimal, to_int, contracts_titlecase
 from .base_model import BaseModel
 
 if TYPE_CHECKING:
-    from ..client import USASpending
+    from ..client import USASpendingClient
 
 
 class SubTierAgency(BaseModel):
@@ -18,12 +18,12 @@ class SubTierAgency(BaseModel):
     including nested office information.
     """
 
-    def __init__(self, data: Dict[str, Any], client: Optional["USASpending"] = None):
+    def __init__(self, data: Dict[str, Any], client: Optional["USASpendingClient"] = None):
         """Initialize SubTierAgency model.
 
         Args:
             data: Raw sub-agency data from API
-            client: USASpending client instance
+            client: USASpendingClient client instance
         """
         # Check if this data includes office_agency_name (from award context)
         office_agency_name = data.get("office_agency_name")

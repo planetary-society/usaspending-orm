@@ -1,15 +1,15 @@
-# usaspendingapi/models/lazy.py
+# usaspending/models/lazy_record.py
 from .base_model import ClientAwareModel
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from usaspending.client import USASpending
+    from ..client import USASpendingClient
 
 
 class LazyRecord(ClientAwareModel):
     """Enhanced LazyRecord that maintains client reference."""
 
-    def __init__(self, data: Dict[str, Any], client: "USASpending"):
+    def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
         super().__init__(data, client)
         self._details_fetched = False
 

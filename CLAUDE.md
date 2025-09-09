@@ -16,7 +16,7 @@ USASpending ORM is a Python ORM library for the USAspending.gov API, providing a
 - Provides generic filters and helper methods
 
 ### Client-Centric Design
-- All operations flow through a central `USASpending` client instance
+- All operations flow through a central `USASpendingClient` client
 - Resources accessed as properties: `client.awards`, `client.recipients`, etc.
 - No global state or session variables
 - Thread-safe through instance-based design
@@ -66,7 +66,7 @@ USASpending ORM is a Python ORM library for the USAspending.gov API, providing a
 ### Project Structure
 ```
 src/usaspending/
-├── client.py              # Main USASpending client
+├── client.py              # Main USASpendingClient
 ├── config.py              # Configuration settings
 ├── logging_config.py      # Custom logger configuration
 ├── exceptions.py          # Custom exceptions
