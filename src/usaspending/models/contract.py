@@ -3,9 +3,10 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, TYPE_CHECKING
 from functools import cached_property
+from decimal import Decimal
 
 from .award import Award
-from ..utils.formatter import to_float
+from ..utils.formatter import to_decimal
 
 if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
@@ -49,14 +50,14 @@ class Contract(Award):
         return self._lazy_get("piid")
 
     @property
-    def base_exercised_options(self) -> Optional[float]:
+    def base_exercised_options(self) -> Optional[Decimal]:
         """The sum of the base_exercised_options_val from associated transactions"""
-        return to_float(self._lazy_get("base_exercised_options", default=None))
+        return to_decimal(self._lazy_get("base_exercised_options", default=None))
 
     @property
-    def base_and_all_options(self) -> Optional[float]:
+    def base_and_all_options(self) -> Optional[Decimal]:
         """The sum of the base_and_all_options_value from associated transactions"""
-        return to_float(self._lazy_get("base_and_all_options", default=None))
+        return to_decimal(self._lazy_get("base_and_all_options", default=None))
 
     @property
     def contract_award_type(self) -> Optional[str]:

@@ -3,7 +3,8 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from dataclasses import dataclass
-from ..utils.formatter import to_float, to_int, to_date
+from decimal import Decimal
+from ..utils.formatter import to_decimal, to_int, to_date
 from datetime import date
 from functools import cached_property
 from .lazy_record import LazyRecord
@@ -257,7 +258,7 @@ class Agency(LazyRecord):
         return self.get_value("slug")
 
     @property
-    def obligations(self) -> Optional[float]:
+    def obligations(self) -> Optional[Decimal]:
         """ Return current fiscal year's total obligations """
         return self.total_obligations
     
@@ -267,7 +268,7 @@ class Agency(LazyRecord):
     # to related award and transaction data.
 
     @cached_property
-    def total_obligations(self) -> Optional[float]:
+    def total_obligations(self) -> Optional[Decimal]:
         """ Return current fiscal year's total obligations """
         obligations = self.get_value(["total_obligations","obligations"])
         if not obligations:
@@ -379,10 +380,10 @@ class Agency(LazyRecord):
             fiscal_year=fiscal_year,
             agency_type=agency_type
         )
-        return to_float(summary.get("obligations")) if summary else None
+        return to_decimal(summary.get("obligations")) if summary else None
     
     @cached_property
-    def contract_obligations(self) -> Optional[float]:
+    def contract_obligations(self) -> Optional[Decimal]:
         """Get contract obligations for this agency.
 
         Returns:
@@ -391,10 +392,10 @@ class Agency(LazyRecord):
         summary = self._get_award_summary(
             award_type_codes=list(CONTRACT_CODES)
         )
-        return to_float(summary.get("obligations")) if summary else None
+        return to_decimal(summary.get("obligations")) if summary else None
 
     @cached_property    
-    def grant_obligations(self) -> Optional[float]:
+    def grant_obligations(self) -> Optional[Decimal]:
         """Get grant obligations for this agency in the current fiscal year.
             
         Returns:
@@ -403,10 +404,10 @@ class Agency(LazyRecord):
         summary = self._get_award_summary(
             award_type_codes=list(GRANT_CODES)
         )
-        return to_float(summary.get("obligations")) if summary else None
+        return to_decimal(summary.get("obligations")) if summary else None
     
     @cached_property
-    def idv_obligations(self) -> Optional[float]:
+    def idv_obligations(self) -> Optional[Decimal]:
         """Get Indefinite Delivery Vehicle (IDV) obligations for this agency in the current fiscal year.
         
         Returns:
@@ -415,10 +416,10 @@ class Agency(LazyRecord):
         summary = self._get_award_summary(
             award_type_codes=list(IDV_CODES)
         )
-        return to_float(summary.get("obligations")) if summary else None
+        return to_decimal(summary.get("obligations")) if summary else None
     
     @cached_property
-    def loan_obligations(self) -> Optional[float]:
+    def loan_obligations(self) -> Optional[Decimal]:
         """Get loan obligations for this agency for the current fiscal year
 
         Returns:
@@ -427,10 +428,10 @@ class Agency(LazyRecord):
         summary = self._get_award_summary(
             award_type_codes=list(LOAN_CODES)
         )
-        return to_float(summary.get("obligations")) if summary else None
+        return to_decimal(summary.get("obligations")) if summary else None
     
     @cached_property
-    def direct_payment_obligations(self) -> Optional[float]:
+    def direct_payment_obligations(self) -> Optional[Decimal]:
         """Get direct payment obligations for this agency for the current fiscal year.
             
         Returns:
@@ -439,10 +440,10 @@ class Agency(LazyRecord):
         summary = self._get_award_summary(
             award_type_codes=list(DIRECT_PAYMENT_CODES)
         )
-        return to_float(summary.get("obligations")) if summary else None
+        return to_decimal(summary.get("obligations")) if summary else None
     
     @cached_property
-    def other_obligations(self) -> Optional[float]:
+    def other_obligations(self) -> Optional[Decimal]:
         """Get other assistance obligations for this agency.
  
         Returns:
@@ -451,7 +452,7 @@ class Agency(LazyRecord):
         summary = self._get_award_summary(
             award_type_codes=list(OTHER_CODES)
         )
-        return to_float(summary.get("obligations")) if summary else None
+        return to_decimal(summary.get("obligations")) if summary else None
     
     def get_transaction_count(
         self,

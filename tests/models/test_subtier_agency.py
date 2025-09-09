@@ -1,3 +1,4 @@
+from tests.utils import assert_decimal_equal
 """Tests for SubTierAgency model."""
 
 from usaspending.models.subtier_agency import SubTierAgency
@@ -23,7 +24,7 @@ class TestSubTierAgency:
         assert agency.name == "National Aeronautics and Space Administration"
         assert agency.abbreviation == "NASA"
         assert agency.code == "80HQTR"
-        assert agency.total_obligations == 17275121376.15
+        assert_decimal_equal(agency.total_obligations, 17275121376.15)
         assert agency.transaction_count == 29818
         assert agency.new_award_count == 5465
 
@@ -62,14 +63,14 @@ class TestSubTierAgency:
         # Test first office - names are transformed by contracts_titlecase
         assert offices[0].code == "80JSC0"
         assert offices[0].name == contracts_titlecase("NASA JOHNSON SPACE CENTER")
-        assert offices[0].total_obligations == 3938738374.3
+        assert_decimal_equal(offices[0].total_obligations, 3938738374.3)
         assert offices[0].transaction_count == 1899
         assert offices[0].new_award_count == 210
         
         # Test second office
         assert offices[1].code == "80MSFC"
         assert offices[1].name == contracts_titlecase("NASA MARSHALL SPACE FLIGHT CENTER")
-        assert offices[1].total_obligations == 3140833781.78
+        assert_decimal_equal(offices[1].total_obligations, 3140833781.78)
         assert offices[1].transaction_count == 1566
         assert offices[1].new_award_count == 158
 
@@ -140,7 +141,7 @@ class TestSubTierAgency:
         
         agency = SubTierAgency(data, mock_usa_client)
         
-        assert agency.total_obligations == 12345.67
+        assert_decimal_equal(agency.total_obligations, 12345.67)
         assert agency.transaction_count == 100
         assert agency.new_award_count is None
 

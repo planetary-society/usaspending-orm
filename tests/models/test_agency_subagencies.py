@@ -1,3 +1,4 @@
+from tests.utils import assert_decimal_equal
 """Tests for Agency model subagencies property integration."""
 
 from usaspending.models.agency import Agency
@@ -52,7 +53,7 @@ class TestAgencySubagencies:
         # Names are transformed by contracts_titlecase in the model
         assert subagency.name == contracts_titlecase(expected_subagency["name"])
         assert subagency.abbreviation == expected_subagency["abbreviation"]
-        assert subagency.total_obligations == expected_subagency["total_obligations"]
+        assert_decimal_equal(subagency.total_obligations, expected_subagency["total_obligations"])
         assert subagency.transaction_count == expected_subagency["transaction_count"]
         assert subagency.new_award_count == expected_subagency["new_award_count"]
 
@@ -90,7 +91,7 @@ class TestAgencySubagencies:
         assert first_office.code == expected_first_office["code"]
         # Names are transformed by contracts_titlecase in the model
         assert first_office.name == contracts_titlecase(expected_first_office["name"])
-        assert first_office.total_obligations == expected_first_office["total_obligations"]
+        assert_decimal_equal(first_office.total_obligations, expected_first_office["total_obligations"])
         assert first_office.transaction_count == expected_first_office["transaction_count"]
         assert first_office.new_award_count == expected_first_office["new_award_count"]
 

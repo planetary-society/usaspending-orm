@@ -1,6 +1,7 @@
-"""Tests for RecipientSpending model functionality."""
-
 from __future__ import annotations
+
+from tests.utils import assert_decimal_equal
+"""Tests for RecipientSpending model functionality."""
 
 from usaspending.models import RecipientSpending, Recipient
 from usaspending.queries.spending_search import SpendingSearch
@@ -182,6 +183,6 @@ class TestRecipientSpendingCount:
             assert recipient_spending.name == contracts_titlecase(
                 fixture_result["name"]
             )
-            assert recipient_spending.amount == fixture_result["amount"]
+            assert_decimal_equal(recipient_spending.amount, fixture_result["amount"])
             assert recipient_spending.uei == fixture_result["uei"]
             assert recipient_spending.duns == fixture_result["code"]

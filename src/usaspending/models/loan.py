@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 from typing import Dict, Any, Optional, List
+from decimal import Decimal
 
 from .grant import Grant
 from .award import Award
-from ..utils.formatter import to_float
+from ..utils.formatter import to_decimal
 
 
 class Loan(Grant):
@@ -50,16 +51,16 @@ class Loan(Grant):
         return self._lazy_get("uri")
 
     @property
-    def total_subsidy_cost(self) -> Optional[float]:
+    def total_subsidy_cost(self) -> Optional[Decimal]:
         """The total of the original_loan_subsidy_cost from associated transactions"""
-        return to_float(
+        return to_decimal(
             self._lazy_get("Subsidy Cost", "total_subsidy_cost", default=None)
         )
 
     @property
-    def total_loan_value(self) -> Optional[float]:
+    def total_loan_value(self) -> Optional[Decimal]:
         """The total of the face_value_loan_guarantee from associated transactions"""
-        return to_float(self._lazy_get("Loan Value", "total_loan_value", default=None))
+        return to_decimal(self._lazy_get("Loan Value", "total_loan_value", default=None))
     
     @property
     def cfda_info(self) -> List[Dict[str, Any]]:

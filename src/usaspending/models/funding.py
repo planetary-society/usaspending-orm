@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from typing import Dict, Any, Optional, TYPE_CHECKING
+from decimal import Decimal
 
 from .base_model import BaseModel
-from ..utils.formatter import to_float, round_to_millions
+from ..utils.formatter import to_decimal, round_to_millions
 
 if TYPE_CHECKING:
     from .agency import Agency
@@ -22,14 +23,14 @@ class Funding(BaseModel):
         super().__init__(data)
 
     @property
-    def transaction_obligated_amount(self) -> Optional[float]:
+    def transaction_obligated_amount(self) -> Optional[Decimal]:
         """Amount obligated for this funding record."""
-        return to_float(self.get_value("transaction_obligated_amount", default=0.0))
+        return to_decimal(self.get_value("transaction_obligated_amount", default=0.0))
 
     @property
-    def gross_outlay_amount(self) -> Optional[float]:
+    def gross_outlay_amount(self) -> Optional[Decimal]:
         """Gross outlay amount for this funding record."""
-        return to_float(self.get_value("gross_outlay_amount", default=0.0))
+        return to_decimal(self.get_value("gross_outlay_amount", default=0.0))
 
     @property
     def disaster_emergency_fund_code(self) -> Optional[str]:

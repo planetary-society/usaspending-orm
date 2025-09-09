@@ -2,10 +2,11 @@ from __future__ import annotations
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from functools import cached_property
 import re
+from decimal import Decimal
 
 from .lazy_record import LazyRecord
 from .location import Location
-from ..utils.formatter import to_float, contracts_titlecase
+from ..utils.formatter import to_decimal, contracts_titlecase
 
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
@@ -161,16 +162,16 @@ class Recipient(LazyRecord):
         return Location(data, self._client) if data else None
 
     @property
-    def total_transaction_amount(self):
-        return to_float(self._lazy_get("total_transaction_amount"))
+    def total_transaction_amount(self) -> Optional[Decimal]:
+        return to_decimal(self._lazy_get("total_transaction_amount"))
 
     @property
     def total_transactions(self):
         return self._lazy_get("total_transactions")
 
     @property
-    def total_face_value_loan_amount(self):
-        return to_float(self._lazy_get("total_face_value_loan_amount"))
+    def total_face_value_loan_amount(self) -> Optional[Decimal]:
+        return to_decimal(self._lazy_get("total_face_value_loan_amount"))
 
     @property
     def total_face_value_loan_transactions(self):

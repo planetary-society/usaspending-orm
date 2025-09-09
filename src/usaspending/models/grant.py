@@ -3,9 +3,10 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from functools import cached_property
+from decimal import Decimal
 
 from .award import Award
-from ..utils.formatter import to_float
+from ..utils.formatter import to_decimal
 
 if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
@@ -95,34 +96,34 @@ class Grant(Award):
         return self._lazy_get("funding_opportunity")
 
     @property
-    def non_federal_funding(self) -> Optional[float]:
+    def non_federal_funding(self) -> Optional[Decimal]:
         """A summation of this award's transactions' non-federal funding amount"""
-        return to_float(self._lazy_get("non_federal_funding", default=None))
+        return to_decimal(self._lazy_get("non_federal_funding", default=None))
 
     @property
-    def total_funding(self) -> Optional[float]:
+    def total_funding(self) -> Optional[Decimal]:
         """The sum of the federal action obligations and the Non-Federal funding amount."""
-        return to_float(self._lazy_get("total_funding", default=None))
+        return to_decimal(self._lazy_get("total_funding", default=None))
 
     @property
-    def transaction_obligated_amount(self) -> Optional[float]:
+    def transaction_obligated_amount(self) -> Optional[Decimal]:
         """Transaction-level obligated amount."""
-        return to_float(self._lazy_get("transaction_obligated_amount", default=None))
+        return to_decimal(self._lazy_get("transaction_obligated_amount", default=None))
 
     @property
-    def total_subsidy_cost(self) -> Optional[float]:
+    def total_subsidy_cost(self) -> Optional[Decimal]:
         """Total subsidy cost for this award."""
-        return to_float(self._lazy_get("total_subsidy_cost", default=None))
+        return to_decimal(self._lazy_get("total_subsidy_cost", default=None))
 
     @property
-    def base_exercised_options(self) -> Optional[float]:
+    def base_exercised_options(self) -> Optional[Decimal]:
         """The total amount obligated for the base and exercised options of this award."""
-        return to_float(self._lazy_get("base_exercised_options", default=None))
+        return to_decimal(self._lazy_get("base_exercised_options", default=None))
     
     @property
-    def base_and_all_options(self) -> Optional[float]:
+    def base_and_all_options(self) -> Optional[Decimal]:
         """The total amount obligated for the base and all options of this award."""
-        return to_float(self._lazy_get("base_and_all_options", default=None))
+        return to_decimal(self._lazy_get("base_and_all_options", default=None))
     @property
     def subawards(self) -> "SubAwardsSearch":
         """Get subawards query builder for this grant award with appropriate award type filters.

@@ -3,13 +3,15 @@ from datetime import datetime
 import re
 import yaml
 from pathlib import Path
+import decimal
+from decimal import Decimal, ROUND_HALF_UP
+
+from titlecase import titlecase
 
 from ..models.recipient_business_categories import BUSINESS_CATEGORY_DESCRIPTIONS
-from titlecase import titlecase
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
-
 
 def to_date(date_string: str) -> Optional[datetime]:
     """Convert date string to datetime object.
@@ -50,21 +52,41 @@ def to_date(date_string: str) -> Optional[datetime]:
     return None
 
 
-def round_to_millions(amount: float) -> str:
-    """Format money amount with commas and 2 decimal places, display as millions or billions based on the amount."""
+def round_to_millions(amount: int | float | Decimal) -> str:
+    """
+    Formats a monetary amount with commas and two decimal places, displaying as millions or billions when appropriate.
+
+    Args:
+        amount (Any): The monetary value to format.
+
+    Returns:
+        str: The formatted string representing the amount in dollars, millions, or billions.
+    """
+    
+    amount = to_decimal(amount)
+    
     if amount is None:
         return "$0.00"
-    if amount >= 1_000_000_000:
+    elif amount >= 1_000_000_000:
         return "${:,.1f} billion".format(amount / 1_000_000_000)
     elif amount >= 10_000_000:
         return "${:,.1f} million".format(amount / 1_000_000)
     elif amount >= 1_000_000:
         return "${:,.1f} million".format(amount / 1_000_000)
-    return "${:,.2f}".format(amount)
+    else:
+        return "${:,.2f}".format(amount)
 
 
 def current_fiscal_year() -> int:
-    """Returns the current fiscal year"""
+    """
+    Returns the current fiscal year based on the current date.
+
+    The fiscal year starts in October. If the current month is October or later,
+    the fiscal year is considered to be the next calendar year.
+
+    Returns:
+        int: The current fiscal year.
+    """
     current_date = datetime.now()
     current_month = datetime.now().month
     if current_month < 10:
@@ -82,7 +104,7 @@ def get_past_fiscal_years(num_years: int = 3) -> List[int]:
         num_years: Number of past fiscal years to return
 
     Returns:
-        List of fiscal years, starting with the most recent
+        List: List of fiscal years, starting with the most recent
     """
     current_date = datetime.now()
     current_year = current_date.year
@@ -95,18 +117,57 @@ def get_past_fiscal_years(num_years: int = 3) -> List[int]:
 
     return [current_fiscal_year - i for i in range(num_years)]
 
+def to_decimal(x: Any) -> Optional[Decimal]:
+    """Convert input to a Decimal with 2 decimal places using banker's rounding.
+    
+    Args:
+        x: Value to convert to Decimal (number, string, etc.)
+        
+    Returns:
+        Optional[Decimal]: Decimal object quantized to 2 decimal places, or None if input is None or conversion fails
+    """
+    if x is None:
+        return None
+    try:
+        return Decimal(str(x)).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+    except (TypeError, ValueError, decimal.InvalidOperation):
+        return None
 
 def to_float(x: Any) -> Optional[float]:
+    """
+    Converts the input value to a float if possible.
+    Attempts to cast the provided value to a float. If the conversion fails due to a TypeError or ValueError,
+    returns None instead.
+    
+    Args:
+        x (Any): The value to convert to float.
+        
+    Returns:
+        Optional[float]: The converted float value, or None if conversion is not possible.
+    """
+    
     try:
         return float(x)
     except (TypeError, ValueError):
-        return x
+        return None
 
 def to_int(x: Any) -> Optional[int]:
+    """
+    Converts the input value to an integer if possible.
+    Attempts to cast the provided value to an integer. If the conversion fails due to a TypeError or ValueError,
+    returns None instead.
+    
+    Args:
+        x (Any): The value to convert to an integer.
+        
+    Returns:
+        Optional[int]: The integer representation of `x` if conversion is successful; otherwise, None.
+    """
+    
     try:
         return int(x)
     except (TypeError, ValueError):
-        return x
+        return None
 
 
 # --- Configuration ---
@@ -311,7 +372,7 @@ class TextFormatter:
             paren_max_len: Max length for parenthesized text to keep uppercase
             
         Returns:
-            Text in sentence case with special cases preserved
+            str: Text in sentence case with special cases preserved
         """
         if not text:
             return ""
@@ -434,15 +495,6 @@ class TextFormatter:
         return cls._preserve_special_case(word)
 
 
-# Cache for special cases from YAML (keep for backward compatibility)
-_special_cases_cache = None
-
-
-def _load_special_cases():
-    """Load and cache special cases from YAML file."""
-    return TextFormatter._load_special_cases()
-
-
 # Define a callback function for custom word handling
 def custom_titlecase_callback(word, **kwargs):
     """Custom titlecase callback using YAML configuration."""
@@ -450,16 +502,15 @@ def custom_titlecase_callback(word, **kwargs):
 
 
 def contracts_titlecase(text):
-    """Apply NASA-specific title casing rules to text"""
+    """
+    Applies NASA-relevant title casing rules to the given text.
+
+    Args:
+        text (str or None): The input text to be title-cased. If None, returns None.
+
+    Returns:
+        str or None: The title-cased text according to NASA-specific rules, or None if input is None.
+    """
     if text is None:
         return None
     return titlecase(text, callback=TextFormatter.titlecase_callback)
-
-
-def get_business_category_display_names(business_category_list):
-    business_category_display_name_list = []
-    for business_category in business_category_list:
-        display_name = BUSINESS_CATEGORY_DESCRIPTIONS.get(business_category)
-        if display_name:
-            business_category_display_name_list.append(display_name)
-    return business_category_display_name_list

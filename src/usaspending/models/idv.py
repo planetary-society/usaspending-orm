@@ -3,10 +3,11 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional
 from functools import cached_property
+from decimal import Decimal
 
 from .award import Award
 from .location import Location
-from ..utils.formatter import to_float
+from ..utils.formatter import to_decimal
     
 class IDV(Award):
     """Indefinite Delivery Vehicle (IDV) award type.
@@ -69,20 +70,20 @@ class IDV(Award):
         return self._lazy_get("piid")
 
     @property
-    def base_and_all_options(self) -> Optional[float]:
+    def base_and_all_options(self) -> Optional[Decimal]:
         """
         For IDVs, this is the mutually agreed upon total contract value including all options (if any)
         AND the estimated value of all potential orders. For modifications enter the CHANGE, positive
         or negative of these values, if any.
         """
-        return to_float(self._lazy_get("base_and_all_options", default=None))
+        return to_decimal(self._lazy_get("base_and_all_options", default=None))
 
     @property
-    def base_exercised_options(self) -> Optional[float]:
+    def base_exercised_options(self) -> Optional[Decimal]:
         """
         The contract value for the base contract and any options that have been exercised.
         """
-        return to_float(self._lazy_get("base_exercised_options", default=None))
+        return to_decimal(self._lazy_get("base_exercised_options", default=None))
 
     @property
     def contract_award_type(self) -> Optional[str]:

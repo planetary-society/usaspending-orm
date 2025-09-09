@@ -1,6 +1,7 @@
-"""Tests for the restructured Agency model functionality."""
-
 from __future__ import annotations
+
+from tests.utils import assert_decimal_equal
+"""Tests for the restructured Agency model functionality."""
 
 from unittest.mock import Mock
 from datetime import date
@@ -144,7 +145,7 @@ class TestAgencyObligationMethodsNewStructure:
         mock_usa_client.set_response(endpoint, agency_award_summary_fixture_data)
         
         obligations = agency.get_obligations()
-        assert obligations == agency_award_summary_fixture_data["obligations"]
+        assert_decimal_equal(obligations, agency_award_summary_fixture_data["obligations"])
 
     def test_get_toptier_code_new_structure(self, mock_usa_client):
         """Test code property with new structure."""
@@ -230,7 +231,7 @@ class TestAgencyCachedProperties:
         endpoint = "/agency/080/awards/"
         mock_usa_client.set_response(endpoint, agency_award_summary_fixture_data)
         
-        assert agency.total_obligations == agency_award_summary_fixture_data["obligations"]
+        assert_decimal_equal(agency.total_obligations, agency_award_summary_fixture_data["obligations"])
         assert mock_usa_client.get_request_count(endpoint) == 1
     
     def test_latest_action_date_parsing(self, mock_usa_client, agency_award_summary_fixture_data):

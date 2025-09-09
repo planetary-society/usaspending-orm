@@ -116,13 +116,13 @@ class TestTransaction:
         assert transaction.amt == 1500000.5
 
     def test_repr(self, transaction):
-        expected = "<Txn CONT_TX_8000_-NONE-_80GSFC18C0008_P00065_-NONE-_0 2025-06-23 00:00:00 1600000.0>"
+        expected = "<Txn CONT_TX_8000_-NONE-_80GSFC18C0008_P00065_-NONE-_0 2025-06-23 00:00:00 1600000.00>"
         assert repr(transaction) == expected
 
     def test_repr_no_date(self):
         data = {"id": "test-id", "federal_action_obligation": 100000.0}
         transaction = Transaction(data)
-        expected = "<Txn test-id None 100000.0>"
+        expected = "<Txn test-id None 100000.00>"
         assert repr(transaction) == expected
 
     def test_all_fixture_transactions(self, all_transaction_data):

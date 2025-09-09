@@ -6,6 +6,7 @@ from __future__ import annotations
 from usaspending.models.funding import Funding
 from usaspending.models.award import Award
 from tests.mocks.mock_client import MockUSASpendingClient
+from tests.utils import assert_decimal_equal
 
 
 class TestClientFunding:
@@ -153,8 +154,8 @@ class TestClientFunding:
         assert len(results) == len(fixture_data["results"])
 
         # Verify first and last results
-        assert results[0].transaction_obligated_amount == 20000.0
-        assert results[-1].gross_outlay_amount == 39077.94
+        assert_decimal_equal(results[0].transaction_obligated_amount, 20000.0)
+        assert_decimal_equal(results[-1].gross_outlay_amount, 39077.94)
 
     def test_funding_first_method(self, mock_usa_client, load_fixture):
         """Test getting first funding record."""

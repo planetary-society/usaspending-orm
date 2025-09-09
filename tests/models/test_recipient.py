@@ -1,6 +1,7 @@
-"""Tests for Recipient model functionality."""
-
 from __future__ import annotations
+
+from tests.utils import assert_decimal_equal
+"""Tests for Recipient model functionality."""
 
 import pytest
 
@@ -331,9 +332,9 @@ class TestRecipientTotals:
     def test_total_transaction_amount(self, mock_usa_client, recipient_data):
         """Test total transaction amount property."""
         recipient = Recipient(recipient_data, mock_usa_client)
-        assert (
-            recipient.total_transaction_amount
-            == recipient_data["total_transaction_amount"]
+        assert_decimal_equal(
+            recipient.total_transaction_amount,
+            recipient_data["total_transaction_amount"]
         )
 
     def test_total_transactions(self, mock_usa_client, recipient_data):

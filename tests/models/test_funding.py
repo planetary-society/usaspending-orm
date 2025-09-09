@@ -1,6 +1,7 @@
-"""Tests for Funding model."""
-
 from __future__ import annotations
+
+from tests.utils import assert_decimal_equal
+"""Tests for Funding model."""
 
 from usaspending.models.funding import Funding
 
@@ -19,7 +20,7 @@ class TestFundingModel:
         funding = Funding(data)
 
         assert funding.raw == data
-        assert funding.transaction_obligated_amount == 20000.0
+        assert_decimal_equal(funding.transaction_obligated_amount, 20000.0)
         assert funding.gross_outlay_amount == 15000.0
         assert funding.federal_account == "080-0120"
         assert (
@@ -105,8 +106,8 @@ class TestFundingModel:
         funding = Funding(data)
 
         # Test all properties
-        assert funding.transaction_obligated_amount == 20000.0
-        assert funding.gross_outlay_amount == 31734.8
+        assert_decimal_equal(funding.transaction_obligated_amount, 20000.0)
+        assert_decimal_equal(funding.gross_outlay_amount, 31734.8)
         assert funding.disaster_emergency_fund_code == "Q"
         assert funding.federal_account == "080-0120"
         assert (

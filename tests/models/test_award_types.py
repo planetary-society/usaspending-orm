@@ -11,6 +11,7 @@ from __future__ import annotations
 from .test_award_common import AwardTestingMixin
 from usaspending.models import Contract, Grant, IDV, Loan
 from tests.mocks.mock_client import MockUSASpendingClient
+from tests.utils import assert_decimal_equal
 
 
 class TestContract(AwardTestingMixin):
@@ -39,8 +40,8 @@ class TestContract(AwardTestingMixin):
         
         # Spot-check key properties
         assert contract.piid == fixture_data["piid"]
-        assert contract.base_exercised_options == fixture_data["base_exercised_options"]
-        assert contract.base_and_all_options == fixture_data["base_and_all_options"]
+        assert_decimal_equal(contract.base_exercised_options, fixture_data["base_exercised_options"])
+        assert_decimal_equal(contract.base_and_all_options, fixture_data["base_and_all_options"])
         assert contract.contract_award_type == fixture_data["type_description"]
         assert contract.naics_code == fixture_data["latest_transaction_contract_data"]["naics"]
         assert contract.naics_description.lower() == fixture_data["latest_transaction_contract_data"]["naics_description"].lower()
@@ -114,9 +115,9 @@ class TestGrant(AwardTestingMixin):
         else:
             assert grant.cfda_number == fixture_data["cfda_info"][0]["cfda_number"]
         assert grant.sai_number == fixture_data.get("sai_number")
-        assert grant.non_federal_funding == fixture_data["non_federal_funding"]
-        assert grant.total_funding == fixture_data["total_funding"]
-        assert grant.transaction_obligated_amount == fixture_data["transaction_obligated_amount"]
+        assert_decimal_equal(grant.non_federal_funding, fixture_data["non_federal_funding"])
+        assert_decimal_equal(grant.total_funding, fixture_data["total_funding"])
+        assert_decimal_equal(grant.transaction_obligated_amount, fixture_data["transaction_obligated_amount"])
 
     def test_cached_and_complex_properties_from_fixture(self, mock_usa_client, fixture_data):
         """Test grant-specific cached and complex properties using fixture data."""
@@ -181,7 +182,7 @@ class TestIDV(AwardTestingMixin):
 
         # Spot-check key properties
         assert idv.piid == fixture_data["piid"]
-        assert idv.base_and_all_options == fixture_data["base_and_all_options"]
+        assert_decimal_equal(idv.base_and_all_options, fixture_data["base_and_all_options"])
         assert idv.contract_award_type == fixture_data["type_description"]
         assert idv.naics_code == fixture_data["naics_hierarchy"]["base_code"]["code"]
         assert idv.psc_code == fixture_data["psc_hierarchy"]["base_code"]["code"]
@@ -218,8 +219,8 @@ class TestLoan(AwardTestingMixin):
         assert loan.fain == fixture_data["fain"]
         # The 'uri' is None in the fixture, so we test that
         assert loan.uri is None
-        assert loan.total_subsidy_cost == fixture_data["total_subsidy_cost"]
-        assert loan.total_loan_value == fixture_data["total_loan_value"]
+        assert_decimal_equal(loan.total_subsidy_cost, fixture_data["total_subsidy_cost"])
+        assert_decimal_equal(loan.total_loan_value, fixture_data["total_loan_value"])
         if loan.cfda_number:
             assert loan.cfda_number == fixture_data["cfda_info"][0]["cfda_number"]
         else:

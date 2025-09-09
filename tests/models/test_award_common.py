@@ -13,6 +13,7 @@ from usaspending.models.agency import Agency
 from usaspending.models.subaward import SubAward
 from usaspending.exceptions import ValidationError,HTTPError
 from tests.mocks.mock_client import MockUSASpendingClient
+from tests.utils import assert_decimal_equal
 
 
 class AwardTestingMixin:
@@ -75,7 +76,7 @@ class AwardTestingMixin:
         assert award.id == fixture_data["id"]
         assert award.generated_unique_award_id == fixture_data["generated_unique_award_id"]
         assert award.description.lower() == fixture_data["description"].lower()
-        assert award.total_obligation == fixture_data["total_obligation"]
+        assert_decimal_equal(award.total_obligation, fixture_data["total_obligation"])
 
     def test_period_of_performance(self, mock_usa_client, fixture_data):
         """Test period_of_performance creation from fixture data."""

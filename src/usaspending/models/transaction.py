@@ -1,7 +1,8 @@
 from .base_model import BaseModel
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
-from ..utils.formatter import to_float, smart_sentence_case, to_date
+from decimal import Decimal
+from ..utils.formatter import to_decimal, smart_sentence_case, to_date
 
 
 @dataclass
@@ -10,7 +11,7 @@ class Transaction(BaseModel):
         super().__init__(data)
 
     @property
-    def amt(self) -> Optional[float]:
+    def amt(self) -> Optional[Decimal]:
         """Get the transaction amount."""
         amt = (
             self.federal_action_obligation
@@ -19,7 +20,7 @@ class Transaction(BaseModel):
             or None
         )
 
-        return to_float(amt)
+        return to_decimal(amt)
 
     @property
     def id(self) -> Optional[str]:
@@ -54,16 +55,16 @@ class Transaction(BaseModel):
         return smart_sentence_case(self.raw.get("description", ""))
 
     @property
-    def federal_action_obligation(self) -> Optional[float]:
-        return to_float(self.raw.get("federal_action_obligation"))
+    def federal_action_obligation(self) -> Optional[Decimal]:
+        return to_decimal(self.raw.get("federal_action_obligation"))
 
     @property
-    def face_value_loan_guarantee(self) -> Optional[float]:
-        return to_float(self.raw.get("face_value_loan_guarantee"))
+    def face_value_loan_guarantee(self) -> Optional[Decimal]:
+        return to_decimal(self.raw.get("face_value_loan_guarantee"))
 
     @property
-    def original_loan_subsidy_cost(self) -> Optional[float]:
-        return to_float(self.raw.get("original_loan_subsidy_cost"))
+    def original_loan_subsidy_cost(self) -> Optional[Decimal]:
+        return to_decimal(self.raw.get("original_loan_subsidy_cost"))
 
     @property
     def cfda_number(self) -> Optional[str]:

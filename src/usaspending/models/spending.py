@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
-from ..utils.formatter import to_float
+from decimal import Decimal
+from ..utils.formatter import to_decimal
 from .base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -43,14 +44,14 @@ class Spending(BaseModel):
         return self.get_value(["code"])
 
     @property
-    def amount(self) -> Optional[float]:
+    def amount(self) -> Optional[Decimal]:
         """Total spending amount for this record."""
-        return to_float(self.get_value(["amount"]))
+        return to_decimal(self.get_value(["amount"]))
 
     @property
-    def total_outlays(self) -> Optional[float]:
+    def total_outlays(self) -> Optional[Decimal]:
         """Total outlays for this spending record."""
-        return to_float(self.get_value(["total_outlays"]))
+        return to_decimal(self.get_value(["total_outlays"]))
 
     @property
     def spending_level(self) -> Optional[str]:

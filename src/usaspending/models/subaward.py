@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import Dict, Any, Optional
 from datetime import datetime
 from functools import cached_property
-from ..utils.formatter import contracts_titlecase, smart_sentence_case, to_float, to_date
+from decimal import Decimal
+from ..utils.formatter import contracts_titlecase, smart_sentence_case, to_decimal, to_date
 from .base_model import ClientAwareModel
 from .recipient import Recipient
 from .location import Location
@@ -158,9 +159,9 @@ class SubAward(ClientAwareModel):
         return to_date(self.raw.get("Sub-Award Date"))
     
     @property
-    def sub_award_amount(self) -> Optional[float]:
+    def sub_award_amount(self) -> Optional[Decimal]:
         """Amount of the subaward."""
-        return to_float(self.raw.get("Sub-Award Amount"))
+        return to_decimal(self.raw.get("Sub-Award Amount"))
     
     @property
     def awarding_agency(self) -> Optional[str]:

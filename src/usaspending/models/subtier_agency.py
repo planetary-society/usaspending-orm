@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from typing import Optional, List, TYPE_CHECKING, Dict, Any
-from ..utils.formatter import to_float, to_int, contracts_titlecase
+from decimal import Decimal
+from ..utils.formatter import to_decimal, to_int, contracts_titlecase
 from .base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -54,10 +55,10 @@ class SubTierAgency(BaseModel):
         return self.get_value("abbreviation")
     
     @property
-    def total_obligations(self) -> Optional[float]:
+    def total_obligations(self) -> Optional[Decimal]:
         """Total obligations for this subtier agency."""
         obligations = self.get_value("total_obligations")
-        return to_float(obligations)
+        return to_decimal(obligations)
     
     @property
     def transaction_count(self) -> Optional[int]:

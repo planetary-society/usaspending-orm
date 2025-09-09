@@ -13,6 +13,7 @@ import pytest
 from unittest.mock import Mock
 
 from usaspending.models import Award, Recipient, Location, PeriodOfPerformance
+from tests.utils import assert_decimal_equal
 
 
 class BaseTestAwardLazyLoading:
@@ -53,10 +54,10 @@ class BaseTestAwardLazyLoading:
 
         assert award.award_identifier == search_result["Award ID"]
         assert award.description.lower() == search_result["Description"].lower()
-        assert award.award_amount == search_result["Award Amount"]
-        assert award.total_obligation == search_result["Award Amount"]
+        assert_decimal_equal(award.award_amount, search_result["Award Amount"])
+        assert_decimal_equal(award.total_obligation, search_result["Award Amount"])
         assert award.recipient_uei == search_result["Recipient UEI"]
-        assert award.total_outlay == search_result["Total Outlays"]
+        assert_decimal_equal(award.total_outlay, search_result["Total Outlays"])
 
         award._fetch_details.assert_not_called()
 
@@ -93,7 +94,7 @@ class BaseTestAwardLazyLoading:
         award._fetch_details.assert_called_once()
 
         # Accessing another lazy-loaded property should not trigger another fetch
-        assert award.total_subaward_amount == detail_fixture_data["total_subaward_amount"]
+        assert_decimal_equal(award.total_subaward_amount, detail_fixture_data["total_subaward_amount"])
         award._fetch_details.assert_called_once()
 
 
