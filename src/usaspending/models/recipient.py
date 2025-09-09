@@ -33,7 +33,9 @@ class Recipient(LazyRecord):
     )
 
     def __init__(
-        self, data_or_id: Dict[str, Any] | str, client: Optional[USASpending] = None
+        self,
+        data_or_id: Dict[str, Any] | str,
+        client: Optional[USASpendingClient] = None,
     ):
         if isinstance(data_or_id, dict):
             raw = data_or_id.copy()
@@ -114,7 +116,7 @@ class Recipient(LazyRecord):
     @cached_property
     def parent(self) -> Optional["Recipient"]:
         pid = self._lazy_get("parent_id")
-        
+
         # Don't load a parent if parent id is missing or
         # the parent recipient_id is theh same as the current one
         if not pid or pid == self.recipient_id:

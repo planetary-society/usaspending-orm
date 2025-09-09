@@ -23,7 +23,7 @@ class _Config:
         self.max_retries: int = 3
         self.retry_delay: float = 1.0
         self.retry_backoff: float = 2.0
-        
+
         # Global rate limit is 1000 calls per 300 seconds
         self.rate_limit_calls: int = 1000
         self.rate_limit_period: int = 300
@@ -31,7 +31,10 @@ class _Config:
         # Caching via cachier
         self.cache_enabled: bool = True
         self.cache_backend: str = "file"  # Default file-based backend for cachier
-        self.cache_dir: str = os.path.join(os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache')), 'usaspending')
+        self.cache_dir: str = os.path.join(
+            os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
+            "usaspending",
+        )
         self.cache_ttl: timedelta = timedelta(weeks=1)
 
         # Logging configuration

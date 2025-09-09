@@ -8,7 +8,7 @@ from ..exceptions import ValidationError
 from ..models.subaward import SubAward
 from .awards_search import AwardsSearch
 from ..logging_config import USASpendingLogger
-from ..models.award_types import AWARD_TYPE_GROUPS, get_category_for_code
+from ..models.award_types import get_category_for_code
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -49,21 +49,21 @@ class SubAwardsSearch(AwardsSearch):
     def _build_payload(self, page: int) -> Dict[str, Any]:
         """
         Constructs the final API request payload for subawards.
-        
+
         Overrides parent to always include subawards=true and spending_level=subawards.
         """
         payload = super()._build_payload(page)
-        
+
         # Always search for subawards
         payload["subawards"] = True
         payload["spending_level"] = "subawards"
-        
+
         # If filtering by specific award, add to filters
         if self._award_id:
             if "filters" not in payload:
                 payload["filters"] = {}
             payload["filters"]["award_unique_id"] = self._award_id
-        
+
         return payload
 
     def _transform_result(self, result: Dict[str, Any]) -> SubAward:
@@ -73,18 +73,18 @@ class SubAwardsSearch(AwardsSearch):
     def _get_fields(self) -> list[str]:
         """
         Determines the list of fields to request based on award type filters.
-        
+
         Returns different field sets depending on the award type codes:
         - Contracts: Contract subaward fields
         - Grants/Assistance: Grant subaward fields
         """
         # Get award type codes from filters
         award_types = self._get_award_type_codes()
-        
+
         # Determine if we're dealing with contracts or grants
         is_contract = False
         is_grant = False
-        
+
         # Check each award type code to determine categories
         for award_type in award_types:
             category = get_category_for_code(award_type)
@@ -92,7 +92,7 @@ class SubAwardsSearch(AwardsSearch):
                 is_contract = True
             elif category == "grants":
                 is_grant = True
-        
+
         # Return appropriate field set
         if is_contract and not is_grant:
             return SubAward.CONTRACT_SUBAWARD_FIELDS.copy()
@@ -107,30 +107,31 @@ class SubAwardsSearch(AwardsSearch):
     def count(self) -> int:
         """
         Get the total count of subawards.
-        
+
         If filtering by a specific award, uses the efficient count endpoint.
         Otherwise falls back to parent implementation.
         """
         logger.debug(f"{self.__class__.__name__}.count() called")
-        
+
         # If we have an award_id filter, use the efficient count endpoint
         if self._award_id:
             endpoint = f"/awards/count/subaward/{self._award_id}/"
-            
+
             from ..logging_config import log_query_execution
+
             log_query_execution(logger, "SubAwardsSearch.count", 1, endpoint)
-            
+
             # Send the request to the count endpoint
             response = self._client._make_request("GET", endpoint)
-            
+
             # Extract count from response
             total = response.get("subawards", 0)
-            
+
             logger.info(
                 f"{self.__class__.__name__}.count() = {total} subawards for award {self._award_id}"
             )
             return total
-        
+
         # Fall back to parent implementation for general subaward counting
         # This is inefficient, but it's the only way to get the count
         # without a dedicated endpoint for subaward searches.
@@ -141,45 +142,48 @@ class SubAwardsSearch(AwardsSearch):
         for _ in self:
             count += 1
         return count
-    
+
     def count_awards_by_type(self) -> Dict[str, int]:
         """
         Override parent method to use subawards-specific count endpoint.
-        
+
         Returns:
             A dictionary mapping award type categories to their subaward counts.
         """
         endpoint = "/search/spending_by_award_count/"
         final_filters = self._aggregate_filters()
-        
+
         payload = {
             "filters": final_filters,
             "subawards": True,  # Always count subawards
-            "spending_level": "subawards"
+            "spending_level": "subawards",
         }
-        
+
         from ..logging_config import log_query_execution
-        
+
         log_query_execution(
-            logger, "SubAwardsSearch.count_awards_by_type", len(self._filter_objects), endpoint
+            logger,
+            "SubAwardsSearch.count_awards_by_type",
+            len(self._filter_objects),
+            endpoint,
         )
-        
+
         # Send the request to the count endpoint
         response = self._client._make_request("POST", endpoint, json=payload)
-        
+
         # Extract and return aggregations
         return response.get("aggregations", {})
 
     def for_award(self, award_id: str) -> SubAwardsSearch:
         """
         Filter subawards for a specific prime award.
-        
+
         Args:
             award_id: The unique generated award identifier.
-        
+
         Returns:
             A new SubAwardsSearch instance with the award filter applied.
-        
+
         Example:
             >>> subawards = client.subawards.for_award("CONT_AWD_123...")
             >>> for sub in subawards:
@@ -187,7 +191,7 @@ class SubAwardsSearch(AwardsSearch):
         """
         if not award_id:
             raise ValidationError("award_id cannot be empty")
-        
+
         clone = self._clone()
         clone._award_id = str(award_id).strip()
         return clone

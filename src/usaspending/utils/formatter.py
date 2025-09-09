@@ -8,10 +8,10 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from titlecase import titlecase
 
-from ..models.recipient_business_categories import BUSINESS_CATEGORY_DESCRIPTIONS
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
+
 
 def to_date(date_string: str) -> Optional[datetime]:
     """Convert date string to datetime object.
@@ -31,22 +31,22 @@ def to_date(date_string: str) -> Optional[datetime]:
     """
     if not date_string:
         return None
-    
+
     # Define formats to try, in order of likelihood
     formats = [
-        "%Y-%m-%d",                 # Date only (original format)
-        "%Y-%m-%dT%H:%M:%S",        # ISO datetime without timezone
-        "%Y-%m-%dT%H:%M:%S.%f",     # ISO datetime with microseconds
-        "%Y-%m-%dT%H:%M:%SZ",       # ISO datetime with UTC indicator
-        "%Y-%m-%dT%H:%M:%S%z",      # ISO datetime with timezone offset
+        "%Y-%m-%d",  # Date only (original format)
+        "%Y-%m-%dT%H:%M:%S",  # ISO datetime without timezone
+        "%Y-%m-%dT%H:%M:%S.%f",  # ISO datetime with microseconds
+        "%Y-%m-%dT%H:%M:%SZ",  # ISO datetime with UTC indicator
+        "%Y-%m-%dT%H:%M:%S%z",  # ISO datetime with timezone offset
     ]
-    
+
     for fmt in formats:
         try:
             return datetime.strptime(date_string, fmt)
         except ValueError:
             continue
-    
+
     # If no format matched, log warning and return None
     logger.warning(f"Could not parse date string: {date_string}")
     return None
@@ -62,9 +62,9 @@ def round_to_millions(amount: int | float | Decimal) -> str:
     Returns:
         str: The formatted string representing the amount in dollars, millions, or billions.
     """
-    
+
     amount = to_decimal(amount)
-    
+
     if amount is None:
         return "$0.00"
     elif amount >= 1_000_000_000:
@@ -117,12 +117,13 @@ def get_past_fiscal_years(num_years: int = 3) -> List[int]:
 
     return [current_fiscal_year - i for i in range(num_years)]
 
+
 def to_decimal(x: Any) -> Optional[Decimal]:
     """Convert input to a Decimal with 2 decimal places using banker's rounding.
-    
+
     Args:
         x: Value to convert to Decimal (number, string, etc.)
-        
+
     Returns:
         Optional[Decimal]: Decimal object quantized to 2 decimal places, or None if input is None or conversion fails
     """
@@ -133,37 +134,39 @@ def to_decimal(x: Any) -> Optional[Decimal]:
     except (TypeError, ValueError, decimal.InvalidOperation):
         return None
 
+
 def to_float(x: Any) -> Optional[float]:
     """
     Converts the input value to a float if possible.
     Attempts to cast the provided value to a float. If the conversion fails due to a TypeError or ValueError,
     returns None instead.
-    
+
     Args:
         x (Any): The value to convert to float.
-        
+
     Returns:
         Optional[float]: The converted float value, or None if conversion is not possible.
     """
-    
+
     try:
         return float(x)
     except (TypeError, ValueError):
         return None
+
 
 def to_int(x: Any) -> Optional[int]:
     """
     Converts the input value to an integer if possible.
     Attempts to cast the provided value to an integer. If the conversion fails due to a TypeError or ValueError,
     returns None instead.
-    
+
     Args:
         x (Any): The value to convert to an integer.
-        
+
     Returns:
         Optional[int]: The integer representation of `x` if conversion is successful; otherwise, None.
     """
-    
+
     try:
         return int(x)
     except (TypeError, ValueError):
@@ -262,9 +265,9 @@ def smart_sentence_case(
 
 class TextFormatter:
     """Unified text formatting utility class for sentence and title case conversions."""
-    
+
     _special_cases_cache = None
-    
+
     @classmethod
     def _load_special_cases(cls):
         """Load and cache special cases from YAML file."""
@@ -280,19 +283,19 @@ class TextFormatter:
                 logger.error(f"Error loading special cases: {e}")
                 cls._special_cases_cache = []
         return cls._special_cases_cache
-    
+
     @classmethod
     def _get_special_cases_set(cls):
         """Get special cases as a set for fast lookups."""
         special_cases = cls._load_special_cases()
         return {case.upper() for case in special_cases if isinstance(case, str)}
-    
+
     @classmethod
     def _split_word_punctuation(cls, word):
         """Split a word into clean word and trailing punctuation."""
         if not word:
             return word, ""
-            
+
         trailing_punct = ""
         clean_word = word
 
@@ -318,15 +321,15 @@ class TextFormatter:
                 # All punctuation, no alphanumeric chars
                 clean_word = word
                 trailing_punct = ""
-                
+
         return clean_word, trailing_punct
-    
+
     @classmethod
     def _preserve_special_case(cls, word):
         """Check if word should be preserved as special case, return preserved version or None."""
         if not isinstance(word, str):
             return None
-            
+
         # If the word is enclosed in parentheses, preserve the case inside
         if word.startswith("(") and word.endswith(")"):
             return word
@@ -358,19 +361,19 @@ class TextFormatter:
                 return special_word + trailing_punct
 
         return None
-    
+
     @classmethod
     def to_sentence_case(cls, text: Optional[str], paren_max_len: int = 9) -> str:
         """
         Convert text to sentence case, preserving special cases from YAML.
-        
+
         True sentence case: only capitalize first word of sentences and special cases.
         Includes progressive acronym expansion for parenthetical content.
-        
+
         Args:
             text: Input text to convert
             paren_max_len: Max length for parenthesized text to keep uppercase
-            
+
         Returns:
             str: Text in sentence case with special cases preserved
         """
@@ -381,38 +384,40 @@ class TextFormatter:
             # Start with lowercase
             processed_text = text.lower()
             special_cases_set = cls._get_special_cases_set()
-            
+
             # Small words to ignore in acronym expansion
-            SMALL_WORDS = r'\b(a|an|and|as|at|but|by|en|for|if|in|of|on|or|the|to|v\.?|via|vs\.?)\b'
-            
+            SMALL_WORDS = r"\b(a|an|and|as|at|but|by|en|for|if|in|of|on|or|the|to|v\.?|via|vs\.?)\b"
+
             # First, handle acronym expansion for parenthetical content
             def expand_acronyms(match):
                 full_match = match.group(0)
                 paren_content = match.group(1)
-                
+
                 # If content is too long, handle normally
                 if len(paren_content) > paren_max_len:
                     return full_match
-                
+
                 # Always try acronym expansion first, even for known acronyms
                 # This allows us to capitalize the expanded form
-                
+
                 # Try progressive acronym expansion
                 start_pos = match.start()
                 text_before = processed_text[:start_pos].strip()
-                
+
                 if text_before:
                     # Split into words
-                    words_before = re.findall(r'\b\w+\b', text_before)
+                    words_before = re.findall(r"\b\w+\b", text_before)
                     acronym_letters = [c.lower() for c in paren_content if c.isalpha()]
-                    
+
                     if len(acronym_letters) > 0:
                         # Try direct match first
                         if len(words_before) >= len(acronym_letters):
-                            last_n_words = words_before[-len(acronym_letters):]
+                            last_n_words = words_before[-len(acronym_letters) :]
                             if [w[0].lower() for w in last_n_words] == acronym_letters:
                                 # Mark these words for capitalization
-                                cls._acronym_expansion_words = getattr(cls, '_acronym_expansion_words', set())
+                                cls._acronym_expansion_words = getattr(
+                                    cls, "_acronym_expansion_words", set()
+                                )
                                 cls._acronym_expansion_words.update(last_n_words)
                             else:
                                 # If direct match failed, try skipping small words
@@ -421,73 +426,98 @@ class TextFormatter:
                                 for word in words_before:
                                     if not re.match(SMALL_WORDS, word, re.IGNORECASE):
                                         content_words.append(word)
-                                
+
                                 if len(content_words) >= len(acronym_letters):
-                                    last_n_content = content_words[-len(acronym_letters):]
-                                    if [w[0].lower() for w in last_n_content] == acronym_letters:
+                                    last_n_content = content_words[
+                                        -len(acronym_letters) :
+                                    ]
+                                    if [
+                                        w[0].lower() for w in last_n_content
+                                    ] == acronym_letters:
                                         # Mark these words for capitalization
-                                        cls._acronym_expansion_words = getattr(cls, '_acronym_expansion_words', set())
-                                        cls._acronym_expansion_words.update(last_n_content)
-                
+                                        cls._acronym_expansion_words = getattr(
+                                            cls, "_acronym_expansion_words", set()
+                                        )
+                                        cls._acronym_expansion_words.update(
+                                            last_n_content
+                                        )
+
                 # Return uppercase parenthetical if short enough
                 if len(paren_content) <= paren_max_len:
                     return f"({paren_content.upper()})"
                 else:
                     return full_match
-            
+
             # Initialize acronym expansion tracking
             cls._acronym_expansion_words = set()
-            
+
             # Apply acronym expansion
-            processed_text = re.sub(r'\(([^)]+)\)', expand_acronyms, processed_text)
-            
+            processed_text = re.sub(r"\(([^)]+)\)", expand_acronyms, processed_text)
+
             # Handle special cases and sentence boundaries
             def word_replacer(match):
                 word = match.group(1)
                 word_start = match.start()
-                
+
                 # Check if word should be capitalized due to acronym expansion
-                if hasattr(cls, '_acronym_expansion_words') and word in cls._acronym_expansion_words:
+                if (
+                    hasattr(cls, "_acronym_expansion_words")
+                    and word in cls._acronym_expansion_words
+                ):
                     return word.capitalize()
-                
+
                 # Check if word is a special case from YAML
                 if word.upper() in special_cases_set:
                     for special_case in cls._load_special_cases():
-                        if isinstance(special_case, str) and word.upper() == special_case.upper():
+                        if (
+                            isinstance(special_case, str)
+                            and word.upper() == special_case.upper()
+                        ):
                             return special_case
-                
+
                 # Check if this is the start of a sentence (beginning or after . ! ? + space)
                 if word_start == 0:
                     return word.capitalize()
-                
+
                 # Look for sentence boundaries (punctuation + one or more spaces)
                 text_before = processed_text[:word_start]
-                if re.search(r'[.!?]\s+$', text_before):
+                if re.search(r"[.!?]\s+$", text_before):
                     return word.capitalize()
-                
+
                 return word
-            
-            processed_text = re.sub(r'\b([a-zA-Z]+(?:-[a-zA-Z]+)*)\b', word_replacer, processed_text)
-            
+
+            processed_text = re.sub(
+                r"\b([a-zA-Z]+(?:-[a-zA-Z]+)*)\b", word_replacer, processed_text
+            )
+
             # Clean up acronym expansion tracking
-            if hasattr(cls, '_acronym_expansion_words'):
-                delattr(cls, '_acronym_expansion_words')
+            if hasattr(cls, "_acronym_expansion_words"):
+                delattr(cls, "_acronym_expansion_words")
 
             return processed_text
 
         except Exception as e:
-            logger.error(f"Error processing text: '{text[:50]}...' - {e}", exc_info=True)
+            logger.error(
+                f"Error processing text: '{text[:50]}...' - {e}", exc_info=True
+            )
             return text  # Fallback to original text on error
-    
+
     @classmethod
     def titlecase_callback(cls, word, **kwargs):
         """Custom titlecase callback using YAML configuration."""
         if not isinstance(word, str):
             return word
-            
+
         # normalizations for common business suffixes
-        normalized_words = {"L.L.C.": "LLC", "I.N.C.": "Inc", "L.L.P.": "LLP", "L.T.D.": "LTD",
-                            "P.L.L.C.": "PLLC", "P.A.": "PA", "P.C.": "PC"}
+        normalized_words = {
+            "L.L.C.": "LLC",
+            "I.N.C.": "Inc",
+            "L.L.P.": "LLP",
+            "L.T.D.": "LTD",
+            "P.L.L.C.": "PLLC",
+            "P.A.": "PA",
+            "P.C.": "PC",
+        }
 
         if word.upper() in normalized_words.keys():
             word = normalized_words[word.upper()]

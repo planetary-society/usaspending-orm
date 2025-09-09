@@ -19,7 +19,12 @@ class TestSubAwardsSearch:
     @pytest.fixture
     def subawards_response(self):
         """Load subawards fixture data."""
-        fixture_path = Path(__file__).parent.parent / "fixtures" / "awards" / "search_results_subawards.json"
+        fixture_path = (
+            Path(__file__).parent.parent
+            / "fixtures"
+            / "awards"
+            / "search_results_subawards.json"
+        )
         with open(fixture_path, "r") as f:
             return json.load(f)
 
@@ -32,9 +37,9 @@ class TestSubAwardsSearch:
     def test_build_payload_includes_subawards_flag(self, mock_usa_client):
         """Test that payload always includes subawards=true."""
         search = SubAwardsSearch(mock_usa_client).with_award_types("A", "B", "C")
-        
+
         payload = search._build_payload(page=1)
-        
+
         assert payload["subawards"] is True
         assert payload["spending_level"] == "subawards"
         assert "filters" in payload
@@ -42,25 +47,29 @@ class TestSubAwardsSearch:
 
     def test_build_payload_with_award_filter(self, mock_usa_client):
         """Test that payload includes award_unique_id when filtering by award."""
-        search = (SubAwardsSearch(mock_usa_client)
-                 .with_award_types("A", "B", "C")
-                 .for_award("CONT_AWD_123_456"))
-        
+        search = (
+            SubAwardsSearch(mock_usa_client)
+            .with_award_types("A", "B", "C")
+            .for_award("CONT_AWD_123_456")
+        )
+
         payload = search._build_payload(page=1)
-        
+
         assert payload["filters"]["award_unique_id"] == "CONT_AWD_123_456"
         assert payload["subawards"] is True
         assert payload["spending_level"] == "subawards"
 
-    def test_transform_result_returns_subaward(self, mock_usa_client, subawards_response):
+    def test_transform_result_returns_subaward(
+        self, mock_usa_client, subawards_response
+    ):
         """Test that transform_result returns SubAward instances."""
         from usaspending.utils.formatter import contracts_titlecase
-        
+
         search = SubAwardsSearch(mock_usa_client)
-        
+
         subaward_data = subawards_response["results"][0]
         result = search._transform_result(subaward_data)
-        
+
         assert isinstance(result, SubAward)
         assert result.id == subaward_data["internal_id"]
         expected_name = contracts_titlecase(subaward_data["Sub-Awardee Name"])
@@ -69,9 +78,9 @@ class TestSubAwardsSearch:
     def test_get_fields_for_contract_subawards(self, mock_usa_client):
         """Test field selection for contract subawards."""
         search = SubAwardsSearch(mock_usa_client).with_award_types("A", "B", "C", "D")
-        
+
         fields = search._get_fields()
-        
+
         # Should return contract subaward fields
         assert "NAICS" in fields
         assert "PSC" in fields
@@ -79,10 +88,12 @@ class TestSubAwardsSearch:
 
     def test_get_fields_for_grant_subawards(self, mock_usa_client):
         """Test field selection for grant subawards."""
-        search = SubAwardsSearch(mock_usa_client).with_award_types("02", "03", "04", "05")
-        
+        search = SubAwardsSearch(mock_usa_client).with_award_types(
+            "02", "03", "04", "05"
+        )
+
         fields = search._get_fields()
-        
+
         # Should return grant subaward fields
         assert "Assistance Listing" in fields
         assert "NAICS" not in fields
@@ -94,13 +105,16 @@ class TestSubAwardsSearch:
         # but if it gets through, we return all fields
         search = SubAwardsSearch(mock_usa_client)
         search._filter_objects = []  # Clear filters to bypass validation
-        
+
         # Manually set both contract and grant codes
         from usaspending.queries.filters import SimpleListFilter
-        search._filter_objects.append(SimpleListFilter(key="award_type_codes", values=["A", "02"]))
-        
+
+        search._filter_objects.append(
+            SimpleListFilter(key="award_type_codes", values=["A", "02"])
+        )
+
         fields = search._get_fields()
-        
+
         # Should return union of both field sets
         assert "NAICS" in fields
         assert "PSC" in fields
@@ -109,13 +123,13 @@ class TestSubAwardsSearch:
     def test_for_award_method(self, mock_usa_client):
         """Test for_award method sets award_id."""
         search = SubAwardsSearch(mock_usa_client).for_award("CONT_AWD_123")
-        
+
         assert search._award_id == "CONT_AWD_123"
 
     def test_for_award_strips_whitespace(self, mock_usa_client):
         """Test for_award strips whitespace from award_id."""
         search = SubAwardsSearch(mock_usa_client).for_award("  CONT_AWD_123  ")
-        
+
         assert search._award_id == "CONT_AWD_123"
 
     def test_for_award_empty_raises_error(self, mock_usa_client):
@@ -126,7 +140,9 @@ class TestSubAwardsSearch:
     def test_count_with_award_id(self, mock_usa_client):
         """Test count method uses efficient endpoint when award_id is set."""
         # Set up the specific endpoint response
-        endpoint = MockUSASpendingClient.Endpoints.SUBWARD_COUNT.format(award_id="CONT_AWD_123")
+        endpoint = MockUSASpendingClient.Endpoints.SUBWARD_COUNT.format(
+            award_id="CONT_AWD_123"
+        )
         mock_usa_client.set_response(endpoint, {"subawards": 7})
 
         search = SubAwardsSearch(mock_usa_client).for_award("CONT_AWD_123")
@@ -134,9 +150,7 @@ class TestSubAwardsSearch:
 
         assert count == 7
         # Verify the correct endpoint was called
-        mock_usa_client.assert_called_with(
-            endpoint=endpoint, method="GET"
-        )
+        mock_usa_client.assert_called_with(endpoint=endpoint, method="GET")
 
     def test_count_without_award_id(self, mock_usa_client):
         """Test count method falls back to parent implementation without award_id."""
@@ -145,7 +159,7 @@ class TestSubAwardsSearch:
         # Mock the iterator to return 5 items
         mock_usa_client.set_paginated_response(
             MockUSASpendingClient.Endpoints.AWARD_SEARCH,
-            [{"internal_id": i} for i in range(5)]
+            [{"internal_id": i} for i in range(5)],
         )
 
         count = search.count()
@@ -153,12 +167,14 @@ class TestSubAwardsSearch:
 
     def test_query_chaining(self, mock_usa_client):
         """Test that SubAwardsSearch supports query chaining."""
-        search = (SubAwardsSearch(mock_usa_client)
-                 .with_award_types("A", "B", "C")
-                 .for_award("CONT_AWD_123")
-                 .limit(50)
-                 .page_size(25))
-        
+        search = (
+            SubAwardsSearch(mock_usa_client)
+            .with_award_types("A", "B", "C")
+            .for_award("CONT_AWD_123")
+            .limit(50)
+            .page_size(25)
+        )
+
         assert search._award_id == "CONT_AWD_123"
         assert search._total_limit == 50
         assert search._page_size == 25
@@ -166,7 +182,7 @@ class TestSubAwardsSearch:
     def test_inherits_award_search_filters(self, mock_usa_client):
         """Test that SubAwardsSearch inherits filter methods from AwardsSearch."""
         search = SubAwardsSearch(mock_usa_client)
-        
+
         # Should have all AwardsSearch filter methods
         assert hasattr(search, "with_keywords")
         assert hasattr(search, "in_time_period")
@@ -182,11 +198,11 @@ class TestSubAwardsSearch:
         search1 = SubAwardsSearch(mock_usa_client).with_award_types("A", "B")
         search2 = search1.for_award("CONT_AWD_123")
         search3 = search2.limit(10)
-        
+
         # Each should be a different instance
         assert search1 is not search2
         assert search2 is not search3
-        
+
         # Original should not be modified
         assert search1._award_id is None
         assert search2._award_id == "CONT_AWD_123"

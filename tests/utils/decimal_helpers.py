@@ -7,11 +7,11 @@ from typing import Any, Union
 def decimal_equal(actual: Any, expected: Union[float, int, str, Decimal]) -> bool:
     """
     Compare a Decimal value with expected numeric value, handling precision differences.
-    
+
     Args:
         actual: The actual value (should be Decimal)
         expected: The expected value (can be float, int, str, or Decimal)
-        
+
     Returns:
         bool: True if values are equal within expected precision
     """
@@ -19,7 +19,7 @@ def decimal_equal(actual: Any, expected: Union[float, int, str, Decimal]) -> boo
         return True
     if actual is None or expected is None:
         return False
-        
+
     # Convert expected to Decimal for comparison
     if isinstance(expected, (float, int, str)):
         expected_decimal = Decimal(str(expected))
@@ -27,17 +27,19 @@ def decimal_equal(actual: Any, expected: Union[float, int, str, Decimal]) -> boo
         expected_decimal = expected
     else:
         return False
-        
+
     # Compare as Decimal values
     return isinstance(actual, Decimal) and actual == expected_decimal
 
 
-def assert_decimal_equal(actual: Any, expected: Union[float, int, str, Decimal], message: str = None):
+def assert_decimal_equal(
+    actual: Any, expected: Union[float, int, str, Decimal], message: str = None
+):
     """
     Assert that a Decimal value equals the expected value.
-    
+
     Args:
-        actual: The actual value (should be Decimal) 
+        actual: The actual value (should be Decimal)
         expected: The expected value (can be float, int, str, or Decimal)
         message: Optional custom error message
     """

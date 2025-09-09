@@ -8,26 +8,27 @@ from decimal import Decimal
 from .award import Award
 from .location import Location
 from ..utils.formatter import to_decimal
-    
+
+
 class IDV(Award):
     """Indefinite Delivery Vehicle (IDV) award type.
-    
-    IDVs are contract vehicles that provide for an indefinite quantity of supplies 
-    or services during a fixed period of time. They establish broad parameters and 
-    terms for ordering supplies/services, with specific orders placed against them 
+
+    IDVs are contract vehicles that provide for an indefinite quantity of supplies
+    or services during a fixed period of time. They establish broad parameters and
+    terms for ordering supplies/services, with specific orders placed against them
     via delivery orders or task orders.
-    
+
     Common IDV types include:
     - GWAC (Government-Wide Acquisition Contract)
-    - IDC (Indefinite Delivery Contract)  
+    - IDC (Indefinite Delivery Contract)
     - FSS (Federal Supply Schedule)
     - BOA (Basic Ordering Agreement)
     - BPA (Blanket Purchase Agreement)
-    
+
     IDVs serve as parent contracts that streamline procurement by pre-negotiating
-    terms, conditions, and pricing for future orders. They reduce administrative 
+    terms, conditions, and pricing for future orders. They reduce administrative
     costs and enable faster acquisition of recurring needs.
-    
+
     Example:
         >>> # Find all IDVs for an agency
         >>> idvs = client.awards.search().idvs().for_agency("NASA").all()
@@ -88,7 +89,9 @@ class IDV(Award):
     @property
     def contract_award_type(self) -> Optional[str]:
         """Contract award type description."""
-        return self._lazy_get("contract_award_type", "Contract Award Type", "type_description")
+        return self._lazy_get(
+            "contract_award_type", "Contract Award Type", "type_description"
+        )
 
     @property
     def naics_code(self) -> Optional[str]:
@@ -96,7 +99,9 @@ class IDV(Award):
         naics_data = self._lazy_get("naics", "NAICS")
         if isinstance(naics_data, dict):
             return naics_data.get("code")
-        if self.naics_hierarchy and isinstance(self.naics_hierarchy.get("base_code"), dict):
+        if self.naics_hierarchy and isinstance(
+            self.naics_hierarchy.get("base_code"), dict
+        ):
             return self.naics_hierarchy["base_code"].get("code")
         return None
 

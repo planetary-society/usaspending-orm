@@ -14,7 +14,14 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 # Valid award types for recipient searches
-AwardType = Literal["all", "contracts", "grants", "loans", "direct_payments", "other_financial_assistance"]
+AwardType = Literal[
+    "all",
+    "contracts",
+    "grants",
+    "loans",
+    "direct_payments",
+    "other_financial_assistance",
+]
 # Valid sort fields
 SortField = Literal["name", "duns", "amount"]
 # Valid sort directions
@@ -25,7 +32,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
     """
     Builds and executes recipient search queries, allowing for complex
     filtering on recipient data. This class follows a fluent interface pattern.
-    
+
     Supports filtering by keyword, award type, and sorting by various fields.
     """
 
@@ -75,6 +82,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
     def _transform_result(self, result: dict[str, Any]) -> "Recipient":
         """Transforms a single API result item into a Recipient model."""
         from usaspending.models.recipient import Recipient
+
         if not result.get("recipient_id") and result.get("id"):
             result["recipient_id"] = result["id"]
         return Recipient(result, self._client)
@@ -82,7 +90,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
     def count(self) -> int:
         """
         Get the total count of results using the dedicated count endpoint.
-        
+
         Uses the /v2/recipient/count/ endpoint which takes the same filters
         but returns just a count value.
 
@@ -103,7 +111,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
         # Make API request to count endpoint
         count_endpoint = "/recipient/count/"
         response = self._client._make_request("POST", count_endpoint, json=payload)
-        
+
         total_count = response.get("count", 0)
         logger.info(f"{self.__class__.__name__}.count() = {total_count}")
         return total_count
@@ -140,7 +148,9 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
         clone._award_type = award_type
         return clone
 
-    def order_by(self, field: SortField, direction: SortDirection = "desc") -> RecipientsSearch:
+    def order_by(
+        self, field: SortField, direction: SortDirection = "desc"
+    ) -> RecipientsSearch:
         """
         Set the sort field and direction.
 

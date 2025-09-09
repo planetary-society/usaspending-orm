@@ -13,5 +13,5 @@ __all__ = [
     "TransactionsResource",
     "SpendingResource",
     "FundingResource",
-    "DownloadResource"
+    "DownloadResource",
 ]

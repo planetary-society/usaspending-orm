@@ -69,7 +69,7 @@ class Location(BaseModel):
 
     @property
     def congressional_code(self) -> Optional[str]:
-        return self.get_value(["congressional_code","district"])
+        return self.get_value(["congressional_code", "district"])
 
     @property
     def foreign_province(self) -> Optional[str]:

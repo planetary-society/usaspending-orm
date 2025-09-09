@@ -107,13 +107,23 @@ OVERLAPPING_CATEGORIES = {
     "emerging_small_business": ["category_business", "special_designations"],
     "small_agricultural_cooperative": ["category_business", "special_designations"],
     "small_disadvantaged_business": ["category_business", "special_designations"],
-    "self_certified_small_disadvanted_business": ["category_business", "special_designations"],
+    "self_certified_small_disadvanted_business": [
+        "category_business",
+        "special_designations",
+    ],
     # Women-owned small businesses also trigger small_business
     "women_owned_small_business": ["women_owned", "category_business"],
-    "economically_disadvantaged_women_owned_small_business": ["women_owned", "category_business"],
+    "economically_disadvantaged_women_owned_small_business": [
+        "women_owned",
+        "category_business",
+    ],
     "joint_venture_women_owned_small_business": ["women_owned", "category_business"],
-    "joint_venture_economically_disadvantaged_women_owned_small_business": ["women_owned", "category_business"],
+    "joint_venture_economically_disadvantaged_women_owned_small_business": [
+        "women_owned",
+        "category_business",
+    ],
 }
+
 
 # Create a complete mapping including overlaps
 def _build_complete_descriptions():
@@ -125,14 +135,19 @@ def _build_complete_descriptions():
                 descriptions[code] = description
     return descriptions
 
+
 BUSINESS_CATEGORY_DESCRIPTIONS = _build_complete_descriptions()
 
 # Create frozensets for each group
-CATEGORY_BUSINESS_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["category_business"].keys())
+CATEGORY_BUSINESS_CODES = frozenset(
+    BUSINESS_CATEGORY_GROUPS["category_business"].keys()
+)
 MINORITY_OWNED_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["minority_owned"].keys())
 WOMEN_OWNED_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["women_owned"].keys())
 VETERAN_OWNED_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["veteran_owned"].keys())
-SPECIAL_DESIGNATIONS_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["special_designations"].keys())
+SPECIAL_DESIGNATIONS_CODES = frozenset(
+    BUSINESS_CATEGORY_GROUPS["special_designations"].keys()
+)
 NONPROFIT_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["nonprofit"].keys())
 HIGHER_EDUCATION_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["higher_education"].keys())
 GOVERNMENT_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["government"].keys())
@@ -147,23 +162,23 @@ BUSINESS_CATEGORIES = ALL_BUSINESS_CATEGORIES
 
 def get_category_group(code: str) -> str:
     """Get the primary category group name for a given business category code.
-    
+
     For categories that belong to multiple groups, returns the first/primary group.
     Use get_all_groups_for_code() to get all groups.
-    
+
     Args:
         code: Business category code (e.g., "small_business", "nonprofit")
-        
+
     Returns:
         Primary category group name (e.g., "category_business", "nonprofit") or empty string if not found
     """
     if not isinstance(code, str):
         return ""
-    
+
     # Check overlapping categories first for their primary group
     if code in OVERLAPPING_CATEGORIES:
         return OVERLAPPING_CATEGORIES[code][0]
-    
+
     # Check each group
     for group_name, codes in BUSINESS_CATEGORY_GROUPS.items():
         if code in codes:
@@ -173,38 +188,38 @@ def get_category_group(code: str) -> str:
 
 def get_all_groups_for_code(code: str) -> list[str]:
     """Get all category groups that a business category code belongs to.
-    
+
     Handles categories that belong to multiple groups (e.g., emerging_small_business).
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         List of all category group names the code belongs to
     """
     if not isinstance(code, str):
         return []
-    
+
     groups = []
-    
+
     # Check if it's an overlapping category
     if code in OVERLAPPING_CATEGORIES:
         return OVERLAPPING_CATEGORIES[code].copy()
-    
+
     # Otherwise check each group
     for group_name, codes in BUSINESS_CATEGORY_GROUPS.items():
         if code in codes:
             groups.append(group_name)
-    
+
     return groups
 
 
 def is_valid_business_category(code: str) -> bool:
     """Check if a code is a valid business category.
-    
+
     Args:
         code: Business category code to validate
-        
+
     Returns:
         True if the code is valid, False otherwise
     """
@@ -215,10 +230,10 @@ def is_valid_business_category(code: str) -> bool:
 
 def get_description(code: str) -> str:
     """Get the description for a given business category code.
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         Description string or empty string if not found
     """
@@ -230,29 +245,29 @@ def get_description(code: str) -> str:
 # Convenience functions for common category checks
 def is_small_business(code: str) -> bool:
     """Check if a code represents a small business.
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         True if the code represents a small business
     """
     if not isinstance(code, str):
         return False
-    
+
     # Direct small business code
     if code == "small_business":
         return True
-    
+
     # Women-owned small businesses
     if code in {
         "women_owned_small_business",
-        "economically_disadvantaged_women_owned_small_business", 
+        "economically_disadvantaged_women_owned_small_business",
         "joint_venture_women_owned_small_business",
         "joint_venture_economically_disadvantaged_women_owned_small_business",
     }:
         return True
-    
+
     # Special designation small businesses
     if code in {
         "emerging_small_business",
@@ -261,16 +276,16 @@ def is_small_business(code: str) -> bool:
         "small_disadvantaged_business",
     }:
         return True
-    
+
     return False
 
 
 def is_minority_owned(code: str) -> bool:
     """Check if a code represents a minority-owned business.
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         True if the code represents a minority-owned business
     """
@@ -281,10 +296,10 @@ def is_minority_owned(code: str) -> bool:
 
 def is_women_owned(code: str) -> bool:
     """Check if a code represents a women-owned business.
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         True if the code represents a women-owned business
     """
@@ -295,10 +310,10 @@ def is_women_owned(code: str) -> bool:
 
 def is_veteran_owned(code: str) -> bool:
     """Check if a code represents a veteran-owned business.
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         True if the code represents a veteran-owned business
     """
@@ -309,10 +324,10 @@ def is_veteran_owned(code: str) -> bool:
 
 def is_government_entity(code: str) -> bool:
     """Check if a code represents a government entity.
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         True if the code represents a government entity
     """
@@ -323,10 +338,10 @@ def is_government_entity(code: str) -> bool:
 
 def is_educational_institution(code: str) -> bool:
     """Check if a code represents an educational institution.
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         True if the code represents an educational institution
     """
@@ -337,10 +352,10 @@ def is_educational_institution(code: str) -> bool:
 
 def is_nonprofit_organization(code: str) -> bool:
     """Check if a code represents a nonprofit organization.
-    
+
     Args:
         code: Business category code
-        
+
     Returns:
         True if the code represents a nonprofit organization
     """

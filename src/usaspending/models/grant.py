@@ -11,6 +11,7 @@ from ..utils.formatter import to_decimal
 if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
 
+
 class Grant(Award):
     """Grant and assistance award types."""
 
@@ -119,11 +120,12 @@ class Grant(Award):
     def base_exercised_options(self) -> Optional[Decimal]:
         """The total amount obligated for the base and exercised options of this award."""
         return to_decimal(self._lazy_get("base_exercised_options", default=None))
-    
+
     @property
     def base_and_all_options(self) -> Optional[Decimal]:
         """The total amount obligated for the base and all options of this award."""
         return to_decimal(self._lazy_get("base_and_all_options", default=None))
+
     @property
     def subawards(self) -> "SubAwardsSearch":
         """Get subawards query builder for this grant award with appropriate award type filters.
@@ -137,9 +139,9 @@ class Grant(Award):
             >>> list(grant.subawards)  # Iterate through all subawards
         """
         from .award_types import GRANT_CODES
-        
+
         # Grant subawards use grant award types only
         # Note: Due to validation in AwardsSearch, we cannot mix grant/direct_payment/other categories
-        return (self._client.subawards
-                .for_award(self.generated_unique_award_id)
-                .with_award_types(*GRANT_CODES))
+        return self._client.subawards.for_award(
+            self.generated_unique_award_id
+        ).with_award_types(*GRANT_CODES)

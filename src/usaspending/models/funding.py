@@ -11,6 +11,7 @@ from ..utils.formatter import to_decimal, round_to_millions
 if TYPE_CHECKING:
     from .agency import Agency
 
+
 class Funding(BaseModel):
     """Represents federal account funding data for an award."""
 
@@ -74,7 +75,9 @@ class Funding(BaseModel):
         """Retrieve the full Agency object for the funding agency."""
         name = self.funding_agency_name
         if name:
-            return self._client.agencies.find_all_funding_agencies_by_name(name).toptier()[0]
+            return self._client.agencies.find_all_funding_agencies_by_name(
+                name
+            ).toptier()[0]
         else:
             return None
 
@@ -105,7 +108,9 @@ class Funding(BaseModel):
         """Retrieve the full Agency object for the funding agency."""
         name = self.awarding_agency_name
         if name:
-            return self._client.agencies.find_all_awarding_agencies_by_name(name).toptier()[0]
+            return self._client.agencies.find_all_awarding_agencies_by_name(
+                name
+            ).toptier()[0]
         else:
             return None
 
@@ -171,7 +176,7 @@ class Funding(BaseModel):
             amount_str = f"OUTLAY: {round_to_millions(amount)}"
         else:
             amount_str = "?"
-        
+
         agency = self.funding_agency_name or "Unknown Agency"
 
         return f"<Funding {year}-{month_str} {agency} {amount_str}>"

@@ -7,19 +7,19 @@ from .award_types import get_category_for_code
 from ..exceptions import ValidationError
 
 if TYPE_CHECKING:
-    from ..client import USASpendingClient
     from .award import Award
+    from ..client import USASpendingClient
 
 
 def create_award(
-    data_or_id: Dict[str, Any] | str, client: Optional[USASpending] = None
+    data_or_id: Dict[str, Any] | str, client: Optional[USASpendingClient] = None
 ) -> Award:
     """
     Factory function to create the appropriate Award subclass based on the award data.
 
     Args:
         data_or_id: Award data dictionary or unique award ID string
-        client: Optional USASpending client instance
+        client: Optional USASpendingClient instance
 
     Returns:
         Appropriate Award subclass instance (Contract, Grant, IDV, Loan, or base Award)
@@ -59,7 +59,7 @@ def create_award(
             # Map config category names to award class names
             category_map = {
                 "contracts": "contract",
-                "idvs": "idv", 
+                "idvs": "idv",
                 "grants": "grant",
                 "loans": "loan",
             }

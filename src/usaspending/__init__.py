@@ -9,6 +9,7 @@ from __future__ import annotations
 # Version information
 try:
     from importlib.metadata import version
+
     __version__ = version("usaspending")
 except ImportError:
     # Fallback for development/editable installs
@@ -47,7 +48,7 @@ from .models import (
     SubAward,
 )
 
-# Query builder classes  
+# Query builder classes
 from .queries import (
     AwardsSearch,
     TransactionsSearch,
@@ -79,7 +80,7 @@ __all__ = [
     "config",
     # Exceptions
     "USASpendingError",
-    "APIError", 
+    "APIError",
     "HTTPError",
     "RateLimitError",
     "ValidationError",
@@ -105,7 +106,7 @@ __all__ = [
     "SubAwardsSearch",
     # Filters
     "AgencyFilter",
-    "AwardAmountFilter", 
+    "AwardAmountFilter",
     "KeywordsFilter",
     "LocationSpec",
     "LocationFilter",

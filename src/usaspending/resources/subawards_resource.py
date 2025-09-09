@@ -15,15 +15,15 @@ logger = USASpendingLogger.get_logger(__name__)
 class SubAwardsResource(BaseResource):
     """Resource for subaward-related operations.
 
-    Provides access to subaward search and retrieval endpoints. Subawards 
+    Provides access to subaward search and retrieval endpoints. Subawards
     represent the secondary distribution of federal funds from prime recipients
     to subrecipients who carry out portions of the federal program.
-    
+
     The resource supports searching for both contract subawards (subcontracts)
     and grant subawards, with filtering by time periods, award types, agencies,
     and recipients. Results include detailed information about the prime award,
     subrecipient, and the subaward transaction itself.
-    
+
     Note: Subaward reporting is required for subawards of $30,000 or more under
     the Federal Funding Accountability and Transparency Act (FFATA).
     """

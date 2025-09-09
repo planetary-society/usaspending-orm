@@ -176,9 +176,9 @@ class ResponseBuilder:
             "award_type": award_type,
             "category": {
                 "contracts": "contract",
-                "idvs": "idv", 
+                "idvs": "idv",
                 "grants": "grant",
-                "loans": "loan"
+                "loans": "loan",
             }.get(get_category_for_code(award_type), "grant"),
             "type_description": "Contract"
             if get_category_for_code(award_type) == "contracts"

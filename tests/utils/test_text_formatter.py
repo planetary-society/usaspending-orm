@@ -116,7 +116,7 @@ class TestTextFormatterSentenceCase:
 
         mock_special_cases = [
             "NASA",
-            "ESA", 
+            "ESA",
             "USA",
             "SBIR",
             "LLC",
@@ -152,11 +152,11 @@ class TestTextFormatterSentenceCase:
         # Test period + space
         result = TextFormatter.to_sentence_case("FIRST SENTENCE. SECOND SENTENCE")
         assert result == "First sentence. Second sentence"
-        
+
         # Test question mark + space
         result = TextFormatter.to_sentence_case("QUESTION? ANSWER")
         assert result == "Question? Answer"
-        
+
         # Test exclamation + space
         result = TextFormatter.to_sentence_case("EXCLAMATION! NEXT")
         assert result == "Exclamation! Next"
@@ -165,7 +165,7 @@ class TestTextFormatterSentenceCase:
         """Test sentence boundaries with multiple spaces."""
         result = TextFormatter.to_sentence_case("FIRST.  SECOND")
         assert result == "First.  Second"
-        
+
         result = TextFormatter.to_sentence_case("FIRST.   THIRD")
         assert result == "First.   Third"
 
@@ -173,26 +173,35 @@ class TestTextFormatterSentenceCase:
         """Test short parenthetical content stays uppercase."""
         result = TextFormatter.to_sentence_case("CONTRACT (RFP) DETAILS")
         assert result == "Contract (RFP) details"
-        
+
         result = TextFormatter.to_sentence_case("USING (API) FOR ACCESS")
         assert result == "Using (API) for access"
 
     def test_long_parenthetical_normal(self):
         """Test long parenthetical content gets normal processing."""
-        result = TextFormatter.to_sentence_case("CONTRACT (VERY LONG DESCRIPTION) DETAILS", paren_max_len=5)
+        result = TextFormatter.to_sentence_case(
+            "CONTRACT (VERY LONG DESCRIPTION) DETAILS", paren_max_len=5
+        )
         assert result == "Contract (very long description) details"
 
     def test_acronym_expansion_direct_match(self):
         """Test direct acronym expansion matching."""
         # N-A-S-A should match directly
-        result = TextFormatter.to_sentence_case("NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)")
+        result = TextFormatter.to_sentence_case(
+            "NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)"
+        )
         assert result == "National Aeronautics Space Administration (NASA)"
 
     def test_acronym_expansion_skip_small_words(self):
         """Test acronym expansion skipping small words."""
         # Should skip "OF", "ENGINEERING", "AND" to match N-A-S-M
-        result = TextFormatter.to_sentence_case("NATIONAL ACADEMIES OF SCIENCES, ENGINEERING, AND MEDICINE (NASEM)")
-        assert result == "National Academies of Sciences, Engineering, and Medicine (NASEM)"
+        result = TextFormatter.to_sentence_case(
+            "NATIONAL ACADEMIES OF SCIENCES, ENGINEERING, AND MEDICINE (NASEM)"
+        )
+        assert (
+            result
+            == "National Academies of Sciences, Engineering, and Medicine (NASEM)"
+        )
 
     def test_acronym_expansion_no_match(self):
         """Test when no acronym expansion match is found."""

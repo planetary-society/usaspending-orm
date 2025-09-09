@@ -21,6 +21,7 @@ class BaseTestAwardLazyLoading:
     A mixin class for testing lazy loading from search results.
     Subclasses must provide SEARCH_RESULT_FIXTURE_NAME and DETAIL_FIXTURE_NAME.
     """
+
     AWARD_MODEL = Award  # These tests should work with the base Award model
     SEARCH_RESULT_FIXTURE_NAME = None
     DETAIL_FIXTURE_NAME = None
@@ -94,23 +95,28 @@ class BaseTestAwardLazyLoading:
         award._fetch_details.assert_called_once()
 
         # Accessing another lazy-loaded property should not trigger another fetch
-        assert_decimal_equal(award.total_subaward_amount, detail_fixture_data["total_subaward_amount"])
+        assert_decimal_equal(
+            award.total_subaward_amount, detail_fixture_data["total_subaward_amount"]
+        )
         award._fetch_details.assert_called_once()
 
 
 class TestContractLazyLoading(BaseTestAwardLazyLoading):
     """Tests lazy loading for Contract awards."""
+
     SEARCH_RESULT_FIXTURE_NAME = "search_results_contracts_data"
     DETAIL_FIXTURE_NAME = "contract_fixture_data"
 
 
 class TestGrantLazyLoading(BaseTestAwardLazyLoading):
     """Tests lazy loading for Grant awards."""
+
     SEARCH_RESULT_FIXTURE_NAME = "search_results_grants_data"
     DETAIL_FIXTURE_NAME = "grant_fixture_data"
 
 
 class TestIDVLazyLoading(BaseTestAwardLazyLoading):
     """Tests lazy loading for IDV awards."""
+
     SEARCH_RESULT_FIXTURE_NAME = "search_results_idvs_data"
     DETAIL_FIXTURE_NAME = "idv_fixture_data"

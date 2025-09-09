@@ -1,9 +1,10 @@
+"""Tests for Funding model."""
+
 from __future__ import annotations
 
 from tests.utils import assert_decimal_equal
-"""Tests for Funding model."""
-
 from usaspending.models.funding import Funding
+
 
 class TestFundingModel:
     """Test Funding model functionality."""
@@ -164,7 +165,7 @@ class TestFundingModel:
         data = {}
 
         funding = Funding(data)
-        
+
         try:
             repr(funding)
         except Exception as e:
@@ -202,41 +203,52 @@ class TestFundingModel:
         first_result = fixture_data["results"][0]
         funding = Funding(first_result)
 
-        expected_transaction_obligated = first_result.get("transaction_obligated_amount")
-        assert funding.transaction_obligated_amount == (expected_transaction_obligated if expected_transaction_obligated is not None else 0.0)
+        expected_transaction_obligated = first_result.get(
+            "transaction_obligated_amount"
+        )
+        assert funding.transaction_obligated_amount == (
+            expected_transaction_obligated
+            if expected_transaction_obligated is not None
+            else 0.0
+        )
         expected_gross_outlay = first_result.get("gross_outlay_amount")
-        assert funding.gross_outlay_amount == (expected_gross_outlay if expected_gross_outlay is not None else 0.0)
-        assert funding.disaster_emergency_fund_code == first_result.get("disaster_emergency_fund_code")
+        assert funding.gross_outlay_amount == (
+            expected_gross_outlay if expected_gross_outlay is not None else 0.0
+        )
+        assert funding.disaster_emergency_fund_code == first_result.get(
+            "disaster_emergency_fund_code"
+        )
         assert funding.federal_account == first_result.get("federal_account")
-        assert (
-            funding.account_title
-            == first_result.get("account_title")
-        )
-        assert (
-            funding.funding_agency_name
-            == first_result.get("funding_agency_name")
-        )
+        assert funding.account_title == first_result.get("account_title")
+        assert funding.funding_agency_name == first_result.get("funding_agency_name")
         assert funding.funding_agency_id == first_result.get("funding_agency_id")
-        assert funding.funding_toptier_agency_id == first_result.get("funding_toptier_agency_id")
-        assert (
-            funding.awarding_agency_name
-            == first_result.get("awarding_agency_name")
+        assert funding.funding_toptier_agency_id == first_result.get(
+            "funding_toptier_agency_id"
         )
+        assert funding.awarding_agency_name == first_result.get("awarding_agency_name")
         assert funding.awarding_agency_id == first_result.get("awarding_agency_id")
-        assert funding.awarding_toptier_agency_id == first_result.get("awarding_toptier_agency_id")
+        assert funding.awarding_toptier_agency_id == first_result.get(
+            "awarding_toptier_agency_id"
+        )
         assert funding.object_class == first_result.get("object_class")
         assert funding.object_class_name == first_result.get("object_class_name")
-        assert funding.program_activity_code == first_result.get("program_activity_code")
-        assert funding.program_activity_name == first_result.get("program_activity_name")
-        assert funding.reporting_fiscal_year == first_result.get("reporting_fiscal_year")
-        assert funding.reporting_fiscal_quarter == first_result.get("reporting_fiscal_quarter")
-        assert funding.reporting_fiscal_month == first_result.get("reporting_fiscal_month")
-        assert funding.is_quarterly_submission is first_result.get("is_quarterly_submission")
-        assert (
-            funding.awarding_agency_slug
-            == first_result.get("awarding_agency_slug")
+        assert funding.program_activity_code == first_result.get(
+            "program_activity_code"
         )
-        assert (
-            funding.funding_agency_slug
-            == first_result.get("funding_agency_slug")
+        assert funding.program_activity_name == first_result.get(
+            "program_activity_name"
         )
+        assert funding.reporting_fiscal_year == first_result.get(
+            "reporting_fiscal_year"
+        )
+        assert funding.reporting_fiscal_quarter == first_result.get(
+            "reporting_fiscal_quarter"
+        )
+        assert funding.reporting_fiscal_month == first_result.get(
+            "reporting_fiscal_month"
+        )
+        assert funding.is_quarterly_submission is first_result.get(
+            "is_quarterly_submission"
+        )
+        assert funding.awarding_agency_slug == first_result.get("awarding_agency_slug")
+        assert funding.funding_agency_slug == first_result.get("funding_agency_slug")

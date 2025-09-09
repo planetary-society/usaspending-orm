@@ -42,7 +42,7 @@ class RecipientsResource(BaseResource):
 
         Returns:
             RecipientsSearch query builder for recipient searches
-        
+
         Example:
             >>> recipients = client.recipients.search()
             ...     .with_keyword("california")
@@ -50,7 +50,9 @@ class RecipientsResource(BaseResource):
             ...     .order_by("amount", "desc")
             ...     .limit(10)
         """
-        logger.debug("Creating new RecipientsSearch query builder for recipient searches")
+        logger.debug(
+            "Creating new RecipientsSearch query builder for recipient searches"
+        )
         from ..queries.recipients_search import RecipientsSearch
 
         return RecipientsSearch(self._client)
@@ -69,6 +71,7 @@ class RecipientsResource(BaseResource):
         """
         logger.debug(f"Searching recipient by DUNS: {duns}")
         from ..queries.recipients_search import RecipientsSearch
+
         recipients = RecipientsSearch(self._client).with_keyword(duns).limit(4)
         # Return the parent recipient if available, otherwise first result
         for r in recipients:
@@ -76,7 +79,7 @@ class RecipientsResource(BaseResource):
                 return r
         # Return first result if no parent found (avoids hanging len() call)
         return recipients.first()
-        
+
     def find_by_uei(self, uei: str) -> Optional["Recipient"]:
         """Retrieve a single recipient by UEI number.
 
@@ -91,6 +94,7 @@ class RecipientsResource(BaseResource):
         """
         logger.debug(f"Searching recipient by UEI: {uei}")
         from ..queries.recipients_search import RecipientsSearch
+
         recipients = RecipientsSearch(self._client).with_keyword(uei).limit(4)
         # Return the parent recipient if available, otherwise first result
         for r in recipients:
@@ -98,4 +102,3 @@ class RecipientsResource(BaseResource):
                 return r
         # Return first result if no parent found (avoids hanging len() call)
         return recipients.first()
-        

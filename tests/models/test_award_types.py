@@ -16,6 +16,7 @@ from tests.utils import assert_decimal_equal
 
 class TestContract(AwardTestingMixin):
     """Test the Contract model."""
+
     AWARD_MODEL = Contract
     FIXTURE_NAME = "contract_fixture_data"
     FIXTURE_PATH = "awards/contract"
@@ -23,9 +24,14 @@ class TestContract(AwardTestingMixin):
     def test_type_fields_defined(self):
         """Test that Contract has the correct TYPE_FIELDS defined."""
         expected_fields = [
-            "piid", "base_exercised_options", "base_and_all_options",
-            "contract_award_type", "naics_code", "naics_description",
-            "psc_code", "psc_description"
+            "piid",
+            "base_exercised_options",
+            "base_and_all_options",
+            "contract_award_type",
+            "naics_code",
+            "naics_description",
+            "psc_code",
+            "psc_description",
         ]
         for field in expected_fields:
             assert field in Contract.TYPE_FIELDS
@@ -33,20 +39,37 @@ class TestContract(AwardTestingMixin):
     def test_specific_properties_from_fixture(self, mock_usa_client, fixture_data):
         """Test contract-specific properties using fixture data."""
         contract = self.AWARD_MODEL(fixture_data, mock_usa_client)
-        
+
         # Assert all expected fixture values have property accessors
         for property in list(fixture_data.keys()):
-            assert hasattr(contract, property), f"Property getter `{property}` is not present"
-        
+            assert hasattr(contract, property), (
+                f"Property getter `{property}` is not present"
+            )
+
         # Spot-check key properties
         assert contract.piid == fixture_data["piid"]
-        assert_decimal_equal(contract.base_exercised_options, fixture_data["base_exercised_options"])
-        assert_decimal_equal(contract.base_and_all_options, fixture_data["base_and_all_options"])
+        assert_decimal_equal(
+            contract.base_exercised_options, fixture_data["base_exercised_options"]
+        )
+        assert_decimal_equal(
+            contract.base_and_all_options, fixture_data["base_and_all_options"]
+        )
         assert contract.contract_award_type == fixture_data["type_description"]
-        assert contract.naics_code == fixture_data["latest_transaction_contract_data"]["naics"]
-        assert contract.naics_description.lower() == fixture_data["latest_transaction_contract_data"]["naics_description"].lower()
+        assert (
+            contract.naics_code
+            == fixture_data["latest_transaction_contract_data"]["naics"]
+        )
+        assert (
+            contract.naics_description.lower()
+            == fixture_data["latest_transaction_contract_data"][
+                "naics_description"
+            ].lower()
+        )
         assert contract.psc_code == fixture_data["psc_hierarchy"]["base_code"]["code"]
-        assert contract.psc_description == fixture_data["psc_hierarchy"]["base_code"]["description"]
+        assert (
+            contract.psc_description
+            == fixture_data["psc_hierarchy"]["base_code"]["description"]
+        )
 
     def test_cached_properties_from_fixture(self, mock_usa_client, fixture_data):
         """Test contract-specific cached properties using fixture data."""
@@ -73,19 +96,24 @@ class TestContract(AwardTestingMixin):
     def test_subawards_applies_correct_filters(self, mock_usa_client, fixture_data):
         """Test that contract.subawards automatically applies contract award type filters."""
         contract = self.AWARD_MODEL(fixture_data, mock_usa_client)
-        mock_usa_client.set_paginated_response(MockUSASpendingClient.Endpoints.AWARD_SEARCH, [])
+        mock_usa_client.set_paginated_response(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH, []
+        )
 
         # Iterate to trigger the API call
         list(contract.subawards)
 
         # Verify the API call included the correct award type codes for contracts
-        last_request = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.AWARD_SEARCH)
+        last_request = mock_usa_client.get_last_request(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH
+        )
         payload = last_request["json"]
         assert set(payload["filters"]["award_type_codes"]) == {"A", "B", "C", "D"}
 
 
 class TestGrant(AwardTestingMixin):
     """Test the Grant model."""
+
     AWARD_MODEL = Grant
     FIXTURE_NAME = "grant_fixture_data"
     FIXTURE_PATH = "awards/grant"
@@ -93,7 +121,11 @@ class TestGrant(AwardTestingMixin):
     def test_type_fields_defined(self):
         """Test that Grant has the correct TYPE_FIELDS defined."""
         expected_fields = [
-            "fain", "uri", "cfda_info", "cfda_number", "funding_opportunity"
+            "fain",
+            "uri",
+            "cfda_info",
+            "cfda_number",
+            "funding_opportunity",
         ]
         for field in expected_fields:
             assert field in Grant.TYPE_FIELDS
@@ -104,8 +136,10 @@ class TestGrant(AwardTestingMixin):
 
         # Assert all expected fixture values have property accessors
         for property in list(fixture_data.keys()):
-            assert hasattr(grant, property), f"Property getter `{property}` is not present"
-        
+            assert hasattr(grant, property), (
+                f"Property getter `{property}` is not present"
+            )
+
         # Spot-check key properties
         assert grant.fain == fixture_data["fain"]
         assert grant.uri == fixture_data["uri"]
@@ -115,11 +149,18 @@ class TestGrant(AwardTestingMixin):
         else:
             assert grant.cfda_number == fixture_data["cfda_info"][0]["cfda_number"]
         assert grant.sai_number == fixture_data.get("sai_number")
-        assert_decimal_equal(grant.non_federal_funding, fixture_data["non_federal_funding"])
+        assert_decimal_equal(
+            grant.non_federal_funding, fixture_data["non_federal_funding"]
+        )
         assert_decimal_equal(grant.total_funding, fixture_data["total_funding"])
-        assert_decimal_equal(grant.transaction_obligated_amount, fixture_data["transaction_obligated_amount"])
+        assert_decimal_equal(
+            grant.transaction_obligated_amount,
+            fixture_data["transaction_obligated_amount"],
+        )
 
-    def test_cached_and_complex_properties_from_fixture(self, mock_usa_client, fixture_data):
+    def test_cached_and_complex_properties_from_fixture(
+        self, mock_usa_client, fixture_data
+    ):
         """Test grant-specific cached and complex properties using fixture data."""
         grant = self.AWARD_MODEL(fixture_data, mock_usa_client)
 
@@ -147,42 +188,47 @@ class TestGrant(AwardTestingMixin):
     def test_subawards_applies_correct_filters(self, mock_usa_client, fixture_data):
         """Test that grant.subawards automatically applies assistance award type filters."""
         grant = self.AWARD_MODEL(fixture_data, mock_usa_client)
-        mock_usa_client.set_paginated_response(MockUSASpendingClient.Endpoints.AWARD_SEARCH, [])
+        mock_usa_client.set_paginated_response(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH, []
+        )
 
         # Iterate to trigger the API call
         list(grant.subawards)
 
         # Verify the API call included the correct award type codes for grants
-        last_request = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.AWARD_SEARCH)
+        last_request = mock_usa_client.get_last_request(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH
+        )
         payload = last_request["json"]
         assert set(payload["filters"]["award_type_codes"]) == {"02", "03", "04", "05"}
 
 
 class TestIDV(AwardTestingMixin):
     """Test the IDV model."""
+
     AWARD_MODEL = IDV
     FIXTURE_NAME = "idv_fixture_data"
     FIXTURE_PATH = "awards/idv"
 
     def test_type_fields_defined(self):
         """Test that IDV has the correct TYPE_FIELDS defined."""
-        expected_fields = [
-            "piid", "contract_award_type", "naics_code", "psc_code"
-        ]
+        expected_fields = ["piid", "contract_award_type", "naics_code", "psc_code"]
         for field in expected_fields:
             assert field in IDV.TYPE_FIELDS
 
     def test_specific_properties_from_fixture(self, mock_usa_client, fixture_data):
         """Test IDV-specific properties using fixture data."""
         idv = self.AWARD_MODEL(fixture_data, mock_usa_client)
-        
+
         # Assert all expected fixture values have property accessors
         for property in list(fixture_data.keys()):
             assert hasattr(idv, property), f"Property {property} is None"
 
         # Spot-check key properties
         assert idv.piid == fixture_data["piid"]
-        assert_decimal_equal(idv.base_and_all_options, fixture_data["base_and_all_options"])
+        assert_decimal_equal(
+            idv.base_and_all_options, fixture_data["base_and_all_options"]
+        )
         assert idv.contract_award_type == fixture_data["type_description"]
         assert idv.naics_code == fixture_data["naics_hierarchy"]["base_code"]["code"]
         assert idv.psc_code == fixture_data["psc_hierarchy"]["base_code"]["code"]
@@ -196,6 +242,7 @@ class TestIDV(AwardTestingMixin):
 
 class TestLoan(AwardTestingMixin):
     """Test the Loan model."""
+
     AWARD_MODEL = Loan
     FIXTURE_NAME = "loan_fixture_data"
     FIXTURE_PATH = "awards/loan"
@@ -203,7 +250,11 @@ class TestLoan(AwardTestingMixin):
     def test_type_fields_defined(self):
         """Test that Loan has the correct TYPE_FIELDS defined."""
         expected_fields = [
-            "fain", "uri", "total_subsidy_cost", "total_loan_value", "cfda_number"
+            "fain",
+            "uri",
+            "total_subsidy_cost",
+            "total_loan_value",
+            "cfda_number",
         ]
         for field in expected_fields:
             assert field in Loan.TYPE_FIELDS
@@ -211,7 +262,7 @@ class TestLoan(AwardTestingMixin):
     def test_specific_properties_from_fixture(self, mock_usa_client, fixture_data):
         """Test loan-specific properties using fixture data."""
         loan = self.AWARD_MODEL(fixture_data, mock_usa_client)
-        
+
         # Assert all expected fixture values have property accessors
         for property in list(fixture_data.keys()):
             assert hasattr(loan, property), f"Property {property} is None"
@@ -219,7 +270,9 @@ class TestLoan(AwardTestingMixin):
         assert loan.fain == fixture_data["fain"]
         # The 'uri' is None in the fixture, so we test that
         assert loan.uri is None
-        assert_decimal_equal(loan.total_subsidy_cost, fixture_data["total_subsidy_cost"])
+        assert_decimal_equal(
+            loan.total_subsidy_cost, fixture_data["total_subsidy_cost"]
+        )
         assert_decimal_equal(loan.total_loan_value, fixture_data["total_loan_value"])
         if loan.cfda_number:
             assert loan.cfda_number == fixture_data["cfda_info"][0]["cfda_number"]

@@ -10,14 +10,17 @@ from .base_model import BaseModel
 AwardType = Literal["contract", "assistance", "idv"]
 FileFormat = Literal["csv", "tsv", "pstxt"]
 
+
 class DownloadState(Enum):
     """Enumeration for download job states."""
-    PENDING = "pending" # Custom state before first API check
+
+    PENDING = "pending"  # Custom state before first API check
     READY = "ready"
     RUNNING = "running"
     FINISHED = "finished"
     FAILED = "failed"
-    UNKNOWN = "unknown" # Custom state if API returns unexpected value
+    UNKNOWN = "unknown"  # Custom state if API returns unexpected value
+
 
 class DownloadStatus(BaseModel):
     """Represents the status details of a download job returned by the API."""
@@ -66,4 +69,6 @@ class DownloadStatus(BaseModel):
         return self.get_value("file_url")
 
     def __repr__(self) -> str:
-        return f"<DownloadStatus status='{self.api_status.value}' file='{self.file_name}'>"
+        return (
+            f"<DownloadStatus status='{self.api_status.value}' file='{self.file_name}'>"
+        )

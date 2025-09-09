@@ -60,7 +60,12 @@ class TestMockClientExamples:
 
         # Should have fetched all 250 items across 3 pages
         assert len(results) == 250
-        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 3
+        assert (
+            mock_usa_client.get_request_count(
+                MockUSASpendingClient.Endpoints.AWARD_SEARCH
+            )
+            == 3
+        )
 
     def test_error_simulation(self, mock_usa_client):
         """Test API error simulation."""
@@ -81,11 +86,11 @@ class TestMockClientExamples:
     def test_fixture_loading(self, mock_usa_client):
         """Test loading responses from fixture files."""
         award_id = "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
-        # Load award detail from fixture
-        mock_usa_client.set_fixture_response(
-            endpoint, "awards/contract"
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
+            award_id=award_id
         )
+        # Load award detail from fixture
+        mock_usa_client.set_fixture_response(endpoint, "awards/contract")
 
         # Get award
         award = mock_usa_client.awards.find_by_generated_id(award_id)

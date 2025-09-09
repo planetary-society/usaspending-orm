@@ -12,7 +12,6 @@ from usaspending.utils.formatter import (
 )
 
 
-
 class TestContractsTitlecase:
     """Test the contracts_titlecase function."""
 
@@ -260,5 +259,3 @@ class TestToDate:
         date1 = to_date("2025-06-15")
         date2 = datetime(2025, 6, 15)
         assert date1 == date2
-
-

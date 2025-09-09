@@ -1,15 +1,14 @@
-from __future__ import annotations
-
-from tests.utils import assert_decimal_equal
 """Tests for Recipient model functionality."""
 
+from __future__ import annotations
 import pytest
 
+from tests.utils import assert_decimal_equal
+from tests.conftest import load_json_fixture
 from usaspending.models.recipient import Recipient
 from usaspending.models.location import Location
 from usaspending.exceptions import ValidationError
 from usaspending.utils.formatter import contracts_titlecase
-from tests.conftest import load_json_fixture
 
 
 class TestRecipientInitialization:
@@ -227,8 +226,10 @@ class TestRecipientParentRelationships:
     def test_parent_property(self, mock_usa_client, recipient_data):
         """Test parent property creates Recipient instance."""
         recipient = Recipient(recipient_data, mock_usa_client)
-        
-        if recipient_data.get("parent_id") and recipient_data.get("parent_id") == recipient_data.get("recipient_id"):
+
+        if recipient_data.get("parent_id") and recipient_data.get(
+            "parent_id"
+        ) == recipient_data.get("recipient_id"):
             # If parent_id is same as recipient_id, parent should be None
             assert recipient.parent is None
         else:
@@ -252,11 +253,14 @@ class TestRecipientParentRelationships:
 
     def test_parent_property_ignores_same_parentage(self, mock_usa_client):
         """Sometimes a recipient lists itself as a parent - ignore this."""
-        data = {"recipient_id": "test-123", "name": "Test Recipient", "parent_id": "test-123"}
+        data = {
+            "recipient_id": "test-123",
+            "name": "Test Recipient",
+            "parent_id": "test-123",
+        }
         recipient = Recipient(data, mock_usa_client)
 
         assert recipient.parent is None
-
 
     def test_parents_property(self, mock_usa_client, recipient_data):
         """Test parents property returns list of Recipients."""
@@ -274,8 +278,15 @@ class TestRecipientParentRelationships:
 
     def test_parents_property_ignores_same_parentage(self, mock_usa_client):
         """Sometimes a recipient lists itself as a parent - ignore these."""
-        parents = [{"parent_id": "test-123", "parent_name": "Test Parent"},{"parent_id": "test-456", "parent_name": "Another Parent"}]
-        data = {"recipient_id": "test-123", "name": "Test Recipient", "parents": parents}
+        parents = [
+            {"parent_id": "test-123", "parent_name": "Test Parent"},
+            {"parent_id": "test-456", "parent_name": "Another Parent"},
+        ]
+        data = {
+            "recipient_id": "test-123",
+            "name": "Test Recipient",
+            "parents": parents,
+        }
         recipient = Recipient(data, mock_usa_client)
 
         assert len(recipient.parents) == 1
@@ -334,7 +345,7 @@ class TestRecipientTotals:
         recipient = Recipient(recipient_data, mock_usa_client)
         assert_decimal_equal(
             recipient.total_transaction_amount,
-            recipient_data["total_transaction_amount"]
+            recipient_data["total_transaction_amount"],
         )
 
     def test_total_transactions(self, mock_usa_client, recipient_data):

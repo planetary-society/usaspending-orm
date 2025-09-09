@@ -68,7 +68,9 @@ class USASpendingLogger:
             "usaspending.client": logging.DEBUG if is_debug else logging.INFO,
             "usaspending.queries": logging.DEBUG if is_debug else logging.INFO,
             "usaspending.models": logging.DEBUG if is_debug else logging.WARNING,
-            "usaspending.utils.rate_limit": logging.DEBUG if is_debug else logging.WARNING,
+            "usaspending.utils.rate_limit": logging.DEBUG
+            if is_debug
+            else logging.WARNING,
             "usaspending.utils.retry": logging.DEBUG if is_debug else logging.WARNING,
             "usaspending.cache": logging.DEBUG if is_debug else logging.WARNING,
         }

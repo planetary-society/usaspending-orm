@@ -44,9 +44,7 @@ class USASpendingClient:
     def __init__(self):
         """Initialize USASpendingClient."""
 
-        logger.debug(
-            f"Initializing USASpendingClient with base URL: {config.base_url}"
-        )
+        logger.debug(f"Initializing USASpendingClient with base URL: {config.base_url}")
 
         # Initialize HTTP session
         self._session = self._create_session()
@@ -105,15 +103,15 @@ class USASpendingClient:
     def downloads(self) -> "DownloadResource":
         """
         Access download operations for detailed award data.
-        
+
         Allows queuing, monitoring, and retrieval of bulk award files.
         """
         if "downloads" not in self._resources:
             from .resources.download_resource import DownloadResource
-            
+
             self._resources["downloads"] = DownloadResource(self)
         return self._resources["downloads"]
-    
+
     @property
     def recipients(self) -> "RecipientsResource":
         """Access recipient endpoints."""
@@ -302,7 +300,9 @@ class USASpendingClient:
             # Note: Don't treat "message" alone as an error indicator since some endpoints
             # (like download/status) include message as a normal response field
             if "error" in data:
-                error_msg = data.get("error") or data.get("message") or "Unknown API error"
+                error_msg = (
+                    data.get("error") or data.get("message") or "Unknown API error"
+                )
                 log_api_response(
                     logger,
                     response.status_code,
@@ -349,56 +349,52 @@ class USASpendingClient:
 
     def _download_binary_file(self, file_url: str, destination_path: str) -> None:
         """Download binary file using client session with streaming support.
-        
+
         This method is used internally for downloading large binary files
         like the ZIP archives from the download endpoints.
-        
+
         Args:
             file_url: Relative or absolute URL to download
             destination_path: Local path where file will be saved
-            
+
         Raises:
             DownloadError: If download fails
         """
         import os
         from .exceptions import DownloadError
-        
+
         # Construct full URL
-        if file_url.startswith('http'):
+        if file_url.startswith("http"):
             download_url = file_url
         else:
-            download_url = urljoin(config.base_url, file_url.lstrip('/'))
-        
+            download_url = urljoin(config.base_url, file_url.lstrip("/"))
+
         logger.info(f"Downloading binary file from {download_url}")
-        
+
         # Use a longer timeout for file downloads
         timeout = 600  # 10 minutes
-        
+
         def download_operation():
             """Inner function for retry handler."""
-            response = self._session.get(
-                download_url, 
-                stream=True,
-                timeout=timeout
-            )
+            response = self._session.get(download_url, stream=True, timeout=timeout)
             response.raise_for_status()
-            
+
             try:
-                with open(destination_path, 'wb') as f:
+                with open(destination_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:
                             f.write(chunk)
             except IOError as e:
                 raise DownloadError(
                     f"Error writing file to disk: {e}",
-                    file_name=os.path.basename(destination_path)
+                    file_name=os.path.basename(destination_path),
                 ) from e
-        
+
         try:
             # Execute with retry handling
             self.retry_handler.execute(download_operation)
             logger.info(f"Successfully downloaded to {destination_path}")
-            
+
         except Exception as e:
             logger.error(f"Failed to download file: {e}")
             # Clean up partial file if it exists
@@ -408,12 +404,12 @@ class USASpendingClient:
                     logger.debug(f"Cleaned up partial file: {destination_path}")
                 except OSError:
                     pass
-            
+
             # Re-raise as DownloadError if not already
             if not isinstance(e, DownloadError):
                 raise DownloadError(
                     f"Failed to download file from {download_url}",
-                    file_name=os.path.basename(destination_path)
+                    file_name=os.path.basename(destination_path),
                 ) from e
             raise
 

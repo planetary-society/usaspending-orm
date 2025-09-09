@@ -56,7 +56,7 @@ class TestBusinessCategoryConstants:
             "individuals",
         }
         assert set(BUSINESS_CATEGORY_GROUPS.keys()) == expected_groups
-        
+
         # Ensure all groups have at least one category
         for group_name, categories in BUSINESS_CATEGORY_GROUPS.items():
             assert len(categories) > 0, f"Group {group_name} should have categories"
@@ -65,14 +65,18 @@ class TestBusinessCategoryConstants:
     def test_business_category_groups_immutability(self):
         """Test that BUSINESS_CATEGORY_GROUPS is properly defined as a dict."""
         assert isinstance(BUSINESS_CATEGORY_GROUPS, dict)
-        
+
         # Test that nested dictionaries contain string keys and values
         for group_name, categories in BUSINESS_CATEGORY_GROUPS.items():
             assert isinstance(group_name, str)
             assert isinstance(categories, dict)
             for code, description in categories.items():
-                assert isinstance(code, str), f"Code {code} in {group_name} should be string"
-                assert isinstance(description, str), f"Description for {code} should be string"
+                assert isinstance(code, str), (
+                    f"Code {code} in {group_name} should be string"
+                )
+                assert isinstance(description, str), (
+                    f"Description for {code} should be string"
+                )
 
     def test_category_business_codes(self):
         """Test CATEGORY_BUSINESS_CODES contains expected values."""
@@ -199,7 +203,7 @@ class TestBusinessCategoryConstants:
         all_codes = set()
         for group_codes in BUSINESS_CATEGORY_GROUPS.values():
             all_codes.update(group_codes.keys())
-        
+
         assert ALL_BUSINESS_CATEGORIES == all_codes
         assert isinstance(ALL_BUSINESS_CATEGORIES, frozenset)
 
@@ -213,14 +217,16 @@ class TestBusinessCategoryConstants:
         all_codes = set()
         for group_codes in BUSINESS_CATEGORY_GROUPS.values():
             all_codes.update(group_codes.keys())
-        
+
         assert set(BUSINESS_CATEGORY_DESCRIPTIONS.keys()) == all_codes
 
     def test_business_category_descriptions_values(self):
         """Test BUSINESS_CATEGORY_DESCRIPTIONS has string descriptions."""
         for code, description in BUSINESS_CATEGORY_DESCRIPTIONS.items():
             assert isinstance(code, str), f"Code {code} should be string"
-            assert isinstance(description, str), f"Description for {code} should be string"
+            assert isinstance(description, str), (
+                f"Description for {code} should be string"
+            )
             assert len(description) > 0, f"Description for {code} should not be empty"
 
     def test_frozenset_immutability(self):
@@ -228,7 +234,7 @@ class TestBusinessCategoryConstants:
         # Try to modify a frozenset - should raise AttributeError
         with pytest.raises(AttributeError):
             CATEGORY_BUSINESS_CODES.add("X")
-        
+
         with pytest.raises(AttributeError):
             ALL_BUSINESS_CATEGORIES.remove("small_business")
 
@@ -239,11 +245,13 @@ class TestOverlappingCategories:
     def test_overlapping_categories_structure(self):
         """Test OVERLAPPING_CATEGORIES has correct structure."""
         assert isinstance(OVERLAPPING_CATEGORIES, dict)
-        
+
         for code, groups in OVERLAPPING_CATEGORIES.items():
             assert isinstance(code, str), f"Code {code} should be string"
             assert isinstance(groups, list), f"Groups for {code} should be list"
-            assert len(groups) >= 2, f"Overlapping category {code} should belong to at least 2 groups"
+            assert len(groups) >= 2, (
+                f"Overlapping category {code} should belong to at least 2 groups"
+            )
             for group in groups:
                 assert group in BUSINESS_CATEGORY_GROUPS, f"Group {group} should exist"
 
@@ -255,7 +263,7 @@ class TestOverlappingCategories:
             "joint_venture_women_owned_small_business",
             "joint_venture_economically_disadvantaged_women_owned_small_business",
         ]
-        
+
         for code in women_small_businesses:
             assert code in OVERLAPPING_CATEGORIES
             assert "women_owned" in OVERLAPPING_CATEGORIES[code]
@@ -269,7 +277,7 @@ class TestOverlappingCategories:
             "small_disadvantaged_business",
             "self_certified_small_disadvanted_business",
         ]
-        
+
         for code in special_small_businesses:
             assert code in OVERLAPPING_CATEGORIES
             assert "category_business" in OVERLAPPING_CATEGORIES[code]
@@ -281,13 +289,21 @@ class TestGetCategoryGroup:
 
     def test_business_category_codes(self):
         """Test business category codes return 'category_business'."""
-        test_codes = ["small_business", "other_than_small_business", "sole_proprietorship"]
+        test_codes = [
+            "small_business",
+            "other_than_small_business",
+            "sole_proprietorship",
+        ]
         for code in test_codes:
             assert get_category_group(code) == "category_business"
 
     def test_minority_owned_codes(self):
         """Test minority owned codes return 'minority_owned'."""
-        test_codes = ["minority_owned_business", "black_american_owned_business", "tribally_owned_firm"]
+        test_codes = [
+            "minority_owned_business",
+            "black_american_owned_business",
+            "tribally_owned_firm",
+        ]
         for code in test_codes:
             assert get_category_group(code) == "minority_owned"
 
@@ -297,7 +313,10 @@ class TestGetCategoryGroup:
 
     def test_veteran_owned_codes(self):
         """Test veteran owned codes return 'veteran_owned'."""
-        test_codes = ["veteran_owned_business", "service_disabled_veteran_owned_business"]
+        test_codes = [
+            "veteran_owned_business",
+            "service_disabled_veteran_owned_business",
+        ]
         for code in test_codes:
             assert get_category_group(code) == "veteran_owned"
 
@@ -333,13 +352,13 @@ class TestGetCategoryGroup:
         """Test overlapping categories return their primary group."""
         # Women-owned small businesses should return women_owned as primary
         assert get_category_group("women_owned_small_business") == "women_owned"
-        
+
         # Special small businesses should return category_business as primary
         assert get_category_group("emerging_small_business") == "category_business"
 
-    @pytest.mark.parametrize("invalid_code", [
-        "INVALID", "99", "XYZ", "", "ABC123", "Z", "00", "nonexistent"
-    ])
+    @pytest.mark.parametrize(
+        "invalid_code", ["INVALID", "99", "XYZ", "", "ABC123", "Z", "00", "nonexistent"]
+    )
     def test_invalid_codes_return_empty_string(self, invalid_code):
         """Test invalid codes return empty string."""
         assert get_category_group(invalid_code) == ""
@@ -369,7 +388,7 @@ class TestGetAllGroupsForCode:
         groups = get_all_groups_for_code("women_owned_small_business")
         assert set(groups) == {"women_owned", "category_business"}
         assert len(groups) == 2
-        
+
         # Special designation small businesses
         groups = get_all_groups_for_code("emerging_small_business")
         assert set(groups) == {"category_business", "special_designations"}
@@ -397,9 +416,19 @@ class TestIsValidBusinessCategory:
         for code in ALL_BUSINESS_CATEGORIES:
             assert is_valid_business_category(code) is True
 
-    @pytest.mark.parametrize("invalid_code", [
-        "INVALID", "99", "XYZ", "", "ABC123", "SMALL_BUSINESS", " small_business ", "Z"
-    ])
+    @pytest.mark.parametrize(
+        "invalid_code",
+        [
+            "INVALID",
+            "99",
+            "XYZ",
+            "",
+            "ABC123",
+            "SMALL_BUSINESS",
+            " small_business ",
+            "Z",
+        ],
+    )
     def test_invalid_codes_return_false(self, invalid_code):
         """Test invalid codes return False."""
         assert is_valid_business_category(invalid_code) is False
@@ -429,25 +458,30 @@ class TestGetDescription:
         for code in ALL_BUSINESS_CATEGORIES:
             description = get_description(code)
             assert isinstance(description, str)
-            assert len(description) > 0, f"Code {code} should have non-empty description"
+            assert len(description) > 0, (
+                f"Code {code} should have non-empty description"
+            )
 
-    @pytest.mark.parametrize("invalid_code", [
-        "INVALID", "99", "XYZ", "", "ABC123", "Z"
-    ])
+    @pytest.mark.parametrize(
+        "invalid_code", ["INVALID", "99", "XYZ", "", "ABC123", "Z"]
+    )
     def test_invalid_codes_return_empty_string(self, invalid_code):
         """Test invalid codes return empty string."""
         assert get_description(invalid_code) == ""
 
-    @pytest.mark.parametrize("code,expected_desc", [
-        ("small_business", "Small Business"),
-        ("nonprofit", "Nonprofit Organization"),
-        ("8a_program_participant", "8(a) Program Participant"),
-        ("woman_owned_business", "Woman Owned Business"),
-        ("veteran_owned_business", "Veteran Owned Business"),
-        ("individuals", "Individuals"),
-        ("government", "Government"),
-        ("foreign_owned", "Foreign Owned"),
-    ])
+    @pytest.mark.parametrize(
+        "code,expected_desc",
+        [
+            ("small_business", "Small Business"),
+            ("nonprofit", "Nonprofit Organization"),
+            ("8a_program_participant", "8(a) Program Participant"),
+            ("woman_owned_business", "Woman Owned Business"),
+            ("veteran_owned_business", "Veteran Owned Business"),
+            ("individuals", "Individuals"),
+            ("government", "Government"),
+            ("foreign_owned", "Foreign Owned"),
+        ],
+    )
     def test_specific_descriptions(self, code, expected_desc):
         """Test specific codes return expected descriptions."""
         assert get_description(code) == expected_desc
@@ -469,21 +503,24 @@ class TestConvenienceMethods:
         """Test is_small_business function."""
         # Direct small business
         assert is_small_business("small_business") is True
-        
+
         # Women-owned small businesses
         assert is_small_business("women_owned_small_business") is True
-        assert is_small_business("economically_disadvantaged_women_owned_small_business") is True
-        
+        assert (
+            is_small_business("economically_disadvantaged_women_owned_small_business")
+            is True
+        )
+
         # Special designation small businesses
         assert is_small_business("emerging_small_business") is True
         assert is_small_business("small_disadvantaged_business") is True
         assert is_small_business("small_agricultural_cooperative") is True
-        
+
         # Non-small businesses
         assert is_small_business("other_than_small_business") is False
         assert is_small_business("nonprofit") is False
         assert is_small_business("government") is False
-        
+
         # Invalid input
         assert is_small_business(None) is False
         assert is_small_business("") is False
@@ -494,7 +531,7 @@ class TestConvenienceMethods:
         assert is_minority_owned("black_american_owned_business") is True
         assert is_minority_owned("hispanic_american_owned_business") is True
         assert is_minority_owned("tribally_owned_firm") is True
-        
+
         assert is_minority_owned("woman_owned_business") is False
         assert is_minority_owned("small_business") is False
         assert is_minority_owned(None) is False
@@ -504,7 +541,7 @@ class TestConvenienceMethods:
         assert is_women_owned("woman_owned_business") is True
         assert is_women_owned("women_owned_small_business") is True
         assert is_women_owned("joint_venture_women_owned_small_business") is True
-        
+
         assert is_women_owned("minority_owned_business") is False
         assert is_women_owned("small_business") is False
         assert is_women_owned(None) is False
@@ -513,7 +550,7 @@ class TestConvenienceMethods:
         """Test is_veteran_owned function."""
         assert is_veteran_owned("veteran_owned_business") is True
         assert is_veteran_owned("service_disabled_veteran_owned_business") is True
-        
+
         assert is_veteran_owned("small_business") is False
         assert is_veteran_owned("woman_owned_business") is False
         assert is_veteran_owned(None) is False
@@ -524,7 +561,7 @@ class TestConvenienceMethods:
         assert is_government_entity("local_government") is True
         assert is_government_entity("national_government") is True
         assert is_government_entity("authorities_and_commissions") is True
-        
+
         assert is_government_entity("small_business") is False
         assert is_government_entity("nonprofit") is False
         assert is_government_entity(None) is False
@@ -534,8 +571,10 @@ class TestConvenienceMethods:
         assert is_educational_institution("higher_education") is True
         assert is_educational_institution("veterinary_college") is True
         assert is_educational_institution("school_of_forestry") is True
-        assert is_educational_institution("public_institution_of_higher_education") is True
-        
+        assert (
+            is_educational_institution("public_institution_of_higher_education") is True
+        )
+
         assert is_educational_institution("government") is False
         assert is_educational_institution("small_business") is False
         assert is_educational_institution(None) is False
@@ -545,7 +584,7 @@ class TestConvenienceMethods:
         assert is_nonprofit_organization("nonprofit") is True
         assert is_nonprofit_organization("foundation") is True
         assert is_nonprofit_organization("community_development_corporations") is True
-        
+
         assert is_nonprofit_organization("small_business") is False
         assert is_nonprofit_organization("government") is False
         assert is_nonprofit_organization(None) is False
@@ -560,25 +599,43 @@ class TestDataConsistency:
             # Every valid code should have at least one group
             primary_group = get_category_group(code)
             assert primary_group != "", f"Code {code} should have a primary group"
-            
+
             # Every valid code should have a description
             description = get_description(code)
             assert description != "", f"Code {code} should have a description"
-            
+
             # Every valid code should validate as valid
             assert is_valid_business_category(code) is True
 
     def test_group_frozensets_match_business_category_groups(self):
         """Test individual frozensets match BUSINESS_CATEGORY_GROUPS content."""
-        assert CATEGORY_BUSINESS_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["category_business"].keys())
-        assert MINORITY_OWNED_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["minority_owned"].keys())
-        assert WOMEN_OWNED_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["women_owned"].keys())
-        assert VETERAN_OWNED_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["veteran_owned"].keys())
-        assert SPECIAL_DESIGNATIONS_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["special_designations"].keys())
-        assert NONPROFIT_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["nonprofit"].keys())
-        assert HIGHER_EDUCATION_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["higher_education"].keys())
-        assert GOVERNMENT_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["government"].keys())
-        assert INDIVIDUALS_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["individuals"].keys())
+        assert CATEGORY_BUSINESS_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["category_business"].keys()
+        )
+        assert MINORITY_OWNED_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["minority_owned"].keys()
+        )
+        assert WOMEN_OWNED_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["women_owned"].keys()
+        )
+        assert VETERAN_OWNED_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["veteran_owned"].keys()
+        )
+        assert SPECIAL_DESIGNATIONS_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["special_designations"].keys()
+        )
+        assert NONPROFIT_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["nonprofit"].keys()
+        )
+        assert HIGHER_EDUCATION_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["higher_education"].keys()
+        )
+        assert GOVERNMENT_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["government"].keys()
+        )
+        assert INDIVIDUALS_CODES == frozenset(
+            BUSINESS_CATEGORY_GROUPS["individuals"].keys()
+        )
 
     def test_descriptions_match_groups(self):
         """Test BUSINESS_CATEGORY_DESCRIPTIONS matches BUSINESS_CATEGORY_GROUPS values."""
@@ -591,24 +648,28 @@ class TestDataConsistency:
         codes_in_groups = set()
         for category_codes in BUSINESS_CATEGORY_GROUPS.values():
             codes_in_groups.update(category_codes.keys())
-        
+
         assert ALL_BUSINESS_CATEGORIES == codes_in_groups
 
     def test_overlapping_categories_exist_in_groups(self):
         """Test all overlapping categories actually exist in their specified groups."""
         for code, groups in OVERLAPPING_CATEGORIES.items():
             # Code should be valid
-            assert is_valid_business_category(code), f"Overlapping code {code} should be valid"
-            
+            assert is_valid_business_category(code), (
+                f"Overlapping code {code} should be valid"
+            )
+
             # Code should exist in at least one of its specified groups
             found_in_groups = []
             for group_name in groups:
                 if code in BUSINESS_CATEGORY_GROUPS.get(group_name, {}):
                     found_in_groups.append(group_name)
-            
+
             # For overlapping categories, we expect them to be in special_designations
             # but they might be listed in category_business through overlap logic
-            assert len(found_in_groups) > 0, f"Code {code} not found in any of its groups: {groups}"
+            assert len(found_in_groups) > 0, (
+                f"Code {code} not found in any of its groups: {groups}"
+            )
 
 
 class TestEdgeCases:
@@ -631,9 +692,15 @@ class TestEdgeCases:
         assert get_description(whitespace_input) == ""
         assert get_all_groups_for_code(whitespace_input) == []
 
-    @pytest.mark.parametrize("whitespace_wrapped", [
-        " small_business ", "small_business ", " small_business", "\tsmall_business\n"
-    ])
+    @pytest.mark.parametrize(
+        "whitespace_wrapped",
+        [
+            " small_business ",
+            "small_business ",
+            " small_business",
+            "\tsmall_business\n",
+        ],
+    )
     def test_whitespace_wrapped_input(self, whitespace_wrapped):
         """Test functions don't match codes with surrounding whitespace."""
         assert get_category_group(whitespace_wrapped) == ""
@@ -678,7 +745,7 @@ class TestPerformance:
     def test_constant_lookup_performance(self):
         """Test that lookups are efficient (using sets/dicts, not loops)."""
         # Test a reasonable number of lookups don't take too long
-        
+
         start_time = time.time()
         for _ in range(1000):
             for code in ["small_business", "nonprofit", "government", "INVALID"]:
@@ -687,7 +754,7 @@ class TestPerformance:
                 get_description(code)
                 get_all_groups_for_code(code)
         end_time = time.time()
-        
+
         # Should complete 16,000 function calls in well under a second
         assert (end_time - start_time) < 1.0, "Function calls should be efficient"
 
@@ -704,7 +771,7 @@ class TestPerformance:
                 is_educational_institution(code)
                 is_nonprofit_organization(code)
         end_time = time.time()
-        
+
         # Should complete 21,000 function calls in well under a second
         assert (end_time - start_time) < 1.0, "Convenience methods should be efficient"
 
@@ -720,7 +787,10 @@ class TestSpecialCases:
 
     def test_hubzone_description(self):
         """Test HUBZone has correct description."""
-        assert get_description("historically_underutilized_business_firm") == "HUBZone Firm"
+        assert (
+            get_description("historically_underutilized_business_firm")
+            == "HUBZone Firm"
+        )
 
     def test_us_owned_vs_foreign_owned(self):
         """Test US-owned and foreign-owned are in special designations."""
@@ -747,7 +817,7 @@ class TestSpecialCases:
             "government": "government",
             "individuals": "individuals",
         }
-        
+
         for code, expected_group in top_level_mappings.items():
             assert is_valid_business_category(code) is True
             assert get_category_group(code) == expected_group

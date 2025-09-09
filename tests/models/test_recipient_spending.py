@@ -1,12 +1,12 @@
+"""Tests for RecipientSpending model functionality."""
+
 from __future__ import annotations
 
 from tests.utils import assert_decimal_equal
-"""Tests for RecipientSpending model functionality."""
-
+from tests.conftest import load_json_fixture
 from usaspending.models import RecipientSpending, Recipient
 from usaspending.queries.spending_search import SpendingSearch
 from usaspending.utils.formatter import contracts_titlecase, round_to_millions
-from tests.conftest import load_json_fixture
 
 
 class TestRecipientSpendingInitialization:

@@ -1,4 +1,3 @@
-
 """Agencies search query implementation for funding agency/office autocomplete."""
 
 from __future__ import annotations
@@ -11,9 +10,10 @@ if TYPE_CHECKING:
 
 logger = USASpendingLogger.get_logger(__name__)
 
+
 class FundingAgenciesSearch(AgenciesSearch):
-    """ Search for funding agencies and offices by name."""
-    
+    """Search for funding agencies and offices by name."""
+
     @property
     def _endpoint(self) -> str:
         """API endpoint for agency autocomplete."""

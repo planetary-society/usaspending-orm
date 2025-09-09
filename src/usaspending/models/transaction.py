@@ -31,7 +31,7 @@ class Transaction(BaseModel):
     def type(self) -> Optional[str]:
         """
         Return the transaction type from the underlying raw data.
-        
+
         Returns:
             Optional[str]: The transaction type string, or None if not present.
         """
@@ -45,12 +45,12 @@ class Transaction(BaseModel):
     def action_date(self) -> Optional[datetime]:
         """
         Return the transaction's action date parsed as a datetime object.
-       
+
         Returns:
             Optional[datetime]: A datetime representing the action date, or None
             when no valid date is available.
         """
-        
+
         return to_date(self.raw.get("action_date"))
 
     @property

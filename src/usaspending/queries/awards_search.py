@@ -41,7 +41,6 @@ from ..models.award_types import (
     DIRECT_PAYMENT_CODES,
     OTHER_CODES,
     AWARD_TYPE_GROUPS,
-    get_category_for_code,
 )
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -91,19 +90,19 @@ class AwardsSearch(QueryBuilder["Award"]):
             "limit": self._get_effective_page_size(),
             "page": page,
         }
-        
+
         # Add sorting parameters if specified
         if self._order_by:
             payload["sort"] = self._order_by
             payload["order"] = self._order_direction
-            
+
         return payload
 
     def _transform_result(self, result: dict[str, Any]) -> Award:
         """Transforms a single API result item into an Award model."""
         # Get award type codes from current filters
         award_type_codes = self._get_award_type_codes()
-        
+
         # If we're filtering for a single award type category, add it to the result
         # This ensures the correct Award subclass is created even when the API
         # response doesn't include explicit type information
@@ -116,7 +115,7 @@ class AwardsSearch(QueryBuilder["Award"]):
                 result["category"] = "grant"
             elif award_type_codes.issubset(LOAN_CODES):
                 result["category"] = "loan"
-        
+
         return create_award(result, self._client)
 
     def _get_award_type_codes(self) -> set[str]:
@@ -169,14 +168,14 @@ class AwardsSearch(QueryBuilder["Award"]):
 
         # Aggregate filters to prepare for the count request
         final_filters = self._aggregate_filters()
-        
+
         # The 'award_type_codes' filter is required by the API.
         if "award_type_codes" not in final_filters:
             raise ValidationError(
                 "A filter for 'award_type_codes' is required. "
                 "Use the .with_award_types() method."
             )
-        
+
         # Make the API call to count awards by type
         results = self.count_awards_by_type()
 
@@ -193,8 +192,8 @@ class AwardsSearch(QueryBuilder["Award"]):
         return total
 
     def count_awards_by_type(self) -> dict[str, int]:
-        """ Shared logic that calls the awards count endpoint.
-        
+        """Shared logic that calls the awards count endpoint.
+
         Returns:
             A dictionary mapping award type categories to their result counts
             for the matching filter set.
@@ -209,13 +208,16 @@ class AwardsSearch(QueryBuilder["Award"]):
         from ..logging_config import log_query_execution
 
         log_query_execution(
-            logger, "AwardsSearch._count_awards_by_type", len(self._filter_objects), endpoint
+            logger,
+            "AwardsSearch._count_awards_by_type",
+            len(self._filter_objects),
+            endpoint,
         )
 
         # Send the request to the count endpoint
         response = self._client._make_request("POST", endpoint, json=payload)
         results = response.get("results", {})
-        
+
         return results
 
     def _get_award_type_category(self, award_type_codes: set[str]) -> str:
@@ -295,22 +297,22 @@ class AwardsSearch(QueryBuilder["Award"]):
     def order_by(self, field: str, direction: str = "desc") -> AwardsSearch:
         """
         Set the sort field and direction for the query results.
-        
+
         Args:
-            field: The field name to sort by. Must be a valid field from the 
+            field: The field name to sort by. Must be a valid field from the
                    current award type's SEARCH_FIELDS.
             direction: The sort direction, either "asc" or "desc". Defaults to "desc".
-        
+
         Returns:
             A new AwardsSearch instance with the ordering applied.
-            
+
         Raises:
             ValidationError: If the field is not a valid search field for the current
                            award type configuration.
         """
         # Get the valid fields for the current award type configuration
         valid_fields = self._get_fields()
-        
+
         # Validate that the field is in the list of valid fields
         if field not in valid_fields:
             # Build a helpful error message
@@ -321,18 +323,22 @@ class AwardsSearch(QueryBuilder["Award"]):
                 for category_name, codes in AWARD_TYPE_GROUPS.items():
                     if award_types & frozenset(codes.keys()):
                         category_names.append(category_name)
-                category_str = ", ".join(category_names) if category_names else "selected award types"
+                category_str = (
+                    ", ".join(category_names)
+                    if category_names
+                    else "selected award types"
+                )
             else:
                 category_str = "all award types (no type filter applied)"
-                
+
             raise ValidationError(
                 f"Invalid sort field '{field}' for {category_str}. "
                 f"Valid fields are: {', '.join(sorted(valid_fields))}"
             )
-        
+
         # Call the parent class order_by method
         return super().order_by(field, direction)
-    
+
     # ==========================================================================
     # Filter Methods
     # ==========================================================================
@@ -446,7 +452,9 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_place_of_performance_locations(self, *locations: LocationSpec) -> AwardsSearch:
+    def with_place_of_performance_locations(
+        self, *locations: LocationSpec
+    ) -> AwardsSearch:
         """
         Filter by one or more specific geographic places of performance.
 

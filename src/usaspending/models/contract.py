@@ -11,6 +11,7 @@ from ..utils.formatter import to_decimal
 if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
 
+
 class Contract(Award):
     """Contract award type including definitive contracts and purchase orders."""
 
@@ -70,7 +71,9 @@ class Contract(Award):
         naics_data = self._lazy_get("naics", "NAICS")
         if isinstance(naics_data, dict):
             return naics_data.get("code")
-        if self.naics_hierarchy and isinstance(self.naics_hierarchy.get("base_code"), dict):
+        if self.naics_hierarchy and isinstance(
+            self.naics_hierarchy.get("base_code"), dict
+        ):
             return self.naics_hierarchy["base_code"].get("code")
         if self.latest_transaction_contract_data:
             return self.latest_transaction_contract_data.get("naics")
@@ -82,7 +85,9 @@ class Contract(Award):
         naics_data = self._lazy_get("naics", "NAICS")
         if isinstance(naics_data, dict):
             return naics_data.get("description")
-        if self.naics_hierarchy and isinstance(self.naics_hierarchy.get("base_code"), dict):
+        if self.naics_hierarchy and isinstance(
+            self.naics_hierarchy.get("base_code"), dict
+        ):
             return self.naics_hierarchy["base_code"].get("description")
         if self.latest_transaction_contract_data:
             return self.latest_transaction_contract_data.get("naics_description")
@@ -136,7 +141,7 @@ class Contract(Award):
             >>> list(contract.subawards)  # Iterate through all subawards
         """
         from .award_types import CONTRACT_CODES
-        
-        return (self._client.subawards
-                .for_award(self.generated_unique_award_id)
-                .with_award_types(*CONTRACT_CODES))
+
+        return self._client.subawards.for_award(
+            self.generated_unique_award_id
+        ).with_award_types(*CONTRACT_CODES)

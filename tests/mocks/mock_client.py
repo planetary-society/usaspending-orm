@@ -18,6 +18,7 @@ from .response_builder import ResponseBuilder
 class MockUSASpendingClient(USASpendingClient):
     class Endpoints:
         """A collection of API endpoint constants."""
+
         AGENCY = "/agency/{toptier_code}/"
         AGENCY_SUBAGENCIES = "/agency/{toptier_code}/sub_agency/"
         AGENCY_AUTOCOMPLETE = "/autocomplete/funding_agency_office/"
@@ -453,23 +454,24 @@ class MockUSASpendingClient(USASpendingClient):
 
     def _download_binary_file(self, file_url: str, destination_path: str) -> None:
         """Mock implementation of binary file download.
-        
+
         For testing, we just create an empty file at the destination.
         Real download testing would be done in integration tests.
         """
         import os
+
         os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-        with open(destination_path, 'wb') as f:
-            f.write(b'Mock download content')
+        with open(destination_path, "wb") as f:
+            f.write(b"Mock download content")
 
     def mock_download_queue(
-        self, 
-        download_type: str, 
-        award_id: str, 
-        response_data: Optional[Dict[str, Any]] = None
+        self,
+        download_type: str,
+        award_id: str,
+        response_data: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Mock download queue response.
-        
+
         Args:
             download_type: "contract", "assistance", or "idv"
             award_id: Award identifier
@@ -479,25 +481,35 @@ class MockUSASpendingClient(USASpendingClient):
             # Load default from fixture
             import json
             from copy import deepcopy
+
             fixture_path = self._fixture_dir / "download_assistance.json"
             with open(fixture_path) as f:
                 response_data = deepcopy(json.load(f))
-            
+
             # Customize for the specific request
             import datetime
+
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d_H%M%S%f")
             file_name = f"{download_type.upper()}_{award_id}_{timestamp}.zip"
             response_data["file_name"] = file_name
-            response_data["file_url"] = f"https://files.usaspending.gov/generated_downloads/{file_name}"
-            response_data["status_url"] = f"https://api.usaspending.gov/api/v2/download/status?file_name={file_name}"
-            
+            response_data["file_url"] = (
+                f"https://files.usaspending.gov/generated_downloads/{file_name}"
+            )
+            response_data["status_url"] = (
+                f"https://api.usaspending.gov/api/v2/download/status?file_name={file_name}"
+            )
+
             # Update download_request fields
             response_data["download_request"]["award_id"] = award_id
             response_data["download_request"]["request_type"] = download_type
-            response_data["download_request"]["is_for_contract"] = download_type == "contract"
-            response_data["download_request"]["is_for_assistance"] = download_type == "assistance"
+            response_data["download_request"]["is_for_contract"] = (
+                download_type == "contract"
+            )
+            response_data["download_request"]["is_for_assistance"] = (
+                download_type == "assistance"
+            )
             response_data["download_request"]["is_for_idv"] = download_type == "idv"
-        
+
         endpoint = f"/download/{download_type}/"
         self.set_response(endpoint, response_data)
 
@@ -505,10 +517,10 @@ class MockUSASpendingClient(USASpendingClient):
         self,
         file_name: str,
         status: str = "finished",
-        custom_data: Optional[Dict[str, Any]] = None
+        custom_data: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Mock download status response.
-        
+
         Args:
             file_name: Name of file to check status for
             status: Status to return ("ready", "running", "finished", "failed")
@@ -520,14 +532,17 @@ class MockUSASpendingClient(USASpendingClient):
             # Load and customize fixture template
             import json
             from copy import deepcopy
+
             fixture_path = self._fixture_dir / "download_status.json"
             with open(fixture_path) as f:
                 response_data = deepcopy(json.load(f))
-            
+
             response_data["file_name"] = file_name
             response_data["status"] = status
-            response_data["file_url"] = f"https://files.usaspending.gov/generated_downloads/{file_name}"
-            
+            response_data["file_url"] = (
+                f"https://files.usaspending.gov/generated_downloads/{file_name}"
+            )
+
             # Adjust fields based on status
             if status == "ready":
                 response_data["seconds_elapsed"] = None
@@ -546,7 +561,7 @@ class MockUSASpendingClient(USASpendingClient):
                 response_data["total_size"] = None
                 response_data["total_columns"] = None
                 response_data["total_rows"] = None
-        
+
         self.set_response("/download/status", response_data)
 
     # Convenience methods for common scenarios
@@ -657,7 +672,9 @@ class MockUSASpendingClient(USASpendingClient):
             if "amount" not in recipient:
                 recipient["amount"] = 1000000.0
 
-        self.set_paginated_response(self.Endpoints.RECIPIENT_SEARCH, recipients, page_size)
+        self.set_paginated_response(
+            self.Endpoints.RECIPIENT_SEARCH, recipients, page_size
+        )
 
         # Count endpoint is now automatically set up by _auto_setup_count_endpoint()
 

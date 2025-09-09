@@ -11,7 +11,7 @@ from datetime import datetime
 from usaspending.models import Award, Recipient
 from usaspending.models.agency import Agency
 from usaspending.models.subaward import SubAward
-from usaspending.exceptions import ValidationError,HTTPError
+from usaspending.exceptions import ValidationError, HTTPError
 from tests.mocks.mock_client import MockUSASpendingClient
 from tests.utils import assert_decimal_equal
 
@@ -61,9 +61,13 @@ class AwardTestingMixin:
     def test_lazy_loading_fetches_details(self, mock_usa_client, fixture_data):
         """Test that lazy loading fetches details when a property is accessed."""
         award_id = fixture_data["generated_unique_award_id"]
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
+            award_id=award_id
+        )
         mock_usa_client.set_fixture_response(endpoint, self.FIXTURE_PATH)
-        award = self.AWARD_MODEL({"generated_unique_award_id": award_id}, mock_usa_client)
+        award = self.AWARD_MODEL(
+            {"generated_unique_award_id": award_id}, mock_usa_client
+        )
 
         assert award.description.lower() == fixture_data["description"].lower()
         assert mock_usa_client.get_request_count(endpoint) == 1
@@ -74,7 +78,9 @@ class AwardTestingMixin:
         """Test various properties using fixture data."""
         award = self.AWARD_MODEL(fixture_data, mock_usa_client)
         assert award.id == fixture_data["id"]
-        assert award.generated_unique_award_id == fixture_data["generated_unique_award_id"]
+        assert (
+            award.generated_unique_award_id == fixture_data["generated_unique_award_id"]
+        )
         assert award.description.lower() == fixture_data["description"].lower()
         assert_decimal_equal(award.total_obligation, fixture_data["total_obligation"])
 
@@ -83,7 +89,9 @@ class AwardTestingMixin:
         award = self.AWARD_MODEL(fixture_data, mock_usa_client)
         pop = award.period_of_performance
         assert pop.raw == fixture_data["period_of_performance"]
-        expected_start_date = datetime.fromisoformat(fixture_data["period_of_performance"]["start_date"])
+        expected_start_date = datetime.fromisoformat(
+            fixture_data["period_of_performance"]["start_date"]
+        )
         assert pop.start_date == expected_start_date
 
     def test_recipient_property(self, mock_usa_client, fixture_data):
@@ -91,7 +99,10 @@ class AwardTestingMixin:
         award = self.AWARD_MODEL(fixture_data, mock_usa_client)
         recipient = award.recipient
         assert isinstance(recipient, Recipient)
-        assert recipient.name.lower() == fixture_data["recipient"]["recipient_name"].lower()
+        assert (
+            recipient.name.lower()
+            == fixture_data["recipient"]["recipient_name"].lower()
+        )
         assert award.recipient is recipient
 
     def test_agency_properties(self, mock_usa_client, fixture_data):
@@ -100,14 +111,20 @@ class AwardTestingMixin:
         funding_agency = award.funding_agency
         if "funding_agency" in fixture_data and fixture_data["funding_agency"]:
             assert isinstance(funding_agency, Agency)
-            assert funding_agency.name == fixture_data["funding_agency"]["toptier_agency"]["name"]
+            assert (
+                funding_agency.name
+                == fixture_data["funding_agency"]["toptier_agency"]["name"]
+            )
         else:
             assert funding_agency is None
 
         awarding_agency = award.awarding_agency
         if "awarding_agency" in fixture_data and fixture_data["awarding_agency"]:
             assert isinstance(awarding_agency, Agency)
-            assert awarding_agency.name == fixture_data["awarding_agency"]["toptier_agency"]["name"]
+            assert (
+                awarding_agency.name
+                == fixture_data["awarding_agency"]["toptier_agency"]["name"]
+            )
         else:
             assert awarding_agency is None
 
@@ -119,19 +136,25 @@ class AwardTestingMixin:
 
         results = award.transactions.limit(10).all()
         assert results == []
-        last_request = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.TRANSACTIONS)
+        last_request = mock_usa_client.get_last_request(
+            MockUSASpendingClient.Endpoints.TRANSACTIONS
+        )
         assert last_request["json"]["award_id"] == award_id
         assert last_request["json"]["limit"] == 10
 
     def test_fetch_details_raises_exception(self, mock_usa_client, fixture_data):
         """Test _fetch_details raises API exceptions if error."""
         award_id = fixture_data["generated_unique_award_id"]
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
+            award_id=award_id
+        )
         mock_usa_client.set_error_response(endpoint, 500)
-        award = self.AWARD_MODEL({"generated_unique_award_id": award_id}, mock_usa_client)
+        award = self.AWARD_MODEL(
+            {"generated_unique_award_id": award_id}, mock_usa_client
+        )
         with pytest.raises(HTTPError):
             award.description
-        
+
         assert mock_usa_client.get_request_count(endpoint) == 1
 
     def test_subawards_property(self, mock_usa_client, fixture_data):
@@ -150,7 +173,9 @@ class AwardTestingMixin:
             {"internal_id": "SUB1", "Sub-Award ID": "S1", "Sub-Award Amount": 100},
             {"internal_id": "SUB2", "Sub-Award ID": "S2", "Sub-Award Amount": 200},
         ]
-        mock_usa_client.set_paginated_response(MockUSASpendingClient.Endpoints.AWARD_SEARCH, subaward_results)
+        mock_usa_client.set_paginated_response(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH, subaward_results
+        )
 
         # Iterate over the subawards
         subawards_list = list(subawards_query)
@@ -161,7 +186,9 @@ class AwardTestingMixin:
         assert subawards_list[0].sub_award_id == "S1"
 
         # Verify the API call
-        last_request = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.AWARD_SEARCH)
+        last_request = mock_usa_client.get_last_request(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH
+        )
         payload = last_request["json"]
         assert payload["filters"]["award_unique_id"] == award_id
         assert payload["subawards"] is True

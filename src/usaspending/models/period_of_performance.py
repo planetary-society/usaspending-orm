@@ -4,6 +4,7 @@ from .base_model import BaseModel
 from ..utils.formatter import to_date
 from datetime import datetime
 
+
 class PeriodOfPerformance(BaseModel):
     def __init__(self, data: Dict[str, Any]):
         super().__init__(data)
@@ -29,10 +30,14 @@ class PeriodOfPerformance(BaseModel):
     @property
     def last_modified_date(self) -> Optional[datetime]:
         return to_date(self.get_value(["last_modified_date", "Last Modified Date"]))
-    
+
     @property
     def potential_end_date(self) -> Optional[datetime]:
-        return to_date(self.get_value(["potential_end_date", "Period of Performance Potential End Date"]))
+        return to_date(
+            self.get_value(
+                ["potential_end_date", "Period of Performance Potential End Date"]
+            )
+        )
 
     def __repr__(self) -> str:
         return f"<Period of Performance {self._start_date or '?'} -> {self._end_date or '?'}>"

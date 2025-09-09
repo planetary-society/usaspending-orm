@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
+
 # Import the manager and type aliases
 from ..download.manager import DownloadManager, FileFormat
 from ..download.job import DownloadJob
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 
 logger = USASpendingLogger.get_logger(__name__)
 
+
 class DownloadResource(BaseResource):
     """Resource for award data download operations."""
 
@@ -22,7 +24,12 @@ class DownloadResource(BaseResource):
         super().__init__(client)
         self._manager = DownloadManager(client)
 
-    def contract(self, award_id: str, file_format: FileFormat = "csv", destination_dir: Optional[str] = None) -> DownloadJob:
+    def contract(
+        self,
+        award_id: str,
+        file_format: FileFormat = "csv",
+        destination_dir: Optional[str] = None,
+    ) -> DownloadJob:
         """
         Queue a download job for contract award data.
 
@@ -34,9 +41,16 @@ class DownloadResource(BaseResource):
         Returns:
             A DownloadJob object. Use job.wait_for_completion() to block until finished.
         """
-        return self._manager.queue_download("contract", award_id, file_format, destination_dir)
+        return self._manager.queue_download(
+            "contract", award_id, file_format, destination_dir
+        )
 
-    def assistance(self, award_id: str, file_format: FileFormat = "csv", destination_dir: Optional[str] = None) -> DownloadJob:
+    def assistance(
+        self,
+        award_id: str,
+        file_format: FileFormat = "csv",
+        destination_dir: Optional[str] = None,
+    ) -> DownloadJob:
         """
         Queue a download job for assistance award data.
 
@@ -48,9 +62,16 @@ class DownloadResource(BaseResource):
         Returns:
             A DownloadJob object. Use job.wait_for_completion() to block until finished.
         """
-        return self._manager.queue_download("assistance", award_id, file_format, destination_dir)
+        return self._manager.queue_download(
+            "assistance", award_id, file_format, destination_dir
+        )
 
-    def idv(self, award_id: str, file_format: FileFormat = "csv", destination_dir: Optional[str] = None) -> DownloadJob:
+    def idv(
+        self,
+        award_id: str,
+        file_format: FileFormat = "csv",
+        destination_dir: Optional[str] = None,
+    ) -> DownloadJob:
         """
         Queue a download job for IDV (Indefinite Delivery Vehicle) award data.
 
@@ -62,12 +83,14 @@ class DownloadResource(BaseResource):
         Returns:
             A DownloadJob object. Use job.wait_for_completion() to block until finished.
         """
-        return self._manager.queue_download("idv", award_id, file_format, destination_dir)
+        return self._manager.queue_download(
+            "idv", award_id, file_format, destination_dir
+        )
 
     def status(self, file_name: str) -> DownloadStatus:
         """
         Check the status of a specific download job directly via the API.
-        
+
         Note: Using DownloadJob.refresh_status() is generally preferred.
 
         Args:

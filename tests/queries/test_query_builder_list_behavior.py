@@ -34,7 +34,9 @@ class TestLenMethod:
 
         # Should have called the count endpoint twice
         assert (
-            mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT)
+            mock_usa_client.get_request_count(
+                MockUSASpendingClient.Endpoints.AWARD_COUNT
+            )
             == 2
         )
 
@@ -73,7 +75,12 @@ class TestGetItemMethod:
         assert result._data["Award ID"] == "AWARD-42"
 
         # Should have fetched only one page
-        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 1
+        assert (
+            mock_usa_client.get_request_count(
+                MockUSASpendingClient.Endpoints.AWARD_SEARCH
+            )
+            == 1
+        )
 
     def test_negative_index(self, awards_search, mock_usa_client):
         """Test accessing items by negative index."""
@@ -162,7 +169,12 @@ class TestGetItemMethod:
         assert results[-1]._data["Award ID"] == "AWARD-104"
 
         # Should have fetched two pages
-        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 2
+        assert (
+            mock_usa_client.get_request_count(
+                MockUSASpendingClient.Endpoints.AWARD_SEARCH
+            )
+            == 2
+        )
 
     def test_slice_with_step(self, awards_search, mock_usa_client):
         """Test slice with step parameter."""
@@ -225,7 +237,12 @@ class TestGetItemMethod:
         assert results == []
 
         # No API calls should be made for empty slices
-        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 0
+        assert (
+            mock_usa_client.get_request_count(
+                MockUSASpendingClient.Endpoints.AWARD_SEARCH
+            )
+            == 0
+        )
 
     def test_invalid_key_type(self, awards_search, mock_usa_client):
         """Test that invalid key types raise TypeError."""
@@ -295,5 +312,7 @@ class TestIntegration:
         assert item._data["Award ID"] == "AWARD-15"
 
         # Check the request was made with correct page size
-        last_request = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.AWARD_SEARCH)
+        last_request = mock_usa_client.get_last_request(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH
+        )
         assert last_request["json"]["limit"] == 20
