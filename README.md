@@ -1,20 +1,18 @@
 # USASpending ORM
 
-An opinionated Python wrapper for the USAspending.gov API that applies an object-relational mapping layer to simplify standardize access to the underlying data. Loosely inspired by ActiveRecord's ORM.
-
-The library includes built-in rate-limiting that adheres to the API published standards, default caching via the `cachier` python library.
+An opinionated Python wrapper for the USAspending.gov API that applies an object-relational mapping layer to simplify access to the underlying data.
 
 ## Key Features
 
-**🔗 ORM-Style Chained Interface** - Maps USAspending API endpoints to Python objects. Navigate complex data relationships (e.g., `award.recipient.location`) with a clean, intuitive syntax.
+**🔗 ORM-Style Chained Interface** - Applies relational object mapping to the USASpending API to simplify data access and preocessing using a clean, intuitive syntax inspired by ActiveRecord (e.g., `award.recipient.location.city`).
 
-**🔎 Comprehensive Award Search** - Construct complex queries in the spirit of SQLAlchemy/ActiveRecord syntax with a clean, chainable interface. Filter by agencies, award types, fiscal years, and more without wrestling with raw API parameters.
+**🔎 Comprehensive Award Queries** - Construct complex queries in using a chainable interface that maps to the set of Award filters provided by the API. Filter by agencies, award types, fiscal years, and more without wrestling with raw API parameters.
 
 **⚡️ Smart Caching & Rate Limiting** - Out-of-the-box file caching speeds up repeated requests, while automatic rate limiting ensures your application stays within the API's usage limits.
 
-**📄 Transparent pagination** - Seamlessly iterate through thousands of records. The library handles the underlying pagination, letting you treat large result sets like simple Python lists.
+**📄 Transparent Pagination** - Seamlessly iterate through thousands of records. The library handles the underlying pagination, letting you treat large result sets like standard Python lists.
 
-**🛡️ Data Normalization and Casting** - Normalizes inconsistent property names and gracefully handles missing fields via lazy-loading of attributes. Casts values to proper types.
+**🛡️ Data Normalization and Type Casting** - Normalizes inconsistent property names and gracefully handles missing fields via lazy-loading of attributes. Casts values to proper types.
 
 **🥩 Raw API Output is Still There** - Access the raw API JSON values and structure via the `.raw` property on any ORM class object.
 
@@ -24,8 +22,8 @@ No API key is required to use the USASpending.gov API resource. Just install, im
 
 ### Load and configure the client
 ```python
->>> from usaspending import USASpending
->>> client = USASpending()
+>>> from usaspending import USASpendingClient
+>>> client = USASpendingClient()
 ```
 
 ### Load a single award
@@ -62,8 +60,25 @@ United States
 >>> award_query.count()
 11358
 
->>> award_query.order_by("Award Amount","desc").first().total_obligation
+# Includes ordering by any search field
+>>> award_query.order_by("Award Amount","desc")
+
+# API query is not executed until results are needed
+>>> awards = award_query.all() # Executes the query and fetches all results
+
+>>> awards[0].total_obligation
 Decimal(22163800679.69)
+```
+
+### Queries are iterable
+```python
+
+>>> len(award_query)
+11358
+
+>>> award = award_query[5000]
+>>> for transaction in award.transactions:
+...     print(f"{transaction.action_date}: {transaction.federal_action_obligation}")
 ```
 
 ### Custom Configuration
@@ -71,7 +86,7 @@ Decimal(22163800679.69)
 You can customize the library's behavior before creating a client instance:
 
 ```python
->>> from usaspending import USASpending, config
+>>> from usaspending import USASpendingClient, config
 >>> 
 >>> # Configure settings before creating the client
 >>> config.configure(
@@ -83,7 +98,7 @@ You can customize the library's behavior before creating a client instance:
 ... )
 >>> 
 >>> # Now create the client with your configuration
->>> client = USASpending()
+>>> client = USASpendingClient()
 ```
 
 ## Project Status
