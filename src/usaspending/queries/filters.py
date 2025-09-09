@@ -49,8 +49,8 @@ class LocationSpec:
     state_code: Optional[str] = None
     county_code: Optional[str] = None
     city_name: Optional[str] = None
-    district_original: Optional[str] = None
-    district_current: Optional[str] = None
+    district_original: Optional[str] = None # Current congressional district (e.g. "IA-03")
+    district_current: Optional[str] = None # Congressional district when awarded (e.g. "WA-01")
     zip_code: Optional[str] = None
 
     def to_dict(self) -> dict[str, str]:

@@ -2,7 +2,7 @@
 
 A wrapper for the USAspending.gov API that applies an object-relational mapping layer to simplify access to the underlying spending data.
 
-[USASpending.gov](https://usaspending.gov) is the official federal database for tracking U.S. government spending, established by Federal Funding Accountability and Transparency Act of 2006. The platform provides extensive data on federal contracts, grants, and other awards since 2005, enabling citizens to track how federal money is spent.
+[USASpending.gov](https://usaspending.gov) is the official federal database for tracking U.S. government spending, established by Federal Funding Accountability and Transparency Act of 2006. The platform provides extensive data on federal contracts, grants, and other awards since 2007-10-01, enabling citizens to track how federal money is spent.
 
 The platform provides access to a comprehensive API for querying the data, but the API can be complex and cumbersome to work with directly. This library provides an abstraction layer that focuses on common and provide a clean, Pythonic interface for accessing and processing the data.
 
