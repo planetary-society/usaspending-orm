@@ -157,6 +157,10 @@ class Recipient(LazyRecord):
     def business_types(self) -> List[str]:
         return self._lazy_get("business_types", "business_categories", default=[])
 
+    @property
+    def business_categories(self) -> List[str]:
+        return self.business_types
+
     @cached_property
     def location(self) -> Optional[Location]:
         """Get recipient location - shares same client."""
