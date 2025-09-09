@@ -1,6 +1,10 @@
 # USASpending ORM
 
-An opinionated Python wrapper for the USAspending.gov API that applies an object-relational mapping layer to simplify access to the underlying data.
+A wrapper for the USAspending.gov API that applies an object-relational mapping layer to simplify access to the underlying spending data.
+
+[USASpending.gov](https://usaspending.gov) is the official federal database for tracking U.S. government spending, established by Federal Funding Accountability and Transparency Act of 2006. The platform provides extensive data on federal contracts, grants, and other awards since 2005, enabling citizens to track how federal money is spent.
+
+The platform provides access to a comprehensive API for querying the data, but the API can be complex and cumbersome to work with directly. This library provides an abstraction layer that focuses on common and provide a clean, Pythonic interface for accessing and processing the data.
 
 ## Key Features
 
@@ -14,7 +18,7 @@ An opinionated Python wrapper for the USAspending.gov API that applies an object
 
 **🛡️ Data Normalization and Type Casting** - Normalizes inconsistent property names and gracefully handles missing fields via lazy-loading of attributes. Casts values to proper types.
 
-**🥩 Raw API Output is Still There** - Access the raw API JSON values and structure via the `.raw` property on any ORM class object.
+**🥩 Raw API Output is Still There** - Access the raw API JSON values and structure via the `.raw` property on any ORM resource object.
 
 ## Usage
 
@@ -108,6 +112,12 @@ USASpending Python Wrapper is under active development. The API is stabilizing b
 ## Contributing
 
 We welcome contributions to improve and expand the implementation and functionality.
+
+## About The Planetary Society
+
+This library was initially developed to serve the needs of The Planetary Society's Space Policy and Advocacy team in tracking and analyzing NASA contract data. We have open-sourced the project for the benefit of the broader community. [The Planetary Society](planetary.org) is a nonprofit, independent organization that empowers the world's citizens to advance space science and exploration. The organization is supported by individuals across the world, and does not accept government grants not does it have major aerospace donations.
+
+Please consider supporting our work by [becoming a member](https://www.planetary.org/join).
 
 ## License
 
