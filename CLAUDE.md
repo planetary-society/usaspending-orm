@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-USASpending Python Wrapper is a Python client library for the USAspending.gov API, providing a modern, client-centric interface with query builders and automatic pagination.
+USASpending ORM is a Python ORM library for the USAspending.gov API, providing a modern, client-centric interface with query builders and automatic pagination.
 
 ## USASpending API Reference Documentation
 - See `api-docs-links.md` for official endpoint documentation links
-- Use **contex7 MCP** to access the API documentation for the usaspendingapi project.
+- Use **contex7 MCP** to access the API documentation for the USASpending project.
 
 ## Architecture Principles
 
@@ -65,7 +65,7 @@ USASpending Python Wrapper is a Python client library for the USAspending.gov AP
 
 ### Project Structure
 ```
-src/usaspendingapi/
+src/usaspending/
 ├── client.py              # Main USASpending client
 ├── config.py              # Configuration settings
 ├── logging_config.py      # Custom logger configuration
