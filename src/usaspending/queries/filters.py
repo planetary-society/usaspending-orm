@@ -4,7 +4,9 @@ import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, ClassVar, Literal, Optional
+from typing import Any, ClassVar, Literal, Optional, Union
+
+from ..exceptions import ValidationError
 
 # ==============================================================================
 # Helper Enums and Dataclasses
@@ -226,3 +228,152 @@ class TreasuryAccountComponentsFilter(BaseFilter):
 
     def to_dict(self) -> dict[str, list[dict[str, str]]]:
         return {self.key: self.components}
+
+
+# ==============================================================================
+# Conversion Utility Functions
+# ==============================================================================
+
+
+def parse_location_scope(scope: str) -> LocationScope:
+    """
+    Convert a string to a LocationScope enum value.
+    
+    Args:
+        scope: Either "domestic" or "foreign" (case-insensitive).
+        
+    Returns:
+        LocationScope: The corresponding enum value.
+        
+    Raises:
+        ValidationError: If scope is not "domestic" or "foreign".
+    """
+    scope_lower = scope.lower()
+    if scope_lower == "domestic":
+        return LocationScope.DOMESTIC
+    elif scope_lower == "foreign":
+        return LocationScope.FOREIGN
+    else:
+        raise ValidationError("scope must be 'domestic' or 'foreign'")
+
+
+def parse_agency_type(agency_type: str) -> AgencyType:
+    """
+    Convert a string to an AgencyType enum value.
+    
+    Args:
+        agency_type: Either "awarding" or "funding" (case-insensitive).
+        
+    Returns:
+        AgencyType: The corresponding enum value.
+        
+    Raises:
+        ValidationError: If agency_type is not "awarding" or "funding".
+    """
+    agency_type_lower = agency_type.lower()
+    if agency_type_lower == "awarding":
+        return AgencyType.AWARDING
+    elif agency_type_lower == "funding":
+        return AgencyType.FUNDING
+    else:
+        raise ValidationError("agency_type must be 'awarding' or 'funding'")
+
+
+def parse_agency_tier(tier: str) -> AgencyTier:
+    """
+    Convert a string to an AgencyTier enum value.
+    
+    Args:
+        tier: Either "toptier" or "subtier" (case-insensitive).
+        
+    Returns:
+        AgencyTier: The corresponding enum value.
+        
+    Raises:
+        ValidationError: If tier is not "toptier" or "subtier".
+    """
+    tier_lower = tier.lower()
+    if tier_lower == "toptier":
+        return AgencyTier.TOPTIER
+    elif tier_lower == "subtier":
+        return AgencyTier.SUBTIER
+    else:
+        raise ValidationError("tier must be 'toptier' or 'subtier'")
+
+
+def parse_award_date_type(date_type: str) -> AwardDateType:
+    """
+    Convert a string to an AwardDateType enum value.
+    
+    Handles flexible input formats including underscores and variations.
+    
+    Args:
+        date_type: One of "action_date", "date_signed", "last_modified_date", 
+            or "new_awards_only" (case-insensitive, underscores optional).
+        
+    Returns:
+        AwardDateType: The corresponding enum value.
+        
+    Raises:
+        ValidationError: If date_type is not a valid option.
+    """
+    date_type_lower = date_type.lower().replace("_", "")
+    if date_type_lower == "actiondate":
+        return AwardDateType.ACTION_DATE
+    elif date_type_lower == "datesigned":
+        return AwardDateType.DATE_SIGNED
+    elif date_type_lower in ["lastmodified", "lastmodifieddate"]:
+        return AwardDateType.LAST_MODIFIED
+    elif date_type_lower == "newardsonly":
+        return AwardDateType.NEW_AWARDS_ONLY
+    else:
+        raise ValidationError(
+            f"Invalid date_type: '{date_type}'. Must be one of: "
+            "'action_date', 'date_signed', 'last_modified_date', 'new_awards_only'"
+        )
+
+
+def parse_award_amount(
+    amount: Union[dict[str, float], tuple[Optional[float], Optional[float]]]
+) -> AwardAmount:
+    """
+    Convert a dictionary or tuple to an AwardAmount dataclass.
+    
+    Args:
+        amount: Either:
+            - A dictionary with 'lower_bound' and/or 'upper_bound' keys
+            - A tuple of (lower_bound, upper_bound) where None means unbounded
+        
+    Returns:
+        AwardAmount: The corresponding dataclass instance.
+        
+    Raises:
+        ValidationError: If amount is not a valid dict or tuple format.
+    """
+    if isinstance(amount, dict):
+        return AwardAmount(**amount)
+    elif isinstance(amount, tuple):
+        if len(amount) != 2:
+            raise ValidationError(
+                "Award amount tuple must have exactly 2 elements (lower_bound, upper_bound)"
+            )
+        lower, upper = amount
+        return AwardAmount(lower_bound=lower, upper_bound=upper)
+    else:
+        raise ValidationError(
+            "Award amounts must be specified as a dictionary or tuple"
+        )
+
+
+def parse_location_spec(location: dict[str, str]) -> LocationSpec:
+    """
+    Convert a dictionary to a LocationSpec dataclass.
+    
+    Args:
+        location: A dictionary with location fields like country_code, 
+            state_code, city_name, etc.
+        
+    Returns:
+        LocationSpec: The corresponding dataclass instance.
+    """
+    return LocationSpec(**location)

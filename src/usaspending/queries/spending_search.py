@@ -14,20 +14,21 @@ from usaspending.queries.query_builder import QueryBuilder
 from usaspending.logging_config import USASpendingLogger
 from usaspending.queries.filters import (
     AgencyFilter,
-    AgencyTier,
-    AgencyType,
-    AwardAmount,
     AwardAmountFilter,
     AwardDateType,
     KeywordsFilter,
-    LocationSpec,
     LocationFilter,
-    LocationScope,
     LocationScopeFilter,
     SimpleListFilter,
     TieredCodeFilter,
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
+    parse_agency_tier,
+    parse_agency_type,
+    parse_award_amount,
+    parse_award_date_type,
+    parse_location_scope,
+    parse_location_spec,
 )
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -257,7 +258,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         start_date: Union[datetime.date, str],
         end_date: Union[datetime.date, str],
         new_awards_only: bool = False,
-        date_type: Optional[AwardDateType] = None,
+        date_type: Optional[str] = None,
     ) -> SpendingSearch:
         """
         Filter by a specific date range.
@@ -266,7 +267,8 @@ class SpendingSearch(QueryBuilder["Spending"]):
             start_date: The start date of the period (datetime.date or string in "YYYY-MM-DD" format).
             end_date: The end date of the period (datetime.date or string in "YYYY-MM-DD" format).
             new_awards_only: If True, filters by awards with a start date within the given range.
-            date_type: The type of date to filter on (e.g., action_date).
+            date_type: The type of date to filter on (e.g., "action_date", "date_signed").
+                Case-insensitive.
 
         Returns:
             A new SpendingSearch instance with the filter applied.
@@ -292,14 +294,19 @@ class SpendingSearch(QueryBuilder["Spending"]):
                     f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'."
                 )
 
+        # Convert string date_type to enum if needed
+        date_type_enum = None
+        if date_type is not None:
+            date_type_enum = parse_award_date_type(date_type)
+        
         # If convenience flag is set, use NEW_AWARDS_ONLY date type
         if new_awards_only:
-            date_type = AwardDateType.NEW_AWARDS_ONLY
+            date_type_enum = AwardDateType.NEW_AWARDS_ONLY
 
         clone = self._clone()
         clone._filter_objects.append(
             TimePeriodFilter(
-                start_date=start_date, end_date=end_date, date_type=date_type
+                start_date=start_date, end_date=end_date, date_type=date_type_enum
             )
         )
         return clone
@@ -308,7 +315,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         self,
         year: int,
         new_awards_only: bool = False,
-        date_type: Optional[AwardDateType] = None,
+        date_type: Optional[str] = None,
     ) -> SpendingSearch:
         """
         Adds a time period filter for a single US government fiscal year
@@ -317,7 +324,8 @@ class SpendingSearch(QueryBuilder["Spending"]):
         Args:
             year: The fiscal year to filter by.
             new_awards_only: If True, filters by awards with a start date within the FY
-            date_type: The type of date to filter on (e.g., action_date).
+            date_type: The type of date to filter on (e.g., "action_date", "date_signed").
+                Case-insensitive.
 
         Returns:
             A new SpendingSearch instance with the fiscal year filter applied.
@@ -331,38 +339,47 @@ class SpendingSearch(QueryBuilder["Spending"]):
             date_type=date_type,
         )
 
-    def with_place_of_performance_scope(self, scope: LocationScope) -> SpendingSearch:
+    def with_place_of_performance_scope(self, scope: str) -> SpendingSearch:
         """
         Filter spending by domestic or foreign place of performance.
 
         Args:
-            scope: The scope, either DOMESTIC or FOREIGN.
+            scope: Either "domestic" or "foreign" (case-insensitive).
 
         Returns:
             A new SpendingSearch instance with the filter applied.
+            
+        Raises:
+            ValidationError: If scope is not "domestic" or "foreign".
         """
+        location_scope = parse_location_scope(scope)
+        
         clone = self._clone()
         clone._filter_objects.append(
-            LocationScopeFilter(key="place_of_performance_scope", scope=scope)
+            LocationScopeFilter(key="place_of_performance_scope", scope=location_scope)
         )
         return clone
 
     def with_place_of_performance_locations(
-        self, *locations: LocationSpec
+        self, *locations: dict[str, str]
     ) -> SpendingSearch:
         """
         Filter by one or more specific geographic places of performance.
 
         Args:
-            *locations: One or more Location objects.
+            *locations: One or more location dictionaries with fields like
+                country_code, state_code, city_name, zip_code, etc.
 
         Returns:
             A new SpendingSearch instance with the filter applied.
         """
+        # Convert dicts to LocationSpec objects internally
+        location_specs = [parse_location_spec(loc) for loc in locations]
+        
         clone = self._clone()
         clone._filter_objects.append(
             LocationFilter(
-                key="place_of_performance_locations", locations=list(locations)
+                key="place_of_performance_locations", locations=location_specs
             )
         )
         return clone
@@ -370,23 +387,35 @@ class SpendingSearch(QueryBuilder["Spending"]):
     def for_agency(
         self,
         name: str,
-        agency_type: AgencyType = AgencyType.AWARDING,
-        tier: AgencyTier = AgencyTier.TOPTIER,
+        agency_type: str = "awarding",
+        tier: str = "toptier",
     ) -> SpendingSearch:
         """
         Filter by a specific awarding or funding agency.
 
         Args:
             name: The name of the agency.
-            agency_type: The type of agency (AWARDING or FUNDING).
-            tier: The agency tier (TOPTIER or SUBTIER).
+            agency_type: Whether to filter by "awarding" agency (who manages
+                the award) or "funding" agency (who provides the money).
+                Defaults to "awarding". Case-insensitive.
+            tier: Whether to filter by "toptier" agency (main department) or
+                "subtier" agency (sub-agency or office). Defaults to "toptier".
+                Case-insensitive.
 
         Returns:
             A new SpendingSearch instance with the filter applied.
+            
+        Raises:
+            ValidationError: If agency_type is not "awarding" or "funding",
+                or if tier is not "toptier" or "subtier".
         """
+        # Convert string inputs to enums
+        agency_type_enum = parse_agency_type(agency_type)
+        tier_enum = parse_agency_tier(tier)
+        
         clone = self._clone()
         clone._filter_objects.append(
-            AgencyFilter(agency_type=agency_type, tier=tier, name=name)
+            AgencyFilter(agency_type=agency_type_enum, tier=tier_enum, name=name)
         )
         return clone
 
@@ -422,35 +451,44 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_recipient_scope(self, scope: LocationScope) -> SpendingSearch:
+    def with_recipient_scope(self, scope: str) -> SpendingSearch:
         """
         Filter recipients by domestic or foreign scope.
 
         Args:
-            scope: The scope, either DOMESTIC or FOREIGN.
+            scope: Either "domestic" or "foreign" (case-insensitive).
 
         Returns:
             A new SpendingSearch instance with the filter applied.
+            
+        Raises:
+            ValidationError: If scope is not "domestic" or "foreign".
         """
+        location_scope = parse_location_scope(scope)
+        
         clone = self._clone()
         clone._filter_objects.append(
-            LocationScopeFilter(key="recipient_scope", scope=scope)
+            LocationScopeFilter(key="recipient_scope", scope=location_scope)
         )
         return clone
 
-    def with_recipient_locations(self, *locations: LocationSpec) -> SpendingSearch:
+    def with_recipient_locations(self, *locations: dict[str, str]) -> SpendingSearch:
         """
         Filter by one or more specific recipient locations.
 
         Args:
-            *locations: One or more Location objects.
+            *locations: One or more location dictionaries with fields like
+                country_code, state_code, city_name, zip_code, etc.
 
         Returns:
             A new SpendingSearch instance with the filter applied.
         """
+        # Convert dicts to LocationSpec objects internally
+        location_specs = [parse_location_spec(loc) for loc in locations]
+        
         clone = self._clone()
         clone._filter_objects.append(
-            LocationFilter(key="recipient_locations", locations=list(locations))
+            LocationFilter(key="recipient_locations", locations=location_specs)
         )
         return clone
 
@@ -502,18 +540,25 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_award_amounts(self, *amounts: AwardAmount) -> SpendingSearch:
+    def with_award_amounts(
+        self, *amounts: Union[dict[str, float], tuple[Optional[float], Optional[float]]]
+    ) -> SpendingSearch:
         """
         Filter by one or more award amount ranges.
 
         Args:
-            *amounts: One or more AwardAmount objects defining the ranges.
+            *amounts: One or more amount ranges specified as:
+                - Dictionary with 'lower_bound' and/or 'upper_bound' keys
+                - Tuple of (lower_bound, upper_bound) where None means unbounded
 
         Returns:
             A new SpendingSearch instance with the filter applied.
         """
+        # Convert various input formats to AwardAmount objects
+        award_amounts = [parse_award_amount(amt) for amt in amounts]
+        
         clone = self._clone()
-        clone._filter_objects.append(AwardAmountFilter(amounts=list(amounts)))
+        clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
         return clone
 
     def with_cfda_numbers(self, *program_numbers: str) -> SpendingSearch:

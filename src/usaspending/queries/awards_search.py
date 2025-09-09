@@ -133,20 +133,21 @@ from usaspending.queries.query_builder import QueryBuilder
 from usaspending.logging_config import USASpendingLogger
 from usaspending.queries.filters import (
     AgencyFilter,
-    AgencyTier,
-    AgencyType,
-    AwardAmount,
     AwardAmountFilter,
     AwardDateType,
     KeywordsFilter,
-    LocationSpec,
     LocationFilter,
-    LocationScope,
     LocationScopeFilter,
     SimpleListFilter,
     TieredCodeFilter,
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
+    parse_agency_tier,
+    parse_agency_type,
+    parse_award_amount,
+    parse_award_date_type,
+    parse_location_scope,
+    parse_location_spec,
 )
 
 # Import award type codes from models
@@ -658,20 +659,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         # Convert string date_type to enum if needed
         date_type_enum = None
         if date_type is not None:
-            date_type_lower = date_type.lower().replace("_", "")
-            if date_type_lower == "actiondate":
-                date_type_enum = AwardDateType.ACTION_DATE
-            elif date_type_lower == "datesigned":
-                date_type_enum = AwardDateType.DATE_SIGNED
-            elif date_type_lower in ["lastmodified", "lastmodifieddate"]:
-                date_type_enum = AwardDateType.LAST_MODIFIED
-            elif date_type_lower == "newardsonly":
-                date_type_enum = AwardDateType.NEW_AWARDS_ONLY
-            else:
-                raise ValidationError(
-                    f"Invalid date_type: '{date_type}'. Must be one of: "
-                    "'action_date', 'date_signed', 'last_modified_date', 'new_awards_only'"
-                )
+            date_type_enum = parse_award_date_type(date_type)
         
         # If convenience flag is set, use NEW_AWARDS_ONLY date type
         # and override any provided date_type
@@ -762,13 +750,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...     .with_place_of_performance_scope("domestic")
             ... )
         """
-        scope_lower = scope.lower()
-        if scope_lower == "domestic":
-            location_scope = LocationScope.DOMESTIC
-        elif scope_lower == "foreign":
-            location_scope = LocationScope.FOREIGN
-        else:
-            raise ValidationError("scope must be 'domestic' or 'foreign'")
+        location_scope = parse_location_scope(scope)
             
         clone = self._clone()
         clone._filter_objects.append(
@@ -818,7 +800,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ... )
         """
         # Convert dicts to LocationSpec objects internally
-        location_specs = [LocationSpec(**loc) for loc in locations]
+        location_specs = [parse_location_spec(loc) for loc in locations]
         
         clone = self._clone()
         clone._filter_objects.append(
@@ -882,21 +864,8 @@ class AwardsSearch(QueryBuilder["Award"]):
             ... )
         """
         # Convert string inputs to enums
-        agency_type_lower = agency_type.lower()
-        if agency_type_lower == "awarding":
-            agency_type_enum = AgencyType.AWARDING
-        elif agency_type_lower == "funding":
-            agency_type_enum = AgencyType.FUNDING
-        else:
-            raise ValidationError("agency_type must be 'awarding' or 'funding'")
-        
-        tier_lower = tier.lower()
-        if tier_lower == "toptier":
-            tier_enum = AgencyTier.TOPTIER
-        elif tier_lower == "subtier":
-            tier_enum = AgencyTier.SUBTIER
-        else:
-            raise ValidationError("tier must be 'toptier' or 'subtier'")
+        agency_type_enum = parse_agency_type(agency_type)
+        tier_enum = parse_agency_tier(tier)
         
         clone = self._clone()
         clone._filter_objects.append(
@@ -966,13 +935,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...     .with_recipient_scope("domestic")
             ... )
         """
-        scope_lower = scope.lower()
-        if scope_lower == "domestic":
-            location_scope = LocationScope.DOMESTIC
-        elif scope_lower == "foreign":
-            location_scope = LocationScope.FOREIGN
-        else:
-            raise ValidationError("scope must be 'domestic' or 'foreign'")
+        location_scope = parse_location_scope(scope)
         
         clone = self._clone()
         clone._filter_objects.append(
@@ -1021,7 +984,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ... )
         """
         # Convert dicts to LocationSpec objects internally
-        location_specs = [LocationSpec(**loc) for loc in locations]
+        location_specs = [parse_location_spec(loc) for loc in locations]
         
         clone = self._clone()
         clone._filter_objects.append(
@@ -1310,17 +1273,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ... )
         """
         # Convert various input formats to AwardAmount objects
-        award_amounts = []
-        for amt in amounts:
-            if isinstance(amt, dict):
-                award_amounts.append(AwardAmount(**amt))
-            elif isinstance(amt, tuple):
-                lower, upper = amt
-                award_amounts.append(AwardAmount(lower_bound=lower, upper_bound=upper))
-            else:
-                raise ValidationError(
-                    "Award amounts must be specified as a dictionary or tuple"
-                )
+        award_amounts = [parse_award_amount(amt) for amt in amounts]
         
         clone = self._clone()
         clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
