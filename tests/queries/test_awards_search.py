@@ -10,14 +10,6 @@ import pytest
 from usaspending.exceptions import ValidationError, APIError
 from usaspending.models import Award
 from usaspending.queries.awards_search import AwardsSearch
-from usaspending.queries.filters import (
-    AgencyTier,
-    AgencyType,
-    AwardAmount,
-    AwardDateType,
-    LocationSpec,
-    LocationScope,
-)
 from usaspending.models.award_types import (
     CONTRACT_CODES,
     IDV_CODES,
@@ -87,7 +79,7 @@ class TestFilterMethods:
         end = datetime.date(2024, 12, 31)
 
         result = awards_search.in_time_period(
-            start_date=start, end_date=end, date_type=AwardDateType.ACTION_DATE
+            start_date=start, end_date=end, date_type="action_date"
         )
 
         assert result is not awards_search
@@ -132,7 +124,7 @@ class TestFilterMethods:
         result = awards_search.in_time_period(
             start_date="2024-01-01",
             end_date="2024-12-31",
-            date_type=AwardDateType.ACTION_DATE,
+            date_type="action_date",
         )
 
         assert result is not awards_search
@@ -154,7 +146,7 @@ class TestFilterMethods:
         start = datetime.date(2024, 1, 1)
 
         result = awards_search.in_time_period(
-            start_date=start, end_date="2024-12-31", date_type=AwardDateType.ACTION_DATE
+            start_date=start, end_date="2024-12-31", date_type="action_date"
         )
 
         assert result is not awards_search
@@ -223,22 +215,23 @@ class TestFilterMethods:
 
     def test_with_place_of_performance_scope(self, awards_search):
         """Test the with_place_of_performance_scope filter method."""
-        result = awards_search.with_place_of_performance_scope(LocationScope.DOMESTIC)
+        result = awards_search.with_place_of_performance_scope("domestic")
 
         assert len(result._filter_objects) == 1
         # The LocationScopeFilter stores the key as instance attribute
         filter_obj = result._filter_objects[0]
         assert filter_obj.key == "place_of_performance_scope"
-        assert filter_obj.scope == LocationScope.DOMESTIC
+        # The filter stores the enum internally but returns string in to_dict()
+        assert filter_obj.scope.value == "domestic"
         filter_dict = filter_obj.to_dict()
         assert filter_dict == {"place_of_performance_scope": "domestic"}
 
     def test_with_place_of_performance_locations(self, awards_search):
         """Test the with_place_of_performance_locations filter method."""
-        loc1 = LocationSpec(
-            country_code="USA", state_code="CA", city_name="Los Angeles"
-        )
-        loc2 = LocationSpec(country_code="USA", state_code="TX")
+        loc1 = {
+            "country_code": "USA", "state_code": "CA", "city_name": "Los Angeles"
+        }
+        loc2 = {"country_code": "USA", "state_code": "TX"}
 
         result = awards_search.with_place_of_performance_locations(loc1, loc2)
 
@@ -254,7 +247,7 @@ class TestFilterMethods:
     def test_for_agency(self, awards_search):
         """Test the for_agency filter method."""
         result = awards_search.for_agency(
-            "NASA", agency_type=AgencyType.AWARDING, tier=AgencyTier.TOPTIER
+            "NASA", agency_type="awarding", tier="toptier"
         )
 
         assert len(result._filter_objects) == 1
@@ -273,19 +266,20 @@ class TestFilterMethods:
 
     def test_with_recipient_scope(self, awards_search):
         """Test the with_recipient_scope filter method."""
-        result = awards_search.with_recipient_scope(LocationScope.FOREIGN)
+        result = awards_search.with_recipient_scope("foreign")
 
         assert len(result._filter_objects) == 1
         # The LocationScopeFilter stores the key as instance attribute
         filter_obj = result._filter_objects[0]
         assert filter_obj.key == "recipient_scope"
-        assert filter_obj.scope == LocationScope.FOREIGN
+        # The filter stores the enum internally but returns string in to_dict()
+        assert filter_obj.scope.value == "foreign"
         filter_dict = filter_obj.to_dict()
         assert filter_dict == {"recipient_scope": "foreign"}
 
     def test_with_recipient_locations(self, awards_search):
         """Test the with_recipient_locations filter method."""
-        loc = LocationSpec(country_code="CAN", state_code="ON", city_name="Toronto")
+        loc = {"country_code": "CAN", "state_code": "ON", "city_name": "Toronto"}
 
         result = awards_search.with_recipient_locations(loc)
 
@@ -325,8 +319,8 @@ class TestFilterMethods:
 
     def test_with_award_amounts(self, awards_search):
         """Test the with_award_amounts filter method."""
-        amount1 = AwardAmount(lower_bound=1000000, upper_bound=5000000)
-        amount2 = AwardAmount(lower_bound=10000000)
+        amount1 = {"lower_bound": 1000000, "upper_bound": 5000000}
+        amount2 = {"lower_bound": 10000000}
 
         result = awards_search.with_award_amounts(amount1, amount2)
 
@@ -496,8 +490,8 @@ class TestPayloadBuilding:
         """Test that multiple agency filters are aggregated into a single list."""
         search = (
             awards_search.with_award_types("A")
-            .for_agency("NASA", AgencyType.AWARDING)
-            .for_agency("DOD", AgencyType.FUNDING)
+            .for_agency("NASA", "awarding")
+            .for_agency("DOD", "funding")
         )
 
         payload = search._build_payload(page=1)
@@ -1198,7 +1192,7 @@ class TestIntegrationScenarios:
         search = (
             mock_usa_client.awards.search()
             .with_award_types("A", "B", "C", "D")
-            .for_agency("NASA", AgencyType.AWARDING)
+            .for_agency("NASA", "awarding")
             .for_fiscal_year(2024)
             .with_keywords("space", "launch")
         )
@@ -1221,14 +1215,14 @@ class TestIntegrationScenarios:
         """Test query for small business grants with location filters."""
         mock_usa_client.mock_award_search([])  # Empty results
 
-        ca_location = LocationSpec(country_code="USA", state_code="CA")
+        ca_location = {"country_code": "USA", "state_code": "CA"}
 
         search = (
             mock_usa_client.awards.search()
             .with_award_types("02", "03", "04", "05")  # Grant types
             .with_recipient_types("small_business")
             .with_recipient_locations(ca_location)
-            .with_award_amounts(AwardAmount(lower_bound=100000, upper_bound=500000))
+            .with_award_amounts({"lower_bound": 100000, "upper_bound": 500000})
         )
 
         _ = search.all()

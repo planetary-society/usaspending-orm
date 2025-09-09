@@ -440,10 +440,8 @@ class Agency(LazyRecord):
                 where this agency is the top-tier awarding agency. Use this to
                 search and filter awards associated with this agency.
         """
-        from ..queries.filters import AgencyTier, AgencyType
-
         return self._client.awards.search().for_agency(
-            self.name, AgencyType.AWARDING, AgencyTier.TOPTIER
+            self.name, "awarding", "toptier"
         )
 
     @property

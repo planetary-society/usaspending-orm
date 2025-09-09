@@ -34,53 +34,6 @@ must include one of the following award types:
 - **Direct Payments**: Types 06, 10 - Direct payment awards
 - **Other**: Types 09, 11, -1 - Other assistance awards
 
-    ## Filter Dataclasses
-
-    Several methods accept specialized dataclass objects that must be imported:
-
-    - **LocationSpec**: Defines geographic locations for place of performance or recipient filters
-      ```python
-      from usaspending.queries import LocationSpec
-      # or
-      from usaspending.queries.filters import LocationSpec
-      
-      ca_location = LocationSpec(country_code="USA", state_code="CA")
-      ```
-
-    - **LocationScope**: Enum for domestic/foreign filtering
-      ```python
-      from usaspending.queries import LocationScope
-      
-      LocationScope.DOMESTIC  # US locations
-      LocationScope.FOREIGN   # Non-US locations
-      ```
-
-    - **AwardAmount**: Defines award amount ranges
-      ```python
-      from usaspending.queries import AwardAmount
-      
-      AwardAmount(lower_bound=100000, upper_bound=1000000)
-      ```
-
-    - **AwardDateType**: Enum for date filtering types
-      ```python
-      from usaspending.queries import AwardDateType
-      
-      AwardDateType.ACTION_DATE
-      AwardDateType.NEW_AWARDS_ONLY
-      ```
-
-    - **AgencyType** and **AgencyTier**: Enums for agency filtering
-      ```python
-      from usaspending.queries import AgencyType, AgencyTier
-      
-      AgencyType.AWARDING  # Agency that manages the award
-      AgencyType.FUNDING   # Agency that provides the funds
-      
-      AgencyTier.TOPTIER   # Main department level
-      AgencyTier.SUBTIER   # Sub-agency or office level
-      ```
-
 ## Basic Usage Examples
 
 ### Example 1: Search for Recent Contracts
@@ -126,23 +79,24 @@ for grant in grants:
 
 ```python
 # Search for NASA-related contracts in California since 2020
-from usaspending.queries import AwardAmount, LocationSpec
+from datetime import date
+
 results = (
     client.awards.search()
     .contracts()
     .for_agency("National Aeronautics and Space Administration")
     .in_time_period("2020-03-01", date.today().isoformat())
     .with_place_of_performance_locations(
-        LocationSpec(state_code="CA", country_code="USA")
+        {"state_code": "CA", "country_code": "USA"}
     )
     .with_award_amounts(
-        AwardAmount(lower_bound=100000, upper_bound=10000000)
+        {"lower_bound": 100000, "upper_bound": 10000000}
     )
     .order_by("Last Modified Date", "desc")
 )
 
 for award in results.page(1):
-    print(f"{award.award_id}: {award.recipient_name}")
+    print(f"{award.award_id}: {award.recipient.name}")
 ```
 
 
@@ -645,7 +599,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         start_date: Union[datetime.date, str],
         end_date: Union[datetime.date, str],
         new_awards_only: bool = False,
-        date_type: Optional[AwardDateType] = None,
+        date_type: Optional[str] = None,
     ) -> AwardsSearch:
         """
         Filter awards by a specific date range.
@@ -657,8 +611,10 @@ class AwardsSearch(QueryBuilder["Award"]):
                 object or string in "YYYY-MM-DD" format.
             new_awards_only: If True, only returns awards that started within
                 the given date range. Defaults to False.
-            date_type: The type of date to filter on (e.g., ACTION_DATE,
-                UPDATE_DATE). If not specified, uses default date type.
+            date_type: The type of date to filter on. Can be a string:
+                "action_date", "date_signed", "last_modified_date", or 
+                "new_awards_only". If not specified, uses default date type.
+                Case-insensitive.
 
         Returns:
             AwardsSearch: A new instance with the time period filter applied.
@@ -699,14 +655,33 @@ class AwardsSearch(QueryBuilder["Award"]):
                     f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'."
                 )
 
+        # Convert string date_type to enum if needed
+        date_type_enum = None
+        if date_type is not None:
+            date_type_lower = date_type.lower().replace("_", "")
+            if date_type_lower == "actiondate":
+                date_type_enum = AwardDateType.ACTION_DATE
+            elif date_type_lower == "datesigned":
+                date_type_enum = AwardDateType.DATE_SIGNED
+            elif date_type_lower in ["lastmodified", "lastmodifieddate"]:
+                date_type_enum = AwardDateType.LAST_MODIFIED
+            elif date_type_lower == "newardsonly":
+                date_type_enum = AwardDateType.NEW_AWARDS_ONLY
+            else:
+                raise ValidationError(
+                    f"Invalid date_type: '{date_type}'. Must be one of: "
+                    "'action_date', 'date_signed', 'last_modified_date', 'new_awards_only'"
+                )
+        
         # If convenience flag is set, use NEW_AWARDS_ONLY date type
         # and override any provided date_type
         if new_awards_only:
-            date_type = AwardDateType.NEW_AWARDS_ONLY
+            date_type_enum = AwardDateType.NEW_AWARDS_ONLY
+        
         clone = self._clone()
         clone._filter_objects.append(
             TimePeriodFilter(
-                start_date=start_date, end_date=end_date, date_type=date_type
+                start_date=start_date, end_date=end_date, date_type=date_type_enum
             )
         )
         return clone
@@ -715,7 +690,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         self,
         year: int,
         new_awards_only: bool = False,
-        date_type: Optional[AwardDateType] = None,
+        date_type: Optional[str] = None,
     ) -> AwardsSearch:
         """
         Filter awards by US government fiscal year.
@@ -727,8 +702,10 @@ class AwardsSearch(QueryBuilder["Award"]):
             year: The fiscal year to filter by (e.g., 2024 for FY2024).
             new_awards_only: If True, only returns awards that started within
                 the fiscal year. Defaults to False.
-            date_type: The type of date to filter on. If not specified,
-                uses default date type.
+            date_type: The type of date to filter on. Can be a string:
+                "action_date", "date_signed", "last_modified_date", or 
+                "new_awards_only". If not specified, uses default date type.
+                Case-insensitive.
 
         Returns:
             AwardsSearch: A new instance with the fiscal year filter applied.
@@ -792,6 +769,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             location_scope = LocationScope.FOREIGN
         else:
             raise ValidationError("scope must be 'domestic' or 'foreign'")
+            
         clone = self._clone()
         clone._filter_objects.append(
             LocationScopeFilter(key="place_of_performance_scope", scope=location_scope)
@@ -799,29 +777,34 @@ class AwardsSearch(QueryBuilder["Award"]):
         return clone
 
     def with_place_of_performance_locations(
-        self, *locations: LocationSpec
+        self, *locations: dict[str, str]
     ) -> AwardsSearch:
         """
         Filter awards by specific geographic places of performance.
 
         Args:
-            *locations: One or more LocationSpec objects defining the
-                geographic locations where work is performed.
+            *locations: One or more location specifications as dictionaries.
+                Each dictionary can contain:
+                - country_code: Country code (required, e.g., "USA")
+                - state_code: State code (optional, e.g., "TX", "CA")
+                - county_code: County code (optional)
+                - city_name: City name (optional)
+                - district_original: Current congressional district (optional, e.g., "IA-03")
+                - district_current: Congressional district when awarded (optional, e.g., "WA-01")
+                - zip_code: ZIP code (optional)
 
         Returns:
             AwardsSearch: A new instance with the location filter applied.
 
         Example:
-            >>> from usaspending.queries.filters import LocationSpec
-            >>>
             >>> # Find contracts performed in specific Texas cities
             >>> texas_contracts = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .with_place_of_performance_locations(
-            ...         LocationSpec(state_code="TX", city="Austin", country_code="USA"),
-            ...         LocationSpec(state_code="TX", city="Houston", country_code="USA"),
-            ...         LocationSpec(state_code="TX", city="Dallas", country_code="USA"),
+            ...         {"state_code": "TX", "city_name": "Austin", "country_code": "USA"},
+            ...         {"state_code": "TX", "city_name": "Houston", "country_code": "USA"},
+            ...         {"state_code": "TX", "city_name": "Dallas", "country_code": "USA"},
             ...     )
             ... )
 
@@ -830,14 +813,17 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...     client.awards.search()
             ...     .with_award_types("A", "B")
             ...     .with_place_of_performance_locations(
-            ...         LocationSpec(zip_code="20001", country_code="USA")
+            ...         {"zip_code": "20001", "country_code": "USA"}
             ...     )
             ... )
         """
+        # Convert dicts to LocationSpec objects internally
+        location_specs = [LocationSpec(**loc) for loc in locations]
+        
         clone = self._clone()
         clone._filter_objects.append(
             LocationFilter(
-                key="place_of_performance_locations", locations=list(locations)
+                key="place_of_performance_locations", locations=location_specs
             )
         )
         return clone
@@ -845,26 +831,29 @@ class AwardsSearch(QueryBuilder["Award"]):
     def for_agency(
         self,
         name: str,
-        agency_type: AgencyType = AgencyType.AWARDING,
-        tier: AgencyTier = AgencyTier.TOPTIER,
+        agency_type: str = "awarding",
+        tier: str = "toptier",
     ) -> AwardsSearch:
         """
         Filter awards by a specific awarding or funding agency.
 
         Args:
             name: The name of the agency (e.g., "Department of Defense").
-            agency_type: Whether to filter by AWARDING agency (who manages
-                the award) or FUNDING agency (who provides the money).
-                Defaults to AWARDING.
-            tier: Whether to filter by TOPTIER agency (main department) or
-                SUBTIER agency (sub-agency or office). Defaults to TOPTIER.
+            agency_type: Whether to filter by "awarding" agency (who manages
+                the award) or "funding" agency (who provides the money).
+                Defaults to "awarding". Case-insensitive.
+            tier: Whether to filter by "toptier" agency (main department) or
+                "subtier" agency (sub-agency or office). Defaults to "toptier".
+                Case-insensitive.
 
         Returns:
             AwardsSearch: A new instance with the agency filter applied.
 
+        Raises:
+            ValidationError: If agency_type is not "awarding" or "funding",
+                or if tier is not "toptier" or "subtier".
+
         Example:
-            >>> from usaspending.queries.filters import AgencyType, AgencyTier
-            >>>
             >>> # Find all DOD contracts
             >>> dod_contracts = (
             ...     client.awards.search()
@@ -878,13 +867,40 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...     .contracts()
             ...     .for_agency(
             ...         "National Aeronautics and Space Administration",
-            ...         agency_type=AgencyType.FUNDING
+            ...         agency_type="funding"
+            ...     )
+            ... )
+            
+            >>> # Find sub-agency awards
+            >>> sub_agency_awards = (
+            ...     client.awards.search()
+            ...     .grants()
+            ...     .for_agency(
+            ...         "National Institute of Health",
+            ...         tier="subtier"
             ...     )
             ... )
         """
+        # Convert string inputs to enums
+        agency_type_lower = agency_type.lower()
+        if agency_type_lower == "awarding":
+            agency_type_enum = AgencyType.AWARDING
+        elif agency_type_lower == "funding":
+            agency_type_enum = AgencyType.FUNDING
+        else:
+            raise ValidationError("agency_type must be 'awarding' or 'funding'")
+        
+        tier_lower = tier.lower()
+        if tier_lower == "toptier":
+            tier_enum = AgencyTier.TOPTIER
+        elif tier_lower == "subtier":
+            tier_enum = AgencyTier.SUBTIER
+        else:
+            raise ValidationError("tier must be 'toptier' or 'subtier'")
+        
         clone = self._clone()
         clone._filter_objects.append(
-            AgencyFilter(agency_type=agency_type, tier=tier, name=name)
+            AgencyFilter(agency_type=agency_type_enum, tier=tier_enum, name=name)
         )
         return clone
 
@@ -922,59 +938,94 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_recipient_scope(self, scope: LocationScope) -> AwardsSearch:
+    def with_recipient_scope(self, scope: str) -> AwardsSearch:
         """
         Filter awards by domestic or foreign recipient location.
 
         Args:
-            scope: The location scope - LocationScope.DOMESTIC for US-based
-                recipients, LocationScope.FOREIGN for foreign recipients.
+            scope: Either "domestic" or "foreign" (case-insensitive).
 
         Returns:
             AwardsSearch: A new instance with the recipient scope filter applied.
 
+        Raises:
+            ValidationError: If scope is not "domestic" or "foreign".
+
         Example:
-            >>> from usaspending.queries.filters import LocationScope
-            >>>
             >>> # Find contracts awarded to foreign companies
             >>> foreign_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_recipient_scope(LocationScope.FOREIGN)
+            ...     .with_recipient_scope("foreign")
+            ... )
+            
+            >>> # Find domestic recipients
+            >>> domestic_awards = (
+            ...     client.awards.search()
+            ...     .grants()
+            ...     .with_recipient_scope("domestic")
             ... )
         """
+        scope_lower = scope.lower()
+        if scope_lower == "domestic":
+            location_scope = LocationScope.DOMESTIC
+        elif scope_lower == "foreign":
+            location_scope = LocationScope.FOREIGN
+        else:
+            raise ValidationError("scope must be 'domestic' or 'foreign'")
+        
         clone = self._clone()
         clone._filter_objects.append(
-            LocationScopeFilter(key="recipient_scope", scope=scope)
+            LocationScopeFilter(key="recipient_scope", scope=location_scope)
         )
         return clone
 
-    def with_recipient_locations(self, *locations: LocationSpec) -> AwardsSearch:
+    def with_recipient_locations(
+        self, *locations: dict[str, str]
+    ) -> AwardsSearch:
         """
         Filter awards by specific recipient locations.
 
         Args:
-            *locations: One or more LocationSpec objects defining the
-                geographic locations of award recipients.
+            *locations: One or more location specifications as dictionaries.
+                Each dictionary can contain:
+                - country_code: Country code (required, e.g., "USA")
+                - state_code: State code (optional, e.g., "TX", "CA")
+                - county_code: County code (optional)
+                - city_name: City name (optional)
+                - district_original: Current congressional district (optional)
+                - district_current: Congressional district when awarded (optional)
+                - zip_code: ZIP code (optional)
 
         Returns:
             AwardsSearch: A new instance with the recipient location filter applied.
 
         Example:
-            >>> from usaspending.queries.filters import LocationSpec
-            >>>
             >>> # Find awards to California-based companies
             >>> california_recipients = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .with_recipient_locations(
-            ...         LocationSpec(state="CA")
+            ...         {"state_code": "CA", "country_code": "USA"}
+            ...     )
+            ... )
+            
+            >>> # Find awards to companies in specific cities
+            >>> city_recipients = (
+            ...     client.awards.search()
+            ...     .grants()
+            ...     .with_recipient_locations(
+            ...         {"city_name": "Seattle", "state_code": "WA", "country_code": "USA"},
+            ...         {"city_name": "Portland", "state_code": "OR", "country_code": "USA"}
             ...     )
             ... )
         """
+        # Convert dicts to LocationSpec objects internally
+        location_specs = [LocationSpec(**loc) for loc in locations]
+        
         clone = self._clone()
         clone._filter_objects.append(
-            LocationFilter(key="recipient_locations", locations=list(locations))
+            LocationFilter(key="recipient_locations", locations=location_specs)
         )
         return clone
 
@@ -1215,26 +1266,36 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_award_amounts(self, *amounts: AwardAmount) -> AwardsSearch:
+    def with_award_amounts(
+        self, *amounts: Union[dict[str, float], tuple[Optional[float], Optional[float]]]
+    ) -> AwardsSearch:
         """
         Filter awards by amount ranges.
 
         Args:
-            *amounts: One or more AwardAmount objects defining the ranges.
-                Each AwardAmount can specify lower_bound and/or upper_bound.
+            *amounts: One or more amount ranges specified as:
+                - Dictionary with 'lower_bound' and/or 'upper_bound' keys
+                - Tuple of (lower_bound, upper_bound) where None means unbounded
 
         Returns:
             AwardsSearch: A new instance with the award amount filter applied.
 
         Example:
-            >>> from usaspending.queries.filters import AwardAmount
-            >>>
             >>> # Find contracts between $1M and $10M
             >>> mid_size_contracts = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .with_award_amounts(
-            ...         AwardAmount(lower_bound=1000000, upper_bound=10000000)
+            ...         {"lower_bound": 1000000, "upper_bound": 10000000}
+            ...     )
+            ... )
+
+            >>> # Using tuple notation
+            >>> large_contracts = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .with_award_amounts(
+            ...         (5000000, None)  # $5M or more
             ...     )
             ... )
 
@@ -1243,13 +1304,26 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...     client.awards.search()
             ...     .grants()
             ...     .with_award_amounts(
-            ...         AwardAmount(upper_bound=100000),
-            ...         AwardAmount(lower_bound=1000000)
+            ...         {"upper_bound": 100000},
+            ...         {"lower_bound": 1000000}
             ...     )
             ... )
         """
+        # Convert various input formats to AwardAmount objects
+        award_amounts = []
+        for amt in amounts:
+            if isinstance(amt, dict):
+                award_amounts.append(AwardAmount(**amt))
+            elif isinstance(amt, tuple):
+                lower, upper = amt
+                award_amounts.append(AwardAmount(lower_bound=lower, upper_bound=upper))
+            else:
+                raise ValidationError(
+                    "Award amounts must be specified as a dictionary or tuple"
+                )
+        
         clone = self._clone()
-        clone._filter_objects.append(AwardAmountFilter(amounts=list(amounts)))
+        clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
         return clone
 
     def with_cfda_numbers(self, *program_numbers: str) -> AwardsSearch:
