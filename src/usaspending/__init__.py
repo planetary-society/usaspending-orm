@@ -13,7 +13,7 @@ try:
     __version__ = version("usaspending")
 except ImportError:
     # Fallback for development/editable installs
-    __version__ = "unknown"
+    __version__ = "0.4.1"
 
 __author__ = "Casey Dreier"
 __email__ = "casey.dreier@planetary.org"
