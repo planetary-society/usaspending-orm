@@ -48,6 +48,8 @@ class USASpendingClient:
 
         # Initialize HTTP session
         self._session = self._create_session()
+        self._closed = False
+        self._request_count = 0
 
         # Lazy-loaded components
         self._rate_limiter: Optional[RateLimiter] = None
@@ -70,6 +72,18 @@ class USASpendingClient:
         )
         return session
 
+    def _format_error_with_context(self, error_msg: str) -> str:
+        """Format error message with request count and session limit context."""
+        context = f"(Request #{self._request_count} in session"
+        
+        # Add warning if approaching session limit
+        remaining = config.session_request_limit - self._request_count
+        if remaining <= 10:
+            context += f", {remaining} remaining before reset"
+        
+        context += ")"
+        return f"{error_msg} {context}"
+
     @property
     def rate_limiter(self) -> RateLimiter:
         """Get rate limiter (lazy-loaded)."""
@@ -87,7 +101,7 @@ class USASpendingClient:
         if self._retry_handler is None:
             from .utils.retry import RetryHandler
 
-            self._retry_handler = RetryHandler()
+            self._retry_handler = RetryHandler(session_reset_callback=self.reset_session)
         return self._retry_handler
 
     @property
@@ -208,6 +222,12 @@ class USASpendingClient:
         # Apply rate limiting
         self.rate_limiter.wait_if_needed()
 
+        # Increment request counter and check for proactive session reset
+        self._request_count += 1
+        if self._request_count >= config.session_request_limit:
+            logger.info(f"Proactively resetting session after {self._request_count} requests")
+            self.reset_session()
+
         # Build full URL
         url = urljoin(config.base_url, endpoint.lstrip("/"))
 
@@ -247,23 +267,25 @@ class USASpendingClient:
                         or data.get("message")
                         or "Bad Request"
                     )
+                    error_msg_with_context = self._format_error_with_context(error_msg)
                     log_api_response(
                         logger,
                         response.status_code,
                         len(response.content) if response.content else None,
                         duration,
-                        error_msg,
+                        error_msg_with_context,
                     )
                     raise APIError(error_msg, status_code=400, response_body=data)
                 except ValueError:
                     # If JSON parsing fails, use generic 400 error
                     error_msg = "Bad Request - Invalid JSON response"
+                    error_msg_with_context = self._format_error_with_context(error_msg)
                     log_api_response(
                         logger,
                         response.status_code,
                         len(response.content) if response.content else None,
                         duration,
-                        error_msg,
+                        error_msg_with_context,
                     )
                     raise APIError(error_msg, status_code=400)
 
@@ -271,12 +293,13 @@ class USASpendingClient:
             try:
                 response.raise_for_status()
             except requests.HTTPError as e:
+                error_msg_with_context = self._format_error_with_context(str(e))
                 log_api_response(
                     logger,
                     response.status_code,
                     len(response.content) if response.content else None,
                     duration,
-                    str(e),
+                    error_msg_with_context,
                 )
                 raise HTTPError(
                     f"HTTP {response.status_code}: {e}",
@@ -287,12 +310,14 @@ class USASpendingClient:
             try:
                 data = response.json()
             except ValueError as e:
+                error_msg = f"Invalid JSON: {e}"
+                error_msg_with_context = self._format_error_with_context(error_msg)
                 log_api_response(
                     logger,
                     response.status_code,
                     len(response.content) if response.content else None,
                     duration,
-                    f"Invalid JSON: {e}",
+                    error_msg_with_context,
                 )
                 raise APIError(f"Invalid JSON response: {e}")
 
@@ -303,12 +328,13 @@ class USASpendingClient:
                 error_msg = (
                     data.get("error") or data.get("message") or "Unknown API error"
                 )
+                error_msg_with_context = self._format_error_with_context(error_msg)
                 log_api_response(
                     logger,
                     response.status_code,
                     len(response.content) if response.content else None,
                     duration,
-                    error_msg,
+                    error_msg_with_context,
                 )
                 raise APIError(
                     error_msg, status_code=response.status_code, response_body=data
@@ -319,9 +345,9 @@ class USASpendingClient:
                 messages = data["messages"]
                 if isinstance(messages, list):
                     for msg in messages:
-                        logger.info(f"API Message: {msg}")
+                        logger.debug(f"API Message: {msg}")
                 else:
-                    logger.info(f"API Message: {messages}")
+                    logger.debug(f"API Message: {messages}")
 
             # Log successful response
             log_api_response(
@@ -336,15 +362,17 @@ class USASpendingClient:
         except Exception as e:
             # Log any unexpected errors
             if "response" in locals():
+                error_msg_with_context = self._format_error_with_context(str(e))
                 log_api_response(
                     logger,
                     getattr(response, "status_code", 0),
                     None,
                     time.time() - start_time,
-                    str(e),
+                    error_msg_with_context,
                 )
             else:
-                logger.error(f"Request failed before response: {e}")
+                error_msg_with_context = self._format_error_with_context(f"Request failed before response: {e}")
+                logger.error(error_msg_with_context)
             raise
 
     def _download_binary_file(self, file_url: str, destination_path: str) -> None:
@@ -414,7 +442,60 @@ class USASpendingClient:
             raise
 
     def close(self) -> None:
-        """Close client and cleanup resources."""
-        if self._session:
+        """Close client and cleanup resources.
+        
+        This method is idempotent and safe to call multiple times.
+        """
+        if not self._closed and self._session:
             self._session.close()
-        logger.debug("USASpending client closed")
+            self._closed = True
+            logger.info(f"USASpending client closed after {self._request_count} requests")
+
+    def reset_session(self) -> None:
+        """Reset the HTTP session to handle server-side session limits.
+        
+        This creates a new session with fresh connection pools, which can
+        resolve issues where the server limits requests per session.
+        The request counter is also reset.
+        """
+        if not self._closed and self._session:
+            old_count = self._request_count
+            self._session.close()
+            self._session = self._create_session()
+            self._request_count = 0
+            logger.info(f"Session reset after {old_count} requests")
+
+    def __enter__(self) -> "USASpendingClient":
+        """Enter context manager.
+        
+        Returns:
+            Self for use in with statement
+            
+        Example:
+            >>> with USASpendingClient() as client:
+            ...     awards = client.awards.search().all()
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit context manager and cleanup resources.
+        
+        Args:
+            exc_type: Exception type if an exception occurred
+            exc_val: Exception value if an exception occurred  
+            exc_tb: Exception traceback if an exception occurred
+        """
+        self.close()
+
+    def __del__(self) -> None:
+        """Destructor to cleanup resources if not already closed.
+        
+        Note: It's better to use the context manager or call close() explicitly.
+        This is a safety net for cases where proper cleanup wasn't done.
+        """
+        if not self._closed and hasattr(self, '_session') and self._session:
+            logger.warning(
+                f"USASpendingClient session was not explicitly closed after {self._request_count} requests. "
+                "Consider using 'with USASpendingClient() as client:' or calling client.close()"
+            )
+            self.close()

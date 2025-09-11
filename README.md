@@ -24,79 +24,102 @@ The platform provides access to a comprehensive API for querying the data, but t
 
 No API key is required to use the USASpending.gov API resource. Just install, import, configure, and use.
 
-### Load and configure the client
+### Load the client
 ```python
 >>> from usaspending import USASpendingClient
->>> client = USASpendingClient()
 ```
 
-### Load a single award
+### Load a specific award by its Award ID
 ```python
->>> award = client.awards.find_by_award_id("80GSFC18C0008")
->>> award.category
-'contract'
->>> award.total_obligation
-Decimal('172213419.67')
+>>> with USASpendingClient() as client:
+...     award = client.awards.find_by_award_id("80GSFC18C0008")
 ```
 
 ### Access properties and queries via chained object associations
 ```python
->>> print(award.recipient.location.full_address)
+>>> with USASpendingClient() as client:
+...     award = client.awards.find_by_award_id("80GSFC18C0008")
+...     print(award.recipient.location.full_address)
+...     print(f"Subawards: {award.subawards.count()}")
+...     print(f"District: {award.subawards[2].recipient.place_of_performance.district}")
 105 Jessup Hall
 Iowa City, IA, 52242
 United States
-
->>> award.subawards.count()
-100
-
->>> award.subawards[2].recipient.place_of_performance.district
-'AL-03'
+Subawards: 100
+District: AL-03
 ```
 
 ### Search for awards using the full filter set from the API
 ```python
 # Search for all active contracts for NASA in FY 2022
->>> award_query = client.awards.search() \
-...             .for_agency("National Aeronautics and Space Administration") \ 
-...             .contracts() \
-...             .for_fiscal_year(2022)
-
->>> award_query.count()
-11358
-
-# Includes ordering by any search field
->>> award_query.order_by("Award Amount","desc")
-
-# API query is not executed until results are needed
->>> awards = award_query.all() # Executes the query and fetches all results
-
->>> awards[0].total_obligation
-Decimal(22163800679.69)
+>>> with USASpendingClient() as client:
+...     award_query = client.awards.search() \
+...                 .for_agency("National Aeronautics and Space Administration") \
+...                 .contracts() \
+...                 .for_fiscal_year(2022)
+...
+...     # Get total number of matching awards
+...     award_query.count()
+...     
+...     # Includes ordering by any search field
+...     award_query = award_query.order_by("Award Amount", "desc")
+...     
+...     # API query is not executed until results are needed
+...     awards = award_query.all()  # Executes the query and fetches all results
 ```
 
 ### Queries are iterable
 ```python
-
->>> len(award_query)
-11358
-
->>> award = award_query[5000]
->>> for transaction in award.transactions:
-...     print(f"{transaction.action_date}: {transaction.federal_action_obligation}")
+>>> with USASpendingClient() as client:
+...     award_query = client.awards.search() \
+...                 .for_agency("National Aeronautics and Space Administration") \
+...                 .contracts() \
+...                 .for_fiscal_year(2022)
+...     
+...     print(f"Query length: {len(award_query)}")
+...     
+...     # Access specific award by index
+...     award = award_query[5000]
+...     for transaction in award.transactions[:3]:  # Show first 3 transactions
+...         print(f"{transaction.action_date}: ${transaction.federal_action_obligation:,.2f}")
 ```
 
-### Custom Configuration
+### Customizable Settings
 
-You can customize the library's behavior before creating a client instance:
+The library implements sensible defaults for API rate limiting and caching:
+
+- Rate limiting: 1000 calls per 5 minutes
+- Caching: file-based, stores successful API qeries for 1 week in a `.usaspending_cache` directory in the user's home folder
+
+You can customize these defaults before creating a client instance. This is particularly useful for making large numbers of requests, which can trigger more aggressive rate limiting by the API.
 
 ```python
->>> from usaspending import USASpendingClient, config
+>>> from usaspending import config as usaspending_config
 >>> 
 >>> # Configure settings before creating the client
->>> config.configure(
-...     cache_dir="/tmp/usaspending_cache",  # Custom cache location
-...     cache_ttl=86400,  # Cache for 24 hours (default: 1 week)
-...     max_retries=5,  # Increase retry attempts (default: 3)
+>>> usaspending_config.configure(
+...     # Cache settings
+...     # Set file-cache directory (default: ~/.usaspending_cache)
+...     cache_dir="/tmp/usaspending_cache",
+...     # Set cache expiration time (default 1 week)
+...     cache_ttl=86400,
+...     # Set cache strategy to be in-memory "mem" or "file" for file-based caching via pickle (default: "file")
+...     cache_strategy="mem",
+...
+...     # Set rate limiting parameters
+...     # Set number of calls allowed within the rate limit period (default: 1000)
+...     rate_limit_calls=500,
+...     # Rate limit period (in seconds, default: 300)
+...     rate_limit_period=60,
+...
+...     # Set HTTP request parameters (default: max_retries=3, timeout=30)
+...     # Set number of retries for failed requests (default: 3)
+...     max_retries=5,
+...     # Set delay between retries in seconds (default: 1.0)
+...     retry_delay=10.0,
+...     # Set exponential backoff factor for retries (default: 2.0)
+...     retry_backoff=2.0,
+...     # Set request timeout in seconds (default: 30)
 ...     timeout=60  # Longer timeout for slow connections (default: 30)
 ... )
 >>> 
@@ -104,9 +127,30 @@ You can customize the library's behavior before creating a client instance:
 >>> client = USASpendingClient()
 ```
 
+### Session Management
+
+For proper resource cleanup, use the client as a context manager (recommended) or explicitly call `close()`:
+
+```python
+# Recommended: Context manager automatically closes session
+with USASpendingClient() as client:
+    awards = client.awards.search().for_agency("NASA").all()
+    for award in awards:
+        print(f"{award.recipient_name}: ${award.total_obligation:,.2f}")
+# Session automatically closed here
+
+# Alternative: Manual cleanup
+client = USASpendingClient()
+try:
+    awards = client.awards.search().for_agency("NASA").all()
+    # Process awards...
+finally:
+    client.close()  # Always close to free resources
+```
+
 ### Logging Configuration
 
-The library provides detailed logging, which you can configure logging in your application:
+The library provides detailed logging, which you can configure in your application:
 
 ```python
 import logging
@@ -118,8 +162,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-client = USASpendingClient()
-awards = client.awards.search().contracts().all()
+with USASpendingClient() as client:
+    awards = client.awards.search().contracts().all()
 ```
 
 ## Project Status

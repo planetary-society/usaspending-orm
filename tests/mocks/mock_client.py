@@ -450,7 +450,13 @@ class MockUSASpendingClient(USASpendingClient):
         params: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        """Pass through to _make_request since caching is disabled in tests."""
+        """Pass through to _make_request with request counter logic."""
+        # Increment request counter and check for proactive session reset
+        # (Same logic as parent class)
+        self._request_count += 1
+        if self._request_count >= config.session_request_limit:
+            self.reset_session()
+            
         return self._make_request(method, endpoint, json=json, params=params, **kwargs)
 
     def _download_binary_file(self, file_url: str, destination_path: str) -> None:

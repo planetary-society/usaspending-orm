@@ -45,20 +45,25 @@ class RetryHandler:
         requests.exceptions.ReadTimeout,
     )
 
-    def __init__(self):
+    def __init__(self, session_reset_callback: Optional[Callable] = None):
         """
         Initialize the retry handler.
 
         Args:
-            config: Configuration object with retry settings
+            session_reset_callback: Optional callback to reset session on persistent errors
         """
         self.max_retries = config.max_retries
         self.base_delay = config.retry_delay
         self.backoff_factor = config.retry_backoff
+        self.session_reset_callback = session_reset_callback
+        
+        # Track consecutive 5XX errors for session reset logic
+        self._consecutive_5xx_errors = 0
 
         logger.debug(
             f"Initialized RetryHandler: max_retries={self.max_retries}, "
-            f"base_delay={self.base_delay}s, backoff_factor={self.backoff_factor}"
+            f"base_delay={self.base_delay}s, backoff_factor={self.backoff_factor}, "
+            f"session_reset={'enabled' if session_reset_callback else 'disabled'}"
         )
 
     def execute(self, func: Callable, *args, **kwargs) -> Any:
@@ -86,10 +91,38 @@ class RetryHandler:
                 if hasattr(result, "status_code"):
                     self._check_response_for_retry(result, attempt)
 
+                # Reset consecutive 5XX error counter on successful response
+                self._consecutive_5xx_errors = 0
                 return result
 
             except Exception as e:
                 last_exception = e
+
+                # Track consecutive 5XX errors for session reset logic
+                if isinstance(e, HTTPError) and e.status_code >= 500:
+                    self._consecutive_5xx_errors += 1
+                    logger.debug(f"Consecutive 5XX errors: {self._consecutive_5xx_errors}")
+                    
+                    # Check if we should reset session due to persistent 5XX errors
+                    if (self.session_reset_callback and 
+                        self._consecutive_5xx_errors >= config.session_reset_on_5xx_threshold and
+                        attempt < self.max_retries):  # Don't reset on final attempt
+                        logger.warning(
+                            f"Resetting session due to {self._consecutive_5xx_errors} consecutive 5XX errors "
+                            f"(suggests server-side session exhaustion)"
+                        )
+                        self.session_reset_callback()
+                        self._consecutive_5xx_errors = 0
+                        # Reduce delay after session reset since we may have fixed the issue
+                        delay = self.base_delay
+                        logger.info(f"Retrying with fresh session after {delay:.2f}s")
+                        time.sleep(delay)
+                        continue
+                else:
+                    # Reset counter for non-5XX errors
+                    if self._consecutive_5xx_errors > 0:
+                        logger.debug(f"5XX error counter reset by {type(e).__name__} (was {self._consecutive_5xx_errors})")
+                    self._consecutive_5xx_errors = 0
 
                 # Don't retry on the last attempt
                 if attempt == self.max_retries:
