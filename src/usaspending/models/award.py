@@ -492,7 +492,7 @@ class Award(LazyRecord):
         if not start_date:
             if self.period_of_performance and self.period_of_performance.start_date:
                 start_date = self.period_of_performance.start_date
-        return start_date
+        return to_date(start_date)
 
     @property
     def end_date(self) -> Optional[datetime]:
@@ -505,7 +505,7 @@ class Award(LazyRecord):
         if not end_date:
             if self.period_of_performance and self.period_of_performance.end_date:
                 end_date = self.period_of_performance.end_date
-        return end_date
+        return to_date(end_date)
 
     @property
     def usa_spending_url(self) -> str:
