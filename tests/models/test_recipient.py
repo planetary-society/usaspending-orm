@@ -177,6 +177,14 @@ class TestRecipientProperties:
 
         assert recipient.name is None
 
+    def test_alternative_names_property(self, mock_usa_client, recipient_data):
+        """Test alternative_names property returns list with titlecase."""
+        recipient = Recipient(recipient_data, mock_usa_client)
+        expected_names = [
+            contracts_titlecase(name) for name in recipient_data.get("alternate_names", [])
+        ]
+        assert recipient.alternative_names == expected_names
+
     def test_duns_property(self, mock_usa_client, recipient_data):
         """Test DUNS property."""
         recipient = Recipient(recipient_data, mock_usa_client)

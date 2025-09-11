@@ -104,6 +104,15 @@ class Recipient(LazyRecord):
         )
 
     @property
+    def alternative_names(self) -> Optional[List[str]]:
+        names = self._lazy_get("alternate_names", default=None)
+        if names is None:
+            return None
+        if isinstance(names, list):
+            return [contracts_titlecase(name) for name in names if name]
+        return None
+
+    @property
     def duns(self) -> Optional[str]:
         return self._lazy_get(
             "duns", "recipient_unique_id", "Recipient DUNS Number", default=None

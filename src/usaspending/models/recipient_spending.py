@@ -29,6 +29,10 @@ class RecipientSpending(Recipient):
 
     @property
     def duns(self) -> Optional[str]:
+        return self.code
+
+    @property
+    def code(self) -> Optional[str]:
         """DUNS number from spending data (stored in 'code' field)."""
         return self.get_value(["code"], default=None)
 
