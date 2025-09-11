@@ -21,7 +21,7 @@ class _Config:
         self.user_agent: str = "usaspending-orm-python/0.5.0"
         self.timeout: int = 30
         self.max_retries: int = 3
-        self.retry_delay: float = 1.0
+        self.retry_delay: float = 10.0
         self.retry_backoff: float = 2.0
 
         # Global rate limit is 1000 calls per 300 seconds
