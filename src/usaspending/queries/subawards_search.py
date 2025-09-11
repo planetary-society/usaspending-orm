@@ -118,7 +118,7 @@ class SubAwardsSearch(AwardsSearch):
 
             from ..logging_config import log_query_execution
 
-            log_query_execution(logger, "SubAwardsSearch.count", 1, endpoint)
+            log_query_execution(logger, "SubAwardsSearch.count", [], endpoint)
 
             # Send the request to the count endpoint
             response = self._client._make_request("GET", endpoint)
@@ -163,7 +163,7 @@ class SubAwardsSearch(AwardsSearch):
         log_query_execution(
             logger,
             "SubAwardsSearch.count_awards_by_type",
-            len(self._filter_objects),
+            self._filter_objects,
             endpoint,
         )
 

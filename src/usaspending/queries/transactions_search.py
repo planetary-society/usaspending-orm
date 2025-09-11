@@ -91,7 +91,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
 
         from ..logging_config import log_query_execution
 
-        log_query_execution(logger, "TransactionsSearch.count", 1, endpoint)
+        log_query_execution(logger, "TransactionsSearch.count", [], endpoint)
 
         # Send the request to the count endpoint
         response = self._client._make_request("GET", endpoint)

@@ -412,7 +412,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         log_query_execution(
             logger,
             "AwardsSearch._count_awards_by_type",
-            len(self._filter_objects),
+            self._filter_objects,
             endpoint,
         )
 

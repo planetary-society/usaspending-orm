@@ -62,7 +62,11 @@ client = USASpendingClient()
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, Optional
+from collections import Counter
+from typing import Dict, Any, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .queries.filters import BaseFilter
 
 
 class USASpendingLogger:
@@ -234,35 +238,68 @@ def log_api_response(
         if status_code >= 300:
             logger.warning(" ".join(msg_parts))
         else:
-            logger.info(" ".join(msg_parts))
+            logger.debug(" ".join(msg_parts))
 
 
 def log_query_execution(
     logger: logging.Logger,
     query_type: str,
-    filters_count: int,
+    filter_objects: list["BaseFilter"],
     endpoint: str,
     page: int = 1,
 ) -> None:
     """Log query execution details.
     
     This helper function provides consistent formatting for query execution logging
-    throughout the library. Debug level includes additional endpoint and pagination info.
+    throughout the library. Debug level includes additional endpoint, pagination info,
+    and detailed filter breakdown.
     
     Args:
         logger: Logger instance to use for output
         query_type: Type of query being executed (e.g., "AwardsSearch")
-        filters_count: Number of filters applied to the query
+        filter_objects: List of filter objects applied to the query
         endpoint: API endpoint being called
         page: Page number for paginated requests (default: 1)
         
     Example:
-        log_query_execution(logger, "AwardsSearch", 3, "/api/v2/search/spending_by_award/", 2)
+        log_query_execution(logger, "AwardsSearch", [KeywordsFilter(...), TimePeriodFilter(...)], "/api/v2/search/spending_by_award/", 2)
     """
+    filters_count = len(filter_objects)
+    
     if logger.isEnabledFor(logging.DEBUG):
+        # Create filter breakdown by type
+        filter_types = [type(f).__name__ for f in filter_objects]
+        filter_counts = Counter(filter_types)
+        
+        if filter_counts:
+            filter_breakdown = ", ".join([f"{count} {filter_type}" for filter_type, count in filter_counts.items()])
+            filter_summary = f"{filters_count} filters ({filter_breakdown})"
+        else:
+            filter_summary = "0 filters"
+            
         logger.debug(
-            f"Executing {query_type} query - {filters_count} filters, "
+            f"Executing {query_type} query - {filter_summary}, "
             f"endpoint: {endpoint}, page: {page}"
         )
+        
+        # Log individual filter details in debug mode
+        for i, filter_obj in enumerate(filter_objects):
+            filter_dict = filter_obj.to_dict()
+            logger.debug(f"Filter {i+1}: {type(filter_obj).__name__} = {filter_dict}")
+            
     else:
-        logger.info(f"Executing {query_type} query - {filters_count} filters")
+        # Extract filter keys for INFO level logging
+        if filters_count == 0:
+            logger.info(f"Executing {query_type} query - no filters")
+        else:
+            # Get the keys from each filter's dictionary representation
+            filter_keys = []
+            for filter_obj in filter_objects:
+                filter_dict = filter_obj.to_dict()
+                # Each filter's to_dict() returns a dict with one key
+                filter_keys.extend(filter_dict.keys())
+            
+            # Join unique keys (in case of duplicates)
+            unique_keys = list(dict.fromkeys(filter_keys))  # Preserves order
+            keys_str = ", ".join(unique_keys)
+            logger.info(f"Executing {query_type} query - filters: {keys_str}")

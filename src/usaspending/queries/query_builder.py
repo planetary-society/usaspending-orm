@@ -290,10 +290,9 @@ class QueryBuilder(ABC, Generic[T]):
     def _execute_query(self, page: int) -> Dict[str, Any]:
         """Execute the query and return raw response."""
         query_type = self.__class__.__name__
-        filters_count = len(self._filter_objects)
         endpoint = self._endpoint
 
-        log_query_execution(logger, query_type, filters_count, endpoint, page)
+        log_query_execution(logger, query_type, self._filter_objects, endpoint, page)
 
         payload = self._build_payload(page)
         logger.debug(f"Query payload: {payload}")
