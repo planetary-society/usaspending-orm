@@ -29,7 +29,7 @@ class _Config:
         self.rate_limit_period: int = 300
 
         # Session management for handling server-side session limits
-        self.session_request_limit: int = 900 # Max requests per session before renewal
+        self.session_request_limit: int = 250 # Max requests per session before renewal
         self.session_reset_on_5xx_threshold: int = 1  # Reset session after N consecutive 5XX errors
 
         # Caching via cachier
