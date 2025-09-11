@@ -36,7 +36,6 @@ class SubAwardsSearch(AwardsSearch):
     def _clone(self) -> SubAwardsSearch:
         """Creates an immutable copy of the query builder."""
         clone = SubAwardsSearch(self._client)
-        clone._filters = self._filters.copy()
         clone._filter_objects = self._filter_objects.copy()
         clone._page_size = self._page_size
         clone._total_limit = self._total_limit

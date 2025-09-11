@@ -36,7 +36,6 @@ class QueryBuilder(ABC, Generic[T]):
 
     def __init__(self, client: "USASpendingClient"):
         self._client = client
-        self._filters: Dict[str, Any] = {}
         self._filter_objects: list[BaseFilter] = []
         self._page_size = 100  # Items per page (max 100 per USASpending API)
         self._total_limit = None  # Total items to return (across all pages)
@@ -291,7 +290,7 @@ class QueryBuilder(ABC, Generic[T]):
     def _execute_query(self, page: int) -> Dict[str, Any]:
         """Execute the query and return raw response."""
         query_type = self.__class__.__name__
-        filters_count = len(self._filters)
+        filters_count = len(self._filter_objects)
         endpoint = self._endpoint
 
         log_query_execution(logger, query_type, filters_count, endpoint, page)
@@ -313,7 +312,6 @@ class QueryBuilder(ABC, Generic[T]):
     def _clone(self) -> "QueryBuilder[T]":
         """Create a copy for method chaining."""
         clone = self.__class__(self._client)
-        clone._filters = self._filters.copy()
         clone._filter_objects = self._filter_objects.copy()
         clone._page_size = self._page_size
         clone._total_limit = self._total_limit

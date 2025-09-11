@@ -407,11 +407,12 @@ class Award(LazyRecord):
         Returns:
             Optional[str]: The recipient's UEI, or None if not available.
         """
-        uei = self._lazy_get("recipient_uei", "Recipient UEI")
-        if not uei:
-            # Try nested recipient object if available
-            if self.recipient and self.recipient.uei:
-                uei = self.recipient.uei
+        # Try nested recipient object if available
+        if self.recipient and self.recipient.uei:
+            uei = self.recipient.uei
+        else:
+            uei = self._lazy_get("recipient_uei", "Recipient UEI")
+        
         return uei
 
     @property
