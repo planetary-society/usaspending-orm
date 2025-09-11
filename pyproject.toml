@@ -1,6 +1,6 @@
 [project]
 name = "usaspending-orm"
-version = "0.4.1"
+version = "0.5.0"
 description = ""
 authors = [
     {name = "Casey Dreier",email = "casey.dreier@planetary.org"}
