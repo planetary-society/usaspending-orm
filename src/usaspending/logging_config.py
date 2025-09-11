@@ -15,7 +15,7 @@ class USASpendingLogger:
 
     @classmethod
     def configure(
-        self,
+        cls,
         level: str = "INFO",
         log_format: Optional[str] = None,
         log_file: Optional[str] = None,
@@ -28,7 +28,7 @@ class USASpendingLogger:
             log_format: Custom log format string
             log_file: Optional file to write logs to (in addition to console)
         """
-        if self._configured:
+        if cls._configured:
             return
 
         # Set root logger level
@@ -82,10 +82,10 @@ class USASpendingLogger:
             logger.propagate = True
 
         # Mark as configured
-        self._configured = True
+        cls._configured = True
 
         # Log configuration
-        config_logger = self.get_logger("usaspending.config")
+        config_logger = cls.get_logger("usaspending.config")
         config_logger.info(f"Logging configured - Level: {level}")
         if log_file:
             config_logger.info(f"Logging to file: {log_file}")
