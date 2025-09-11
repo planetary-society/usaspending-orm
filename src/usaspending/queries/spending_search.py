@@ -32,6 +32,18 @@ from usaspending.queries.filters import (
     parse_location_spec,
 )
 
+# Import award type codes from models
+# These are defined by USASpending.gov and represent different categories of awards
+from ..models.award_types import (
+    CONTRACT_CODES,
+    IDV_CODES,
+    LOAN_CODES,
+    GRANT_CODES,
+    DIRECT_PAYMENT_CODES,
+    OTHER_CODES,
+)
+
+
 logger = USASpendingLogger.get_logger(__name__)
 
 SpendingLevel = Literal["transactions", "awards", "subawards"]
