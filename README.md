@@ -94,7 +94,6 @@ You can customize the library's behavior before creating a client instance:
 >>> 
 >>> # Configure settings before creating the client
 >>> config.configure(
-...     logging_level="DEBUG",  # Increase log verbosity (default: "INFO")
 ...     cache_dir="/tmp/usaspending_cache",  # Custom cache location
 ...     cache_ttl=86400,  # Cache for 24 hours (default: 1 week)
 ...     max_retries=5,  # Increase retry attempts (default: 3)
@@ -103,6 +102,24 @@ You can customize the library's behavior before creating a client instance:
 >>> 
 >>> # Now create the client with your configuration
 >>> client = USASpendingClient()
+```
+
+### Logging Configuration
+
+The library provides detailed logging, which you can configure logging in your application:
+
+```python
+import logging
+from usaspending import USASpendingClient
+
+# Configure root logger (affects all loggers)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+client = USASpendingClient()
+awards = client.awards.search().contracts().all()
 ```
 
 ## Project Status

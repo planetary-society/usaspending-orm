@@ -60,10 +60,14 @@ def main():
 
     args = parser.parse_args()
 
-    # Configure logging
-    log_level = "DEBUG" if args.verbose else "INFO"
-    USASpendingLogger.configure(level=log_level)
-    logger = USASpendingLogger.get_logger("usaspending.cli.download")
+    # Configure logging (CLI scripts can configure logging since they are applications)
+    import logging
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger("usaspending.cli.download")
 
     try:
         # Initialize client (assuming default configuration handling)

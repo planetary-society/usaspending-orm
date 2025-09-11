@@ -14,6 +14,9 @@ def default_test_config():
     """
     This fixture automatically sets the baseline configuration for all tests.
     It runs before any other test-specific fixture.
+    
+    Note: No logging configuration is needed here - the library uses NullHandler
+    by default, so tests run silently unless explicitly configured.
     """
     config.configure(
         cache_enabled=False,

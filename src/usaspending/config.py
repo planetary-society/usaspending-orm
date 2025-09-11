@@ -37,13 +37,8 @@ class _Config:
         )
         self.cache_ttl: timedelta = timedelta(weeks=1)
 
-        # Logging configuration
-        self.logging_level: str = "INFO"
-        self.log_file: Optional[str] = None
-
         # Apply the initial default settings when the object is created
         self._apply_cachier_settings()
-        self._apply_logging_settings()
 
     def configure(self, **kwargs):
         """
@@ -71,7 +66,6 @@ class _Config:
 
         self.validate()
         self._apply_cachier_settings()
-        self._apply_logging_settings()
 
     def _apply_cachier_settings(self):
         """Applies the current caching settings to the cachier library."""
@@ -89,13 +83,6 @@ class _Config:
         else:
             cachier.disable_caching()
 
-    def _apply_logging_settings(self):
-        """Applies the current logging settings to the logger."""
-        # This is the logic moved from your client file
-        USASpendingLogger.configure(
-            level=self.logging_level,
-            log_file=self.log_file,
-        )
 
     def validate(self) -> None:
         """Validate the current configuration values."""
@@ -106,11 +93,6 @@ class _Config:
         if self.rate_limit_calls <= 0:
             raise ConfigurationError("rate_limit_calls must be positive")
 
-        valid_log_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
-        if self.logging_level.upper() not in valid_log_levels:
-            raise ConfigurationError(
-                f"logging_level must be one of: {valid_log_levels}"
-            )
 
         valid_backends = {"file", "memory"}
         if self.cache_enabled and (self.cache_backend not in valid_backends):
