@@ -529,7 +529,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         Filter by one or more award type codes.
 
         Args:
-            *award_codes: A sequence of award type codes (e.g., "A", "B", "02").
+            *award_codes: A sequence of award type codes (e.g., "A", "B").
 
         Returns:
             A new SpendingSearch instance with the filter applied.
@@ -539,6 +539,81 @@ class SpendingSearch(QueryBuilder["Spending"]):
             SimpleListFilter(key="award_type_codes", values=list(award_codes))
         )
         return clone
+
+    def contracts(self) -> SpendingSearch:
+        """
+        Helper filter to search for contract awards only.
+
+        This is a convenience method that applies award type codes A, B, C, D.
+
+        Returns:
+            SpendingSearch: A new instance configured for contract awards.
+
+        """
+        return self.with_award_types(*CONTRACT_CODES)
+
+    def idvs(self) -> SpendingSearch:
+        """
+        Helper filter to search for Indefinite Delivery Vehicle (IDV) awards only.
+
+        IDVs are contract vehicles that provide for an indefinite quantity
+        of supplies or services. This method applies all IDV type codes.
+
+        Returns:
+            SpendingSearch: A new instance configured for IDV awards.
+
+        """
+        return self.with_award_types(*IDV_CODES)
+
+    def loans(self) -> SpendingSearch:
+        """
+        Helper filter to search for loan awards only.
+
+        This applies award type codes 07 and 08 for loan awards.
+
+        Returns:
+            SpendingSearch: A new instance configured for loan awards.
+
+        """
+        return self.with_award_types(*LOAN_CODES)
+
+    def grants(self) -> SpendingSearch:
+        """
+        Helper filter to search for grant awards only.
+
+        This applies award type codes 02, 03, 04, 05 for various grant types.
+
+        Returns:
+            SpendingSearch: A new instance configured for grant awards.
+
+        """
+        return self.with_award_types(*GRANT_CODES)
+
+    def direct_payments(self) -> SpendingSearch:
+        """
+        Helper filter to search for direct payment awards only.
+
+        Direct payments include benefits to individuals and other direct
+        assistance. This applies award type codes 06 and 10.
+
+        Returns:
+            SpendingSearch: A new instance configured for direct payment awards.
+
+        """
+        return self.with_award_types(*DIRECT_PAYMENT_CODES)
+
+    def other_assistance(self) -> SpendingSearch:
+        """
+        Filter to search for other assistance awards.
+
+        This includes insurance programs and other miscellaneous assistance.
+        Applies award type codes 09, 11, and -1.
+
+        Returns:
+            SpendingSearch: A new instance configured for other assistance awards.
+
+        """
+        return self.with_award_types(*OTHER_CODES)
 
     def with_award_ids(self, *award_ids: str) -> SpendingSearch:
         """

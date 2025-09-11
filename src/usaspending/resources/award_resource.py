@@ -82,7 +82,7 @@ class AwardResource(BaseResource):
             "idvs": "idvs",
             "loans": "loans",
             "direct_payments": "direct_payments",
-            "other": "other",
+            "other": "other_assistance",
         }
 
         method_name = method_mapping.get(award_type)

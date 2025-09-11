@@ -1114,7 +1114,7 @@ class TestPaginationAndIteration:
         assert mock_usa_client.awards.search().idvs().count() == 105
         assert mock_usa_client.awards.search().loans().count() == 42
         assert mock_usa_client.awards.search().direct_payments().count() == 123
-        assert mock_usa_client.awards.search().other().count() == 89
+        assert mock_usa_client.awards.search().other_assistance().count() == 89
 
         # Verify 6 calls were made (one for each convenience method)
         assert (

@@ -1173,7 +1173,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         """
         return self.with_award_types(*DIRECT_PAYMENT_CODES)
 
-    def other(self) -> AwardsSearch:
+    def other_assistance(self) -> AwardsSearch:
         """
         Filter to search for other assistance awards.
 
