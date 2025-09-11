@@ -10,6 +10,7 @@ from usaspending.exceptions import ValidationError
 from usaspending.models.spending import Spending
 from usaspending.models.recipient_spending import RecipientSpending
 from usaspending.models.district_spending import DistrictSpending
+from usaspending.models.state_spending import StateSpending
 from usaspending.queries.query_builder import QueryBuilder
 from usaspending.logging_config import USASpendingLogger
 from usaspending.queries.filters import (
@@ -34,7 +35,7 @@ from usaspending.queries.filters import (
 logger = USASpendingLogger.get_logger(__name__)
 
 SpendingLevel = Literal["transactions", "awards", "subawards"]
-SpendingCategory = Literal["recipient", "district"]
+SpendingCategory = Literal["recipient", "district", "state"]
 
 
 class SpendingSearch(QueryBuilder["Spending"]):
@@ -65,9 +66,11 @@ class SpendingSearch(QueryBuilder["Spending"]):
             return "/search/spending_by_category/recipient/"
         elif self._category == "district":
             return "/search/spending_by_category/district/"
+        elif self._category == "state":
+            return "/search/spending_by_category/state_territory/"
         else:
             raise ValidationError(
-                "Category must be set. Use .by_recipient() or .by_district() method."
+                "Category must be set. Use .by_recipient(), .by_district(), or .by_state() method."
             )
 
     def _clone(self) -> SpendingSearch:
@@ -83,7 +86,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
 
         if self._category is None:
             raise ValidationError(
-                "Category must be set. Use .by_recipient() or .by_district() method."
+                "Category must be set. Use .by_recipient(), .by_district(), or .by_state() method."
             )
 
         final_filters = self._aggregate_filters()
@@ -115,6 +118,8 @@ class SpendingSearch(QueryBuilder["Spending"]):
             return RecipientSpending(result_with_category, self._client)
         elif self._category == "district":
             return DistrictSpending(result_with_category, self._client)
+        elif self._category == "state":
+            return StateSpending(result_with_category, self._client)
         else:
             return Spending(result_with_category, self._client)
 
@@ -201,6 +206,17 @@ class SpendingSearch(QueryBuilder["Spending"]):
         """
         clone = self._clone()
         clone._category = "district"
+        return clone
+
+    def by_state(self) -> SpendingSearch:
+        """
+        Configure search to return spending grouped by state/territory.
+
+        Returns:
+            A new SpendingSearch instance configured for state spending.
+        """
+        clone = self._clone()
+        clone._category = "state"
         return clone
 
     # ==========================================================================

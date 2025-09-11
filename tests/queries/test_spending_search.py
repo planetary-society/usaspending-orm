@@ -8,6 +8,7 @@ import pytest
 from usaspending.queries.spending_search import SpendingSearch
 from usaspending.models.recipient_spending import RecipientSpending
 from usaspending.models.district_spending import DistrictSpending
+from usaspending.models.state_spending import StateSpending
 from usaspending.exceptions import ValidationError
 
 
@@ -43,6 +44,14 @@ class TestCategorySelection:
         assert district_search._category == "district"
         assert district_search is not search  # Should return new instance
 
+    def test_by_state(self, mock_usa_client):
+        """Test by_state category selection."""
+        search = SpendingSearch(mock_usa_client)
+        state_search = search.by_state()
+
+        assert state_search._category == "state"
+        assert state_search is not search  # Should return new instance
+
     def test_endpoint_with_recipient_category(self, mock_usa_client):
         """Test endpoint property with recipient category."""
         search = SpendingSearch(mock_usa_client).by_recipient()
@@ -54,6 +63,12 @@ class TestCategorySelection:
         search = SpendingSearch(mock_usa_client).by_district()
 
         assert search._endpoint == mock_usa_client.Endpoints.SPENDING_BY_DISTRICT
+
+    def test_endpoint_with_state_category(self, mock_usa_client):
+        """Test endpoint property with state category."""
+        search = SpendingSearch(mock_usa_client).by_state()
+
+        assert search._endpoint == mock_usa_client.Endpoints.SPENDING_BY_STATE
 
     def test_endpoint_without_category_raises_error(self, mock_usa_client):
         """Test endpoint property without category raises ValidationError."""

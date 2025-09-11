@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
+from decimal import Decimal
+
 from usaspending.models.district_spending import DistrictSpending
 from usaspending.models.spending import Spending
 
@@ -87,3 +90,46 @@ class TestDistrictSpendingProperties:
         repr_str = repr(district_spending)
         assert "Unknown District" in repr_str
         assert "0.00" in repr_str
+
+
+class TestDistrictSpendingWithFixture:
+    """Test DistrictSpending with real fixture data."""
+
+    @pytest.fixture
+    def district_fixture_data(self, load_fixture):
+        """Load district spending fixture."""
+        data = load_fixture("spending_by_district.json")
+        return data["results"][0]  # First district: WA-09
+
+    def test_district_spending_properties_from_fixture(self, district_fixture_data, mock_usa_client):
+        """Test DistrictSpending properties match fixture data."""
+        district = DistrictSpending(district_fixture_data, mock_usa_client)
+
+        # Test base properties match fixture
+        assert district.id == district_fixture_data.get("id")
+        assert district.code == district_fixture_data["code"]
+        assert district.name == district_fixture_data["name"]
+        assert district.amount == Decimal(str(district_fixture_data["amount"]))
+        assert district.total_outlays == district_fixture_data.get("total_outlays")
+
+        # Test district-specific properties derived from fixture data
+        assert district.district_code == district_fixture_data["code"]
+
+        # Extract expected values from fixture name field
+        expected_state = district_fixture_data["name"].split("-")[0] if "-" in district_fixture_data["name"] else None
+        expected_district_num = district_fixture_data["name"].split("-")[1] if "-" in district_fixture_data["name"] else None
+
+        assert district.state_code == expected_state
+        assert district.district_number == expected_district_num
+        assert not district.is_multiple_districts
+
+    def test_district_spending_repr_from_fixture(self, district_fixture_data, mock_usa_client):
+        """Test string representation with fixture data."""
+        district = DistrictSpending(district_fixture_data, mock_usa_client)
+
+        # Build expected repr from fixture data
+        name = district_fixture_data["name"]
+        amount = Decimal(str(district_fixture_data["amount"]))
+        expected_repr = f"<DistrictSpending {name}: ${amount:,.2f}>"
+
+        assert repr(district) == expected_repr

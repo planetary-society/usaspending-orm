@@ -42,6 +42,7 @@ class MockUSASpendingClient(USASpendingClient):
 
         SPENDING_BY_RECIPIENT = "/search/spending_by_category/recipient/"
         SPENDING_BY_DISTRICT = "/search/spending_by_category/district/"
+        SPENDING_BY_STATE = "/search/spending_by_category/state_territory/"
 
     """Mock USASpending client for testing.
 

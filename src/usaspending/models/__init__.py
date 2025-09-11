@@ -26,6 +26,7 @@ from .subaward import SubAward
 from .spending import Spending
 from .recipient_spending import RecipientSpending
 from .district_spending import DistrictSpending
+from .state_spending import StateSpending
 
 # Award type constants
 from .award_types import (
@@ -66,6 +67,7 @@ __all__ = [
     "Spending",
     "RecipientSpending",
     "DistrictSpending",
+    "StateSpending",
     # Factory
     "create_award",
     # Award type constants

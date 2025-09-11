@@ -36,7 +36,7 @@ class SpendingResource(BaseResource):
             >>> district_spending = client.spending.search()
             ...     .by_district()
             ...     .spending_level("awards")
-            ...     .with_place_of_performance_locations(Location("USA", "TX"))
+            ...     .with_place_of_performance_locations({"country_code": "USA", "state_code": "TX"))
             ...     .all()
         """
         logger.debug("Creating new SpendingSearch query builder")
