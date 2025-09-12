@@ -104,14 +104,14 @@ class Recipient(LazyRecord):
         )
 
     @property
-    def alternative_names(self) -> List[Optional[str]]:
+    def alternate_names(self) -> List[Optional[str]]:
         """
-        Returns a list of alternative names for the recipient, formatted in title case.
-        If no alternative names are available, returns an empty list.
+        Returns a list of alternate names for the recipient, formatted in title case.
+        If no alternate names are available, returns an empty list.
         """
         names = self._lazy_get("alternate_names", default=[])
         if isinstance(names, list):
-            return [contracts_titlecase(name) for name in names if name]
+            return [contracts_titlecase(name) for name in names if isinstance(name, str)]
         else:
             return []
 
