@@ -180,7 +180,6 @@ class USASpendingClient:
             self._resources["agencies"] = AgencyResource(self)
         return self._resources["agencies"]
 
-    @cachier.cachier()
     def _make_request(
         self,
         method: str,
@@ -189,7 +188,45 @@ class USASpendingClient:
         json: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        """A cacheable HTTP request method that won't trigger rate-limiting or other unnecessary behaviors"""
+        """A cacheable HTTP request method with fallback for cache failures."""
+        try:
+            # Try cached version first if caching is enabled
+            if config.cache_enabled:
+                cached_result = self._make_cached_request(
+                    method, endpoint, params=params, json=json, **kwargs
+                )
+                # Validate that cache returned proper data
+                if cached_result is not None and isinstance(cached_result, dict):
+                    logger.debug(f"Cache hit for {method} {endpoint}")
+                    return cached_result
+                else:
+                    logger.warning(
+                        f"Cache returned invalid data for {method} {endpoint}, falling back to uncached request"
+                    )
+            
+            # Fallback to uncached request
+            return self._make_uncached_request(
+                method, endpoint, params=params, json=json, **kwargs
+            )
+        except Exception as cache_error:
+            # If cache fails completely, log and fallback to uncached request
+            logger.warning(
+                f"Cache operation failed for {method} {endpoint}: {cache_error}. Using uncached request."
+            )
+            return self._make_uncached_request(
+                method, endpoint, params=params, json=json, **kwargs
+            )
+
+    @cachier.cachier()
+    def _make_cached_request(
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Internal cached request method."""
         return self._make_uncached_request(
             method, endpoint, params=params, json=json, **kwargs
         )
