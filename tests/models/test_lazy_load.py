@@ -209,3 +209,20 @@ class TestLazyRecord:
         result = record._lazy_get("empty", "truthy")
         assert result == ""
         assert record._details_fetched is False
+
+    def test_lazy_get_with_none_value_triggers_load(self, mock_client):
+        """Test that _lazy_get triggers loading when value is None."""
+        
+        class TestModel(LazyRecord):
+            def _fetch_details(self):
+                return {"test_field": "loaded_value"}
+        
+        # Create model with None value
+        model = TestModel({"test_field": None}, mock_client)
+        
+        # Access field - should trigger lazy load
+        result = model._lazy_get("test_field", default="default")
+        
+        # Assert: details were fetched and correct value returned
+        assert model._details_fetched
+        assert result == "loaded_value"

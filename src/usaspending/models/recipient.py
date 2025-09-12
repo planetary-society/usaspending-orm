@@ -151,7 +151,10 @@ class Recipient(LazyRecord):
     @cached_property
     def parents(self) -> List["Recipient"]:
         plist = []
-        for p in self.get_value("parents", default=[]):
+        # Use _lazy_get to ensure parents data is loaded if not present
+        parents_data = self._lazy_get("parents", default=[])
+        
+        for p in parents_data:
             if isinstance(p, dict):
                 # Skip if parent_id is missing or the same as current recipient_id
                 if not p.get("parent_id") or p.get("parent_id") == self.recipient_id:

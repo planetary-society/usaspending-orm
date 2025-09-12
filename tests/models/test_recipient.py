@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import pytest
+from unittest.mock import Mock
 
 from tests.utils import assert_decimal_equal
 from tests.conftest import load_json_fixture
@@ -59,11 +60,11 @@ class TestRecipientInitialization:
     def test_init_with_invalid_type_raises_error(self, mock_usa_client):
         """Test that Recipient initialization with invalid type raises ValidationError."""
         with pytest.raises(
-            ValidationError, match="Recipient expects dict or recipient_id/hash string"
+            ValidationError, match="Recipient expects dict or string, got int"
         ):
             Recipient(123, mock_usa_client)
 
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="Recipient expects dict or string, got list"):
             Recipient([], mock_usa_client)
 
     def test_init_copies_data_dict(self, mock_usa_client):
@@ -98,6 +99,10 @@ class TestRecipientInitialization:
         # Test with string ID
         recipient2 = Recipient("abc123-['P','C']", mock_usa_client)
         assert recipient2._data["recipient_id"] == "abc123-P"
+        
+        # Test with problematic case
+        recipient3 = Recipient("bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C", mock_usa_client)
+        assert recipient3._data["recipient_id"] == "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C"
 
 
 class TestRecipientIdCleaning:
@@ -510,3 +515,181 @@ class TestRecipientLazyLoading:
 
         # Verify no API calls were made
         assert mock_usa_client.get_request_count() == 0
+
+
+class TestLazyLoadingFixes:
+    """Test lazy loading bug fixes."""
+    
+    def setup_method(self):
+        """Set up test client and mocks."""
+        self.mock_client = Mock()
+        self.mock_client._make_request.return_value = {
+            "name": "Full Recipient Data",
+            "recipient_id": "test-123",
+            "parents": [
+                {
+                    "parent_id": "parent-456",
+                    "parent_name": "Parent Recipient",
+                    "parent_duns": "123456789",
+                    "parent_uei": "ABC123DEF"
+                }
+            ],
+            "business_types": ["nonprofit", "small_business"]
+        }
+    
+    def test_parents_lazy_loading_with_missing_key(self):
+        """Test that parents property triggers lazy loading when key is missing."""
+        # Create recipient without parents data
+        recipient = Recipient({"recipient_id": "test-123"}, client=self.mock_client)
+        
+        # Access parents property - should trigger lazy load
+        parents = recipient.parents
+        
+        # Assert: API was called
+        self.mock_client._make_request.assert_called_once()
+        
+        # Assert: parent objects were created
+        assert len(parents) == 1
+        assert parents[0].recipient_id == "parent-456"
+        assert parents[0].name == "Parent Recipient"
+    
+    def test_parents_lazy_loading_with_empty_list(self):
+        """Test that parents property still works with empty list in initial data."""
+        # Create recipient with empty parents list
+        recipient = Recipient(
+            {"recipient_id": "test-123", "parents": []}, 
+            client=self.mock_client
+        )
+        
+        # Access parents property - should NOT trigger lazy load since key exists
+        parents = recipient.parents
+        
+        # Assert: API was NOT called (key exists, even if empty)
+        self.mock_client._make_request.assert_not_called()
+        
+        # Assert: empty list returned
+        assert len(parents) == 0
+    
+    def test_business_types_lazy_loading_with_missing_key(self):
+        """Test that business_types triggers lazy loading when key is missing."""
+        # Create recipient without business_types data
+        recipient = Recipient({"recipient_id": "test-123"}, client=self.mock_client)
+        
+        # Access business_types property - should trigger lazy load
+        business_types = recipient.business_types
+        
+        # Assert: API was called
+        self.mock_client._make_request.assert_called_once()
+        
+        # Assert: correct data returned
+        assert business_types == ["nonprofit", "small_business"]
+    
+
+
+class TestRecipientSpendingIntegration:
+    """Test RecipientSpending integration with fixes."""
+    
+    def test_recipient_spending_from_spending_query_data(self):
+        """Test creating RecipientSpending from spending query results."""
+        mock_client = Mock()
+        mock_client._make_request.return_value = {
+            "name": "ASSOCIATION OF UNIVERSITIES FOR RESEARCH IN ASTRONOMY, INC.",
+            "recipient_id": "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C",
+            "parents": [
+                {
+                    "parent_id": "4c2d8769-6506-a0d1-dbb6-ceb88e11e281-P",
+                    "parent_name": "PARENT AURA",
+                }
+            ],
+            "business_types": ["nonprofit"]
+        }
+        
+        # Data from spending by recipient query (with list suffix)
+        spending_data = {
+            "amount": 12345678.90,
+            "recipient_id": "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-['C']",
+            "name": "ASSOCIATION OF UNIVERSITIES FOR RESEARCH IN ASTRONOMY, INC.",
+            "code": "101460871",
+            "uei": "W1NBN156CYF9",
+            "total_outlays": 9876543.21
+        }
+        
+        # Create RecipientSpending object
+        from src.usaspending.models.recipient_spending import RecipientSpending
+        recipient_spending = RecipientSpending(spending_data, client=mock_client)
+        
+        # Assert: recipient_id was cleaned
+        assert recipient_spending.recipient_id == "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C"
+        
+        # Assert: name from initial data
+        assert recipient_spending.name == "Association of Universities for Research in Astronomy, Inc."
+        
+        # Assert: amount property works (returns Decimal)
+        from decimal import Decimal
+        assert recipient_spending.amount == Decimal('12345678.90')
+        
+        # Access parents property - should trigger lazy load
+        parents = recipient_spending.parents
+        
+        # Assert: API was called for lazy load
+        mock_client._make_request.assert_called_once()
+        
+        # Assert: parent was created
+        assert len(parents) == 1
+        assert parents[0].recipient_id == "4c2d8769-6506-a0d1-dbb6-ceb88e11e281-P"
+
+
+class TestCircularReferenceProtection:
+    """Test protection against circular references."""
+    
+    def test_circular_parent_references(self):
+        """Test that circular parent references don't cause infinite loops."""
+        call_count = 0
+        
+        def mock_make_request(method, endpoint):
+            nonlocal call_count
+            call_count += 1
+            
+            if call_count > 5:
+                pytest.fail("Too many API calls - possible infinite loop")
+            
+            if "recipient-A" in endpoint:
+                return {
+                    "name": "Recipient A",
+                    "recipient_id": "recipient-A",
+                    "parents": [{"parent_id": "recipient-B", "parent_name": "Recipient B"}]
+                }
+            elif "recipient-B" in endpoint:
+                return {
+                    "name": "Recipient B", 
+                    "recipient_id": "recipient-B",
+                    "parents": [{"parent_id": "recipient-A", "parent_name": "Recipient A"}]
+                }
+            else:
+                return {"name": "Unknown", "recipient_id": "unknown", "parents": []}
+        
+        mock_client = Mock()
+        mock_client._make_request.side_effect = mock_make_request
+        
+        # Create recipient A
+        recipient_a = Recipient({"recipient_id": "recipient-A"}, client=mock_client)
+        
+        # Get parents of A (includes B)
+        parents_a = recipient_a.parents
+        assert len(parents_a) == 1
+        
+        parent_b = parents_a[0]
+        assert parent_b.recipient_id == "recipient-B"
+        
+        # Get parents of B (includes A) - should not cause infinite loop
+        parents_b = parent_b.parents
+        assert len(parents_b) == 1
+        
+        back_to_a = parents_b[0]
+        assert back_to_a.recipient_id == "recipient-A"
+        
+        # This should be a different object, not the same one
+        assert back_to_a is not recipient_a
+        
+        # Total calls should be reasonable (2 for A and B)
+        assert call_count <= 3

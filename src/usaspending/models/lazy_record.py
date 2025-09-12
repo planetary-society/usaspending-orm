@@ -34,27 +34,29 @@ class LazyRecord(ClientAwareModel):
 
         # If we've already lazy-loaded details, return whatever
         # values are present in the data
-
         if self._details_fetched:
             return self.get_value(keys, default=default)
-        else:
-            # Try loading the value directly
-            # If returned value is None, than try fetching
-            # the source data
-            value = None
 
-            for key in keys:
-                if key in self._data:
-                    value = self._data[key]
-                    break
+        # Check if any of the keys exist in the current data
+        key_found = False
+        value = None
+        
+        for key in keys:
+            if key in self._data:
+                value = self._data[key]
+                key_found = True
+                break
 
-            if value is None:
-                # Load full resource data from source
-                self._ensure_details()
+        # If no key was found, or if the value is None (indicating missing data),
+        # trigger lazy loading
+        if not key_found or value is None:
+            # Load full resource data from source
+            self._ensure_details()
 
-                # Set flag
-                self._details_fetched = True
+            # Set flag
+            self._details_fetched = True
 
-                # Attempt to return the value again
-                value = self.get_value(keys, default=default)
-            return value
+            # Attempt to return the value again
+            value = self.get_value(keys, default=default)
+        
+        return value
