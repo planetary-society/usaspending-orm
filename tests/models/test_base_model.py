@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from usaspending.models.base_model import BaseModel
+from usaspending.exceptions import ValidationError
 
 
 class TestBaseModelGetValue:
@@ -200,3 +201,151 @@ class TestBaseModelOtherMethods:
         assert model._data == {}
         assert model.raw == {}
         assert model.to_dict() == {}
+
+
+class TestBaseModelValidation:
+    """Test the validate_init_data() method of BaseModel."""
+
+    def test_validate_init_data_with_none_raises_error(self):
+        """Test that validate_init_data raises ValidationError with None input."""
+        with pytest.raises(ValidationError, match="Test data cannot be None"):
+            BaseModel.validate_init_data(None, "Test")
+
+    def test_validate_init_data_with_empty_string_raises_error(self):
+        """Test that validate_init_data raises ValidationError with empty string when string ID allowed."""
+        with pytest.raises(ValidationError, match="Test ID cannot be empty"):
+            BaseModel.validate_init_data("", "Test", id_field="test_id", allow_string_id=True)
+
+    def test_validate_init_data_with_whitespace_string_raises_error(self):
+        """Test that validate_init_data raises ValidationError with whitespace-only string."""
+        with pytest.raises(ValidationError, match="Test ID cannot be empty"):
+            BaseModel.validate_init_data("   \t\n  ", "Test", id_field="test_id", allow_string_id=True)
+
+    def test_validate_init_data_with_string_when_not_allowed_raises_error(self):
+        """Test that validate_init_data raises ValidationError when string ID not allowed."""
+        with pytest.raises(ValidationError, match="Test expects dict, got str"):
+            BaseModel.validate_init_data("test-id", "Test", allow_string_id=False)
+
+    def test_validate_init_data_with_invalid_type_raises_error(self):
+        """Test that validate_init_data raises ValidationError with invalid types."""
+        invalid_inputs = [
+            ([], "list"),
+            (123, "int"), 
+            (3.14, "float"),
+            (True, "bool"),
+            (set(), "set"),
+        ]
+        
+        for invalid_input, expected_type in invalid_inputs:
+            with pytest.raises(ValidationError, match=f"Test expects dict or string, got {expected_type}"):
+                BaseModel.validate_init_data(
+                    invalid_input, 
+                    "Test", 
+                    id_field="test_id", 
+                    allow_string_id=True
+                )
+
+    def test_validate_init_data_with_valid_dict_returns_copy(self):
+        """Test that validate_init_data returns a copy of valid dict input."""
+        original_data = {"key": "value", "other": 123}
+        result = BaseModel.validate_init_data(original_data, "Test")
+        
+        assert result == original_data
+        assert result is not original_data  # Should be a copy
+        
+        # Modify original to verify it's a copy
+        original_data["new_key"] = "new_value"
+        assert "new_key" not in result
+
+    def test_validate_init_data_with_valid_string_id_creates_dict(self):
+        """Test that validate_init_data converts string ID to dict when allowed."""
+        result = BaseModel.validate_init_data(
+            "test-123", 
+            "Test", 
+            id_field="test_id", 
+            allow_string_id=True
+        )
+        
+        assert result == {"test_id": "test-123"}
+        assert isinstance(result, dict)
+
+    def test_validate_init_data_without_id_field_raises_error(self):
+        """Test that validate_init_data raises error when string provided but no id_field specified."""
+        with pytest.raises(ValidationError, match="Test expects dict, got str"):
+            BaseModel.validate_init_data("test-123", "Test", allow_string_id=True)
+
+    def test_validate_init_data_with_empty_dict_returns_copy(self):
+        """Test that validate_init_data handles empty dict correctly."""
+        result = BaseModel.validate_init_data({}, "Test")
+        
+        assert result == {}
+        assert isinstance(result, dict)
+
+    def test_validate_init_data_error_messages_are_descriptive(self):
+        """Test that validate_init_data provides helpful error messages."""
+        # Test None error message
+        with pytest.raises(ValidationError, match=r"Recipient data cannot be None.*API or caching issue"):
+            BaseModel.validate_init_data(None, "Recipient")
+        
+        # Test empty string error message
+        with pytest.raises(ValidationError, match="Award ID cannot be empty or whitespace"):
+            BaseModel.validate_init_data("", "Award", id_field="award_id", allow_string_id=True)
+        
+        # Test type mismatch error message
+        with pytest.raises(ValidationError, match="Agency expects dict, got list"):
+            BaseModel.validate_init_data([], "Agency")
+
+    def test_validate_init_data_preserves_dict_contents(self):
+        """Test that validate_init_data preserves all dict contents including None values."""
+        original_data = {
+            "id": "test-123",
+            "name": "Test Name",
+            "optional_field": None,
+            "empty_list": [],
+            "empty_dict": {},
+            "zero": 0,
+            "false": False
+        }
+        
+        result = BaseModel.validate_init_data(original_data, "Test")
+        
+        assert result == original_data
+        assert all(key in result for key in original_data.keys())
+        assert result["optional_field"] is None
+        assert result["empty_list"] == []
+        assert result["empty_dict"] == {}
+        assert result["zero"] == 0
+        assert result["false"] is False
+
+    def test_validate_init_data_with_different_model_names(self):
+        """Test that validate_init_data uses correct model name in error messages."""
+        test_cases = [
+            ("Recipient", "Recipient data cannot be None"),
+            ("Award", "Award data cannot be None"),
+            ("Agency", "Agency data cannot be None"),
+            ("CustomModel", "CustomModel data cannot be None"),
+        ]
+        
+        for model_name, expected_message in test_cases:
+            with pytest.raises(ValidationError, match=expected_message):
+                BaseModel.validate_init_data(None, model_name)
+
+    def test_validate_init_data_string_id_with_special_characters(self):
+        """Test that validate_init_data handles string IDs with special characters."""
+        special_ids = [
+            "abc123-def456",
+            "test_id_with_underscores",
+            "id.with.dots",
+            "id@with@symbols",
+            "id with spaces",  # This should work - whitespace validation is only for empty/whitespace-only
+            "urn:uuid:12345678-1234-5678-9012-123456789abc"
+        ]
+        
+        for test_id in special_ids:
+            result = BaseModel.validate_init_data(
+                test_id, 
+                "Test", 
+                id_field="test_id", 
+                allow_string_id=True
+            )
+            assert result == {"test_id": test_id}

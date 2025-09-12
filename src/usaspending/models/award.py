@@ -75,14 +75,13 @@ class Award(LazyRecord):
         Raises:
             ValidationError: If data_or_id is not a dict or string, or if required keys are missing.
         """
-        if isinstance(data_or_id, dict):
-            raw = data_or_id.copy()
-        elif isinstance(data_or_id, str):
-            raw = {"generated_unique_award_id": data_or_id}
-        else:
-            raise ValidationError(
-                "Award expects a dict with the generated_unique_award_id key present, or a string of the same id."
-            )
+        # Use the base validation method
+        raw = self.validate_init_data(
+            data_or_id,
+            "Award",
+            id_field="generated_unique_award_id",
+            allow_string_id=True
+        )
         super().__init__(raw, client)
 
     def _fetch_details(self) -> Optional[Dict[str, Any]]:

@@ -68,7 +68,9 @@ class Agency(LazyRecord):
             client: USASpendingClient client instance
             subtier_data: Optional subtier agency data for subtier_agency property
         """
-        super().__init__(data, client)
+        # Use the base validation method (dict-only)
+        raw = self.validate_init_data(data, "Agency", allow_string_id=False)
+        super().__init__(raw, client)
 
         # Store subtier data separately
         self._subtier_data = subtier_data

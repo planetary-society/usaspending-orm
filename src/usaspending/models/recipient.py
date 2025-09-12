@@ -37,15 +37,19 @@ class Recipient(LazyRecord):
         data_or_id: Dict[str, Any] | str,
         client: Optional[USASpendingClient] = None,
     ):
-        if isinstance(data_or_id, dict):
-            raw = data_or_id.copy()
-            rid = raw.get("recipient_id") or raw.get("recipient_hash")
-            if rid:
-                raw["recipient_id"] = self._clean_recipient_id(rid)
-        elif isinstance(data_or_id, str):
-            raw = {"recipient_id": self._clean_recipient_id(data_or_id)}
-        else:
-            raise ValidationError("Recipient expects dict or recipient_id/hash string")
+        # Use the base validation method
+        raw = self.validate_init_data(
+            data_or_id,
+            "Recipient", 
+            id_field="recipient_id",
+            allow_string_id=True
+        )
+        
+        # Apply recipient-specific ID cleaning
+        rid = raw.get("recipient_id") or raw.get("recipient_hash")
+        if rid:
+            raw["recipient_id"] = self._clean_recipient_id(rid)
+        
         super().__init__(raw, client)
 
     def _fetch_details(self) -> Optional[Dict[str, Any]]:

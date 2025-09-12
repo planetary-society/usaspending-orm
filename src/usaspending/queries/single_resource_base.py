@@ -51,6 +51,17 @@ class SingleResourceBase(ABC):
 
         # Make API request
         response = self._client._make_request("GET", endpoint)
+        
+        # Validate response
+        if response is None:
+            raise ValidationError(
+                f"API request for {endpoint} returned None. This may be due to caching issues."
+            )
+        
+        if not isinstance(response, dict):
+            raise ValidationError(
+                f"API request for {endpoint} returned invalid response type: {type(response)}. Expected dict."
+            )
 
         return response
 
