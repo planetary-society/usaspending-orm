@@ -221,7 +221,7 @@ class USASpendingClient:
                 method, endpoint, params=params, json=json, **kwargs
             )
 
-    @cachier.cachier()
+    @cachier.cachier(wait_for_calc_timeout=config.cache_timeout)
     def _make_cached_request(
         self,
         method: str,

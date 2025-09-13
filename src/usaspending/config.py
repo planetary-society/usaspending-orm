@@ -40,6 +40,7 @@ class _Config:
             "usaspending",
         )
         self.cache_ttl: timedelta = timedelta(weeks=1)
+        self.cache_timeout: int = 60  # Seconds to wait for processing cache entries
 
         # Apply the initial default settings when the object is created
         self._apply_cachier_settings()
@@ -105,6 +106,8 @@ class _Config:
         valid_backends = {"file", "memory"}
         if self.cache_enabled and (self.cache_backend not in valid_backends):
             raise ConfigurationError(f"cache_backend must be one of: {valid_backends}")
+        if self.cache_timeout <= 0:
+            raise ConfigurationError("cache_timeout must be positive")
 
 
 # Global configuration object
