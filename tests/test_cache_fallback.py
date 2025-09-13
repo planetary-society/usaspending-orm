@@ -98,3 +98,53 @@ class TestCachingFallback:
         finally:
             # Restore original setting
             config.cache_enabled = original_cache_enabled
+    
+    def test_api_errors_dont_trigger_duplicate_calls(self):
+        """Test that API errors don't cause duplicate calls due to fallback logic."""
+        from src.usaspending.exceptions import APIError
+        
+        # Setup: cache raises API error (simulating failed API call)
+        api_error = APIError("Invalid Recipient ID", status_code=400)
+        self.client._make_cached_request.side_effect = api_error
+        
+        # Execute: make request and expect API error to propagate
+        with pytest.raises(APIError) as exc_info:
+            self.client._make_request("GET", "/recipient/invalid-id/")
+        
+        # Assert: API error propagated without fallback
+        assert str(exc_info.value) == "Invalid Recipient ID"
+        # Uncached request should NOT have been called (no fallback for API errors)
+        self.client._make_uncached_request.assert_not_called()
+    
+    def test_http_errors_dont_trigger_duplicate_calls(self):
+        """Test that HTTP errors don't cause duplicate calls due to fallback logic."""
+        from src.usaspending.exceptions import HTTPError
+        
+        # Setup: cache raises HTTP error (simulating HTTP failure)
+        http_error = HTTPError("Not Found", status_code=404)
+        self.client._make_cached_request.side_effect = http_error
+        
+        # Execute: make request and expect HTTP error to propagate
+        with pytest.raises(HTTPError) as exc_info:
+            self.client._make_request("GET", "/recipient/not-found/")
+        
+        # Assert: HTTP error propagated without fallback
+        assert exc_info.value.status_code == 404
+        # Uncached request should NOT have been called (no fallback for HTTP errors)
+        self.client._make_uncached_request.assert_not_called()
+    
+    def test_validation_errors_dont_trigger_duplicate_calls(self):
+        """Test that ValidationError doesn't cause duplicate calls due to fallback logic."""
+        
+        # Setup: cache raises validation error (simulating input validation failure)
+        validation_error = ValidationError("Invalid input parameters")
+        self.client._make_cached_request.side_effect = validation_error
+        
+        # Execute: make request and expect validation error to propagate
+        with pytest.raises(ValidationError) as exc_info:
+            self.client._make_request("GET", "/recipient/invalid-params/")
+        
+        # Assert: Validation error propagated without fallback
+        assert str(exc_info.value) == "Invalid input parameters"
+        # Uncached request should NOT have been called (no fallback for validation errors)
+        self.client._make_uncached_request.assert_not_called()

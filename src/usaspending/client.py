@@ -9,7 +9,7 @@ import requests
 import cachier
 
 from .config import config
-from .exceptions import HTTPError, APIError
+from .exceptions import HTTPError, APIError, ValidationError, RateLimitError
 from .logging_config import USASpendingLogger, log_api_request, log_api_response
 
 if TYPE_CHECKING:
@@ -204,12 +204,16 @@ class USASpendingClient:
                         f"Cache returned invalid data for {method} {endpoint}, falling back to uncached request"
                     )
             
-            # Fallback to uncached request
+            # Fallback to uncached request if cache disabled or returned invalid data
             return self._make_uncached_request(
                 method, endpoint, params=params, json=json, **kwargs
             )
+        except (APIError, HTTPError, ValidationError, RateLimitError):
+            # These are normal API errors - let them propagate without fallback
+            # Cachier will re-execute on next call (doesn't cache exceptions)
+            raise
         except Exception as cache_error:
-            # If cache fails completely, log and fallback to uncached request
+            # Only catch serious cache failures (file corruption, lock issues, etc.)
             logger.warning(
                 f"Cache operation failed for {method} {endpoint}: {cache_error}. Using uncached request."
             )
