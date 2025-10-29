@@ -51,8 +51,12 @@ class LocationSpec:
     state_code: Optional[str] = None
     county_code: Optional[str] = None
     city_name: Optional[str] = None
-    district_original: Optional[str] = None # Current congressional district (e.g. "IA-03")
-    district_current: Optional[str] = None # Congressional district when awarded (e.g. "WA-01")
+    district_original: Optional[str] = (
+        None  # Current congressional district (e.g. "IA-03")
+    )
+    district_current: Optional[str] = (
+        None  # Congressional district when awarded (e.g. "WA-01")
+    )
     zip_code: Optional[str] = None
 
     def to_dict(self) -> dict[str, str]:
@@ -238,13 +242,13 @@ class TreasuryAccountComponentsFilter(BaseFilter):
 def parse_location_scope(scope: str) -> LocationScope:
     """
     Convert a string to a LocationScope enum value.
-    
+
     Args:
         scope: Either "domestic" or "foreign" (case-insensitive).
-        
+
     Returns:
         LocationScope: The corresponding enum value.
-        
+
     Raises:
         ValidationError: If scope is not "domestic" or "foreign".
     """
@@ -260,13 +264,13 @@ def parse_location_scope(scope: str) -> LocationScope:
 def parse_agency_type(agency_type: str) -> AgencyType:
     """
     Convert a string to an AgencyType enum value.
-    
+
     Args:
         agency_type: Either "awarding" or "funding" (case-insensitive).
-        
+
     Returns:
         AgencyType: The corresponding enum value.
-        
+
     Raises:
         ValidationError: If agency_type is not "awarding" or "funding".
     """
@@ -282,13 +286,13 @@ def parse_agency_type(agency_type: str) -> AgencyType:
 def parse_agency_tier(tier: str) -> AgencyTier:
     """
     Convert a string to an AgencyTier enum value.
-    
+
     Args:
         tier: Either "toptier" or "subtier" (case-insensitive).
-        
+
     Returns:
         AgencyTier: The corresponding enum value.
-        
+
     Raises:
         ValidationError: If tier is not "toptier" or "subtier".
     """
@@ -304,16 +308,16 @@ def parse_agency_tier(tier: str) -> AgencyTier:
 def parse_award_date_type(date_type: str) -> AwardDateType:
     """
     Convert a string to an AwardDateType enum value.
-    
+
     Handles flexible input formats including underscores and variations.
-    
+
     Args:
-        date_type: One of "action_date", "date_signed", "last_modified_date", 
+        date_type: One of "action_date", "date_signed", "last_modified_date",
             or "new_awards_only" (case-insensitive, underscores optional).
-        
+
     Returns:
         AwardDateType: The corresponding enum value.
-        
+
     Raises:
         ValidationError: If date_type is not a valid option.
     """
@@ -334,19 +338,19 @@ def parse_award_date_type(date_type: str) -> AwardDateType:
 
 
 def parse_award_amount(
-    amount: Union[dict[str, float], tuple[Optional[float], Optional[float]]]
+    amount: Union[dict[str, float], tuple[Optional[float], Optional[float]]],
 ) -> AwardAmount:
     """
     Convert a dictionary or tuple to an AwardAmount dataclass.
-    
+
     Args:
         amount: Either:
             - A dictionary with 'lower_bound' and/or 'upper_bound' keys
             - A tuple of (lower_bound, upper_bound) where None means unbounded
-        
+
     Returns:
         AwardAmount: The corresponding dataclass instance.
-        
+
     Raises:
         ValidationError: If amount is not a valid dict or tuple format.
     """
@@ -368,11 +372,11 @@ def parse_award_amount(
 def parse_location_spec(location: dict[str, str]) -> LocationSpec:
     """
     Convert a dictionary to a LocationSpec dataclass.
-    
+
     Args:
-        location: A dictionary with location fields like country_code, 
+        location: A dictionary with location fields like country_code,
             state_code, city_name, etc.
-        
+
     Returns:
         LocationSpec: The corresponding dataclass instance.
     """

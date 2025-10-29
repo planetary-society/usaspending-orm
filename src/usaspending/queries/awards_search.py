@@ -107,7 +107,7 @@ The same filtering limitations and requirements that apply to the USAspending.go
 1. **Required Award Type Filter**: Every query must include a filter for `award_type_codes`.
     Or use the conveinience methods `.contracts()`, `.grants()`, `.loans()`, `.idvs()`, `.direct_payments()`, or `.other_assistance()`
     to set the award type category.
-    
+
 2. **Single Category Restriction**: You cannot mix different award type categories
    (e.g., contracts and grants) in a single query. Use separate queries for each.
 
@@ -613,7 +613,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             new_awards_only: If True, only returns awards that started within
                 the given date range. Defaults to False.
             date_type: The type of date to filter on. Can be a string:
-                "action_date", "date_signed", "last_modified_date", or 
+                "action_date", "date_signed", "last_modified_date", or
                 "new_awards_only". If not specified, uses default date type.
                 Case-insensitive.
 
@@ -660,12 +660,12 @@ class AwardsSearch(QueryBuilder["Award"]):
         date_type_enum = None
         if date_type is not None:
             date_type_enum = parse_award_date_type(date_type)
-        
+
         # If convenience flag is set, use NEW_AWARDS_ONLY date type
         # and override any provided date_type
         if new_awards_only:
             date_type_enum = AwardDateType.NEW_AWARDS_ONLY
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             TimePeriodFilter(
@@ -691,7 +691,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             new_awards_only: If True, only returns awards that started within
                 the fiscal year. Defaults to False.
             date_type: The type of date to filter on. Can be a string:
-                "action_date", "date_signed", "last_modified_date", or 
+                "action_date", "date_signed", "last_modified_date", or
                 "new_awards_only". If not specified, uses default date type.
                 Case-insensitive.
 
@@ -751,7 +751,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ... )
         """
         location_scope = parse_location_scope(scope)
-            
+
         clone = self._clone()
         clone._filter_objects.append(
             LocationScopeFilter(key="place_of_performance_scope", scope=location_scope)
@@ -801,7 +801,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         """
         # Convert dicts to LocationSpec objects internally
         location_specs = [parse_location_spec(loc) for loc in locations]
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             LocationFilter(
@@ -852,7 +852,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...         agency_type="funding"
             ...     )
             ... )
-            
+
             >>> # Find sub-agency awards
             >>> sub_agency_awards = (
             ...     client.awards.search()
@@ -866,7 +866,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         # Convert string inputs to enums
         agency_type_enum = parse_agency_type(agency_type)
         tier_enum = parse_agency_tier(tier)
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             AgencyFilter(agency_type=agency_type_enum, tier=tier_enum, name=name)
@@ -927,7 +927,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...     .contracts()
             ...     .with_recipient_scope("foreign")
             ... )
-            
+
             >>> # Find domestic recipients
             >>> domestic_awards = (
             ...     client.awards.search()
@@ -936,16 +936,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             ... )
         """
         location_scope = parse_location_scope(scope)
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             LocationScopeFilter(key="recipient_scope", scope=location_scope)
         )
         return clone
 
-    def with_recipient_locations(
-        self, *locations: dict[str, str]
-    ) -> AwardsSearch:
+    def with_recipient_locations(self, *locations: dict[str, str]) -> AwardsSearch:
         """
         Filter awards by specific recipient locations.
 
@@ -972,7 +970,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...         {"state_code": "CA", "country_code": "USA"}
             ...     )
             ... )
-            
+
             >>> # Find awards to companies in specific cities
             >>> city_recipients = (
             ...     client.awards.search()
@@ -985,7 +983,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         """
         # Convert dicts to LocationSpec objects internally
         location_specs = [parse_location_spec(loc) for loc in locations]
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             LocationFilter(key="recipient_locations", locations=location_specs)
@@ -1274,7 +1272,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         """
         # Convert various input formats to AwardAmount objects
         award_amounts = [parse_award_amount(amt) for amt in amounts]
-        
+
         clone = self._clone()
         clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
         return clone

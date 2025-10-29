@@ -326,7 +326,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         date_type_enum = None
         if date_type is not None:
             date_type_enum = parse_award_date_type(date_type)
-        
+
         # If convenience flag is set, use NEW_AWARDS_ONLY date type
         if new_awards_only:
             date_type_enum = AwardDateType.NEW_AWARDS_ONLY
@@ -376,12 +376,12 @@ class SpendingSearch(QueryBuilder["Spending"]):
 
         Returns:
             A new SpendingSearch instance with the filter applied.
-            
+
         Raises:
             ValidationError: If scope is not "domestic" or "foreign".
         """
         location_scope = parse_location_scope(scope)
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             LocationScopeFilter(key="place_of_performance_scope", scope=location_scope)
@@ -403,7 +403,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         """
         # Convert dicts to LocationSpec objects internally
         location_specs = [parse_location_spec(loc) for loc in locations]
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             LocationFilter(
@@ -432,7 +432,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
 
         Returns:
             A new SpendingSearch instance with the filter applied.
-            
+
         Raises:
             ValidationError: If agency_type is not "awarding" or "funding",
                 or if tier is not "toptier" or "subtier".
@@ -440,7 +440,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         # Convert string inputs to enums
         agency_type_enum = parse_agency_type(agency_type)
         tier_enum = parse_agency_tier(tier)
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             AgencyFilter(agency_type=agency_type_enum, tier=tier_enum, name=name)
@@ -488,12 +488,12 @@ class SpendingSearch(QueryBuilder["Spending"]):
 
         Returns:
             A new SpendingSearch instance with the filter applied.
-            
+
         Raises:
             ValidationError: If scope is not "domestic" or "foreign".
         """
         location_scope = parse_location_scope(scope)
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             LocationScopeFilter(key="recipient_scope", scope=location_scope)
@@ -513,7 +513,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         """
         # Convert dicts to LocationSpec objects internally
         location_specs = [parse_location_spec(loc) for loc in locations]
-        
+
         clone = self._clone()
         clone._filter_objects.append(
             LocationFilter(key="recipient_locations", locations=location_specs)
@@ -659,7 +659,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         """
         # Convert various input formats to AwardAmount objects
         award_amounts = [parse_award_amount(amt) for amt in amounts]
-        
+
         clone = self._clone()
         clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
         return clone

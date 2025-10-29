@@ -228,9 +228,7 @@ class TestFilterMethods:
 
     def test_with_place_of_performance_locations(self, awards_search):
         """Test the with_place_of_performance_locations filter method."""
-        loc1 = {
-            "country_code": "USA", "state_code": "CA", "city_name": "Los Angeles"
-        }
+        loc1 = {"country_code": "USA", "state_code": "CA", "city_name": "Los Angeles"}
         loc2 = {"country_code": "USA", "state_code": "TX"}
 
         result = awards_search.with_place_of_performance_locations(loc1, loc2)

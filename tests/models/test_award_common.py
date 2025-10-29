@@ -216,7 +216,7 @@ class TestAwardGenericBehaviors:
 
     def test_derived_award_identifier(self, mock_usa_client):
         """Test _derived_award_identifier extracts correct ID from generated_unique_award_id."""
-        
+
         # Test valid IDs using real examples from fixture data
         test_cases = [
             # Contract Awards (CONT_AWD format)
@@ -225,28 +225,27 @@ class TestAwardGenericBehaviors:
             ("CONT_AWD_80NM0018F0615_8000_80NM0018D0004_8000", "80NM0018F0615"),
             ("CONT_AWD_NNJ06TA25C_8000_-NONE-_-NONE-", "NNJ06TA25C"),
             ("CONT_AWD_NNM07AB03C_8000_-NONE-_-NONE-", "NNM07AB03C"),
-            
             # Contract IDVs (CONT_IDV format)
             ("CONT_IDV_80JSC019C0012_8000", "80JSC019C0012"),
             ("CONT_IDV_NNJ09GA02B_8000", "NNJ09GA02B"),
             ("CONT_IDV_NNK10LB00B_8000", "NNK10LB00B"),
-            
             # Assistance Non-Aggregated (ASST_NON format)
             ("ASST_NON_NNM11AA01A_080", "NNM11AA01A"),
             ("ASST_NON_P268K115150_091", "P268K115150"),
             ("ASST_NON_NNX16AO69A_080", "NNX16AO69A"),
             ("ASST_NON_NNX12AD05A_080", "NNX12AD05A"),
-            
             # Assistance Aggregated (ASST_AGG format)
             ("ASST_AGG_1020FA_-NONE-", "1020FA"),
             ("ASST_AGG_15CA35050692501_1251", "15CA35050692501"),
         ]
-        
+
         for generated_id, expected in test_cases:
             award = Award({"generated_unique_award_id": generated_id}, mock_usa_client)
             result = award._derived_award_identifier()
-            assert result == expected, f"Expected {expected} from {generated_id}, got {result}"
-        
+            assert result == expected, (
+                f"Expected {expected} from {generated_id}, got {result}"
+            )
+
         # Test -NONE- placeholders return None
         none_cases = [
             "CONT_IDV_-NONE-_8000",
@@ -254,11 +253,13 @@ class TestAwardGenericBehaviors:
             "ASST_NON_-NONE-_080",
             "ASST_AGG_-NONE-_1251",
         ]
-        
+
         for generated_id in none_cases:
             award = Award({"generated_unique_award_id": generated_id}, mock_usa_client)
-            assert award._derived_award_identifier() is None, f"Expected None from {generated_id}"
-        
+            assert award._derived_award_identifier() is None, (
+                f"Expected None from {generated_id}"
+            )
+
         # Test malformed IDs return None
         malformed_cases = [
             "",  # Empty string
@@ -267,15 +268,20 @@ class TestAwardGenericBehaviors:
             "INVALID_FORMAT_12345_8000",  # Invalid prefix
             "NOT_A_VALID_ID",  # Completely invalid
         ]
-        
+
         for generated_id in malformed_cases:
             award = Award({"generated_unique_award_id": generated_id}, mock_usa_client)
-            assert award._derived_award_identifier() is None, f"Expected None from malformed ID: {generated_id}"
-        
+            assert award._derived_award_identifier() is None, (
+                f"Expected None from malformed ID: {generated_id}"
+            )
+
         # Test empty identifier segment returns None
-        award = Award({"generated_unique_award_id": "CONT_AWD__8000_-NONE-_-NONE-"}, mock_usa_client)
+        award = Award(
+            {"generated_unique_award_id": "CONT_AWD__8000_-NONE-_-NONE-"},
+            mock_usa_client,
+        )
         assert award._derived_award_identifier() is None
-        
+
         # Test missing generated_unique_award_id returns None
         award = Award({"description": "Test Award"}, mock_usa_client)
         assert award._derived_award_identifier() is None

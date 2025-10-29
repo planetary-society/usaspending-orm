@@ -101,7 +101,9 @@ class TestDistrictSpendingWithFixture:
         data = load_fixture("spending_by_district.json")
         return data["results"][0]  # First district: WA-09
 
-    def test_district_spending_properties_from_fixture(self, district_fixture_data, mock_usa_client):
+    def test_district_spending_properties_from_fixture(
+        self, district_fixture_data, mock_usa_client
+    ):
         """Test DistrictSpending properties match fixture data."""
         district = DistrictSpending(district_fixture_data, mock_usa_client)
 
@@ -116,14 +118,24 @@ class TestDistrictSpendingWithFixture:
         assert district.district_code == district_fixture_data["code"]
 
         # Extract expected values from fixture name field
-        expected_state = district_fixture_data["name"].split("-")[0] if "-" in district_fixture_data["name"] else None
-        expected_district_num = district_fixture_data["name"].split("-")[1] if "-" in district_fixture_data["name"] else None
+        expected_state = (
+            district_fixture_data["name"].split("-")[0]
+            if "-" in district_fixture_data["name"]
+            else None
+        )
+        expected_district_num = (
+            district_fixture_data["name"].split("-")[1]
+            if "-" in district_fixture_data["name"]
+            else None
+        )
 
         assert district.state_code == expected_state
         assert district.district_number == expected_district_num
         assert not district.is_multiple_districts
 
-    def test_district_spending_repr_from_fixture(self, district_fixture_data, mock_usa_client):
+    def test_district_spending_repr_from_fixture(
+        self, district_fixture_data, mock_usa_client
+    ):
         """Test string representation with fixture data."""
         district = DistrictSpending(district_fixture_data, mock_usa_client)
 

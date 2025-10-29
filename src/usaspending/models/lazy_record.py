@@ -40,7 +40,7 @@ class LazyRecord(ClientAwareModel):
         # Check if any of the keys exist in the current data
         key_found = False
         value = None
-        
+
         for key in keys:
             if key in self._data:
                 value = self._data[key]
@@ -58,5 +58,5 @@ class LazyRecord(ClientAwareModel):
 
             # Attempt to return the value again
             value = self.get_value(keys, default=default)
-        
+
         return value

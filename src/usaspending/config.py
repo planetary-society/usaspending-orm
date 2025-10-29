@@ -29,8 +29,10 @@ class _Config:
         self.rate_limit_period: int = 300
 
         # Session management for handling server-side session limits
-        self.session_request_limit: int = 250 # Max requests per session before renewal
-        self.session_reset_on_5xx_threshold: int = 1  # Reset session after N consecutive 5XX errors
+        self.session_request_limit: int = 250  # Max requests per session before renewal
+        self.session_reset_on_5xx_threshold: int = (
+            1  # Reset session after N consecutive 5XX errors
+        )
 
         # Caching via cachier
         self.cache_enabled: bool = True
@@ -88,7 +90,6 @@ class _Config:
         else:
             cachier.disable_caching()
 
-
     def validate(self) -> None:
         """Validate the current configuration values."""
         if self.timeout <= 0:
@@ -100,8 +101,9 @@ class _Config:
         if self.session_request_limit <= 0:
             raise ConfigurationError("session_request_limit must be positive")
         if self.session_reset_on_5xx_threshold < 0:
-            raise ConfigurationError("session_reset_on_5xx_threshold must be non-negative")
-
+            raise ConfigurationError(
+                "session_reset_on_5xx_threshold must be non-negative"
+            )
 
         valid_backends = {"file", "memory"}
         if self.cache_enabled and (self.cache_backend not in valid_backends):

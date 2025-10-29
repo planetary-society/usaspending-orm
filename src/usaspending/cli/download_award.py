@@ -62,10 +62,10 @@ def main():
 
     # Configure logging (CLI scripts can configure logging since they are applications)
     import logging
+
     log_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
     logger = logging.getLogger("usaspending.cli.download")
 

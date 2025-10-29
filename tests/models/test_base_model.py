@@ -214,12 +214,16 @@ class TestBaseModelValidation:
     def test_validate_init_data_with_empty_string_raises_error(self):
         """Test that validate_init_data raises ValidationError with empty string when string ID allowed."""
         with pytest.raises(ValidationError, match="Test ID cannot be empty"):
-            BaseModel.validate_init_data("", "Test", id_field="test_id", allow_string_id=True)
+            BaseModel.validate_init_data(
+                "", "Test", id_field="test_id", allow_string_id=True
+            )
 
     def test_validate_init_data_with_whitespace_string_raises_error(self):
         """Test that validate_init_data raises ValidationError with whitespace-only string."""
         with pytest.raises(ValidationError, match="Test ID cannot be empty"):
-            BaseModel.validate_init_data("   \t\n  ", "Test", id_field="test_id", allow_string_id=True)
+            BaseModel.validate_init_data(
+                "   \t\n  ", "Test", id_field="test_id", allow_string_id=True
+            )
 
     def test_validate_init_data_with_string_when_not_allowed_raises_error(self):
         """Test that validate_init_data raises ValidationError when string ID not allowed."""
@@ -230,29 +234,29 @@ class TestBaseModelValidation:
         """Test that validate_init_data raises ValidationError with invalid types."""
         invalid_inputs = [
             ([], "list"),
-            (123, "int"), 
+            (123, "int"),
             (3.14, "float"),
             (True, "bool"),
             (set(), "set"),
         ]
-        
+
         for invalid_input, expected_type in invalid_inputs:
-            with pytest.raises(ValidationError, match=f"Test expects dict or string, got {expected_type}"):
+            with pytest.raises(
+                ValidationError,
+                match=f"Test expects dict or string, got {expected_type}",
+            ):
                 BaseModel.validate_init_data(
-                    invalid_input, 
-                    "Test", 
-                    id_field="test_id", 
-                    allow_string_id=True
+                    invalid_input, "Test", id_field="test_id", allow_string_id=True
                 )
 
     def test_validate_init_data_with_valid_dict_returns_copy(self):
         """Test that validate_init_data returns a copy of valid dict input."""
         original_data = {"key": "value", "other": 123}
         result = BaseModel.validate_init_data(original_data, "Test")
-        
+
         assert result == original_data
         assert result is not original_data  # Should be a copy
-        
+
         # Modify original to verify it's a copy
         original_data["new_key"] = "new_value"
         assert "new_key" not in result
@@ -260,12 +264,9 @@ class TestBaseModelValidation:
     def test_validate_init_data_with_valid_string_id_creates_dict(self):
         """Test that validate_init_data converts string ID to dict when allowed."""
         result = BaseModel.validate_init_data(
-            "test-123", 
-            "Test", 
-            id_field="test_id", 
-            allow_string_id=True
+            "test-123", "Test", id_field="test_id", allow_string_id=True
         )
-        
+
         assert result == {"test_id": "test-123"}
         assert isinstance(result, dict)
 
@@ -277,20 +278,27 @@ class TestBaseModelValidation:
     def test_validate_init_data_with_empty_dict_returns_copy(self):
         """Test that validate_init_data handles empty dict correctly."""
         result = BaseModel.validate_init_data({}, "Test")
-        
+
         assert result == {}
         assert isinstance(result, dict)
 
     def test_validate_init_data_error_messages_are_descriptive(self):
         """Test that validate_init_data provides helpful error messages."""
         # Test None error message
-        with pytest.raises(ValidationError, match=r"Recipient data cannot be None.*API or caching issue"):
+        with pytest.raises(
+            ValidationError,
+            match=r"Recipient data cannot be None.*API or caching issue",
+        ):
             BaseModel.validate_init_data(None, "Recipient")
-        
+
         # Test empty string error message
-        with pytest.raises(ValidationError, match="Award ID cannot be empty or whitespace"):
-            BaseModel.validate_init_data("", "Award", id_field="award_id", allow_string_id=True)
-        
+        with pytest.raises(
+            ValidationError, match="Award ID cannot be empty or whitespace"
+        ):
+            BaseModel.validate_init_data(
+                "", "Award", id_field="award_id", allow_string_id=True
+            )
+
         # Test type mismatch error message
         with pytest.raises(ValidationError, match="Agency expects dict, got list"):
             BaseModel.validate_init_data([], "Agency")
@@ -304,11 +312,11 @@ class TestBaseModelValidation:
             "empty_list": [],
             "empty_dict": {},
             "zero": 0,
-            "false": False
+            "false": False,
         }
-        
+
         result = BaseModel.validate_init_data(original_data, "Test")
-        
+
         assert result == original_data
         assert all(key in result for key in original_data.keys())
         assert result["optional_field"] is None
@@ -325,7 +333,7 @@ class TestBaseModelValidation:
             ("Agency", "Agency data cannot be None"),
             ("CustomModel", "CustomModel data cannot be None"),
         ]
-        
+
         for model_name, expected_message in test_cases:
             with pytest.raises(ValidationError, match=expected_message):
                 BaseModel.validate_init_data(None, model_name)
@@ -338,14 +346,11 @@ class TestBaseModelValidation:
             "id.with.dots",
             "id@with@symbols",
             "id with spaces",  # This should work - whitespace validation is only for empty/whitespace-only
-            "urn:uuid:12345678-1234-5678-9012-123456789abc"
+            "urn:uuid:12345678-1234-5678-9012-123456789abc",
         ]
-        
+
         for test_id in special_ids:
             result = BaseModel.validate_init_data(
-                test_id, 
-                "Test", 
-                id_field="test_id", 
-                allow_string_id=True
+                test_id, "Test", id_field="test_id", allow_string_id=True
             )
             assert result == {"test_id": test_id}

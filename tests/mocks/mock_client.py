@@ -456,7 +456,7 @@ class MockUSASpendingClient(USASpendingClient):
         self._request_count += 1
         if self._request_count >= config.session_request_limit:
             self.reset_session()
-            
+
         return self._make_request(method, endpoint, json=json, params=params, **kwargs)
 
     def _download_binary_file(self, file_url: str, destination_path: str) -> None:

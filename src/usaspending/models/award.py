@@ -80,7 +80,7 @@ class Award(LazyRecord):
             data_or_id,
             "Award",
             id_field="generated_unique_award_id",
-            allow_string_id=True
+            allow_string_id=True,
         )
         super().__init__(raw, client)
 
@@ -155,45 +155,45 @@ class Award(LazyRecord):
     def _derived_award_identifier(self) -> Optional[str]:
         """
         Extract the award identifier (PIID, FAIN, or URI) from generated_unique_award_id.
-        
+
         Parses the generated ID format to extract the original identifier:
         - CONT_AWD_<piid>_<agency>_<parent>_<ref> -> returns piid
-        - CONT_IDV_<piid>_<agency> -> returns piid  
+        - CONT_IDV_<piid>_<agency> -> returns piid
         - ASST_NON_<fain>_<agency> -> returns fain
         - ASST_AGG_<uri>_<agency> -> returns uri
-        
+
         Returns:
             The extracted identifier or None if not found or is "-NONE-"
         """
         gen_id = self.generated_unique_award_id
         if not gen_id:
             return None
-        
+
         try:
-            parts = gen_id.split('_')
-            
+            parts = gen_id.split("_")
+
             # Validate minimum parts based on format
             if len(parts) < 3:
                 return None
-                
-            prefix = '_'.join(parts[:2])  # e.g., "CONT_AWD" or "ASST_NON"
-            
+
+            prefix = "_".join(parts[:2])  # e.g., "CONT_AWD" or "ASST_NON"
+
             # Validate expected number of parts for each format
-            if prefix == 'CONT_AWD' and len(parts) != 6:
+            if prefix == "CONT_AWD" and len(parts) != 6:
                 return None
-            elif prefix == 'CONT_IDV' and len(parts) != 4:
+            elif prefix == "CONT_IDV" and len(parts) != 4:
                 return None
-            elif prefix in ('ASST_NON', 'ASST_AGG') and len(parts) != 4:
+            elif prefix in ("ASST_NON", "ASST_AGG") and len(parts) != 4:
                 return None
-            elif prefix not in ('CONT_AWD', 'CONT_IDV', 'ASST_NON', 'ASST_AGG'):
+            elif prefix not in ("CONT_AWD", "CONT_IDV", "ASST_NON", "ASST_AGG"):
                 return None
-            
+
             identifier = parts[2]  # The actual ID is always the 3rd segment
-            
+
             # Don't return placeholder values
-            if identifier == '-NONE-' or not identifier:
+            if identifier == "-NONE-" or not identifier:
                 return None
-                
+
             return identifier
         except (IndexError, AttributeError):
             return None
@@ -411,7 +411,7 @@ class Award(LazyRecord):
             uei = self.recipient.uei
         else:
             uei = self._lazy_get("recipient_uei", "Recipient UEI")
-        
+
         return uei
 
     @property

@@ -30,10 +30,10 @@ logger = USASpendingLogger.get_logger(__name__)
 @dataclass
 class DefCode:
     """Disaster Emergency Fund Code (DEFC) data structure.
-    
+
     Represents a disaster emergency fund code associated with an agency,
     containing legislative and reference information.
-    
+
     Attributes:
         code: The DEFC code identifier.
         public_law: Associated public law reference.
@@ -41,6 +41,7 @@ class DefCode:
         urls: Optional list of related URLs for additional information.
         disaster: Optional disaster category or description.
     """
+
     code: str
     public_law: str
     title: Optional[str] = None
@@ -79,7 +80,7 @@ class Agency(LazyRecord):
         """Fetch full agency details if we have a toptier_code and client.
 
         Returns:
-            Optional[Dict[str, Any]]: Full agency data from the API, or None 
+            Optional[Dict[str, Any]]: Full agency data from the API, or None
                 if unable to fetch due to missing toptier_code or API error.
         """
         # Try to get toptier_code from existing data
@@ -114,9 +115,9 @@ class Agency(LazyRecord):
         """Fetch award summary data for a given agency code.
 
         Args:
-            award_type_codes (Optional[List[str]]): Optional list of award type codes 
+            award_type_codes (Optional[List[str]]): Optional list of award type codes
                 to filter by. If None, includes all award types.
-            fiscal_year (Optional[int]): Fiscal year to filter by. If None, 
+            fiscal_year (Optional[int]): Fiscal year to filter by. If None,
                 defaults to the current fiscal year.
             agency_type (str): Type of agency relationship to filter by.
                 Must be "awarding" or "funding". Defaults to "awarding".
@@ -152,7 +153,7 @@ class Agency(LazyRecord):
     @property
     def fiscal_year(self) -> Optional[int]:
         """Fiscal year for the agency data.
-        
+
         Returns:
             Optional[int]: The fiscal year for this agency's data,
                 or None if not available.
@@ -163,10 +164,10 @@ class Agency(LazyRecord):
     @property
     def toptier_code(self) -> Optional[str]:
         """Agency toptier code (3-4 digit string).
-        
+
         This is the Treasury Account Fund Symbol (TAFS) used to identify
         the agency at the top-tier level in the government hierarchy.
-        
+
         Returns:
             Optional[str]: The toptier agency code, or None if not available.
         """
@@ -175,7 +176,7 @@ class Agency(LazyRecord):
     @property
     def code(self) -> Optional[str]:
         """Alias for toptier_code property.
-        
+
         Returns:
             Optional[str]: The toptier agency code, or None if not available.
         """
@@ -184,7 +185,7 @@ class Agency(LazyRecord):
     @property
     def name(self) -> Optional[str]:
         """Primary agency name.
-        
+
         Returns:
             Optional[str]: The official name of the agency,
                 or None if not available.
@@ -195,7 +196,7 @@ class Agency(LazyRecord):
     @property
     def abbreviation(self) -> Optional[str]:
         """Primary agency abbreviation.
-        
+
         Returns:
             Optional[str]: The official abbreviation of the agency,
                 or None if not available.
@@ -206,7 +207,7 @@ class Agency(LazyRecord):
     @property
     def id(self):
         """Internal identifier from USASpending.gov.
-        
+
         Returns:
             Optional[int]: The internal agency identifier,
                 or None if not available.
@@ -216,7 +217,7 @@ class Agency(LazyRecord):
     @property
     def agency_id(self) -> Optional[int]:
         """Internal identifier from USASpending.gov.
-        
+
         Returns:
             Optional[int]: The internal agency identifier used by the API,
                 or None if not available.
@@ -227,7 +228,7 @@ class Agency(LazyRecord):
     @property
     def icon_filename(self) -> Optional[str]:
         """Filename of the agency's icon/logo.
-        
+
         Returns:
             Optional[str]: The filename of the agency's icon or logo image,
                 or None if not available.
@@ -237,7 +238,7 @@ class Agency(LazyRecord):
     @property
     def mission(self) -> Optional[str]:
         """Agency mission statement.
-        
+
         Returns:
             Optional[str]: The official mission statement of the agency,
                 or None if not available.
@@ -247,7 +248,7 @@ class Agency(LazyRecord):
     @property
     def website(self) -> Optional[str]:
         """Agency website URL.
-        
+
         Returns:
             Optional[str]: The official website URL of the agency,
                 or None if not available.
@@ -257,7 +258,7 @@ class Agency(LazyRecord):
     @property
     def congressional_justification_url(self) -> Optional[str]:
         """URL to the agency's congressional justification.
-        
+
         Returns:
             Optional[str]: The URL to the agency's congressional justification document,
                 or None if not available.
@@ -267,7 +268,7 @@ class Agency(LazyRecord):
     @property
     def about_agency_data(self) -> Optional[str]:
         """Additional information about the agency's data.
-        
+
         Returns:
             Optional[str]: Descriptive text about the agency's data quality,
                 coverage, or other relevant information, or None if not available.
@@ -277,7 +278,7 @@ class Agency(LazyRecord):
     @property
     def subtier_agency_count(self) -> Optional[int]:
         """Number of subtier agencies under this agency.
-        
+
         Returns:
             Optional[int]: The total count of subtier agencies that report
                 to this toptier agency, or None if not available.
@@ -288,7 +289,7 @@ class Agency(LazyRecord):
     @property
     def messages(self) -> List[str]:
         """API messages related to this agency data.
-        
+
         Returns:
             List[str]: List of informational messages from the API
                 related to this agency's data. Empty list if no messages.
@@ -340,7 +341,7 @@ class Agency(LazyRecord):
     @property
     def has_agency_page(self) -> bool:
         """Whether this agency has a dedicated page on USASpending.gov.
-        
+
         Returns:
             bool: True if the agency has a dedicated profile page on USASpending.gov,
                 False otherwise.
@@ -350,7 +351,7 @@ class Agency(LazyRecord):
     @property
     def office_agency_name(self) -> Optional[str]:
         """Name of the specific office within the agency.
-        
+
         Returns:
             Optional[str]: The name of a specific office or division within
                 the agency, or None if not available.
@@ -360,7 +361,7 @@ class Agency(LazyRecord):
     @property
     def slug(self) -> Optional[str]:
         """URL slug for this agency.
-        
+
         Returns:
             Optional[str]: The URL-friendly slug identifier used in
                 USASpending.gov URLs for this agency, or None if not available.
@@ -370,7 +371,7 @@ class Agency(LazyRecord):
     @property
     def obligations(self) -> Optional[Decimal]:
         """Alias for total_obligations property.
-        
+
         Returns:
             Optional[Decimal]: The current fiscal year's total obligations
                 for this agency, or None if not available.
@@ -385,7 +386,7 @@ class Agency(LazyRecord):
     @cached_property
     def total_obligations(self) -> Optional[Decimal]:
         """Current fiscal year's total obligations made by this agency.
-        
+
         Returns:
             Optional[Decimal]: The total dollar amount of obligations
                 for the current fiscal year, or None if not available.
@@ -399,7 +400,7 @@ class Agency(LazyRecord):
     @cached_property
     def latest_action_date(self) -> Optional[date]:
         """Date of the most recent action for this agency's awards.
-        
+
         Returns:
             Optional[date]: The date of the most recent award action
                 associated with this agency, or None if not available.
@@ -418,7 +419,7 @@ class Agency(LazyRecord):
     @cached_property
     def transaction_count(self) -> Optional[int]:
         """Total transaction count for this agency across all awards.
-        
+
         Returns:
             Optional[int]: The total number of transactions associated
                 with all awards for this agency, or None if not available.
@@ -442,9 +443,7 @@ class Agency(LazyRecord):
                 where this agency is the top-tier awarding agency. Use this to
                 search and filter awards associated with this agency.
         """
-        return self._client.awards.search().for_agency(
-            self.name, "awarding", "toptier"
-        )
+        return self._client.awards.search().for_agency(self.name, "awarding", "toptier")
 
     @property
     def subagencies(self) -> List["SubTierAgency"]:
@@ -622,7 +621,7 @@ class Agency(LazyRecord):
 
     def __repr__(self) -> str:
         """String representation of Agency.
-        
+
         Returns:
             str: A string representation showing the agency code and name
                 in the format "<Agency CODE: NAME>".

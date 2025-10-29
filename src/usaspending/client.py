@@ -75,12 +75,12 @@ class USASpendingClient:
     def _format_error_with_context(self, error_msg: str) -> str:
         """Format error message with request count and session limit context."""
         context = f"(Request #{self._request_count} in session"
-        
+
         # Add warning if approaching session limit
         remaining = config.session_request_limit - self._request_count
         if remaining <= 10:
             context += f", {remaining} remaining before reset"
-        
+
         context += ")"
         return f"{error_msg} {context}"
 
@@ -101,7 +101,9 @@ class USASpendingClient:
         if self._retry_handler is None:
             from .utils.retry import RetryHandler
 
-            self._retry_handler = RetryHandler(session_reset_callback=self.reset_session)
+            self._retry_handler = RetryHandler(
+                session_reset_callback=self.reset_session
+            )
         return self._retry_handler
 
     @property
@@ -203,7 +205,7 @@ class USASpendingClient:
                     logger.warning(
                         f"Cache returned invalid data for {method} {endpoint}, falling back to uncached request"
                     )
-            
+
             # Fallback to uncached request if cache disabled or returned invalid data
             return self._make_uncached_request(
                 method, endpoint, params=params, json=json, **kwargs
@@ -266,7 +268,9 @@ class USASpendingClient:
         # Increment request counter and check for proactive session reset
         self._request_count += 1
         if self._request_count >= config.session_request_limit:
-            logger.info(f"Proactively resetting session after {self._request_count} requests")
+            logger.info(
+                f"Proactively resetting session after {self._request_count} requests"
+            )
             self.reset_session()
 
         # Build full URL
@@ -412,7 +416,9 @@ class USASpendingClient:
                     error_msg_with_context,
                 )
             else:
-                error_msg_with_context = self._format_error_with_context(f"Request failed before response: {e}")
+                error_msg_with_context = self._format_error_with_context(
+                    f"Request failed before response: {e}"
+                )
                 logger.error(error_msg_with_context)
             raise
 
@@ -484,17 +490,19 @@ class USASpendingClient:
 
     def close(self) -> None:
         """Close client and cleanup resources.
-        
+
         This method is idempotent and safe to call multiple times.
         """
         if not self._closed and self._session:
             self._session.close()
             self._closed = True
-            logger.info(f"USASpending client closed after {self._request_count} requests")
+            logger.info(
+                f"USASpending client closed after {self._request_count} requests"
+            )
 
     def reset_session(self) -> None:
         """Reset the HTTP session to handle server-side session limits.
-        
+
         This creates a new session with fresh connection pools, which can
         resolve issues where the server limits requests per session.
         The request counter is also reset.
@@ -508,10 +516,10 @@ class USASpendingClient:
 
     def __enter__(self) -> "USASpendingClient":
         """Enter context manager.
-        
+
         Returns:
             Self for use in with statement
-            
+
         Example:
             >>> with USASpendingClient() as client:
             ...     awards = client.awards.search().all()
@@ -520,21 +528,21 @@ class USASpendingClient:
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit context manager and cleanup resources.
-        
+
         Args:
             exc_type: Exception type if an exception occurred
-            exc_val: Exception value if an exception occurred  
+            exc_val: Exception value if an exception occurred
             exc_tb: Exception traceback if an exception occurred
         """
         self.close()
 
     def __del__(self) -> None:
         """Destructor to cleanup resources if not already closed.
-        
+
         Note: It's better to use the context manager or call close() explicitly.
         This is a safety net for cases where proper cleanup wasn't done.
         """
-        if not self._closed and hasattr(self, '_session') and self._session:
+        if not self._closed and hasattr(self, "_session") and self._session:
             logger.warning(
                 f"USASpendingClient session was not explicitly closed after {self._request_count} requests. "
                 "Consider using 'with USASpendingClient() as client:' or calling client.close()"

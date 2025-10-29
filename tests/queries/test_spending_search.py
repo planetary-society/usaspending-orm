@@ -8,7 +8,6 @@ import pytest
 from usaspending.queries.spending_search import SpendingSearch
 from usaspending.models.recipient_spending import RecipientSpending
 from usaspending.models.district_spending import DistrictSpending
-from usaspending.models.state_spending import StateSpending
 from usaspending.exceptions import ValidationError
 
 

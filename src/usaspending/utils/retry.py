@@ -56,7 +56,7 @@ class RetryHandler:
         self.base_delay = config.retry_delay
         self.backoff_factor = config.retry_backoff
         self.session_reset_callback = session_reset_callback
-        
+
         # Track consecutive 5XX errors for session reset logic
         self._consecutive_5xx_errors = 0
 
@@ -101,12 +101,17 @@ class RetryHandler:
                 # Track consecutive 5XX errors for session reset logic
                 if isinstance(e, HTTPError) and e.status_code >= 500:
                     self._consecutive_5xx_errors += 1
-                    logger.debug(f"Consecutive 5XX errors: {self._consecutive_5xx_errors}")
-                    
+                    logger.debug(
+                        f"Consecutive 5XX errors: {self._consecutive_5xx_errors}"
+                    )
+
                     # Check if we should reset session due to persistent 5XX errors
-                    if (self.session_reset_callback and 
-                        self._consecutive_5xx_errors >= config.session_reset_on_5xx_threshold and
-                        attempt < self.max_retries):  # Don't reset on final attempt
+                    if (
+                        self.session_reset_callback
+                        and self._consecutive_5xx_errors
+                        >= config.session_reset_on_5xx_threshold
+                        and attempt < self.max_retries
+                    ):  # Don't reset on final attempt
                         logger.warning(
                             f"Resetting session due to {self._consecutive_5xx_errors} consecutive 5XX errors "
                             f"(suggests server-side session exhaustion)"
@@ -121,7 +126,9 @@ class RetryHandler:
                 else:
                     # Reset counter for non-5XX errors
                     if self._consecutive_5xx_errors > 0:
-                        logger.debug(f"5XX error counter reset by {type(e).__name__} (was {self._consecutive_5xx_errors})")
+                        logger.debug(
+                            f"5XX error counter reset by {type(e).__name__} (was {self._consecutive_5xx_errors})"
+                        )
                     self._consecutive_5xx_errors = 0
 
                 # Don't retry on the last attempt
