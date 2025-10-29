@@ -1,18 +1,40 @@
 [project]
 name = "usaspending-orm"
-version = "0.5.1"
-description = ""
+version = "0.5.2"
+description = "A Python ORM wrapper for the USAspending.gov API with intuitive queries, automatic pagination, and smart caching"
 authors = [
-    {name = "Casey Dreier",email = "casey.dreier@planetary.org"}
+    {name = "Casey Dreier", email = "casey.dreier@planetary.org"}
 ]
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = [
-    "requests (>=2.32.4,<3.0.0)",
-    "cachier (>=4.1.0,<5.0.0)",
-    "titlecase (>=2.4.1,<3.0.0)",
-    "pyyaml (>=6.0.2,<7.0.0)"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = [
+    "usaspending", "federal-spending", "government-data",
+    "api-wrapper", "orm", "contracts", "grants"
 ]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "requests>=2.32.4,<3.0.0",
+    "cachier>=4.1.0,<5.0.0",
+    "titlecase>=2.4.1,<3.0.0",
+    "pyyaml>=6.0.2,<7.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/planetary-society/usaspending-orm"
+Repository = "https://github.com/planetary-society/usaspending-orm"
+Issues = "https://github.com/planetary-society/usaspending-orm/issues"
+Documentation = "https://github.com/planetary-society/usaspending-orm/blob/main/README.md"
 
 [tool.poetry]
 packages = [{include = "usaspending", from = "src"}]
