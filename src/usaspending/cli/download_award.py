@@ -14,7 +14,6 @@ if __name__ == "__main__":
 
 # Import necessary components from the library
 from usaspending.exceptions import DownloadError
-from usaspending.logging_config import USASpendingLogger
 from usaspending import USASpendingClient
 
 

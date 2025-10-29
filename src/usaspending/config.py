@@ -1,6 +1,5 @@
 from __future__ import annotations
 from datetime import timedelta
-from typing import Optional
 from usaspending.logging_config import USASpendingLogger
 from usaspending.exceptions import ConfigurationError
 import os

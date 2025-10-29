@@ -8,7 +8,6 @@ from .lazy_record import LazyRecord
 from .location import Location
 from ..utils.formatter import to_decimal, contracts_titlecase
 
-from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
