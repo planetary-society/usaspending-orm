@@ -1,11 +1,11 @@
 # usaspending/models/base_model.py
-from typing import Optional, Dict, Any, List, TYPE_CHECKING
+from typing import Optional, Dict, Any, List, Set, TYPE_CHECKING
 from weakref import ref
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
 
-from ..exceptions import ValidationError
+from ..exceptions import ValidationError, DetachedInstanceError
 
 
 class BaseModel:
@@ -98,6 +98,117 @@ class ClientAwareModel(BaseModel):
         self._client_ref = ref(client)  # Weak reference prevents circular refs
 
     @property
-    def _client(self) -> Optional["USASpendingClient"]:
-        """Get client instance if still alive."""
-        return self._client_ref() if self._client_ref else None
+    def _client(self) -> "USASpendingClient":
+        """Get client instance if still alive and usable.
+
+        Returns:
+            USASpendingClient: The client instance.
+
+        Raises:
+            DetachedInstanceError: If the client has been closed or garbage collected.
+        """
+        client = self._client_ref() if self._client_ref else None
+
+        if client is None:
+            raise DetachedInstanceError(
+                f"Cannot access {self.__class__.__name__} properties: "
+                "the USASpendingClient has been garbage collected. "
+                "Ensure the client remains in scope, or access all needed data "
+                "within the 'with USASpendingClient()' context block."
+            )
+
+        if hasattr(client, "_closed") and client._closed:
+            raise DetachedInstanceError(
+                f"Cannot access {self.__class__.__name__} properties: "
+                "the USASpendingClient session is closed. "
+                "Access all lazy-loaded properties within the 'with' block, "
+                "or use explicit cleanup (client.close()) only after you're done with the models."
+            )
+
+        return client
+
+    def reattach(
+        self,
+        client: "USASpendingClient",
+        recursive: bool = False,
+        _visited: Optional[Set[int]] = None,
+    ) -> None:
+        """Reattach this model to a new client session.
+
+        This method updates the model's client reference to point to a new
+        USASpendingClient, allowing you to use objects created in one session
+        within a different session context.
+
+        Args:
+            client: The new USASpendingClient to attach to.
+            recursive: If True, recursively reattach nested LazyRecord objects
+                      (e.g., award.recipient, award.awarding_agency). Default False.
+            _visited: Internal parameter for cycle detection. Do not pass manually.
+
+        Example:
+            >>> # Create objects in one session
+            >>> with USASpendingClient() as client:
+            ...     award = client.awards.find_by_award_id("123")
+            ...     # Session closes here
+            ...
+            >>> # Later, reattach to a new session
+            >>> with USASpendingClient() as new_client:
+            ...     award.reattach(new_client)
+            ...     print(award.subaward_count)  # Now works!
+            ...
+            >>> # Recursive reattach for nested objects
+            >>> with USASpendingClient() as new_client:
+            ...     award.reattach(new_client, recursive=True)
+            ...     # Now award.recipient and award.awarding_agency also reattached
+            ...     print(award.recipient.name)
+
+        Note:
+            QueryBuilder properties (like award.transactions) are not affected
+            by reattach. They create new query builders when accessed, which
+            automatically use the reattached client.
+
+        Raises:
+            DetachedInstanceError: If the provided client is closed.
+        """
+        # Validate that the new client is usable
+        if hasattr(client, "_closed") and client._closed:
+            raise DetachedInstanceError(
+                f"Cannot reattach {self.__class__.__name__} to a closed client. "
+                "Ensure the client is active (within a 'with' block or before close())."
+            )
+
+        # Update this model's client reference
+        self._client_ref = ref(client)
+
+        # Handle recursive reattachment if requested
+        if recursive:
+            # Import here to avoid circular dependency
+            from .lazy_record import LazyRecord
+
+            # Initialize visited set for cycle detection
+            if _visited is None:
+                _visited = set()
+
+            # Prevent infinite recursion on circular references
+            obj_id = id(self)
+            if obj_id in _visited:
+                return
+            _visited.add(obj_id)
+
+            # Find and reattach all LazyRecord properties
+            for attr_name in dir(self):
+                # Skip private attributes and methods
+                if attr_name.startswith("_"):
+                    continue
+
+                try:
+                    attr = getattr(self, attr_name)
+
+                    # Recursively reattach LazyRecord instances
+                    if isinstance(attr, LazyRecord):
+                        attr.reattach(client, recursive=True, _visited=_visited)
+
+                except (AttributeError, Exception):
+                    # Skip properties that raise errors during access
+                    # (e.g., properties that require API calls, methods, etc.)
+                    pass

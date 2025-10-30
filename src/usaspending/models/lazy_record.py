@@ -23,6 +23,26 @@ class LazyRecord(ClientAwareModel):
             self._data.update(new_data)
         self._details_fetched = True
 
+    def fetch_all_details(self) -> None:
+        """Eagerly fetch all lazy-loadable data for this model.
+
+        This method is useful when you need to access model properties outside
+        of the client context manager. Call this method before the client session
+        closes to ensure all data is fetched.
+
+        Example:
+            with USASpendingClient() as client:
+                awards = client.awards.search().limit(10).all()
+                for award in awards:
+                    award.fetch_all_details()  # Fetch all lazy data
+            # Now safe to use awards outside the context
+            print(awards[0].subaward_count)
+
+        Raises:
+            DetachedInstanceError: If the client session is already closed.
+        """
+        self._ensure_details()
+
     def _fetch_details(self) -> Optional[Dict[str, Any]]:
         """Override in subclasses."""
         raise NotImplementedError

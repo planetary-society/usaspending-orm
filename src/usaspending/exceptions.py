@@ -40,6 +40,22 @@ class ValidationError(USASpendingError):
     pass
 
 
+class DetachedInstanceError(USASpendingError):
+    """Raised when attempting to access lazy-loaded properties on a model whose client session is closed.
+
+    This error occurs when you try to access properties that require API calls
+    (lazy-loaded properties) on model instances after the USASpendingClient that
+    created them has been closed or garbage collected.
+
+    To avoid this error:
+    1. Access all needed properties within the client context manager
+    2. Use explicit client cleanup (client.close()) only after you're done with models
+    3. Call fetch_all_details() on models before the client context exits
+    """
+
+    pass
+
+
 class ConfigurationError(USASpendingError):
     """Raised when client configuration is invalid."""
 

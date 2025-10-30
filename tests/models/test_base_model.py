@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from usaspending.models.base_model import BaseModel
-from usaspending.exceptions import ValidationError
+from usaspending.models.base_model import BaseModel, ClientAwareModel
+from usaspending.exceptions import ValidationError, DetachedInstanceError
 
 
 class TestBaseModelGetValue:
@@ -354,3 +354,269 @@ class TestBaseModelValidation:
                 test_id, "Test", id_field="test_id", allow_string_id=True
             )
             assert result == {"test_id": test_id}
+
+
+class TestClientAwareModel:
+    """Test the ClientAwareModel class and DetachedInstanceError."""
+
+    def test_client_property_with_active_client(self):
+        """Test that _client property returns client when active."""
+        from unittest.mock import Mock
+
+        mock_client = Mock()
+        mock_client._closed = False
+
+        model = ClientAwareModel({"test": "data"}, mock_client)
+        assert model._client == mock_client
+
+    def test_client_property_raises_error_when_client_closed(self):
+        """Test that _client property raises DetachedInstanceError when client is closed."""
+        from unittest.mock import Mock
+
+        mock_client = Mock()
+        mock_client._closed = True
+
+        model = ClientAwareModel({"test": "data"}, mock_client)
+
+        with pytest.raises(
+            DetachedInstanceError,
+            match="the USASpendingClient session is closed",
+        ):
+            _ = model._client
+
+    def test_client_property_raises_error_when_client_garbage_collected(self):
+        """Test that _client property raises DetachedInstanceError when client is garbage collected."""
+        from unittest.mock import Mock
+
+        mock_client = Mock()
+        mock_client._closed = False
+
+        model = ClientAwareModel({"test": "data"}, mock_client)
+
+        # Delete the client to simulate garbage collection
+        del mock_client
+
+        with pytest.raises(
+            DetachedInstanceError,
+            match="the USASpendingClient has been garbage collected",
+        ):
+            _ = model._client
+
+    def test_error_message_includes_model_class_name(self):
+        """Test that DetachedInstanceError message includes the model class name."""
+        from unittest.mock import Mock
+
+        mock_client = Mock()
+        mock_client._closed = True
+
+        # Create a custom subclass to test class name in error
+        class CustomModel(ClientAwareModel):
+            pass
+
+        model = CustomModel({"test": "data"}, mock_client)
+
+        with pytest.raises(
+            DetachedInstanceError,
+            match="Cannot access CustomModel properties",
+        ):
+            _ = model._client
+
+    def test_error_message_provides_helpful_guidance(self):
+        """Test that DetachedInstanceError provides helpful guidance to users."""
+        from unittest.mock import Mock
+
+        mock_client = Mock()
+        mock_client._closed = True
+
+        model = ClientAwareModel({"test": "data"}, mock_client)
+
+        with pytest.raises(
+            DetachedInstanceError,
+            match="Access all lazy-loaded properties within the 'with' block",
+        ):
+            _ = model._client
+
+
+class TestReattachMethod:
+    """Test the reattach() method for ClientAwareModel."""
+
+    def test_reattach_updates_client_reference(self):
+        """Test that reattach() updates the client reference."""
+        from unittest.mock import Mock
+
+        mock_client1 = Mock()
+        mock_client1._closed = False
+
+        mock_client2 = Mock()
+        mock_client2._closed = False
+
+        model = ClientAwareModel({"test": "data"}, mock_client1)
+        assert model._client == mock_client1
+
+        # Reattach to new client
+        model.reattach(mock_client2)
+        assert model._client == mock_client2
+
+    def test_reattached_object_can_access_lazy_properties(self):
+        """Test that reattached objects can access lazy-loaded properties."""
+        from unittest.mock import Mock
+
+        # Create model with first client
+        mock_client1 = Mock()
+        mock_client1._closed = False
+        model = ClientAwareModel({"test": "data"}, mock_client1)
+
+        # Close first client
+        mock_client1._closed = True
+
+        # Reattach to new client
+        mock_client2 = Mock()
+        mock_client2._closed = False
+        model.reattach(mock_client2)
+
+        # Should now work
+        assert model._client == mock_client2
+
+    def test_reattach_with_closed_client_raises_error(self):
+        """Test that reattaching to a closed client raises DetachedInstanceError."""
+        from unittest.mock import Mock
+
+        mock_client1 = Mock()
+        mock_client1._closed = False
+
+        mock_client2 = Mock()
+        mock_client2._closed = True
+
+        model = ClientAwareModel({"test": "data"}, mock_client1)
+
+        with pytest.raises(
+            DetachedInstanceError,
+            match="Cannot reattach.*to a closed client",
+        ):
+            model.reattach(mock_client2)
+
+    def test_reattach_non_recursive_skips_nested_objects(self):
+        """Test that non-recursive reattach doesn't affect nested objects."""
+        from unittest.mock import Mock
+        from usaspending.models.lazy_record import LazyRecord
+
+        # Create nested LazyRecord
+        class TestLazyRecord(LazyRecord):
+            def _fetch_details(self):
+                return {}
+
+        mock_client1 = Mock()
+        mock_client1._closed = False
+
+        parent = ClientAwareModel({"test": "data"}, mock_client1)
+        child = TestLazyRecord({"child": "data"}, mock_client1)
+
+        # Manually set child as property (simulating relationship)
+        parent._child = child
+
+        # Reattach parent without recursive
+        mock_client2 = Mock()
+        mock_client2._closed = False
+        parent.reattach(mock_client2, recursive=False)
+
+        # Parent should be reattached
+        assert parent._client == mock_client2
+
+        # Child should still reference old client
+        assert child._client == mock_client1
+
+    def test_reattach_recursive_updates_nested_objects(self):
+        """Test that recursive reattach updates nested LazyRecord objects."""
+        from unittest.mock import Mock
+        from usaspending.models.lazy_record import LazyRecord
+
+        # Create nested LazyRecord
+        class TestLazyRecord(LazyRecord):
+            def _fetch_details(self):
+                return {}
+
+            @property
+            def nested_child(self):
+                """Property that returns a LazyRecord."""
+                return self._nested_child if hasattr(self, "_nested_child") else None
+
+        mock_client1 = Mock()
+        mock_client1._closed = False
+
+        parent = TestLazyRecord({"parent": "data"}, mock_client1)
+        child = TestLazyRecord({"child": "data"}, mock_client1)
+
+        # Set child as property
+        parent._nested_child = child
+
+        # Reattach with recursive=True
+        mock_client2 = Mock()
+        mock_client2._closed = False
+        parent.reattach(mock_client2, recursive=True)
+
+        # Both should be reattached
+        assert parent._client == mock_client2
+        assert child._client == mock_client2
+
+    def test_reattach_handles_circular_references(self):
+        """Test that reattach prevents infinite loops with circular references."""
+        from unittest.mock import Mock
+        from usaspending.models.lazy_record import LazyRecord
+
+        class TestLazyRecord(LazyRecord):
+            def _fetch_details(self):
+                return {}
+
+            @property
+            def parent(self):
+                return self._parent if hasattr(self, "_parent") else None
+
+        mock_client1 = Mock()
+        mock_client1._closed = False
+
+        # Create circular reference
+        obj1 = TestLazyRecord({"obj": "1"}, mock_client1)
+        obj2 = TestLazyRecord({"obj": "2"}, mock_client1)
+
+        obj1._parent = obj2
+        obj2._parent = obj1
+
+        # This should not cause infinite recursion
+        mock_client2 = Mock()
+        mock_client2._closed = False
+
+        # Should complete without hanging
+        obj1.reattach(mock_client2, recursive=True)
+
+        # Both should be reattached
+        assert obj1._client == mock_client2
+        assert obj2._client == mock_client2
+
+    def test_reattach_skips_non_lazyrecord_properties(self):
+        """Test that reattach only affects LazyRecord instances."""
+        from unittest.mock import Mock
+        from usaspending.models.base_model import BaseModel
+
+        mock_client1 = Mock()
+        mock_client1._closed = False
+
+        parent = ClientAwareModel({"test": "data"}, mock_client1)
+
+        # Add non-LazyRecord property
+        parent._regular_model = BaseModel({"regular": "data"})
+        parent._string_value = "test"
+        parent._int_value = 123
+
+        mock_client2 = Mock()
+        mock_client2._closed = False
+
+        # Recursive reattach should not affect non-LazyRecord properties
+        parent.reattach(mock_client2, recursive=True)
+
+        # Parent reattached
+        assert parent._client == mock_client2
+
+        # Other properties unchanged
+        assert parent._regular_model._data == {"regular": "data"}
+        assert parent._string_value == "test"
+        assert parent._int_value == 123

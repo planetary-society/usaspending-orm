@@ -120,3 +120,49 @@ class TestIDVLazyLoading(BaseTestAwardLazyLoading):
 
     SEARCH_RESULT_FIXTURE_NAME = "search_results_idvs_data"
     DETAIL_FIXTURE_NAME = "idv_fixture_data"
+
+
+class TestFetchAllDetails:
+    """Test the fetch_all_details() method for eager loading."""
+
+    @pytest.fixture
+    def award_with_mock_fetch(self, mock_usa_client, search_results_contracts_data):
+        """Create an Award with a mocked _fetch_details method."""
+        award = Award(search_results_contracts_data[0], mock_usa_client)
+        award._fetch_details = Mock(return_value={"extra": "data"})
+        return award
+
+    def test_fetch_all_details_calls_ensure_details(
+        self, award_with_mock_fetch
+    ):
+        """Test that fetch_all_details() triggers lazy loading."""
+        assert not award_with_mock_fetch._details_fetched
+
+        award_with_mock_fetch.fetch_all_details()
+
+        assert award_with_mock_fetch._details_fetched
+        award_with_mock_fetch._fetch_details.assert_called_once()
+
+    def test_fetch_all_details_idempotent(self, award_with_mock_fetch):
+        """Test that calling fetch_all_details() multiple times is safe."""
+        award_with_mock_fetch.fetch_all_details()
+        award_with_mock_fetch.fetch_all_details()
+        award_with_mock_fetch.fetch_all_details()
+
+        # Should only fetch once
+        award_with_mock_fetch._fetch_details.assert_called_once()
+
+    def test_fetch_all_details_updates_data(
+        self, mock_usa_client, search_results_contracts_data
+    ):
+        """Test that fetch_all_details() updates model data."""
+        award = Award(search_results_contracts_data[0], mock_usa_client)
+        award._fetch_details = Mock(return_value={"new_field": "new_value"})
+
+        initial_keys = set(award._data.keys())
+        award.fetch_all_details()
+
+        assert "new_field" in award._data
+        assert award._data["new_field"] == "new_value"
+        # Original keys should still be present
+        assert all(key in award._data for key in initial_keys)

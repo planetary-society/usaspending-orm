@@ -530,6 +530,7 @@ class TestLazyLoadingFixes:
     def setup_method(self):
         """Set up test client and mocks."""
         self.mock_client = Mock()
+        self.mock_client._closed = False  # Mark client as open for lazy loading
         self.mock_client._make_request.return_value = {
             "name": "Full Recipient Data",
             "recipient_id": "test-123",
@@ -597,6 +598,7 @@ class TestRecipientSpendingIntegration:
     def test_recipient_spending_from_spending_query_data(self):
         """Test creating RecipientSpending from spending query results."""
         mock_client = Mock()
+        mock_client._closed = False  # Mark client as open for lazy loading
         mock_client._make_request.return_value = {
             "name": "ASSOCIATION OF UNIVERSITIES FOR RESEARCH IN ASTRONOMY, INC.",
             "recipient_id": "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C",
@@ -685,6 +687,7 @@ class TestCircularReferenceProtection:
                 return {"name": "Unknown", "recipient_id": "unknown", "parents": []}
 
         mock_client = Mock()
+        mock_client._closed = False  # Mark client as open for lazy loading
         mock_client._make_request.side_effect = mock_make_request
 
         # Create recipient A
