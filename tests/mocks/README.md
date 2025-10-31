@@ -95,15 +95,15 @@ def test_pagination(mock_usa_client):
     # Create 250 awards, auto-paginated at 100 per page
     awards = [{"Award ID": f"AWD-{i}"} for i in range(250)]
     mock_usa_client.set_paginated_response(
-        "/v2/search/spending_by_award/",
+        "/search/spending_by_award/",
         awards,
         page_size=100
     )
-    
+
     results = list(mock_usa_client.awards.search().award_type_codes("A"))
-    
+
     assert len(results) == 250
-    assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 3
+    assert mock_usa_client.get_request_count("/search/spending_by_award/") == 3
 ```
 
 ### Error Simulation
@@ -111,14 +111,14 @@ def test_pagination(mock_usa_client):
 ```python
 def test_api_error(mock_usa_client):
     mock_usa_client.set_error_response(
-        "/v2/search/spending_by_award/",
+        "/search/spending_by_award/",
         error_code=400,
         detail="Invalid award type: X"
     )
-    
+
     with pytest.raises(APIError) as exc_info:
         list(mock_usa_client.awards.search().award_type_codes("X"))
-    
+
     assert exc_info.value.status_code == 400
     assert "Invalid award type" in str(exc_info.value)
 ```
@@ -129,10 +129,10 @@ def test_api_error(mock_usa_client):
 def test_with_fixture(mock_usa_client):
     # Load from tests/fixtures/awards
     mock_usa_client.set_fixture_response(
-        "/v2/awards/CONT_AWD_123/",
+        "/awards/CONT_AWD_123/",
         "award"
     )
-    
+
     award = mock_usa_client.awards.find_by_generated_id("CONT_AWD_123")
     assert award.recipient.name == "The University of Iowa"  # From fixture
 ```
@@ -158,7 +158,7 @@ def test_request_tracking(mock_usa_client):
     
     # Or use assertion helper
     mock_usa_client.assert_called_with(
-        "/v2/search/spending_by_award/",
+        "/search/spending_by_award/",
         method="POST"
     )
 ```
@@ -172,33 +172,81 @@ def test_award_counts(mock_usa_client):
         grants=300,
         loans=25
     )
-    
+
     assert mock_usa_client.awards.search().contracts().count() == 150
     assert mock_usa_client.awards.search().grants().count() == 300
     assert mock_usa_client.awards.search().loans().count() == 25
+```
+
+### Rate Limiting Simulation
+
+```python
+def test_rate_limiting(mock_usa_client):
+    # Enable rate limiting with 0.1 second delay between requests
+    mock_usa_client.simulate_rate_limit(delay=0.1)
+
+    mock_usa_client.mock_award_search([
+        {"Award ID": "1"},
+        {"Award ID": "2"}
+    ])
+
+    import time
+    start = time.time()
+
+    # This will make 2 requests (count + search)
+    results = list(mock_usa_client.awards.search().award_type_codes("A"))
+
+    elapsed = time.time() - start
+
+    # Should take at least 0.1 seconds due to rate limiting
+    assert elapsed >= 0.1
+    assert len(results) == 2
+
+    # Disable rate limiting
+    mock_usa_client.disable_rate_limit()
 ```
 
 ## Available Methods
 
 ### MockUSASpendingClient
 
+#### Response Setup Methods
 - `set_response(endpoint, response_data, status_code=200)`: Set single response
 - `set_paginated_response(endpoint, items, page_size=100)`: Auto-paginate items
 - `set_fixture_response(endpoint, fixture_name)`: Load from fixture file
 - `set_error_response(endpoint, error_code, error_message, detail)`: Simulate errors
 - `add_response_sequence(endpoint, responses)`: Multiple responses in sequence
+
+#### Convenience Mock Methods
 - `mock_award_search(awards, page_size=100)`: Convenience for award search
 - `mock_award_count(**counts)`: Convenience for award counts
 - `mock_award_detail(award_id, **data)`: Convenience for award detail
+- `mock_transactions_for_award(award_id, fixture_name, transactions)`: Mock transactions for an award
+- `mock_recipient_search(recipients, page_size=50)`: Convenience for recipient search
+- `mock_recipient_count(count)`: Convenience for recipient counts
+- `mock_download_queue(download_type, award_id, response_data)`: Mock download queue response
+- `mock_download_status(file_name, status, custom_data)`: Mock download status response
+
+#### Request Tracking
 - `get_request_count(endpoint=None)`: Get number of requests made
 - `get_last_request(endpoint=None)`: Get last request data
 - `assert_called_with(endpoint, method, json, params)`: Assert specific request
+
+#### Rate Limiting Simulation
+- `simulate_rate_limit(delay=0.1)`: Enable rate limiting with delay between requests
+- `disable_rate_limit()`: Disable rate limiting simulation
+
+#### Utility Methods
 - `reset()`: Clear all mock state
+
+#### Endpoint Constants
+- `Endpoints` class: Contains constants for all API endpoints (e.g., `MockUSASpendingClient.Endpoints.AWARD_SEARCH`)
 
 ### ResponseBuilder
 
 - `paginated_response(results, page, has_next, total)`: Build paginated response
 - `award_search_response(awards, page, has_next)`: Build award search response
+- `transaction_response(transactions, page, has_next)`: Build transaction response
 - `count_response(**counts)`: Build count response
 - `error_response(status_code, detail, error)`: Build error response
 - `award_detail_response(award_id, **data)`: Build award detail response
@@ -232,7 +280,6 @@ python -m pytest tests/test_mock_client_example.py -v
 - `mock_client.py`: Main `MockUSASpendingClient` class
 - `response_builder.py`: Helper class for building API responses
 - `test_mock_client.py`: Tests for the mock client implementation
-- `migration_example.py`: Side-by-side comparison of old vs new patterns
 - `README.md`: This documentation file
 
 ## Quick Start
