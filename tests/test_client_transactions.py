@@ -17,7 +17,7 @@ class TestClientTransactionsIntegration:
         assert transactions.__class__.__name__ == "TransactionsResource"
 
     def test_transactions_for_award_integration(self, mock_usa_client):
-        query = mock_usa_client.transactions.for_award("CONT_AWD_123")
+        query = mock_usa_client.transactions.award_id("CONT_AWD_123")
 
         assert query.__class__.__name__ == "TransactionsSearch"
         assert query._award_id == "CONT_AWD_123"

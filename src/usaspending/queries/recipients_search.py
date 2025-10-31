@@ -120,7 +120,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
     # Filter Methods
     # ==========================================================================
 
-    def with_keyword(self, keyword: str) -> RecipientsSearch:
+    def keyword(self, keyword: str) -> RecipientsSearch:
         """
         Filter by recipient name, UEI, or DUNS keyword.
 
@@ -134,7 +134,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
         clone._keyword = keyword.strip() if keyword else None
         return clone
 
-    def with_award_type(self, award_type: AwardType) -> RecipientsSearch:
+    def award_type(self, award_type: AwardType) -> RecipientsSearch:
         """
         Filter by award type.
 

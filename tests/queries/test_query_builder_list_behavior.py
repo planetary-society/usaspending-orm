@@ -10,7 +10,7 @@ from tests.mocks.mock_client import MockUSASpendingClient
 @pytest.fixture
 def awards_search(mock_usa_client):
     """Create an AwardsSearch instance with a mock client."""
-    return AwardsSearch(mock_usa_client).with_award_types("A")
+    return AwardsSearch(mock_usa_client).award_type_codes("A")
 
 
 class TestLenMethod:
@@ -47,7 +47,7 @@ class TestLenMethod:
             MockUSASpendingClient.Endpoints.AWARD_COUNT, {"results": {"contracts": 15}}
         )
 
-        filtered_search = awards_search.for_agency("DOD")
+        filtered_search = awards_search.agency("DOD")
         assert len(filtered_search) == 15
 
 
@@ -274,7 +274,7 @@ class TestIntegration:
             },
         )
 
-        filtered = awards_search.for_agency("DOD")
+        filtered = awards_search.agency("DOD")
 
         # Test len()
         assert len(filtered) == 50

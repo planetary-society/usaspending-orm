@@ -18,7 +18,7 @@ class TransactionsResource(BaseResource):
     Provides access to transaction search and retrieval endpoints.
     """
 
-    def for_award(self, award_id: str) -> "TransactionsSearch":
+    def award_id(self, award_id: str) -> "TransactionsSearch":
         """Create a transactions search query for a specific award.
 
         Args:
@@ -28,7 +28,7 @@ class TransactionsResource(BaseResource):
             TransactionsSearch query builder for chaining filters
 
         Example:
-            >>> transactions = client.transactions.for_award("CONT_AWD_123")
+            >>> transactions = client.transactions.award_id("CONT_AWD_123")
             ...     .limit(50)
             >>> for txn in transactions:
             ...     print(f"{txn.action_date}: ${txn.federal_action_obligation:,.2f}")
@@ -36,4 +36,4 @@ class TransactionsResource(BaseResource):
         logger.debug(f"Creating transactions search for award: {award_id}")
         from ..queries.transactions_search import TransactionsSearch
 
-        return TransactionsSearch(self._client).for_award(award_id)
+        return TransactionsSearch(self._client).award_id(award_id)

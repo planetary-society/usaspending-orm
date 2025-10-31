@@ -59,7 +59,7 @@ def mock_usa_client():
                 {"Award ID": "123", "Recipient Name": "Test Corp"}
             ])
 
-            results = list(mock_usa_client.awards.search().with_award_types("A"))
+            results = list(mock_usa_client.awards.search().award_type_codes("A"))
             assert len(results) == 1
     """
     client = MockUSASpendingClient()

@@ -24,7 +24,7 @@ class TestSubAwardsResource:
         """Test that for_award creates a SubAwardsSearch with award_id set."""
         resource = SubAwardsResource(mock_usa_client)
 
-        query = resource.for_award("CONT_AWD_123")
+        query = resource.award_id("CONT_AWD_123")
 
         # Should return a SubAwardsSearch instance with award_id set
         assert query.__class__.__name__ == "SubAwardsSearch"
@@ -35,7 +35,7 @@ class TestSubAwardsResource:
         """Test that for_award strips whitespace from award_id."""
         resource = SubAwardsResource(mock_usa_client)
 
-        query = resource.for_award("  CONT_AWD_123  ")
+        query = resource.award_id("  CONT_AWD_123  ")
 
         assert query._award_id == "CONT_AWD_123"
 
@@ -46,7 +46,7 @@ class TestSubAwardsResource:
         resource = SubAwardsResource(mock_usa_client)
 
         with pytest.raises(ValidationError, match="award_id cannot be empty"):
-            resource.for_award("")
+            resource.award_id("")
 
     def test_subawards_query_has_required_methods(self, mock_usa_client):
         """Test that the returned query builder has expected methods."""
@@ -78,8 +78,8 @@ class TestSubAwardsResource:
 
         query = (
             resource.search()
-            .with_award_types("A", "B", "C")
-            .for_award("CONT_AWD_123")
+            .award_type_codes("A", "B", "C")
+            .award_id("CONT_AWD_123")
             .limit(10)
             .page_size(25)
         )
@@ -89,14 +89,14 @@ class TestSubAwardsResource:
         assert query._page_size == 25
 
     def test_for_award_convenience_method(self, mock_usa_client):
-        """Test that for_award is equivalent to search().for_award()."""
+        """Test that for_award is equivalent to search().award_id()."""
         resource = SubAwardsResource(mock_usa_client)
 
         # Using convenience method
-        query1 = resource.for_award("CONT_AWD_123")
+        query1 = resource.award_id("CONT_AWD_123")
 
         # Using chained method
-        query2 = resource.search().for_award("CONT_AWD_123")
+        query2 = resource.search().award_id("CONT_AWD_123")
 
         # Both should have the same award_id set
         assert query1._award_id == "CONT_AWD_123"

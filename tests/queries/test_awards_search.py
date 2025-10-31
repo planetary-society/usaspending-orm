@@ -62,7 +62,7 @@ class TestFilterMethods:
 
     def test_with_keywords(self, awards_search):
         """Test the with_keywords filter method."""
-        result = awards_search.with_keywords("NASA", "space", "research")
+        result = awards_search.keywords("NASA", "space", "research")
 
         # Should return new instance
         assert result is not awards_search
@@ -78,7 +78,7 @@ class TestFilterMethods:
         start = datetime.date(2024, 1, 1)
         end = datetime.date(2024, 12, 31)
 
-        result = awards_search.in_time_period(
+        result = awards_search.time_period(
             start_date=start, end_date=end, date_type="action_date"
         )
 
@@ -101,7 +101,7 @@ class TestFilterMethods:
         start = datetime.date(2024, 1, 1)
         end = datetime.date(2024, 12, 31)
 
-        result = awards_search.in_time_period(
+        result = awards_search.time_period(
             start_date=start, end_date=end, new_awards_only=True
         )
 
@@ -121,7 +121,7 @@ class TestFilterMethods:
 
     def test_in_time_period_with_string_dates(self, awards_search):
         """Test the in_time_period filter method with string dates."""
-        result = awards_search.in_time_period(
+        result = awards_search.time_period(
             start_date="2024-01-01",
             end_date="2024-12-31",
             date_type="action_date",
@@ -145,7 +145,7 @@ class TestFilterMethods:
         """Test the in_time_period filter method with mixed date types."""
         start = datetime.date(2024, 1, 1)
 
-        result = awards_search.in_time_period(
+        result = awards_search.time_period(
             start_date=start, end_date="2024-12-31", date_type="action_date"
         )
 
@@ -169,23 +169,23 @@ class TestFilterMethods:
             ValidationError,
             match="Invalid start_date format: '01-01-2024'. Expected 'YYYY-MM-DD'.",
         ):
-            awards_search.in_time_period(start_date="01-01-2024", end_date="2024-12-31")
+            awards_search.time_period(start_date="01-01-2024", end_date="2024-12-31")
 
         with pytest.raises(
             ValidationError,
             match="Invalid end_date format: '2024/12/31'. Expected 'YYYY-MM-DD'.",
         ):
-            awards_search.in_time_period(start_date="2024-01-01", end_date="2024/12/31")
+            awards_search.time_period(start_date="2024-01-01", end_date="2024/12/31")
 
         with pytest.raises(
             ValidationError,
             match="Invalid start_date format: 'invalid'. Expected 'YYYY-MM-DD'.",
         ):
-            awards_search.in_time_period(start_date="invalid", end_date="2024-12-31")
+            awards_search.time_period(start_date="invalid", end_date="2024-12-31")
 
     def test_for_fiscal_year(self, awards_search):
         """Test the for_fiscal_year filter method."""
-        result = awards_search.for_fiscal_year(2024)
+        result = awards_search.fiscal_year(2024)
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -197,7 +197,7 @@ class TestFilterMethods:
 
     def test_for_fiscal_year_new_awards_only_convenience_parameter(self, awards_search):
         """Test the for_fiscal_year filter method."""
-        result = awards_search.for_fiscal_year(year=2024, new_awards_only=True)
+        result = awards_search.fiscal_year(year=2024, new_awards_only=True)
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -215,7 +215,7 @@ class TestFilterMethods:
 
     def test_with_place_of_performance_scope(self, awards_search):
         """Test the with_place_of_performance_scope filter method."""
-        result = awards_search.with_place_of_performance_scope("domestic")
+        result = awards_search.place_of_performance_scope("domestic")
 
         assert len(result._filter_objects) == 1
         # The LocationScopeFilter stores the key as instance attribute
@@ -231,7 +231,7 @@ class TestFilterMethods:
         loc1 = {"country_code": "USA", "state_code": "CA", "city_name": "Los Angeles"}
         loc2 = {"country_code": "USA", "state_code": "TX"}
 
-        result = awards_search.with_place_of_performance_locations(loc1, loc2)
+        result = awards_search.place_of_performance_locations(loc1, loc2)
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -242,9 +242,9 @@ class TestFilterMethods:
             ]
         }
 
-    def test_for_agency(self, awards_search):
+    def test_agency(self, awards_search):
         """Test the for_agency filter method."""
-        result = awards_search.for_agency(
+        result = awards_search.agency(
             "NASA", agency_type="awarding", tier="toptier"
         )
 
@@ -256,7 +256,7 @@ class TestFilterMethods:
 
     def test_with_recipient_search_text(self, awards_search):
         """Test the with_recipient_search_text filter method."""
-        result = awards_search.with_recipient_search_text("SpaceX", "123456789")
+        result = awards_search.recipient_search_text("SpaceX", "123456789")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -264,7 +264,7 @@ class TestFilterMethods:
 
     def test_with_recipient_scope(self, awards_search):
         """Test the with_recipient_scope filter method."""
-        result = awards_search.with_recipient_scope("foreign")
+        result = awards_search.recipient_scope("foreign")
 
         assert len(result._filter_objects) == 1
         # The LocationScopeFilter stores the key as instance attribute
@@ -279,7 +279,7 @@ class TestFilterMethods:
         """Test the with_recipient_locations filter method."""
         loc = {"country_code": "CAN", "state_code": "ON", "city_name": "Toronto"}
 
-        result = awards_search.with_recipient_locations(loc)
+        result = awards_search.recipient_locations(loc)
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -291,7 +291,7 @@ class TestFilterMethods:
 
     def test_with_recipient_types(self, awards_search):
         """Test the with_recipient_types filter method."""
-        result = awards_search.with_recipient_types("small_business", "minority_owned")
+        result = awards_search.recipient_type_names("small_business", "minority_owned")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -301,15 +301,15 @@ class TestFilterMethods:
 
     def test_with_award_types(self, awards_search):
         """Test the with_award_types filter method."""
-        result = awards_search.with_award_types("A", "B", "C")
+        result = awards_search.award_type_codes("A", "B", "C")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
         assert filter_dict == {"award_type_codes": ["A", "B", "C"]}
 
-    def test_with_award_ids(self, awards_search):
+    def test_award_ids(self, awards_search):
         """Test the with_award_ids filter method."""
-        result = awards_search.with_award_ids("AWARD123", "AWARD456")
+        result = awards_search.award_ids("AWARD123", "AWARD456")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -320,7 +320,7 @@ class TestFilterMethods:
         amount1 = {"lower_bound": 1000000, "upper_bound": 5000000}
         amount2 = {"lower_bound": 10000000}
 
-        result = awards_search.with_award_amounts(amount1, amount2)
+        result = awards_search.award_amounts(amount1, amount2)
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -333,7 +333,7 @@ class TestFilterMethods:
 
     def test_with_cfda_numbers(self, awards_search):
         """Test the with_cfda_numbers filter method."""
-        result = awards_search.with_cfda_numbers("43.001", "43.002")
+        result = awards_search.program_numbers("43.001", "43.002")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -341,7 +341,7 @@ class TestFilterMethods:
 
     def test_with_naics_codes(self, awards_search):
         """Test the with_naics_codes filter method."""
-        result = awards_search.with_naics_codes(
+        result = awards_search.naics_codes(
             require=["541511", "541512"], exclude=["541519"]
         )
 
@@ -356,7 +356,7 @@ class TestFilterMethods:
 
     def test_with_psc_codes(self, awards_search):
         """Test the with_psc_codes filter method."""
-        result = awards_search.with_psc_codes(
+        result = awards_search.psc_codes(
             require=[["R", "R4"], ["70"]], exclude=[["R", "R499"]]
         )
 
@@ -368,7 +368,7 @@ class TestFilterMethods:
 
     def test_with_contract_pricing_types(self, awards_search):
         """Test the with_contract_pricing_types filter method."""
-        result = awards_search.with_contract_pricing_types("J", "K")
+        result = awards_search.contract_pricing_type_codes("J", "K")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -376,7 +376,7 @@ class TestFilterMethods:
 
     def test_with_set_aside_types(self, awards_search):
         """Test the with_set_aside_types filter method."""
-        result = awards_search.with_set_aside_types("SBA", "8A")
+        result = awards_search.set_aside_type_codes("SBA", "8A")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -384,7 +384,7 @@ class TestFilterMethods:
 
     def test_with_extent_competed_types(self, awards_search):
         """Test the with_extent_competed_types filter method."""
-        result = awards_search.with_extent_competed_types("A", "B")
+        result = awards_search.extent_competed_type_codes("A", "B")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -392,7 +392,7 @@ class TestFilterMethods:
 
     def test_with_tas_codes(self, awards_search):
         """Test the with_tas_codes filter method."""
-        result = awards_search.with_tas_codes(
+        result = awards_search.tas_codes(
             require=[["080", "2022"], ["080", "2023"]], exclude=[["080", "2021"]]
         )
 
@@ -409,7 +409,7 @@ class TestFilterMethods:
         """Test the with_treasury_account_components filter method."""
         components = [{"aid": "080", "main": "0126"}, {"aid": "080", "main": "0130"}]
 
-        result = awards_search.with_treasury_account_components(*components)
+        result = awards_search.treasury_account_components(*components)
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -422,7 +422,7 @@ class TestFilterMethods:
 
     def test_with_def_codes(self, awards_search):
         """Test the with_def_codes filter method."""
-        result = awards_search.with_def_codes("L", "M", "N")
+        result = awards_search.def_codes("L", "M", "N")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -431,10 +431,10 @@ class TestFilterMethods:
     def test_method_chaining(self, awards_search):
         """Test that multiple filters can be chained together."""
         result = (
-            awards_search.with_keywords("NASA")
-            .for_fiscal_year(2024)
-            .with_award_types("A", "B")
-            .for_agency("NASA")
+            awards_search.keywords("NASA")
+            .fiscal_year(2024)
+            .award_type_codes("A", "B")
+            .agency("NASA")
         )
 
         assert len(result._filter_objects) == 4
@@ -447,7 +447,7 @@ class TestPayloadBuilding:
 
     def test_build_payload_basic(self, awards_search):
         """Test basic payload building with required filters."""
-        search = awards_search.with_award_types("A", "B")
+        search = awards_search.award_type_codes("A", "B")
 
         payload = search._build_payload(page=1)
 
@@ -463,9 +463,9 @@ class TestPayloadBuilding:
     def test_build_payload_multiple_filters(self, awards_search):
         """Test payload building with multiple filters."""
         search = (
-            awards_search.with_award_types("A")
-            .with_keywords("test")
-            .for_fiscal_year(2024)
+            awards_search.award_type_codes("A")
+            .keywords("test")
+            .fiscal_year(2024)
         )
 
         payload = search._build_payload(page=2)
@@ -477,7 +477,7 @@ class TestPayloadBuilding:
 
     def test_build_payload_missing_required_filter(self, awards_search):
         """Test that missing award_type_codes raises ValidationError."""
-        search = awards_search.with_keywords("test")
+        search = awards_search.keywords("test")
 
         with pytest.raises(ValidationError) as exc_info:
             search._build_payload(page=1)
@@ -487,9 +487,9 @@ class TestPayloadBuilding:
     def test_build_payload_aggregates_agency_filters(self, awards_search):
         """Test that multiple agency filters are aggregated into a single list."""
         search = (
-            awards_search.with_award_types("A")
-            .for_agency("NASA", "awarding")
-            .for_agency("DOD", "funding")
+            awards_search.award_type_codes("A")
+            .agency("NASA", "awarding")
+            .agency("DOD", "funding")
         )
 
         payload = search._build_payload(page=1)
@@ -500,7 +500,7 @@ class TestPayloadBuilding:
 
     def test_build_payload_custom_page_size(self, awards_search):
         """Test payload with custom page size."""
-        search = awards_search.with_award_types("A").page_size(50)
+        search = awards_search.award_type_codes("A").page_size(50)
 
         payload = search._build_payload(page=1)
 
@@ -508,7 +508,7 @@ class TestPayloadBuilding:
 
     def test_contract_fields_included(self, awards_search):
         """Test that contract-specific fields are included for contract types."""
-        search = awards_search.with_award_types("A", "B")
+        search = awards_search.award_type_codes("A", "B")
 
         fields = search._get_fields()
 
@@ -523,7 +523,7 @@ class TestPayloadBuilding:
 
     def test_idv_fields_included(self, awards_search):
         """Test that IDV-specific fields are included for IDV types."""
-        search = awards_search.with_award_types("IDV_A", "IDV_B")
+        search = awards_search.award_type_codes("IDV_A", "IDV_B")
 
         fields = search._get_fields()
 
@@ -539,7 +539,7 @@ class TestPayloadBuilding:
 
     def test_loan_fields_included(self, awards_search):
         """Test that loan-specific fields are included for loan types."""
-        search = awards_search.with_award_types("07", "08")
+        search = awards_search.award_type_codes("07", "08")
 
         fields = search._get_fields()
 
@@ -554,7 +554,7 @@ class TestPayloadBuilding:
 
     def test_assistance_fields_included(self, awards_search):
         """Test that assistance-specific fields are included for assistance types."""
-        search = awards_search.with_award_types("02", "03", "04")
+        search = awards_search.award_type_codes("02", "03", "04")
 
         fields = search._get_fields()
 
@@ -575,7 +575,7 @@ class TestPayloadBuilding:
         with pytest.raises(
             ValidationError, match="Cannot mix different award type categories"
         ):
-            awards_search.with_award_types("A", "07")  # Contract + Loan
+            awards_search.award_type_codes("A", "07")  # Contract + Loan
 
     def test_no_award_types_base_fields_only(self, awards_search):
         """Test that only base fields are returned when no award types specified."""
@@ -598,7 +598,7 @@ class TestOrderByFunctionality:
 
     def test_order_by_included_in_payload(self, awards_search):
         """Test that sort and order parameters are included in payload when order_by is used."""
-        search = awards_search.with_award_types("A", "B").order_by(
+        search = awards_search.award_type_codes("A", "B").order_by(
             "Award Amount", "desc"
         )
 
@@ -611,7 +611,7 @@ class TestOrderByFunctionality:
 
     def test_order_by_ascending(self, awards_search):
         """Test order_by with ascending direction."""
-        search = awards_search.with_award_types("A").order_by("Award ID", "asc")
+        search = awards_search.award_type_codes("A").order_by("Award ID", "asc")
 
         payload = search._build_payload(page=1)
 
@@ -620,7 +620,7 @@ class TestOrderByFunctionality:
 
     def test_order_by_default_direction(self, awards_search):
         """Test order_by defaults to descending when direction not specified."""
-        search = awards_search.with_award_types("A").order_by("Recipient Name")
+        search = awards_search.award_type_codes("A").order_by("Recipient Name")
 
         payload = search._build_payload(page=1)
 
@@ -629,7 +629,7 @@ class TestOrderByFunctionality:
 
     def test_no_order_by_no_sort_params(self, awards_search):
         """Test that sort and order are not in payload when order_by is not used."""
-        search = awards_search.with_award_types("A", "B")
+        search = awards_search.award_type_codes("A", "B")
 
         payload = search._build_payload(page=1)
 
@@ -638,7 +638,7 @@ class TestOrderByFunctionality:
 
     def test_order_by_invalid_field_raises_error(self, awards_search):
         """Test that order_by raises ValidationError for invalid field names."""
-        search = awards_search.with_award_types("A")
+        search = awards_search.award_type_codes("A")
 
         with pytest.raises(ValidationError) as exc_info:
             search.order_by("invalid_field_name")
@@ -745,9 +745,9 @@ class TestOrderByFunctionality:
     def test_order_by_chaining(self, awards_search):
         """Test that order_by can be chained with other methods."""
         search = (
-            awards_search.for_agency("NASA")
+            awards_search.agency("NASA")
             .contracts()
-            .for_fiscal_year(2024)
+            .fiscal_year(2024)
             .order_by("Award Amount", "desc")
             .limit(10)
         )
@@ -843,7 +843,7 @@ class TestAwardTypeValidation:
 
     def test_single_category_contracts_allowed(self, awards_search):
         """Test that multiple codes within contract category are allowed."""
-        search = awards_search.with_award_types("A", "B", "C")
+        search = awards_search.award_type_codes("A", "B", "C")
 
         # Should not raise an error
         award_types = search._get_award_type_codes()
@@ -851,7 +851,7 @@ class TestAwardTypeValidation:
 
     def test_single_category_grants_allowed(self, awards_search):
         """Test that multiple codes within grant category are allowed."""
-        search = awards_search.with_award_types("02", "03", "04")
+        search = awards_search.award_type_codes("02", "03", "04")
 
         # Should not raise an error
         award_types = search._get_award_type_codes()
@@ -862,14 +862,14 @@ class TestAwardTypeValidation:
         with pytest.raises(
             ValidationError, match="Cannot mix different award type categories"
         ):
-            awards_search.with_award_types("A", "07")
+            awards_search.award_type_codes("A", "07")
 
     def test_mixing_idvs_and_grants_forbidden(self, awards_search):
         """Test that mixing IDVs and grants raises ValidationError."""
         with pytest.raises(
             ValidationError, match="Cannot mix different award type categories"
         ):
-            awards_search.with_award_types("IDV_A", "02")
+            awards_search.award_type_codes("IDV_A", "02")
 
     def test_chaining_different_categories_forbidden(self, awards_search):
         """Test that chaining different categories is forbidden."""
@@ -880,7 +880,7 @@ class TestAwardTypeValidation:
         with pytest.raises(
             ValidationError, match="Cannot mix different award type categories"
         ):
-            search.with_award_types("07")
+            search.award_type_codes("07")
 
     def test_helper_methods_cannot_be_mixed(self, awards_search):
         """Test that helper methods cannot be chained with different types."""
@@ -896,10 +896,10 @@ class TestAwardTypeValidation:
     def test_adding_same_category_allowed(self, awards_search):
         """Test that adding more codes from the same category is allowed."""
         # Start with some contracts
-        search = awards_search.with_award_types("A", "B")
+        search = awards_search.award_type_codes("A", "B")
 
         # Add more contracts - should be allowed (validation should pass)
-        search2 = search.with_award_types("C", "D")
+        search2 = search.award_type_codes("C", "D")
 
         # The search should have two separate award_type_codes filters
         # When building the payload, they should be combined
@@ -912,7 +912,7 @@ class TestAwardTypeValidation:
     def test_contracts_helper_after_contracts_allowed(self, awards_search):
         """Test that using contracts() after setting contract codes is allowed."""
         # Start with some contract codes
-        search = awards_search.with_award_types("A", "B")
+        search = awards_search.award_type_codes("A", "B")
 
         # Use contracts() helper - should work since same category
         search2 = search.contracts()
@@ -935,7 +935,7 @@ class TestTransformResult:
         mock_usa_client.mock_award_search([award_data])
 
         # Get the award through the query
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
         award = search.first()
 
         assert isinstance(award, Award)
@@ -955,7 +955,7 @@ class TestPaginationAndIteration:
         ]
         mock_usa_client.mock_award_search(awards)
 
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
         results = list(search)
 
         assert len(results) == 2
@@ -968,7 +968,7 @@ class TestPaginationAndIteration:
         awards = [{"Award ID": f"{i}"} for i in range(1, 251)]
         mock_usa_client.mock_award_search(awards, page_size=100)
 
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
         results = list(search)
 
         assert len(results) == 250
@@ -980,7 +980,7 @@ class TestPaginationAndIteration:
         awards = [{"Award ID": f"{i}"} for i in range(300)]
         mock_usa_client.mock_award_search(awards, page_size=100)
 
-        search = mock_usa_client.awards.search().with_award_types("A").max_pages(2)
+        search = mock_usa_client.awards.search().award_type_codes("A").max_pages(2)
         results = list(search)
 
         assert len(results) == 200
@@ -994,7 +994,7 @@ class TestPaginationAndIteration:
         ]
         mock_usa_client.mock_award_search(awards)
 
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
         result = search.first()
 
         assert isinstance(result, Award)
@@ -1006,7 +1006,7 @@ class TestPaginationAndIteration:
         """Test first() returns None when no results."""
         mock_usa_client.mock_award_search([])  # Empty results
 
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
         result = search.first()
 
         assert result is None
@@ -1016,7 +1016,7 @@ class TestPaginationAndIteration:
         awards = [{"Award ID": "1"}, {"Award ID": "2"}, {"Award ID": "3"}]
         mock_usa_client.mock_award_search(awards)
 
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
         results = search.all()
 
         assert isinstance(results, list)
@@ -1030,7 +1030,7 @@ class TestPaginationAndIteration:
             contracts=3287, direct_payments=0, grants=7821, idvs=105, loans=0, other=0
         )
 
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
         count = search.count()
 
         assert count == 3287
@@ -1046,7 +1046,7 @@ class TestPaginationAndIteration:
             contracts=3287, direct_payments=0, grants=7821, idvs=105, loans=0, other=0
         )
 
-        search = mock_usa_client.awards.search().with_award_types("02", "03")
+        search = mock_usa_client.awards.search().award_type_codes("02", "03")
         count = search.count()
 
         assert count == 7821
@@ -1057,7 +1057,7 @@ class TestPaginationAndIteration:
             contracts=3287, direct_payments=0, grants=7821, idvs=105, loans=0, other=0
         )
 
-        search = mock_usa_client.awards.search().with_award_types("IDV_A")
+        search = mock_usa_client.awards.search().award_type_codes("IDV_A")
         count = search.count()
 
         assert count == 105
@@ -1068,7 +1068,7 @@ class TestPaginationAndIteration:
             contracts=3287, direct_payments=0, grants=7821, idvs=105, loans=42, other=0
         )
 
-        search = mock_usa_client.awards.search().with_award_types("07")
+        search = mock_usa_client.awards.search().award_type_codes("07")
         count = search.count()
 
         assert count == 42
@@ -1079,7 +1079,7 @@ class TestPaginationAndIteration:
             contracts=3287, direct_payments=123, grants=7821, idvs=105, loans=0, other=0
         )
 
-        search = mock_usa_client.awards.search().with_award_types("06")
+        search = mock_usa_client.awards.search().award_type_codes("06")
         count = search.count()
 
         assert count == 123
@@ -1090,7 +1090,7 @@ class TestPaginationAndIteration:
             contracts=3287, direct_payments=0, grants=7821, idvs=105, loans=0, other=89
         )
 
-        search = mock_usa_client.awards.search().with_award_types("09")
+        search = mock_usa_client.awards.search().award_type_codes("09")
         count = search.count()
 
         assert count == 89
@@ -1128,7 +1128,7 @@ class TestPaginationAndIteration:
             # Missing other categories
         )
 
-        search = mock_usa_client.awards.search().with_award_types("07")  # loans
+        search = mock_usa_client.awards.search().award_type_codes("07")  # loans
         count = search.count()
 
         # Should return 0 when category is missing
@@ -1154,7 +1154,7 @@ class TestErrorHandling:
             "/search/spending_by_award_count/", error_code=400, detail="Bad request"
         )
 
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
 
         with pytest.raises(APIError):
             list(search)
@@ -1162,7 +1162,7 @@ class TestErrorHandling:
     def test_empty_award_types_filter(self, awards_search):
         """Test that empty award types raises appropriate error."""
         # This should work but payload building should fail
-        search = awards_search.with_award_types()  # No types provided
+        search = awards_search.award_type_codes()  # No types provided
 
         # Filter should still be added, just empty
         assert len(search._filter_objects) == 1
@@ -1189,10 +1189,10 @@ class TestIntegrationScenarios:
 
         search = (
             mock_usa_client.awards.search()
-            .with_award_types("A", "B", "C", "D")
-            .for_agency("NASA", "awarding")
-            .for_fiscal_year(2024)
-            .with_keywords("space", "launch")
+            .award_type_codes("A", "B", "C", "D")
+            .agency("NASA", "awarding")
+            .fiscal_year(2024)
+            .keywords("space", "launch")
         )
 
         results = list(search)
@@ -1217,10 +1217,10 @@ class TestIntegrationScenarios:
 
         search = (
             mock_usa_client.awards.search()
-            .with_award_types("02", "03", "04", "05")  # Grant types
-            .with_recipient_types("small_business")
-            .with_recipient_locations(ca_location)
-            .with_award_amounts({"lower_bound": 100000, "upper_bound": 500000})
+            .award_type_codes("02", "03", "04", "05")  # Grant types
+            .recipient_type_names("small_business")
+            .recipient_locations(ca_location)
+            .award_amounts({"lower_bound": 100000, "upper_bound": 500000})
         )
 
         _ = search.all()

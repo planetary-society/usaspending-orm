@@ -14,7 +14,7 @@ def awards_search(mock_usa_client):
     mock_usa_client.mock_award_count(
         contracts=1000
     )  # High number to not interfere with limits
-    return AwardsSearch(mock_usa_client).with_award_types("A")
+    return AwardsSearch(mock_usa_client).award_type_codes("A")
 
 
 class TestLimitFunctionality:

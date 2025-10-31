@@ -142,6 +142,6 @@ class Contract(Award):
         """
         from .award_types import CONTRACT_CODES
 
-        return self._client.subawards.for_award(
+        return self._client.subawards.award_id(
             self.generated_unique_award_id
-        ).with_award_types(*CONTRACT_CODES)
+        ).award_type_codes(*CONTRACT_CODES)

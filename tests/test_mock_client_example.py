@@ -31,7 +31,7 @@ class TestMockClientExamples:
         )
 
         # Execute search
-        results = list(mock_usa_client.awards.search().with_award_types("A"))
+        results = list(mock_usa_client.awards.search().award_type_codes("A"))
 
         # Verify results
         assert len(results) == 2
@@ -56,7 +56,7 @@ class TestMockClientExamples:
         mock_usa_client.mock_award_count(contracts=250)
 
         # Execute search and collect all results
-        results = list(mock_usa_client.awards.search().with_award_types("A"))
+        results = list(mock_usa_client.awards.search().award_type_codes("A"))
 
         # Should have fetched all 250 items across 3 pages
         assert len(results) == 250
@@ -78,7 +78,7 @@ class TestMockClientExamples:
 
         # Should raise APIError when calling count()
         with pytest.raises(APIError) as exc_info:
-            list(mock_usa_client.awards.search().with_award_types("X"))
+            list(mock_usa_client.awards.search().award_type_codes("X"))
 
         assert exc_info.value.status_code == 400
         assert "Invalid award type code" in str(exc_info.value)
@@ -109,9 +109,9 @@ class TestMockClientExamples:
         # Make a search request
         list(
             mock_usa_client.awards.search()
-            .with_award_types("A", "B")
-            .with_keywords("space")
-            .for_fiscal_year(2024)
+            .award_type_codes("A", "B")
+            .keywords("space")
+            .fiscal_year(2024)
         )
 
         # Verify request was made correctly
@@ -160,7 +160,7 @@ class TestMockClientExamples:
         )
 
         # Make three searches
-        search = mock_usa_client.awards.search().with_award_types("A")
+        search = mock_usa_client.awards.search().award_type_codes("A")
 
         results1 = list(search)
         assert len(results1) == 2
@@ -197,7 +197,7 @@ class TestMockClientExamples:
 
         # Execute complex workflow
         # 1. Search for awards
-        awards = list(mock_usa_client.awards.search().with_award_types("A"))
+        awards = list(mock_usa_client.awards.search().award_type_codes("A"))
         assert len(awards) == 1
 
         # 2. Get award detail
@@ -206,7 +206,7 @@ class TestMockClientExamples:
         assert award.total_obligation == 5000000000.0
 
         # 3. Get transactions (would need transaction implementation)
-        # transactions = list(mock_usa_client.transactions.for_award("CONT_AWD_123"))
+        # transactions = list(mock_usa_client.transactions.award_id("CONT_AWD_123"))
         # assert len(transactions) == 2
 
         # Verify all endpoints were called
@@ -217,7 +217,7 @@ class TestMockClientExamples:
         """Test resetting mock state between tests."""
         # Set up initial state
         mock_usa_client.mock_award_search([{"Award ID": "1"}])
-        list(mock_usa_client.awards.search().with_award_types("A"))
+        list(mock_usa_client.awards.search().award_type_codes("A"))
 
         # Verify state
         # Expected: count + search = 2 total requests (list() calls both)
@@ -230,5 +230,5 @@ class TestMockClientExamples:
         assert mock_usa_client.get_request_count() == 0
 
         # Should return empty results now (no mocks set)
-        results = list(mock_usa_client.awards.search().with_award_types("A"))
+        results = list(mock_usa_client.awards.search().award_type_codes("A"))
         assert len(results) == 0

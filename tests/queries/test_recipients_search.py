@@ -54,7 +54,7 @@ class TestRecipientsSearchPayloadBuilding:
 
     def test_build_payload_with_keyword(self, recipients_search):
         """Test payload with keyword filter."""
-        search = recipients_search.with_keyword("california")
+        search = recipients_search.keyword("california")
         payload = search._build_payload(page=1)
 
         assert payload["keyword"] == "california"
@@ -62,7 +62,7 @@ class TestRecipientsSearchPayloadBuilding:
 
     def test_build_payload_with_award_type(self, recipients_search):
         """Test payload with award type filter."""
-        search = recipients_search.with_award_type("contracts")
+        search = recipients_search.award_type("contracts")
         payload = search._build_payload(page=1)
 
         assert payload["award_type"] == "contracts"
@@ -79,8 +79,8 @@ class TestRecipientsSearchPayloadBuilding:
     def test_build_payload_with_all_filters(self, recipients_search):
         """Test payload with all filters applied."""
         search = (
-            recipients_search.with_keyword("test corp")
-            .with_award_type("grants")
+            recipients_search.keyword("test corp")
+            .award_type("grants")
             .order_by("duns", "asc")
         )
         payload = search._build_payload(page=1)
@@ -118,7 +118,7 @@ class TestRecipientsSearchFluentInterface:
     def test_with_keyword_immutability(self, recipients_search):
         """Test that with_keyword returns new instance."""
         original = recipients_search
-        modified = recipients_search.with_keyword("test")
+        modified = recipients_search.keyword("test")
 
         assert original is not modified
         assert original._keyword is None
@@ -126,18 +126,18 @@ class TestRecipientsSearchFluentInterface:
 
     def test_with_keyword_strips_whitespace(self, recipients_search):
         """Test that keyword whitespace is stripped."""
-        search = recipients_search.with_keyword("  test keyword  ")
+        search = recipients_search.keyword("  test keyword  ")
         assert search._keyword == "test keyword"
 
     def test_with_keyword_empty_string_sets_none(self, recipients_search):
         """Test that empty keyword is set to None."""
-        search = recipients_search.with_keyword("")
+        search = recipients_search.keyword("")
         assert search._keyword is None
 
     def test_with_award_type_immutability(self, recipients_search):
         """Test that with_award_type returns new instance."""
         original = recipients_search
-        modified = recipients_search.with_award_type("contracts")
+        modified = recipients_search.award_type("contracts")
 
         assert original is not modified
         assert original._award_type == "all"
@@ -163,8 +163,8 @@ class TestRecipientsSearchFluentInterface:
     def test_method_chaining(self, recipients_search):
         """Test that methods can be chained together."""
         search = (
-            recipients_search.with_keyword("california")
-            .with_award_type("grants")
+            recipients_search.keyword("california")
+            .award_type("grants")
             .order_by("name", "asc")
         )
 
@@ -212,7 +212,7 @@ class TestRecipientsSearchCount:
         """Test count payload includes keyword filter."""
         mock_usa_client.mock_recipient_count(500)
 
-        search = recipients_search.with_keyword("california")
+        search = recipients_search.keyword("california")
         search.count()
 
         last_request = mock_usa_client.get_last_request()
@@ -226,7 +226,7 @@ class TestRecipientsSearchCount:
         """Test count payload includes award type filter."""
         mock_usa_client.mock_recipient_count(300)
 
-        search = recipients_search.with_award_type("contracts")
+        search = recipients_search.award_type("contracts")
         search.count()
 
         last_request = mock_usa_client.get_last_request()
@@ -239,7 +239,7 @@ class TestRecipientsSearchCount:
         """Test count payload includes all applicable filters."""
         mock_usa_client.mock_recipient_count(100)
 
-        search = recipients_search.with_keyword("test").with_award_type("grants")
+        search = recipients_search.keyword("test").award_type("grants")
         search.count()
 
         last_request = mock_usa_client.get_last_request()
@@ -391,7 +391,7 @@ class TestRecipientsSearchIntegration:
         fixture_results = recipients_search_fixture_data["results"][:2]
         mock_usa_client.mock_recipient_search(fixture_results)
 
-        search = recipients_search.with_keyword("california")
+        search = recipients_search.keyword("california")
         results = list(search)
 
         assert len(results) == 2

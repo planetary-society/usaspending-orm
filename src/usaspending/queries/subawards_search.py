@@ -173,7 +173,7 @@ class SubAwardsSearch(AwardsSearch):
         # Extract and return aggregations
         return response.get("aggregations", {})
 
-    def for_award(self, award_id: str) -> SubAwardsSearch:
+    def award_id(self, award_id: str) -> SubAwardsSearch:
         """
         Filter subawards for a specific prime award.
 
@@ -184,7 +184,7 @@ class SubAwardsSearch(AwardsSearch):
             A new SubAwardsSearch instance with the award filter applied.
 
         Example:
-            >>> subawards = client.subawards.for_award("CONT_AWD_123...")
+            >>> subawards = client.subawards.award_id("CONT_AWD_123...")
             >>> for sub in subawards:
             ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount:,.2f}")
         """

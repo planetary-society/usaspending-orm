@@ -1,4 +1,4 @@
-"""Base spending model for USASpending spending by category data."""
+"""Base model for USASpending spending by category data."""
 
 from __future__ import annotations
 

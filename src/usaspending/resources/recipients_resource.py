@@ -45,8 +45,8 @@ class RecipientsResource(BaseResource):
 
         Example:
             >>> recipients = client.recipients.search()
-            ...     .with_keyword("california")
-            ...     .with_award_type("contracts")
+            ...     .keyword("california")
+            ...     .award_type("contracts")
             ...     .order_by("amount", "desc")
             ...     .limit(10)
         """
@@ -72,7 +72,7 @@ class RecipientsResource(BaseResource):
         logger.debug(f"Searching recipient by DUNS: {duns}")
         from ..queries.recipients_search import RecipientsSearch
 
-        recipients = RecipientsSearch(self._client).with_keyword(duns).limit(4)
+        recipients = RecipientsSearch(self._client).keyword(duns).limit(4)
         # Return the parent recipient if available, otherwise first result
         for r in recipients:
             if "-P" in r.recipient_id:
@@ -95,7 +95,7 @@ class RecipientsResource(BaseResource):
         logger.debug(f"Searching recipient by UEI: {uei}")
         from ..queries.recipients_search import RecipientsSearch
 
-        recipients = RecipientsSearch(self._client).with_keyword(uei).limit(4)
+        recipients = RecipientsSearch(self._client).keyword(uei).limit(4)
         # Return the parent recipient if available, otherwise first result
         for r in recipients:
             if "-P" in r.recipient_id:

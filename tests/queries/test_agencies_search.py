@@ -66,7 +66,7 @@ class TestAgenciesSearchExecution:
         """Test searching returns all types when no filter applied."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).with_search_text("NASA")
+        search = search_class(mock_usa_client).search_text("NASA")
         results = list(search)
 
         # Count expected total results from fixture
@@ -90,7 +90,7 @@ class TestAgenciesSearchExecution:
         """Test filtering for toptier agencies only."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).with_search_text("NASA").toptier()
+        search = search_class(mock_usa_client).search_text("NASA").toptier()
         results = list(search)
 
         # Use fixture data for assertions
@@ -117,7 +117,7 @@ class TestAgenciesSearchExecution:
         """Test filtering for subtier agencies only."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).with_search_text("NASA").subtier()
+        search = search_class(mock_usa_client).search_text("NASA").subtier()
         results = list(search)
 
         # Use fixture data for assertions
@@ -136,7 +136,7 @@ class TestAgenciesSearchExecution:
         """Test filtering for offices only."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).with_search_text("NASA").office()
+        search = search_class(mock_usa_client).search_text("NASA").office()
         results = list(search)
 
         # Use fixture data for assertions
@@ -164,7 +164,7 @@ class TestAgenciesSearchExecution:
 
         mock_usa_client.set_response(endpoint, empty_response)
 
-        search = search_class(mock_usa_client).with_search_text("ZZZZ")
+        search = search_class(mock_usa_client).search_text("ZZZZ")
         results = list(search)
 
         assert results == []
@@ -180,7 +180,7 @@ class TestAgenciesSearchExecution:
         """Test that pagination is not attempted (only page 1 is fetched)."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).with_search_text("NASA")
+        search = search_class(mock_usa_client).search_text("NASA")
         results = list(search)
 
         # Should make at most a few API calls (may call count() and iterate)
@@ -201,7 +201,7 @@ class TestAgenciesSearchExecution:
         """Test that payload is constructed correctly."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).with_search_text("NASA")
+        search = search_class(mock_usa_client).search_text("NASA")
         list(search)  # Execute query
 
         # Check the request was made with correct payload
@@ -221,7 +221,7 @@ class TestAgenciesSearchExecution:
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
         search1 = search_class(mock_usa_client)
-        search2 = search1.with_search_text("NASA")
+        search2 = search1.search_text("NASA")
         search3 = search2.toptier()
 
         # Each should be a different instance
@@ -308,7 +308,7 @@ class TestFundingAgenciesSearchSpecific:
         )
 
         search1 = FundingAgenciesSearch(mock_usa_client)
-        search2 = search1.with_search_text("NASA")
+        search2 = search1.search_text("NASA")
         search3 = search2.toptier()
 
         # All should be FundingAgenciesSearch instances
@@ -333,7 +333,7 @@ class TestAwardingAgenciesSearchSpecific:
         )
 
         search1 = AwardingAgenciesSearch(mock_usa_client)
-        search2 = search1.with_search_text("NASA")
+        search2 = search1.search_text("NASA")
         search3 = search2.toptier()
 
         # All should be AwardingAgenciesSearch instances

@@ -36,7 +36,7 @@ class TestSubAwardsSearch:
 
     def test_build_payload_includes_subawards_flag(self, mock_usa_client):
         """Test that payload always includes subawards=true."""
-        search = SubAwardsSearch(mock_usa_client).with_award_types("A", "B", "C")
+        search = SubAwardsSearch(mock_usa_client).award_type_codes("A", "B", "C")
 
         payload = search._build_payload(page=1)
 
@@ -49,8 +49,8 @@ class TestSubAwardsSearch:
         """Test that payload includes award_unique_id when filtering by award."""
         search = (
             SubAwardsSearch(mock_usa_client)
-            .with_award_types("A", "B", "C")
-            .for_award("CONT_AWD_123_456")
+            .award_type_codes("A", "B", "C")
+            .award_id("CONT_AWD_123_456")
         )
 
         payload = search._build_payload(page=1)
@@ -77,7 +77,7 @@ class TestSubAwardsSearch:
 
     def test_get_fields_for_contract_subawards(self, mock_usa_client):
         """Test field selection for contract subawards."""
-        search = SubAwardsSearch(mock_usa_client).with_award_types("A", "B", "C", "D")
+        search = SubAwardsSearch(mock_usa_client).award_type_codes("A", "B", "C", "D")
 
         fields = search._get_fields()
 
@@ -88,7 +88,7 @@ class TestSubAwardsSearch:
 
     def test_get_fields_for_grant_subawards(self, mock_usa_client):
         """Test field selection for grant subawards."""
-        search = SubAwardsSearch(mock_usa_client).with_award_types(
+        search = SubAwardsSearch(mock_usa_client).award_type_codes(
             "02", "03", "04", "05"
         )
 
@@ -122,20 +122,20 @@ class TestSubAwardsSearch:
 
     def test_for_award_method(self, mock_usa_client):
         """Test for_award method sets award_id."""
-        search = SubAwardsSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = SubAwardsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         assert search._award_id == "CONT_AWD_123"
 
     def test_for_award_strips_whitespace(self, mock_usa_client):
         """Test for_award strips whitespace from award_id."""
-        search = SubAwardsSearch(mock_usa_client).for_award("  CONT_AWD_123  ")
+        search = SubAwardsSearch(mock_usa_client).award_id("  CONT_AWD_123  ")
 
         assert search._award_id == "CONT_AWD_123"
 
     def test_for_award_empty_raises_error(self, mock_usa_client):
         """Test for_award with empty string raises ValidationError."""
         with pytest.raises(ValidationError, match="award_id cannot be empty"):
-            SubAwardsSearch(mock_usa_client).for_award("")
+            SubAwardsSearch(mock_usa_client).award_id("")
 
     def test_count_with_award_id(self, mock_usa_client):
         """Test count method uses efficient endpoint when award_id is set."""
@@ -145,7 +145,7 @@ class TestSubAwardsSearch:
         )
         mock_usa_client.set_response(endpoint, {"subawards": 7})
 
-        search = SubAwardsSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = SubAwardsSearch(mock_usa_client).award_id("CONT_AWD_123")
         count = search.count()
 
         assert count == 7
@@ -154,7 +154,7 @@ class TestSubAwardsSearch:
 
     def test_count_without_award_id(self, mock_usa_client):
         """Test count method falls back to parent implementation without award_id."""
-        search = SubAwardsSearch(mock_usa_client).with_award_types("A", "B")
+        search = SubAwardsSearch(mock_usa_client).award_type_codes("A", "B")
 
         # Mock the iterator to return 5 items
         mock_usa_client.set_paginated_response(
@@ -169,8 +169,8 @@ class TestSubAwardsSearch:
         """Test that SubAwardsSearch supports query chaining."""
         search = (
             SubAwardsSearch(mock_usa_client)
-            .with_award_types("A", "B", "C")
-            .for_award("CONT_AWD_123")
+            .award_type_codes("A", "B", "C")
+            .award_id("CONT_AWD_123")
             .limit(50)
             .page_size(25)
         )
@@ -195,8 +195,8 @@ class TestSubAwardsSearch:
 
     def test_immutability(self, mock_usa_client):
         """Test that SubAwardsSearch maintains immutability."""
-        search1 = SubAwardsSearch(mock_usa_client).with_award_types("A", "B")
-        search2 = search1.for_award("CONT_AWD_123")
+        search1 = SubAwardsSearch(mock_usa_client).award_type_codes("A", "B")
+        search2 = search1.award_id("CONT_AWD_123")
         search3 = search2.limit(10)
 
         # Each should be a different instance

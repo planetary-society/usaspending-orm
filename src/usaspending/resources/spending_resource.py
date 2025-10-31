@@ -28,15 +28,15 @@ class SpendingResource(BaseResource):
             >>> # Search spending by recipient
             >>> recipient_spending = client.spending.search()
             ...     .by_recipient()
-            ...     .for_agency("NASA")
-            ...     .for_fiscal_year(2024)
+            ...     .agency("National Aeronautics and Space Administration")
+            ...     .fiscal_year(2024)
             ...     .limit(10)
 
             >>> # Search spending by district
             >>> district_spending = client.spending.search()
             ...     .by_district()
             ...     .spending_level("awards")
-            ...     .with_place_of_performance_locations({"country_code": "USA", "state_code": "TX"))
+            ...     .place_of_performance_locations({"country_code": "USA", "state_code": "TX"))
             ...     .all()
         """
         logger.debug("Creating new SpendingSearch query builder")

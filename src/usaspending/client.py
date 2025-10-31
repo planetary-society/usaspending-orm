@@ -36,7 +36,7 @@ class USASpendingClient:
 
     Example:
         >>> client = USASpendingClient()
-        >>> awards = client.awards.search().for_agency("NASA").limit(10)
+        >>> awards = client.awards.search().agency("NASA").limit(10)
         >>> for award in awards:
         ...     print(f"{award.recipient_name}: ${award.amount:,.2f}")
     """

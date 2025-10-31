@@ -66,7 +66,7 @@ class FundingSearch(QueryBuilder["Funding"]):
         """Constructs the final API request payload."""
         if not self._award_id:
             raise ValidationError(
-                "An award_id is required. Use the .for_award() method."
+                "An award_id is required. Use the .award_id() method."
             )
 
         payload = {
@@ -94,7 +94,7 @@ class FundingSearch(QueryBuilder["Funding"]):
 
         if not self._award_id:
             raise ValidationError(
-                "An award_id is required. Use the .for_award() method."
+                "An award_id is required. Use the .award_id() method."
             )
 
         # Iterate through all results to count
@@ -112,7 +112,7 @@ class FundingSearch(QueryBuilder["Funding"]):
     # Filter Methods
     # ==========================================================================
 
-    def for_award(self, award_id: str) -> FundingSearch:
+    def award_id(self, award_id: str) -> FundingSearch:
         """
         Filter funding records for a specific award.
 

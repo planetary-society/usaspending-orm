@@ -22,7 +22,7 @@ class TestSpendingIntegration:
         client = USASpendingClient()
 
         # Test recipient search chaining
-        recipient_search = client.spending.search().by_recipient().for_agency("NASA")
+        recipient_search = client.spending.search().by_recipient().agency("NASA")
         assert isinstance(recipient_search, SpendingSearch)
         assert recipient_search._category == "recipient"
         assert len(recipient_search._filter_objects) == 1
@@ -42,9 +42,9 @@ class TestSpendingIntegration:
         search = (
             client.spending.search()
             .by_recipient()
-            .for_agency("NASA")
-            .for_fiscal_year(2024)
-            .with_recipient_search_text("Lockheed")
+            .agency("NASA")
+            .fiscal_year(2024)
+            .recipient_search_text("Lockheed")
             .spending_level("transactions")
             .limit(50)
         )

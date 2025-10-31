@@ -38,7 +38,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
         """Build request payload."""
         if not self._search_text:
             raise ValidationError(
-                "search_text is required. Use with_search_text() method."
+                "search_text is required. Use search_text() method."
             )
 
         return {"search_text": self._search_text, "limit": self._limit}
@@ -131,7 +131,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
         if not self._search_text:
             raise ValidationError(
-                "search_text is required. Use with_search_text() method."
+                "search_text is required. Use search_text() method."
             )
 
         # Execute query to get all results
@@ -146,7 +146,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
         )
         return count
 
-    def with_search_text(self, search_text: str) -> AgenciesSearch:
+    def search_text(self, search_text: str) -> AgenciesSearch:
         """Set the search text for the query.
 
         Args:

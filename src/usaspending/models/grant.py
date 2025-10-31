@@ -142,6 +142,6 @@ class Grant(Award):
 
         # Grant subawards use grant award types only
         # Note: Due to validation in AwardsSearch, we cannot mix grant/direct_payment/other categories
-        return self._client.subawards.for_award(
+        return self._client.subawards.award_id(
             self.generated_unique_award_id
-        ).with_award_types(*GRANT_CODES)
+        ).award_type_codes(*GRANT_CODES)

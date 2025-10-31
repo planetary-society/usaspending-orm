@@ -14,7 +14,7 @@ class TestTransactionsResource:
         """Test that for_award creates a TransactionsSearch query builder."""
         resource = TransactionsResource(mock_usa_client)
 
-        query = resource.for_award("CONT_AWD_123")
+        query = resource.award_id("CONT_AWD_123")
 
         # Should return a TransactionsSearch instance
         assert query.__class__.__name__ == "TransactionsSearch"
@@ -28,13 +28,13 @@ class TestTransactionsResource:
         resource = TransactionsResource(mock_usa_client)
 
         with pytest.raises(ValidationError, match="award_id cannot be empty"):
-            resource.for_award("")
+            resource.award_id("")
 
     def test_for_award_strips_whitespace(self, mock_usa_client):
         """Test that for_award strips whitespace from award_id."""
         resource = TransactionsResource(mock_usa_client)
 
-        query = resource.for_award("  CONT_AWD_123  ")
+        query = resource.award_id("  CONT_AWD_123  ")
 
         assert query._award_id == "CONT_AWD_123"
 
@@ -42,7 +42,7 @@ class TestTransactionsResource:
         """Test that the returned query builder has expected methods."""
         resource = TransactionsResource(mock_usa_client)
 
-        query = resource.for_award("CONT_AWD_123")
+        query = resource.award_id("CONT_AWD_123")
 
         # Should have inherited QueryBuilder methods
         assert hasattr(query, "limit")
@@ -57,7 +57,7 @@ class TestTransactionsResource:
         """Test that query builder methods can be chained."""
         resource = TransactionsResource(mock_usa_client)
 
-        query = resource.for_award("CONT_AWD_123").limit(10).page_size(25)
+        query = resource.award_id("CONT_AWD_123").limit(10).page_size(25)
 
         assert query._award_id == "CONT_AWD_123"
         assert query._total_limit == 10

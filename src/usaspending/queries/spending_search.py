@@ -267,7 +267,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
     # Filter Methods (same as AwardsSearch)
     # ==========================================================================
 
-    def with_keywords(self, *keywords: str) -> SpendingSearch:
+    def keywords(self, *keywords: str) -> SpendingSearch:
         """
         Filter by a list of keywords.
 
@@ -281,7 +281,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         clone._filter_objects.append(KeywordsFilter(values=list(keywords)))
         return clone
 
-    def in_time_period(
+    def time_period(
         self,
         start_date: Union[datetime.date, str],
         end_date: Union[datetime.date, str],
@@ -339,7 +339,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def for_fiscal_year(
+    def fiscal_year(
         self,
         year: int,
         new_awards_only: bool = False,
@@ -360,14 +360,14 @@ class SpendingSearch(QueryBuilder["Spending"]):
         """
         start_date = datetime.date(year - 1, 10, 1)
         end_date = datetime.date(year, 9, 30)
-        return self.in_time_period(
+        return self.time_period(
             start_date=start_date,
             end_date=end_date,
             new_awards_only=new_awards_only,
             date_type=date_type,
         )
 
-    def with_place_of_performance_scope(self, scope: str) -> SpendingSearch:
+    def place_of_performance_scope(self, scope: str) -> SpendingSearch:
         """
         Filter spending by domestic or foreign place of performance.
 
@@ -388,7 +388,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_place_of_performance_locations(
+    def place_of_performance_locations(
         self, *locations: dict[str, str]
     ) -> SpendingSearch:
         """
@@ -412,7 +412,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def for_agency(
+    def agency(
         self,
         name: str,
         agency_type: str = "awarding",
@@ -447,7 +447,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_recipient_search_text(self, *search_terms: str) -> SpendingSearch:
+    def recipient_search_text(self, *search_terms: str) -> SpendingSearch:
         """
         Filter by recipient name, UEI, or DUNS.
 
@@ -463,7 +463,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_recipient_id(self, recipient_id: str) -> SpendingSearch:
+    def recipient_id(self, recipient_id: str) -> SpendingSearch:
         """
         Filter by specific recipient ID.
 
@@ -479,7 +479,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_recipient_scope(self, scope: str) -> SpendingSearch:
+    def recipient_scope(self, scope: str) -> SpendingSearch:
         """
         Filter recipients by domestic or foreign scope.
 
@@ -500,7 +500,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_recipient_locations(self, *locations: dict[str, str]) -> SpendingSearch:
+    def recipient_locations(self, *locations: dict[str, str]) -> SpendingSearch:
         """
         Filter by one or more specific recipient locations.
 
@@ -520,7 +520,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_recipient_types(self, *type_names: str) -> SpendingSearch:
+    def recipient_type_names(self, *type_names: str) -> SpendingSearch:
         """
         Filter by one or more recipient or business types.
 
@@ -536,7 +536,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_award_types(self, *award_codes: str) -> SpendingSearch:
+    def award_type_codes(self, *award_codes: str) -> SpendingSearch:
         """
         Filter by one or more award type codes.
 
@@ -562,7 +562,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
             SpendingSearch: A new instance configured for contract awards.
 
         """
-        return self.with_award_types(*CONTRACT_CODES)
+        return self.award_type_codes(*CONTRACT_CODES)
 
     def idvs(self) -> SpendingSearch:
         """
@@ -575,7 +575,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
             SpendingSearch: A new instance configured for IDV awards.
 
         """
-        return self.with_award_types(*IDV_CODES)
+        return self.award_type_codes(*IDV_CODES)
 
     def loans(self) -> SpendingSearch:
         """
@@ -587,7 +587,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
             SpendingSearch: A new instance configured for loan awards.
 
         """
-        return self.with_award_types(*LOAN_CODES)
+        return self.award_type_codes(*LOAN_CODES)
 
     def grants(self) -> SpendingSearch:
         """
@@ -599,7 +599,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
             SpendingSearch: A new instance configured for grant awards.
 
         """
-        return self.with_award_types(*GRANT_CODES)
+        return self.award_type_codes(*GRANT_CODES)
 
     def direct_payments(self) -> SpendingSearch:
         """
@@ -612,7 +612,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
             SpendingSearch: A new instance configured for direct payment awards.
 
         """
-        return self.with_award_types(*DIRECT_PAYMENT_CODES)
+        return self.award_type_codes(*DIRECT_PAYMENT_CODES)
 
     def other_assistance(self) -> SpendingSearch:
         """
@@ -625,9 +625,9 @@ class SpendingSearch(QueryBuilder["Spending"]):
             SpendingSearch: A new instance configured for other assistance awards.
 
         """
-        return self.with_award_types(*OTHER_CODES)
+        return self.award_type_codes(*OTHER_CODES)
 
-    def with_award_ids(self, *award_ids: str) -> SpendingSearch:
+    def award_ids(self, *award_ids: str) -> SpendingSearch:
         """
         Filter by specific award IDs (FAIN, PIID, URI).
 
@@ -643,7 +643,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_award_amounts(
+    def award_amounts(
         self, *amounts: Union[dict[str, float], tuple[Optional[float], Optional[float]]]
     ) -> SpendingSearch:
         """
@@ -664,12 +664,12 @@ class SpendingSearch(QueryBuilder["Spending"]):
         clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
         return clone
 
-    def with_cfda_numbers(self, *program_numbers: str) -> SpendingSearch:
+    def program_numbers(self, *program_numbers: str) -> SpendingSearch:
         """
-        Filter by one or more CFDA program numbers.
+        Filter by one or more program numbers (CFDA numbers).
 
         Args:
-            *program_numbers: The CFDA numbers to filter by.
+            *program_numbers: The CFDA/program numbers to filter by.
 
         Returns:
             A new SpendingSearch instance with the filter applied.
@@ -680,7 +680,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_naics_codes(
+    def naics_codes(
         self,
         require: Optional[list[str]] = None,
         exclude: Optional[list[str]] = None,
@@ -706,7 +706,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_psc_codes(
+    def psc_codes(
         self,
         require: Optional[list[list[str]]] = None,
         exclude: Optional[list[list[str]]] = None,
@@ -731,7 +731,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_contract_pricing_types(self, *type_codes: str) -> SpendingSearch:
+    def contract_pricing_type_codes(self, *type_codes: str) -> SpendingSearch:
         """
         Filter by one or more contract pricing type codes.
 
@@ -747,7 +747,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_set_aside_types(self, *type_codes: str) -> SpendingSearch:
+    def set_aside_type_codes(self, *type_codes: str) -> SpendingSearch:
         """
         Filter by one or more set-aside type codes.
 
@@ -763,7 +763,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_extent_competed_types(self, *type_codes: str) -> SpendingSearch:
+    def extent_competed_type_codes(self, *type_codes: str) -> SpendingSearch:
         """
         Filter by one or more extent competed type codes.
 
@@ -779,7 +779,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_tas_codes(
+    def tas_codes(
         self,
         require: Optional[list[list[str]]] = None,
         exclude: Optional[list[list[str]]] = None,
@@ -804,7 +804,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_treasury_account_components(
+    def treasury_account_components(
         self, *components: dict[str, str]
     ) -> SpendingSearch:
         """
@@ -822,7 +822,7 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
-    def with_def_codes(self, *def_codes: str) -> SpendingSearch:
+    def def_codes(self, *def_codes: str) -> SpendingSearch:
         """
         Filter by one or more Disaster Emergency Fund (DEF) codes.
 

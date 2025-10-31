@@ -36,8 +36,8 @@ class SubAwardsResource(BaseResource):
 
         Example:
             >>> subawards = client.subawards.search()
-            ...     .with_award_types("A", "B", "C")
-            ...     .in_time_period("2024-01-01", "2024-12-31")
+            ...     .award_type_codes("A", "B", "C")
+            ...     .time_period("2024-01-01", "2024-12-31")
             ...     .limit(50)
             >>> for sub in subawards:
             ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount:,.2f}")
@@ -47,10 +47,10 @@ class SubAwardsResource(BaseResource):
 
         return SubAwardsSearch(self._client)
 
-    def for_award(self, award_id: str) -> "SubAwardsSearch":
+    def award_id(self, award_id: str) -> "SubAwardsSearch":
         """Create a subawards search query for a specific award.
 
-        This is a convenience method that chains search().for_award(award_id).
+        This is a convenience method that chains search().award_id(award_id).
 
         Args:
             award_id: Unique award identifier
@@ -59,10 +59,10 @@ class SubAwardsResource(BaseResource):
             SubAwardsSearch query builder for chaining filters
 
         Example:
-            >>> subawards = client.subawards.for_award("CONT_AWD_123...")
+            >>> subawards = client.subawards.award_id("CONT_AWD_123...")
             ...     .limit(50)
             >>> for sub in subawards:
             ...     print(f"{sub.sub_award_date}: {sub.sub_awardee_name}")
         """
         logger.debug(f"Creating subawards search for award: {award_id}")
-        return self.search().for_award(award_id)
+        return self.search().award_id(award_id)

@@ -14,7 +14,7 @@ class TestFundingResource:
         """Test that for_award creates a FundingSearch query builder."""
         resource = FundingResource(mock_usa_client)
 
-        query = resource.for_award("CONT_AWD_123")
+        query = resource.award_id("CONT_AWD_123")
 
         # Should return a FundingSearch instance
         assert query.__class__.__name__ == "FundingSearch"
@@ -28,13 +28,13 @@ class TestFundingResource:
         resource = FundingResource(mock_usa_client)
 
         with pytest.raises(ValidationError, match="award_id cannot be empty"):
-            resource.for_award("")
+            resource.award_id("")
 
     def test_for_award_strips_whitespace(self, mock_usa_client):
         """Test that for_award strips whitespace from award_id."""
         resource = FundingResource(mock_usa_client)
 
-        query = resource.for_award("  CONT_AWD_123  ")
+        query = resource.award_id("  CONT_AWD_123  ")
 
         assert query._award_id == "CONT_AWD_123"
 
@@ -42,7 +42,7 @@ class TestFundingResource:
         """Test that the returned query builder has expected methods."""
         resource = FundingResource(mock_usa_client)
 
-        query = resource.for_award("CONT_AWD_123")
+        query = resource.award_id("CONT_AWD_123")
 
         # Should have inherited QueryBuilder methods
         assert hasattr(query, "limit")
@@ -62,7 +62,7 @@ class TestFundingResource:
         resource = FundingResource(mock_usa_client)
 
         query = (
-            resource.for_award("CONT_AWD_123")
+            resource.award_id("CONT_AWD_123")
             .order_by("fiscal_date", "asc")
             .limit(10)
             .page_size(25)

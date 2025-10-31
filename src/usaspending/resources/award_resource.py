@@ -51,7 +51,7 @@ class AwardResource(BaseResource):
 
         # Get counts by award type
         search_result = (
-            AwardsSearch(self._client).with_award_ids(award_id).count_awards_by_type()
+            AwardsSearch(self._client).award_ids(award_id).count_awards_by_type()
         )
 
         # Find which type has exactly one result
@@ -95,7 +95,7 @@ class AwardResource(BaseResource):
         if hasattr(awards_search, method_name):
             logger.debug(f"Calling .{method_name}() method on AwardsSearch")
             awards_search = getattr(awards_search, method_name)()
-            return awards_search.with_award_ids(award_id).first()
+            return awards_search.award_ids(award_id).first()
         else:
             logger.error(f"Method {method_name} not found on AwardsSearch")
             return None
@@ -108,7 +108,7 @@ class AwardResource(BaseResource):
 
         Example:
             >>> awards = client.awards.search()
-            ...     .for_agency("NASA")
+            ...     .agency("NASA")
             ...     .in_state("TX")
             ...     .fiscal_years(2023, 2024)
             ...     .limit(10)

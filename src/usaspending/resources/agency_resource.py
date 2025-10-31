@@ -76,7 +76,7 @@ class AgencyResource(BaseResource):
         """
         from ..queries.funding_agencies_search import FundingAgenciesSearch
 
-        return FundingAgenciesSearch(self._client).with_search_text(name)
+        return FundingAgenciesSearch(self._client).search_text(name)
 
     def find_all_awarding_agencies_by_name(self, name: str) -> "AwardingAgenciesSearch":
         """Search for funding agencies and offices by name.
@@ -102,4 +102,4 @@ class AgencyResource(BaseResource):
         """
         from ..queries.awarding_agencies_search import AwardingAgenciesSearch
 
-        return AwardingAgenciesSearch(self._client).with_search_text(name)
+        return AwardingAgenciesSearch(self._client).search_text(name)

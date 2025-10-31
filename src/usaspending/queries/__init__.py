@@ -26,7 +26,7 @@ Example:
     >>> 
     >>> # Complex award search
     >>> awards = client.awards.search()\\
-    ...     .for_agency("NASA")\\
+    ...     .agency("NASA")\\
     ...     .in_state("TX")\\
     ...     .fiscal_years(2023, 2024)\\
     ...     .limit(50)

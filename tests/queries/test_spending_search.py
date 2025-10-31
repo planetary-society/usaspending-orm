@@ -113,7 +113,7 @@ class TestFilterMethods:
     def test_with_keywords(self, mock_usa_client):
         """Test with_keywords filter method."""
         search = SpendingSearch(mock_usa_client)
-        filtered_search = search.with_keywords("transport", "logistics")
+        filtered_search = search.keywords("transport", "logistics")
 
         assert len(filtered_search._filter_objects) == 1
         filter_dict = filtered_search._filter_objects[0].to_dict()
@@ -126,7 +126,7 @@ class TestFilterMethods:
         start_date = datetime.date(2023, 1, 1)
         end_date = datetime.date(2023, 12, 31)
 
-        filtered_search = search.in_time_period(start_date, end_date)
+        filtered_search = search.time_period(start_date, end_date)
 
         assert len(filtered_search._filter_objects) == 1
         filter_dict = filtered_search._filter_objects[0].to_dict()
@@ -138,7 +138,7 @@ class TestFilterMethods:
         """Test in_time_period with string dates."""
         search = SpendingSearch(mock_usa_client)
 
-        filtered_search = search.in_time_period("2023-01-01", "2023-12-31")
+        filtered_search = search.time_period("2023-01-01", "2023-12-31")
 
         assert len(filtered_search._filter_objects) == 1
         filter_dict = filtered_search._filter_objects[0].to_dict()
@@ -149,18 +149,18 @@ class TestFilterMethods:
         """Test for_fiscal_year method."""
         search = SpendingSearch(mock_usa_client)
 
-        filtered_search = search.for_fiscal_year(2024)
+        filtered_search = search.fiscal_year(2024)
 
         assert len(filtered_search._filter_objects) == 1
         filter_dict = filtered_search._filter_objects[0].to_dict()
         assert filter_dict["time_period"][0]["start_date"] == "2023-10-01"
         assert filter_dict["time_period"][0]["end_date"] == "2024-09-30"
 
-    def test_for_agency(self, mock_usa_client):
+    def test_agency(self, mock_usa_client):
         """Test for_agency filter method."""
         search = SpendingSearch(mock_usa_client)
 
-        filtered_search = search.for_agency("NASA")
+        filtered_search = search.agency("NASA")
 
         assert len(filtered_search._filter_objects) == 1
         filter_dict = filtered_search._filter_objects[0].to_dict()
@@ -174,7 +174,7 @@ class TestFilterMethods:
         search = SpendingSearch(mock_usa_client)
         recipient_id = "1c3edaaa-611b-840c-bf2b-fd34df49f21f-P"
 
-        filtered_search = search.with_recipient_id(recipient_id)
+        filtered_search = search.recipient_id(recipient_id)
 
         assert len(filtered_search._filter_objects) == 1
         filter_dict = filtered_search._filter_objects[0].to_dict()
@@ -220,7 +220,7 @@ class TestBuildPayload:
 
     def test_build_payload_recipient(self, mock_usa_client):
         """Test _build_payload for recipient search."""
-        search = SpendingSearch(mock_usa_client).by_recipient().for_agency("NASA")
+        search = SpendingSearch(mock_usa_client).by_recipient().agency("NASA")
 
         payload = search._build_payload(1)
 

@@ -63,7 +63,7 @@ class MockUSASpendingClient(USASpendingClient):
             page_size=100
         )
 
-        results = list(mock_client.awards.search().with_award_types("A"))
+        results = list(mock_client.awards.search().award_type_codes("A"))
         assert len(results) == 250
         ```
     """

@@ -52,7 +52,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
 
         if not self._award_id:
             raise ValidationError(
-                "An award_id is required. Use the .for_award() method."
+                "An award_id is required. Use the .award_id() method."
             )
 
         payload = {
@@ -108,7 +108,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     # Filter Methods
     # ==========================================================================
 
-    def for_award(self, award_id: str) -> TransactionsSearch:
+    def award_id(self, award_id: str) -> TransactionsSearch:
         """
         Filter transactions for a specific award.
 

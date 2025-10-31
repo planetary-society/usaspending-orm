@@ -812,7 +812,7 @@ class Award(LazyRecord):
             >>> award.transactions.limit(10).all()  # Get first 10 transactions
             >>> list(award.transactions)  # Iterate through all transactions
         """
-        return self._client.transactions.for_award(self.generated_unique_award_id)
+        return self._client.transactions.award_id(self.generated_unique_award_id)
 
     @property
     def funding(self) -> "FundingSearch":
@@ -825,7 +825,7 @@ class Award(LazyRecord):
             >>> award.funding.order_by("fiscal_date", "asc").all()  # Get all funding records sorted by date
             >>> list(award.funding.limit(10))  # Iterate through first 10 funding records
         """
-        return self._client.funding.for_award(self.generated_unique_award_id)
+        return self._client.funding.award_id(self.generated_unique_award_id)
 
     @property
     def subawards(self) -> "SubAwardsSearch":

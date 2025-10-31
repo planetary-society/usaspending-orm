@@ -47,8 +47,8 @@ client = USASpendingClient()
 contracts = (
     client.awards.search()
     .contracts()  # Filter to contract types only
-    .for_fiscal_year(2024)
-    .with_recipient_types("small_business")
+    .fiscal_year(2024)
+    .recipient_type_names("small_business")
     .order_by("Last Modified Date", "desc")
     .limit(100)
 )
@@ -64,8 +64,8 @@ for contract in contracts:
 grants = (
     client.awards.search()
     .grants()  # Filter to grant types
-    .for_agency("Department of Education")
-    .for_fiscal_year(2023)
+    .agencies("Department of Education")
+    .fiscal_year(2023)
 )
 
 print(f"Total grants: {grants.count()}")
@@ -84,12 +84,12 @@ from datetime import date
 results = (
     client.awards.search()
     .contracts()
-    .for_agency("National Aeronautics and Space Administration")
-    .in_time_period("2020-03-01", date.today().isoformat())
-    .with_place_of_performance_locations(
+    .agencies("National Aeronautics and Space Administration")
+    .time_period("2020-03-01", date.today().isoformat())
+    .place_of_performance_locations(
         {"state_code": "CA", "country_code": "USA"}
     )
-    .with_award_amounts(
+    .award_amounts(
         {"lower_bound": 100000, "upper_bound": 10000000}
     )
     .order_by("Last Modified Date", "desc")
@@ -105,7 +105,7 @@ for award in results.page(1):
 The same filtering limitations and requirements that apply to the USAspending.gov API also apply here:
 
 1. **Required Award Type Filter**: Every query must include a filter for `award_type_codes`.
-    Or use the conveinience methods `.contracts()`, `.grants()`, `.loans()`, `.idvs()`, `.direct_payments()`, or `.other_assistance()`
+    Use the `.award_type_codes()` method or convenience methods like `.contracts()`, `.grants()`, `.loans()`, `.idvs()`, `.direct_payments()`, or `.other_assistance()`
     to set the award type category.
 
 2. **Single Category Restriction**: You cannot mix different award type categories
@@ -239,7 +239,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         if "award_type_codes" not in final_filters:
             raise ValidationError(
                 "A filter for 'award_type_codes' is required. "
-                "Use the .with_award_types() method."
+                "Use the .award_type_codes() method or a convenience method like .contracts()."
             )
 
         payload = {
@@ -316,7 +316,7 @@ class AwardsSearch(QueryBuilder["Award"]):
 
         Example:
             >>> # This would raise ValidationError:
-            >>> search.with_award_types("A", "02")  # Contract + Grant
+            >>> search.award_type_codes("A", "02")  # Contract + Grant
         """
         existing_codes = self._get_award_type_codes()
         all_codes = existing_codes | new_codes
@@ -353,7 +353,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             ValidationError: If award_type_codes filter is not set.
 
         Example:
-            >>> contracts = client.awards.search().contracts().for_fiscal_year(2024)
+            >>> contracts = client.awards.search().contracts().fiscal_year(2024)
             >>> total = contracts.count()
             >>> print(f"Found {total} contracts in FY2024")
         """
@@ -366,7 +366,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         if "award_type_codes" not in final_filters:
             raise ValidationError(
                 "A filter for 'award_type_codes' is required. "
-                "Use the .with_award_types() method."
+                "Use the .award_type_codes() method or a convenience method like .contracts()."
             )
 
         # Make the API call to count awards by type
@@ -396,7 +396,7 @@ class AwardsSearch(QueryBuilder["Award"]):
                 ('contracts', 'grants', 'loans', etc.) to their counts.
 
         Example:
-            >>> search = client.awards.search().for_fiscal_year(2024)
+            >>> search = client.awards.search().fiscal_year(2024)
             >>> counts = search.count_awards_by_type()
             >>> print(counts)  # {'contracts': 1234, 'grants': 567, ...}
         """
@@ -569,7 +569,7 @@ class AwardsSearch(QueryBuilder["Award"]):
     # Filter Methods
     # ==========================================================================
 
-    def with_keywords(self, *keywords: str) -> AwardsSearch:
+    def keywords(self, *keywords: str) -> AwardsSearch:
         """
         Filter awards by keyword search.
 
@@ -588,14 +588,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> results = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_keywords("Jupiter", "Saturn", "Neptune", "Uranus")
+            ...     .keywords("Jupiter", "Saturn", "Neptune", "Uranus")
             ... )
         """
         clone = self._clone()
         clone._filter_objects.append(KeywordsFilter(values=list(keywords)))
         return clone
 
-    def in_time_period(
+    def time_period(
         self,
         start_date: Union[datetime.date, str],
         end_date: Union[datetime.date, str],
@@ -628,14 +628,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> contracts_2023 = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .in_time_period("2023-01-01", "2023-12-31")
+            ...     .time_period("2023-01-01", "2023-12-31")
             ... )
 
             >>> # Find only NEW grants started in Q1 2024
             >>> new_grants = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .in_time_period("2024-01-01", "2024-03-31", new_awards_only=True)
+            ...     .time_period("2024-01-01", "2024-03-31", new_awards_only=True)
             ... )
         """
 
@@ -674,17 +674,19 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def for_fiscal_year(
+    def fiscal_year(
         self,
         year: int,
         new_awards_only: bool = False,
         date_type: Optional[str] = None,
     ) -> AwardsSearch:
         """
-        Filter awards by US government fiscal year.
+        Convenience method to apply a `time_period` filter for a U.S. government fiscal year.
 
-        A fiscal year runs from October 1 to September 30. For example,
-        FY2024 runs from October 1, 2023 to September 30, 2024.
+        A fiscal year is negatively offset to the calendar year by 3 months. For example,
+        FY 2024 runs from October 1, 2023 to September 30, 2024.
+        
+        
 
         Args:
             year: The fiscal year to filter by (e.g., 2024 for FY2024).
@@ -703,26 +705,26 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> fy2024_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .for_fiscal_year(2024)
+            ...     .fiscal_year(2024)
             ... )
 
             >>> # Get only NEW grants started in FY2023
             >>> new_fy2023_grants = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .for_fiscal_year(2023, new_awards_only=True)
+            ...     .fiscal_year(2023, new_awards_only=True)
             ... )
         """
         start_date = datetime.date(year - 1, 10, 1)
         end_date = datetime.date(year, 9, 30)
-        return self.in_time_period(
+        return self.time_period(
             start_date=start_date,
             end_date=end_date,
             new_awards_only=new_awards_only,
             date_type=date_type,
         )
 
-    def with_place_of_performance_scope(self, scope: str) -> AwardsSearch:
+    def place_of_performance_scope(self, scope: str) -> AwardsSearch:
         """
         Filter awards by domestic or foreign place of performance.
 
@@ -740,14 +742,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> foreign_aid = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .with_place_of_performance_scope("foreign")
+            ...     .place_of_performance_scope("foreign")
             ... )
 
             >>> # Find domestic infrastructure contracts
             >>> domestic_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_place_of_performance_scope("domestic")
+            ...     .place_of_performance_scope("domestic")
             ... )
         """
         location_scope = parse_location_scope(scope)
@@ -758,7 +760,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_place_of_performance_locations(
+    def place_of_performance_locations(
         self, *locations: dict[str, str]
     ) -> AwardsSearch:
         """
@@ -783,7 +785,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> texas_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_place_of_performance_locations(
+            ...     .place_of_performance_locations(
             ...         {"state_code": "TX", "city_name": "Austin", "country_code": "USA"},
             ...         {"state_code": "TX", "city_name": "Houston", "country_code": "USA"},
             ...         {"state_code": "TX", "city_name": "Dallas", "country_code": "USA"},
@@ -793,8 +795,8 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> # Find awards in a specific ZIP code
             >>> local_awards = (
             ...     client.awards.search()
-            ...     .with_award_types("A", "B")
-            ...     .with_place_of_performance_locations(
+            ...     .award_type_codes("A", "B")
+            ...     .place_of_performance_locations(
             ...         {"zip_code": "20001", "country_code": "USA"}
             ...     )
             ... )
@@ -810,7 +812,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def for_agency(
+    def agencies(
         self,
         name: str,
         agency_type: str = "awarding",
@@ -840,14 +842,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> dod_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .for_agency("Department of Defense")
+            ...     .agencies("Department of Defense")
             ... )
 
             >>> # Find awards funded by NASA (not necessarily awarded by them)
             >>> nasa_funded = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .for_agency(
+            ...     .agencies(
             ...         "National Aeronautics and Space Administration",
             ...         agency_type="funding"
             ...     )
@@ -857,7 +859,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> sub_agency_awards = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .for_agency(
+            ...     .agencies(
             ...         "National Institute of Health",
             ...         tier="subtier"
             ...     )
@@ -873,7 +875,41 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_recipient_search_text(self, *search_terms: str) -> AwardsSearch:
+    def agency(
+        self,
+        name: str,
+        agency_type: str = "awarding",
+        tier: str = "toptier",
+    ) -> AwardsSearch:
+        """
+        Helper method: Filter awards by a single agency (wraps agencies()).
+
+        This is a convenience wrapper around the agencies() method for improved readability
+        when filtering by a single agency.
+
+        Args:
+            name: The name of the agency (e.g., "Department of Defense").
+            agency_type: Whether to filter by "awarding" agency (who manages
+                the award) or "funding" agency (who provides the money).
+                Defaults to "awarding". Case-insensitive.
+            tier: Whether to filter by "toptier" agency (main department) or
+                "subtier" agency (sub-agency or office). Defaults to "toptier".
+                Case-insensitive.
+
+        Returns:
+            AwardsSearch: A new instance with the agency filter applied.
+
+        Example:
+            >>> # Find NASA contracts (more readable than agencies())
+            >>> nasa_contracts = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .agency("National Aeronautics and Space Administration")
+            ... )
+        """
+        return self.agencies(name, agency_type=agency_type, tier=tier)
+
+    def recipient_search_text(self, *search_terms: str) -> AwardsSearch:
         """
         Search for awards by recipient name, UEI, or DUNS.
 
@@ -891,14 +927,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> lockheed_awards = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_recipient_search_text("Lockheed Martin")
+            ...     .recipient_search_text("Lockheed Martin")
             ... )
 
             >>> # Search by UEI
             >>> specific_recipient = (
             ...     client.awards.search()
-            ...     .with_award_types("A", "B")
-            ...     .with_recipient_search_text("ABCD1234567890")
+            ...     .award_type_codes("A", "B")
+            ...     .recipient_search_text("ABCD1234567890")
             ... )
         """
         clone = self._clone()
@@ -907,7 +943,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_recipient_scope(self, scope: str) -> AwardsSearch:
+    def recipient_scope(self, scope: str) -> AwardsSearch:
         """
         Filter awards by domestic or foreign recipient location.
 
@@ -925,14 +961,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> foreign_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_recipient_scope("foreign")
+            ...     .recipient_scope("foreign")
             ... )
 
             >>> # Find domestic recipients
             >>> domestic_awards = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .with_recipient_scope("domestic")
+            ...     .recipient_scope("domestic")
             ... )
         """
         location_scope = parse_location_scope(scope)
@@ -943,7 +979,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_recipient_locations(self, *locations: dict[str, str]) -> AwardsSearch:
+    def recipient_locations(self, *locations: dict[str, str]) -> AwardsSearch:
         """
         Filter awards by specific recipient locations.
 
@@ -966,7 +1002,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> california_recipients = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_recipient_locations(
+            ...     .recipient_locations(
             ...         {"state_code": "CA", "country_code": "USA"}
             ...     )
             ... )
@@ -975,7 +1011,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> city_recipients = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .with_recipient_locations(
+            ...     .recipient_locations(
             ...         {"city_name": "Seattle", "state_code": "WA", "country_code": "USA"},
             ...         {"city_name": "Portland", "state_code": "OR", "country_code": "USA"}
             ...     )
@@ -990,7 +1026,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_recipient_types(self, *type_names: str) -> AwardsSearch:
+    def recipient_type_names(self, *type_names: str) -> AwardsSearch:
         """
         Filter awards by recipient or business types.
 
@@ -1007,14 +1043,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> small_biz_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_recipient_types("small_business")
+            ...     .recipient_type_names("small_business")
             ... )
 
             >>> # Find grants to universities and nonprofits
             >>> education_grants = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .with_recipient_types("higher_education", "nonprofit")
+            ...     .recipient_type_names("higher_education", "nonprofit")
             ... )
         """
         clone = self._clone()
@@ -1023,7 +1059,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_award_types(self, *award_codes: str) -> AwardsSearch:
+    def award_type_codes(self, *award_codes: str) -> AwardsSearch:
         """
         Filter by one or more award type codes.
 
@@ -1051,17 +1087,17 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> # Search for specific contract types
             >>> contracts = (
             ...     client.awards.search()
-            ...     .with_award_types("A", "B", "C", "D")
+            ...     .award_type_codes("A", "B", "C", "D")
             ... )
 
             >>> # Search for grants only
             >>> grants = (
             ...     client.awards.search()
-            ...     .with_award_types("02", "03", "04", "05")
+            ...     .award_type_codes("02", "03", "04", "05")
             ... )
 
             >>> # This will raise ValidationError (mixing categories):
-            >>> # client.awards.search().with_award_types("A", "02")  # Contract + Grant
+            >>> # client.awards.search().award_type_codes("A", "02")  # Contract + Grant
         """
         new_codes = set(award_codes)
         self._validate_single_award_type_category(new_codes)
@@ -1086,10 +1122,10 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> fy2024_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .for_fiscal_year(2024)
+            ...     .fiscal_year(2024)
             ... )
         """
-        return self.with_award_types(*CONTRACT_CODES)
+        return self.award_type_codes(*CONTRACT_CODES)
 
     def idvs(self) -> AwardsSearch:
         """
@@ -1106,10 +1142,10 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> dod_idvs = (
             ...     client.awards.search()
             ...     .idvs()
-            ...     .for_agency("Department of Defense")
+            ...     .agency("Department of Defense")
             ... )
         """
-        return self.with_award_types(*IDV_CODES)
+        return self.award_type_codes(*IDV_CODES)
 
     def loans(self) -> AwardsSearch:
         """
@@ -1125,11 +1161,11 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> sba_loans = (
             ...     client.awards.search()
             ...     .loans()
-            ...     .for_agency("Small Business Administration")
-            ...     .for_fiscal_year(2023)
+            ...     .agency("Small Business Administration")
+            ...     .fiscal_year(2023)
             ... )
         """
-        return self.with_award_types(*LOAN_CODES)
+        return self.award_type_codes(*LOAN_CODES)
 
     def grants(self) -> AwardsSearch:
         """
@@ -1145,11 +1181,11 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> education_grants = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .for_agency("Department of Education")
-            ...     .with_keywords("STEM", "research")
+            ...     .fiscal_year(2024)
+            ...     .keywords("STEM", "research")
             ... )
         """
-        return self.with_award_types(*GRANT_CODES)
+        return self.award_type_codes(*GRANT_CODES)
 
     def direct_payments(self) -> AwardsSearch:
         """
@@ -1166,10 +1202,10 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> ss_payments = (
             ...     client.awards.search()
             ...     .direct_payments()
-            ...     .for_agency("Social Security Administration")
+            ...     .fiscal_year(2024)
             ... )
         """
-        return self.with_award_types(*DIRECT_PAYMENT_CODES)
+        return self.award_type_codes(*DIRECT_PAYMENT_CODES)
 
     def other_assistance(self) -> AwardsSearch:
         """
@@ -1185,13 +1221,13 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> # Search for insurance and other assistance programs
             >>> other_assistance = (
             ...     client.awards.search()
-            ...     .other()
-            ...     .for_fiscal_year(2024)
+            ...     .other_assistance()
+            ...     .fiscal_year(2024)
             ... )
         """
-        return self.with_award_types(*OTHER_CODES)
+        return self.award_type_codes(*OTHER_CODES)
 
-    def with_award_ids(self, *award_ids: str) -> AwardsSearch:
+    def award_ids(self, *award_ids: str) -> AwardsSearch:
         """
         Filter by specific award IDs.
 
@@ -1211,14 +1247,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> specific_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_award_ids("W58RGZ-20-C-0037", "W911QY-20-C-0012")
+            ...     .award_ids("W58RGZ-20-C-0037", "W911QY-20-C-0012")
             ... )
 
             >>> # Search for a grant by FAIN
             >>> specific_grant = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .with_award_ids("1234567890ABCD")
+            ...     .award_ids("1234567890ABCD")
             ... )
         """
         clone = self._clone()
@@ -1227,7 +1263,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_award_amounts(
+    def award_amounts(
         self, *amounts: Union[dict[str, float], tuple[Optional[float], Optional[float]]]
     ) -> AwardsSearch:
         """
@@ -1246,7 +1282,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> mid_size_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_award_amounts(
+            ...     .award_amounts(
             ...         {"lower_bound": 1000000, "upper_bound": 10000000}
             ...     )
             ... )
@@ -1255,7 +1291,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> large_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_award_amounts(
+            ...     .award_amounts(
             ...         (5000000, None)  # $5M or more
             ...     )
             ... )
@@ -1264,7 +1300,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> grants = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .with_award_amounts(
+            ...     .award_amounts(
             ...         {"upper_bound": 100000},
             ...         {"lower_bound": 1000000}
             ...     )
@@ -1277,33 +1313,33 @@ class AwardsSearch(QueryBuilder["Award"]):
         clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
         return clone
 
-    def with_cfda_numbers(self, *program_numbers: str) -> AwardsSearch:
+    def program_numbers(self, *program_numbers: str) -> AwardsSearch:
         """
-        Filter by Catalog of Federal Domestic Assistance (CFDA) numbers.
+        Filter by program numbers (CFDA/Assistance Listing numbers).
 
         CFDA numbers identify specific federal assistance programs.
-        Also known as Assistance Listing numbers.
+        Also known as Assistance Listing numbers or program numbers.
 
         Args:
             *program_numbers: The CFDA/Assistance Listing numbers to filter by
                 (e.g., "10.001", "84.063").
 
         Returns:
-            AwardsSearch: A new instance with the CFDA filter applied.
+            AwardsSearch: A new instance with the program number filter applied.
 
         Example:
             >>> # Find Pell Grant awards (CFDA 84.063)
             >>> pell_grants = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .with_cfda_numbers("84.063")
+            ...     .program_numbers("84.063")
             ... )
 
             >>> # Find multiple agriculture programs
             >>> ag_programs = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .with_cfda_numbers("10.001", "10.310", "10.902")
+            ...     .program_numbers("10.001", "10.310", "10.902")
             ... )
         """
         clone = self._clone()
@@ -1312,7 +1348,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_naics_codes(
+    def naics_codes(
         self,
         require: Optional[list[str]] = None,
         exclude: Optional[list[str]] = None,
@@ -1334,14 +1370,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> healthcare = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_naics_codes(require=["62"])
+            ...     .naics_codes(require=["62"])
             ... )
 
             >>> # Find manufacturing contracts, excluding chemicals
             >>> manufacturing = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_naics_codes(
+            ...     .naics_codes(
             ...         require=["31", "32", "33"],  # Manufacturing codes
             ...         exclude=["325"]  # Exclude chemical manufacturing
             ...     )
@@ -1358,7 +1394,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_psc_codes(
+    def psc_codes(
         self,
         require: Optional[list[list[str]]] = None,
         exclude: Optional[list[list[str]]] = None,
@@ -1382,7 +1418,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> it_services = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_psc_codes(
+            ...     .psc_codes(
             ...         require=[["Service", "D"]],  # IT and Telecom services
             ...     )
             ... )
@@ -1391,7 +1427,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> research = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_psc_codes(
+            ...     .psc_codes(
             ...         require=[["Service", "A"]],  # Research and Development
             ...         exclude=[["Service", "A", "AN"]]  # Exclude medical R&D
             ...     )
@@ -1407,7 +1443,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_contract_pricing_types(self, *type_codes: str) -> AwardsSearch:
+    def contract_pricing_type_codes(self, *type_codes: str) -> AwardsSearch:
         """
         Filter contracts by pricing type.
 
@@ -1426,7 +1462,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> fixed_price = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_contract_pricing_types("J")
+            ...     .contract_pricing_type_codes("J")
             ... )
         """
         clone = self._clone()
@@ -1435,7 +1471,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_set_aside_types(self, *type_codes: str) -> AwardsSearch:
+    def set_aside_type_codes(self, *type_codes: str) -> AwardsSearch:
         """
         Filter contracts by set-aside type.
 
@@ -1454,7 +1490,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> small_biz_setaside = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_set_aside_types("SBA")
+            ...     .set_aside_type_codes("SBA")
             ... )
         """
         clone = self._clone()
@@ -1463,7 +1499,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_extent_competed_types(self, *type_codes: str) -> AwardsSearch:
+    def extent_competed_type_codes(self, *type_codes: str) -> AwardsSearch:
         """
         Filter contracts by competition level.
 
@@ -1481,7 +1517,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> competed = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_extent_competed_types("A")
+            ...     .extent_competed_type_codes("A")
             ... )
         """
         clone = self._clone()
@@ -1490,7 +1526,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_tas_codes(
+    def tas_codes(
         self,
         require: Optional[list[list[str]]] = None,
         exclude: Optional[list[list[str]]] = None,
@@ -1513,7 +1549,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> tas_filtered = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_tas_codes(
+            ...     .tas_codes(
             ...         require=[["091"], ["097"]]
             ...     )
             ... )
@@ -1528,7 +1564,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_treasury_account_components(
+    def treasury_account_components(
         self, *components: dict[str, str]
     ) -> AwardsSearch:
         """
@@ -1555,7 +1591,7 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> treasury_awards = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_treasury_account_components(
+            ...     .treasury_account_components(
             ...         {"aid": "097", "main": "0100"},
             ...         {"aid": "012", "main": "3500"}
             ...     )
@@ -1567,7 +1603,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def with_def_codes(self, *def_codes: str) -> AwardsSearch:
+    def def_codes(self, *def_codes: str) -> AwardsSearch:
         """
         Filter by Disaster Emergency Fund (DEF) codes.
 
@@ -1588,15 +1624,15 @@ class AwardsSearch(QueryBuilder["Award"]):
             >>> covid_contracts = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_def_codes("L", "M", "N", "O", "P")
-            ...     .for_fiscal_year(2021)
+            ...     .def_codes("L", "M", "N", "O", "P")
+            ...     .fiscal_year(2021)
             ... )
 
             >>> # Find infrastructure awards
             >>> infrastructure = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .with_def_codes("Z")
+            ...     .def_codes("Z")
             ... )
         """
         clone = self._clone()

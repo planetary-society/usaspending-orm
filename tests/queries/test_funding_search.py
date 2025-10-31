@@ -33,7 +33,7 @@ class TestFundingSearch:
         """Test that for_award properly sets the award_id."""
         search = FundingSearch(mock_usa_client)
 
-        result = search.for_award("CONT_AWD_123")
+        result = search.award_id("CONT_AWD_123")
 
         assert result._award_id == "CONT_AWD_123"
         assert result is not search  # Should return a clone
@@ -42,7 +42,7 @@ class TestFundingSearch:
         """Test that for_award strips whitespace from award_id."""
         search = FundingSearch(mock_usa_client)
 
-        result = search.for_award("  CONT_AWD_123  ")
+        result = search.award_id("  CONT_AWD_123  ")
 
         assert result._award_id == "CONT_AWD_123"
 
@@ -51,11 +51,11 @@ class TestFundingSearch:
         search = FundingSearch(mock_usa_client)
 
         with pytest.raises(ValidationError, match="award_id cannot be empty"):
-            search.for_award("")
+            search.award_id("")
 
     def test_build_payload_default(self, mock_usa_client):
         """Test default payload construction."""
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         payload = search._build_payload(1)
 
@@ -69,7 +69,7 @@ class TestFundingSearch:
 
     def test_build_payload_with_limit(self, mock_usa_client):
         """Test payload with custom limit."""
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123").limit(25)
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123").limit(25)
 
         payload = search._build_payload(1)
 
@@ -77,7 +77,7 @@ class TestFundingSearch:
 
     def test_build_payload_with_page(self, mock_usa_client):
         """Test payload with different page numbers."""
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         payload_page_1 = search._build_payload(1)
         payload_page_2 = search._build_payload(2)
@@ -87,7 +87,7 @@ class TestFundingSearch:
 
     def test_order_by_valid_fields(self, mock_usa_client):
         """Test order_by with valid fields."""
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         # Test user-friendly field names
         result = search.order_by("fiscal_date", "asc")
@@ -109,7 +109,7 @@ class TestFundingSearch:
 
     def test_order_by_all_mapped_fields(self, mock_usa_client):
         """Test all field mappings in SORT_FIELD_MAP."""
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         field_mappings = {
             "account_title": "account_title",
@@ -132,14 +132,14 @@ class TestFundingSearch:
 
     def test_order_by_invalid_direction(self, mock_usa_client):
         """Test order_by with invalid direction."""
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with pytest.raises(ValidationError, match="Invalid sort direction"):
             search.order_by("fiscal_date", "invalid")
 
     def test_order_by_invalid_field(self, mock_usa_client):
         """Test order_by with invalid field."""
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with pytest.raises(ValidationError, match="Invalid sort field"):
             search.order_by("invalid_field")
@@ -160,7 +160,7 @@ class TestFundingSearch:
         """Test that _clone preserves funding-specific attributes."""
         search = (
             FundingSearch(mock_usa_client)
-            .for_award("CONT_AWD_123")
+            .award_id("CONT_AWD_123")
             .order_by("fiscal_date", "asc")
             .limit(50)
         )
@@ -190,7 +190,7 @@ class TestFundingSearch:
             "/awards/funding/", fixture_data["results"], page_size=100
         )
 
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
         count = search.count()
 
         # Should count all results from the fixture
@@ -200,7 +200,7 @@ class TestFundingSearch:
         """Test that query methods can be chained."""
         search = (
             FundingSearch(mock_usa_client)
-            .for_award("CONT_AWD_123")
+            .award_id("CONT_AWD_123")
             .order_by("fiscal_date", "asc")
             .limit(25)
             .page_size(10)
@@ -228,7 +228,7 @@ class TestFundingSearch:
             "/awards/funding/", [fixture_data], auto_count=False
         )
 
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
         results = list(search)
 
         assert len(results) == len(fixture_data["results"])
@@ -250,7 +250,7 @@ class TestFundingSearch:
         # Set up mock to return fixture data
         mock_usa_client.set_response("/awards/funding/", fixture_data)
 
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123")
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")
         first = search.first()
 
         assert isinstance(first, Funding)
@@ -264,7 +264,7 @@ class TestFundingSearch:
         # Set up mock to return fixture data
         mock_usa_client.set_response("/awards/funding/", fixture_data)
 
-        search = FundingSearch(mock_usa_client).for_award("CONT_AWD_123").limit(5)
+        search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123").limit(5)
         results = search.all()
 
         assert isinstance(results, list)

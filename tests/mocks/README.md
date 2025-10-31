@@ -41,7 +41,7 @@ def test_award_search(mock_client):
     ]
     
     # Test execution
-    results = list(mock_client.awards.search().with_award_types("A"))
+    results = list(mock_client.awards.search().award_type_codes("A"))
     assert len(results) == 3
     
     # Manual assertion
@@ -60,7 +60,7 @@ def test_award_search(mock_usa_client):
     ])
     
     # Test execution
-    results = list(mock_usa_client.awards.search().with_award_types("A"))
+    results = list(mock_usa_client.awards.search().award_type_codes("A"))
     assert len(results) == 3
     
     # Built-in assertion
@@ -80,8 +80,8 @@ def test_award_search(mock_usa_client):
     
     results = list(
         mock_usa_client.awards.search()
-        .with_award_types("A")
-        .with_keywords("space")
+        .award_type_codes("A")
+        .keywords("space")
     )
     
     assert len(results) == 2
@@ -100,7 +100,7 @@ def test_pagination(mock_usa_client):
         page_size=100
     )
     
-    results = list(mock_usa_client.awards.search().with_award_types("A"))
+    results = list(mock_usa_client.awards.search().award_type_codes("A"))
     
     assert len(results) == 250
     assert mock_usa_client.get_request_count("/v2/search/spending_by_award/") == 3
@@ -117,7 +117,7 @@ def test_api_error(mock_usa_client):
     )
     
     with pytest.raises(APIError) as exc_info:
-        list(mock_usa_client.awards.search().with_award_types("X"))
+        list(mock_usa_client.awards.search().award_type_codes("X"))
     
     assert exc_info.value.status_code == 400
     assert "Invalid award type" in str(exc_info.value)
@@ -145,8 +145,8 @@ def test_request_tracking(mock_usa_client):
     
     list(
         mock_usa_client.awards.search()
-        .with_award_types("A")
-        .with_keywords("space")
+        .award_type_codes("A")
+        .keywords("space")
     )
     
     # Check what was sent
@@ -252,7 +252,7 @@ python -m pytest tests/test_mock_client_example.py -v
 
 3. Execute your test logic:
    ```python
-   results = list(mock_usa_client.awards.search().with_award_types("A"))
+   results = list(mock_usa_client.awards.search().award_type_codes("A"))
    assert len(results) == 1
    ```
 

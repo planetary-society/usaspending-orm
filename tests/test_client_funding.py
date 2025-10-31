@@ -19,7 +19,7 @@ class TestClientFunding:
 
     def test_funding_for_award_query_builder(self, mock_usa_client):
         """Test creating funding query through client."""
-        query = mock_usa_client.funding.for_award("CONT_AWD_123")
+        query = mock_usa_client.funding.award_id("CONT_AWD_123")
 
         assert query.__class__.__name__ == "FundingSearch"
         assert query._award_id == "CONT_AWD_123"
@@ -36,7 +36,7 @@ class TestClientFunding:
 
         # Execute query
         results = (
-            mock_usa_client.funding.for_award("CONT_AWD_123")
+            mock_usa_client.funding.award_id("CONT_AWD_123")
             .order_by("fiscal_date", "asc")
             .limit(5)
             .all()
@@ -114,7 +114,7 @@ class TestClientFunding:
         )
 
         # Test sorting by obligated amount
-        query = mock_usa_client.funding.for_award("CONT_AWD_123").order_by(
+        query = mock_usa_client.funding.award_id("CONT_AWD_123").order_by(
             "obligated_amount", "desc"
         )
 
@@ -158,7 +158,7 @@ class TestClientFunding:
         )
 
         # Get all results with small page size
-        results = mock_usa_client.funding.for_award("CONT_AWD_123").page_size(5).all()
+        results = mock_usa_client.funding.award_id("CONT_AWD_123").page_size(5).all()
 
         # Should get all results across both pages
         assert len(results) == len(fixture_data["results"])
@@ -179,7 +179,7 @@ class TestClientFunding:
 
         # Get first result
         first = (
-            mock_usa_client.funding.for_award("CONT_AWD_123")
+            mock_usa_client.funding.award_id("CONT_AWD_123")
             .order_by("fiscal_date", "asc")
             .first()
         )
@@ -202,17 +202,17 @@ class TestClientFunding:
         )
 
         # Query should return empty list
-        results = mock_usa_client.funding.for_award("CONT_AWD_123").all()
+        results = mock_usa_client.funding.award_id("CONT_AWD_123").all()
 
         assert results == []
 
         # First should return None
-        first = mock_usa_client.funding.for_award("CONT_AWD_123").first()
+        first = mock_usa_client.funding.award_id("CONT_AWD_123").first()
         assert first is None
 
         # Count should return 0
         mock_usa_client.set_response(
             MockUSASpendingClient.Endpoints.AWARD_FUNDING, empty_response
         )
-        count = mock_usa_client.funding.for_award("CONT_AWD_123").count()
+        count = mock_usa_client.funding.award_id("CONT_AWD_123").count()
         assert count == 0
