@@ -714,7 +714,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     )
             ... )
         """
-        from .filters import parse_agency_spec, AgencyFilter
 
         # Parse each agency dict into AgencySpec objects
         agency_specs = [parse_agency_spec(agency) for agency in agencies]
