@@ -1,6 +1,6 @@
 [project]
 name = "usaspending-orm"
-version = "0.5.2"
+version = "0.6.0"
 description = "A Python ORM wrapper for the USAspending.gov API with intuitive queries, automatic pagination, and smart caching"
 authors = [
     {name = "Casey Dreier", email = "casey.dreier@planetary.org"}

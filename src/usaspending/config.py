@@ -17,7 +17,7 @@ class _Config:
     def __init__(self):
         # Default settings are defined here as instance attributes
         self.base_url: str = "https://api.usaspending.gov/api/v2/"
-        self.user_agent: str = "usaspending-orm-python/0.5.2"
+        self.user_agent: str = "usaspending-orm-python/0.6.0"
         self.timeout: int = 30
         self.max_retries: int = 3
         self.retry_delay: float = 10.0
