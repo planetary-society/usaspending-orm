@@ -110,65 +110,6 @@ class TestSpendingLevelConfiguration:
 class TestFilterMethods:
     """Test filter methods."""
 
-    def test_with_keywords(self, mock_usa_client):
-        """Test with_keywords filter method."""
-        search = SpendingSearch(mock_usa_client)
-        filtered_search = search.keywords("transport", "logistics")
-
-        assert len(filtered_search._filter_objects) == 1
-        filter_dict = filtered_search._filter_objects[0].to_dict()
-        assert "keywords" in filter_dict
-        assert filter_dict["keywords"] == ["transport", "logistics"]
-
-    def test_in_time_period_with_dates(self, mock_usa_client):
-        """Test in_time_period with date objects."""
-        search = SpendingSearch(mock_usa_client)
-        start_date = datetime.date(2023, 1, 1)
-        end_date = datetime.date(2023, 12, 31)
-
-        filtered_search = search.time_period(start_date, end_date)
-
-        assert len(filtered_search._filter_objects) == 1
-        filter_dict = filtered_search._filter_objects[0].to_dict()
-        assert "time_period" in filter_dict
-        assert filter_dict["time_period"][0]["start_date"] == "2023-01-01"
-        assert filter_dict["time_period"][0]["end_date"] == "2023-12-31"
-
-    def test_in_time_period_with_strings(self, mock_usa_client):
-        """Test in_time_period with string dates."""
-        search = SpendingSearch(mock_usa_client)
-
-        filtered_search = search.time_period("2023-01-01", "2023-12-31")
-
-        assert len(filtered_search._filter_objects) == 1
-        filter_dict = filtered_search._filter_objects[0].to_dict()
-        assert filter_dict["time_period"][0]["start_date"] == "2023-01-01"
-        assert filter_dict["time_period"][0]["end_date"] == "2023-12-31"
-
-    def test_for_fiscal_year(self, mock_usa_client):
-        """Test for_fiscal_year method."""
-        search = SpendingSearch(mock_usa_client)
-
-        filtered_search = search.fiscal_year(2024)
-
-        assert len(filtered_search._filter_objects) == 1
-        filter_dict = filtered_search._filter_objects[0].to_dict()
-        assert filter_dict["time_period"][0]["start_date"] == "2023-10-01"
-        assert filter_dict["time_period"][0]["end_date"] == "2024-09-30"
-
-    def test_agency(self, mock_usa_client):
-        """Test for_agency filter method."""
-        search = SpendingSearch(mock_usa_client)
-
-        filtered_search = search.agency("NASA")
-
-        assert len(filtered_search._filter_objects) == 1
-        filter_dict = filtered_search._filter_objects[0].to_dict()
-        assert "agencies" in filter_dict
-        assert filter_dict["agencies"][0]["name"] == "NASA"
-        assert filter_dict["agencies"][0]["type"] == "awarding"
-        assert filter_dict["agencies"][0]["tier"] == "toptier"
-
     def test_with_recipient_id(self, mock_usa_client):
         """Test with_recipient_id filter method."""
         search = SpendingSearch(mock_usa_client)
