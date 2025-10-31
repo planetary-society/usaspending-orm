@@ -78,13 +78,16 @@ class _Config:
         if self.cache_enabled:
             if self.cache_backend == "file":
                 cache_backend = "pickle"  # cachier uses 'pickle' for file caching
-            else:
-                cache_backend = self.cache_backend
-            cachier.set_global_params(
-                stale_after=self.cache_ttl,
-                cache_dir=self.cache_dir,
-                backend=cache_backend,
-            )
+                cachier.set_global_params(
+                    stale_after=self.cache_ttl,
+                    cache_dir=self.cache_dir,
+                    backend=cache_backend,
+                )
+            else:  # memory backend
+                cachier.set_global_params(
+                    stale_after=self.cache_ttl,
+                    backend=self.cache_backend,
+                )
             cachier.enable_caching()
         else:
             cachier.disable_caching()
