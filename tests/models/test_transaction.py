@@ -1,6 +1,6 @@
 import pytest
 import json
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 from src.usaspending.models.transaction import Transaction
@@ -40,7 +40,7 @@ class TestTransaction:
         assert transaction.type_description == "DEFINITIVE CONTRACT"
 
     def test_action_date_parsing(self, transaction):
-        assert transaction.action_date == datetime(2025, 6, 23)
+        assert transaction.action_date == date(2025, 6, 23)
 
     def test_action_date_invalid_format(self):
         invalid_data = {"action_date": "invalid-date"}
@@ -116,7 +116,7 @@ class TestTransaction:
         assert transaction.amt == 1500000.5
 
     def test_repr(self, transaction):
-        expected = "<Txn CONT_TX_8000_-NONE-_80GSFC18C0008_P00065_-NONE-_0 2025-06-23 00:00:00 1600000.00>"
+        expected = "<Txn CONT_TX_8000_-NONE-_80GSFC18C0008_P00065_-NONE-_0 2025-06-23 1600000.00>"
         assert repr(transaction) == expected
 
     def test_repr_no_date(self):
@@ -132,7 +132,7 @@ class TestTransaction:
             assert transaction.id is not None
             assert transaction.type == "D"
             assert transaction.type_description == "DEFINITIVE CONTRACT"
-            assert isinstance(transaction.action_date, datetime)
+            assert isinstance(transaction.action_date, date)
             assert transaction.action_type in ["C", "B"]
             assert transaction.modification_number is not None
             assert transaction.award_description is not None
@@ -189,5 +189,5 @@ class TestTransaction:
 
         assert transaction.id == "TEST_TX_001"
         assert transaction.type == "A"
-        assert transaction.action_date == datetime(2024, 1, 15)
+        assert transaction.action_date == date(2024, 1, 15)
         assert transaction.amt == 750000.0

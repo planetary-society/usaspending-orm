@@ -8,8 +8,6 @@ import datetime
 from usaspending.queries.filters import (
     AgencyFilter,
     AgencySpec,
-    AgencyTier,
-    AgencyType,
     AwardAmount,
     AwardAmountFilter,
     AwardDateType,

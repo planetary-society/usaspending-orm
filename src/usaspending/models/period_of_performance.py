@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Dict, Any, Optional
 from .base_model import BaseModel
 from ..utils.formatter import to_date
-from datetime import datetime
+from datetime import date
 
 
 class PeriodOfPerformance(BaseModel):
@@ -20,19 +20,19 @@ class PeriodOfPerformance(BaseModel):
         )
 
     @property
-    def start_date(self) -> Optional[datetime]:
+    def start_date(self) -> Optional[date]:
         return self._start_date
 
     @property
-    def end_date(self) -> Optional[datetime]:
+    def end_date(self) -> Optional[date]:
         return self._end_date
 
     @property
-    def last_modified_date(self) -> Optional[datetime]:
+    def last_modified_date(self) -> Optional[date]:
         return to_date(self.get_value(["last_modified_date", "Last Modified Date"]))
 
     @property
-    def potential_end_date(self) -> Optional[datetime]:
+    def potential_end_date(self) -> Optional[date]:
         return to_date(
             self.get_value(
                 ["potential_end_date", "Period of Performance Potential End Date"]

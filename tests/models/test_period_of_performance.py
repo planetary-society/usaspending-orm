@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import date
 from unittest.mock import patch
 from src.usaspending.models.period_of_performance import PeriodOfPerformance
 
@@ -40,28 +40,28 @@ class TestPeriodOfPerformance:
         assert isinstance(period, PeriodOfPerformance)
 
     def test_start_date_property(self, sample_period_data):
-        """Test start_date property returns correct datetime"""
+        """Test start_date property returns correct date"""
         period = PeriodOfPerformance(sample_period_data)
         start_date = period.start_date
-        assert isinstance(start_date, datetime)
+        assert isinstance(start_date, date)
         assert start_date.year == 2018
         assert start_date.month == 3
         assert start_date.day == 5
 
     def test_end_date_property(self, sample_period_data):
-        """Test end_date property returns correct datetime"""
+        """Test end_date property returns correct date"""
         period = PeriodOfPerformance(sample_period_data)
         end_date = period.end_date
-        assert isinstance(end_date, datetime)
+        assert isinstance(end_date, date)
         assert end_date.year == 2025
         assert end_date.month == 8
         assert end_date.day == 23
 
     def test_last_modified_date_property(self, sample_period_data):
-        """Test last_modified_date property returns correct datetime"""
+        """Test last_modified_date property returns correct date"""
         period = PeriodOfPerformance(sample_period_data)
         last_modified = period.last_modified_date
-        assert isinstance(last_modified, datetime)
+        assert isinstance(last_modified, date)
         assert last_modified.year == 2025
         assert last_modified.month == 6
         assert last_modified.day == 23
@@ -72,21 +72,21 @@ class TestPeriodOfPerformance:
 
         # Should pick up "Start Date"
         start_date = period.start_date
-        assert isinstance(start_date, datetime)
+        assert isinstance(start_date, date)
         assert start_date.year == 2020
         assert start_date.month == 1
         assert start_date.day == 1
 
         # Should pick up "End Date"
         end_date = period.end_date
-        assert isinstance(end_date, datetime)
+        assert isinstance(end_date, date)
         assert end_date.year == 2021
         assert end_date.month == 12
         assert end_date.day == 31
 
         # Should pick up "Last Modified Date"
         last_modified = period.last_modified_date
-        assert isinstance(last_modified, datetime)
+        assert isinstance(last_modified, date)
         assert last_modified.year == 2021
         assert last_modified.month == 6
         assert last_modified.day == 15
@@ -139,24 +139,21 @@ class TestPeriodOfPerformance:
         """Test __repr__ with complete data"""
         period = PeriodOfPerformance(sample_period_data)
         repr_str = repr(period)
-        assert (
-            repr_str
-            == "<Period of Performance 2018-03-05 00:00:00 -> 2025-08-23 00:00:00>"
-        )
+        assert repr_str == "<Period of Performance 2018-03-05 -> 2025-08-23>"
 
     def test_repr_with_missing_start_date(self):
         """Test __repr__ with missing start date"""
         data = {"end_date": "2025-08-23"}
         period = PeriodOfPerformance(data)
         repr_str = repr(period)
-        assert repr_str == "<Period of Performance ? -> 2025-08-23 00:00:00>"
+        assert repr_str == "<Period of Performance ? -> 2025-08-23>"
 
     def test_repr_with_missing_end_date(self):
         """Test __repr__ with missing end date"""
         data = {"start_date": "2018-03-05"}
         period = PeriodOfPerformance(data)
         repr_str = repr(period)
-        assert repr_str == "<Period of Performance 2018-03-05 00:00:00 -> ?>"
+        assert repr_str == "<Period of Performance 2018-03-05 -> ?>"
 
     def test_repr_with_no_dates(self, empty_period_data):
         """Test __repr__ with no dates"""

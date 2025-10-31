@@ -3,7 +3,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from functools import cached_property
-from datetime import datetime
+from datetime import date
 from decimal import Decimal
 
 from .lazy_record import LazyRecord
@@ -314,22 +314,22 @@ class Award(LazyRecord):
         return to_decimal(self._lazy_get("total_subaward_amount", default=None))
 
     @property
-    def date_signed(self) -> Optional[datetime]:
+    def date_signed(self) -> Optional[date]:
         """Date the award was signed by the Government or a binding agreement was reached.
 
         Returns:
-            Optional[datetime]: The date the award was signed, or None if not available.
+            Optional[date]: The date the award was signed, or None if not available.
         """
         return to_date(
             self._lazy_get("date_signed", "Base Obligation Date", default=None)
         )
 
     @property
-    def base_obligation_date(self) -> Optional[datetime]:
+    def base_obligation_date(self) -> Optional[date]:
         """Base obligation date for the award (alias for date_signed).
 
         Returns:
-            Optional[datetime]: The base obligation date, or None if not available.
+            Optional[date]: The base obligation date, or None if not available.
         """
         return self.date_signed
 
@@ -480,11 +480,11 @@ class Award(LazyRecord):
         ) or Decimal("0.00")
 
     @property
-    def start_date(self) -> Optional[datetime]:
+    def start_date(self) -> Optional[date]:
         """Award start date from period of performance or obligation data.
 
         Returns:
-            Optional[datetime]: The award start date, or None if not available.
+            Optional[date]: The award start date, or None if not available.
         """
         start_date = self.get_value(
             ["Start Date", "Base Obligation Date", "Period of Performance Start Date"]
@@ -495,11 +495,11 @@ class Award(LazyRecord):
         return to_date(start_date)
 
     @property
-    def end_date(self) -> Optional[datetime]:
+    def end_date(self) -> Optional[date]:
         """Award end date from period of performance data.
 
         Returns:
-            Optional[datetime]: The award end date, or None if not available.
+            Optional[date]: The award end date, or None if not available.
         """
         end_date = self.get_value(["End Date", "Period of Performance End Date"])
         if not end_date:

@@ -118,8 +118,7 @@ The same filtering limitations and requirements that apply to the USAspending.go
 
 from __future__ import annotations
 
-import datetime
-from typing import Any, Optional, Union
+from typing import Any
 
 from ..client import USASpendingClient
 from usaspending.exceptions import ValidationError

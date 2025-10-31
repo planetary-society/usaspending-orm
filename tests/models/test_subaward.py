@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -74,7 +74,7 @@ class TestSubAwardModel:
         subaward = SubAward(subaward_data, mock_usa_client)
 
         assert subaward.sub_award_amount == subaward_data["Sub-Award Amount"]
-        assert isinstance(subaward.sub_award_date, datetime)
+        assert isinstance(subaward.sub_award_date, date)
         expected_date = to_date(subaward_data["Sub-Award Date"])
         assert subaward.sub_award_date == expected_date
 

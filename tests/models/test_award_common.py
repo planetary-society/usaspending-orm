@@ -91,7 +91,7 @@ class AwardTestingMixin:
         assert pop.raw == fixture_data["period_of_performance"]
         expected_start_date = datetime.fromisoformat(
             fixture_data["period_of_performance"]["start_date"]
-        )
+        ).date()
         assert pop.start_date == expected_start_date
 
     def test_recipient_property(self, mock_usa_client, fixture_data):

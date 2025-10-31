@@ -1,5 +1,5 @@
 from typing import List, Any, Optional, Set
-from datetime import datetime
+from datetime import datetime, date
 import re
 import yaml
 from pathlib import Path
@@ -13,8 +13,8 @@ from ..logging_config import USASpendingLogger
 logger = USASpendingLogger.get_logger(__name__)
 
 
-def to_date(date_string: str) -> Optional[datetime]:
-    """Convert date string to datetime object.
+def to_date(date_string: str) -> Optional[date]:
+    """Convert date string to date object.
 
     Supports multiple date formats:
     - YYYY-MM-DD (date only)
@@ -23,11 +23,13 @@ def to_date(date_string: str) -> Optional[datetime]:
     - YYYY-MM-DDTHH:MM:SSZ (ISO datetime with UTC indicator)
     - YYYY-MM-DDTHH:MM:SS+/-HH:MM (ISO datetime with timezone offset)
 
+    Note: For formats with time components, only the date portion is returned.
+
     Args:
         date_string: Date string in any supported format
 
     Returns:
-        datetime object or None if parsing fails
+        date object or None if parsing fails
     """
     if not date_string:
         return None
@@ -43,7 +45,9 @@ def to_date(date_string: str) -> Optional[datetime]:
 
     for fmt in formats:
         try:
-            return datetime.strptime(date_string, fmt)
+            parsed_datetime = datetime.strptime(date_string, fmt)
+            # Return only the date portion
+            return parsed_datetime.date()
         except ValueError:
             continue
 

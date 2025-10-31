@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, TYPE_CHECKING
-from datetime import datetime
+from datetime import date
 from functools import cached_property
 from decimal import Decimal
 from ..utils.formatter import (
@@ -163,7 +163,7 @@ class SubAward(ClientAwareModel):
         return contracts_titlecase(name) if name else None
 
     @property
-    def sub_award_date(self) -> Optional[datetime]:
+    def sub_award_date(self) -> Optional[date]:
         """Date the subaward was issued."""
         return to_date(self.raw.get("Sub-Award Date"))
 
@@ -265,6 +265,6 @@ class SubAward(ClientAwareModel):
         return self.sub_award_description
 
     @property
-    def award_date(self) -> Optional[datetime]:
+    def award_date(self) -> Optional[date]:
         """Alias for sub_award_date."""
         return self.sub_award_date

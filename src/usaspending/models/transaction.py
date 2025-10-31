@@ -1,6 +1,6 @@
 from .base_model import BaseModel
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date
 from typing import Dict, Any, Optional
 from decimal import Decimal
 from ..utils.formatter import to_decimal, smart_sentence_case, to_date
@@ -42,12 +42,12 @@ class Transaction(BaseModel):
         return self.raw.get("type_description")
 
     @property
-    def action_date(self) -> Optional[datetime]:
+    def action_date(self) -> Optional[date]:
         """
-        Return the transaction's action date parsed as a datetime object.
+        Return the transaction's action date parsed as a date object.
 
         Returns:
-            Optional[datetime]: A datetime representing the action date, or None
+            Optional[date]: A date representing the action date, or None
             when no valid date is available.
         """
 

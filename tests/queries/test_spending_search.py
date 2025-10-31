@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import pytest
 
 from usaspending.queries.spending_search import SpendingSearch

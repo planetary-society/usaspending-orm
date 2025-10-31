@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
-from typing import Any, Optional, Union, Literal
+from typing import Any, Optional, Literal
 
 from ..client import USASpendingClient
 from usaspending.exceptions import ValidationError
