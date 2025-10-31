@@ -34,7 +34,7 @@ class _Config:
         )
 
         # Caching via cachier
-        self.cache_enabled: bool = True
+        self.cache_enabled: bool = False
         self.cache_backend: str = "file"  # Default file-based backend for cachier
         self.cache_dir: str = os.path.join(
             os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
