@@ -14,7 +14,6 @@ from usaspending.models.state_spending import StateSpending
 from usaspending.queries.query_builder import QueryBuilder
 from usaspending.logging_config import USASpendingLogger
 from usaspending.queries.filters import (
-    AgencyFilter,
     AwardAmountFilter,
     AwardDateType,
     KeywordsFilter,
@@ -24,8 +23,6 @@ from usaspending.queries.filters import (
     TieredCodeFilter,
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
-    parse_agency_tier,
-    parse_agency_type,
     parse_award_amount,
     parse_award_date_type,
     parse_location_scope,
@@ -412,23 +409,64 @@ class SpendingSearch(QueryBuilder["Spending"]):
         )
         return clone
 
+    def agencies(self, *agencies: dict[str, str]) -> SpendingSearch:
+        """
+        Filter by one or more awarding or funding agencies.
+
+        Args:
+            *agencies: One or more agency specifications as dictionaries.
+                Each dictionary must contain:
+                - name: Agency name (required, e.g., "Department of Defense")
+                - type: "awarding" or "funding" (required)
+                - tier: "toptier" or "subtier" (required)
+                - toptier_name: Parent agency name (optional, for scoping subtiers)
+
+        Returns:
+            SpendingSearch: A new instance with the agency filter applied.
+
+        Raises:
+            ValidationError: If required fields are missing or invalid.
+
+        Example:
+            >>> # Find spending for DOD and NASA
+            >>> multi_agency = (
+            ...     client.spending.search()
+            ...     .agencies(
+            ...         {"name": "Department of Defense", "type": "awarding", "tier": "toptier"},
+            ...         {"name": "National Aeronautics and Space Administration", "type": "awarding", "tier": "toptier"},
+            ...     )
+            ... )
+        """
+        from .filters import parse_agency_spec, AgencyFilter
+
+        # Parse each agency dict into AgencySpec objects
+        agency_specs = [parse_agency_spec(agency) for agency in agencies]
+
+        clone = self._clone()
+        clone._filter_objects.append(AgencyFilter(agencies=agency_specs))
+        return clone
+
     def agency(
         self,
         name: str,
         agency_type: str = "awarding",
         tier: str = "toptier",
+        toptier_name: str = None,
     ) -> SpendingSearch:
         """
-        Filter by a specific awarding or funding agency.
+        Helper method: Filter by a single agency (wraps agencies()).
+
+        This is a convenience wrapper around the agencies() method for improved readability
+        when filtering by a single agency.
 
         Args:
             name: The name of the agency.
             agency_type: Whether to filter by "awarding" agency (who manages
                 the award) or "funding" agency (who provides the money).
-                Defaults to "awarding". Case-insensitive.
+                Defaults to "awarding".
             tier: Whether to filter by "toptier" agency (main department) or
                 "subtier" agency (sub-agency or office). Defaults to "toptier".
-                Case-insensitive.
+            toptier_name: Parent agency name (optional, for scoping subtiers).
 
         Returns:
             A new SpendingSearch instance with the filter applied.
@@ -437,15 +475,14 @@ class SpendingSearch(QueryBuilder["Spending"]):
             ValidationError: If agency_type is not "awarding" or "funding",
                 or if tier is not "toptier" or "subtier".
         """
-        # Convert string inputs to enums
-        agency_type_enum = parse_agency_type(agency_type)
-        tier_enum = parse_agency_tier(tier)
-
-        clone = self._clone()
-        clone._filter_objects.append(
-            AgencyFilter(agency_type=agency_type_enum, tier=tier_enum, name=name)
-        )
-        return clone
+        agency_dict = {
+            "name": name,
+            "type": agency_type,
+            "tier": tier,
+        }
+        if toptier_name:
+            agency_dict["toptier_name"] = toptier_name
+        return self.agencies(agency_dict)
 
     def recipient_search_text(self, *search_terms: str) -> SpendingSearch:
         """

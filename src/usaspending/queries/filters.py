@@ -77,6 +77,27 @@ class LocationSpec:
         return data
 
 
+@dataclass(frozen=True)
+class AgencySpec:
+    """Represents a standard agency specification for awarding/funding agency filters."""
+
+    name: str
+    type: str  # "awarding" or "funding"
+    tier: str  # "toptier" or "subtier"
+    toptier_name: Optional[str] = None  # For scoping subtiers to specific parent
+
+    def to_dict(self) -> dict[str, str]:
+        """Serializes the agency spec to the dictionary format required by the API."""
+        data = {
+            "name": self.name,
+            "type": self.type,
+            "tier": self.tier,
+        }
+        if self.toptier_name:
+            data["toptier_name"] = self.toptier_name
+        return data
+
+
 # ==============================================================================
 # Base Filter Abstraction
 # ==============================================================================
@@ -152,20 +173,13 @@ class LocationFilter(BaseFilter):
 
 @dataclass(frozen=True)
 class AgencyFilter(BaseFilter):
-    """Filter by an awarding or funding agency."""
+    """Filter by one or more awarding or funding agencies."""
 
     key: ClassVar[str] = "agencies"
-    agency_type: AgencyType
-    tier: AgencyTier
-    name: str
+    agencies: list[AgencySpec]
 
     def to_dict(self) -> dict[str, list[dict[str, str]]]:
-        agency_object = {
-            "type": self.agency_type.value,
-            "tier": self.tier.value,
-            "name": self.name,
-        }
-        return {self.key: [agency_object]}
+        return {self.key: [agency.to_dict() for agency in self.agencies]}
 
 
 @dataclass(frozen=True)
@@ -381,3 +395,43 @@ def parse_location_spec(location: dict[str, str]) -> LocationSpec:
         LocationSpec: The corresponding dataclass instance.
     """
     return LocationSpec(**location)
+
+
+def parse_agency_spec(agency: dict[str, str]) -> AgencySpec:
+    """
+    Convert a dictionary to an AgencySpec dataclass.
+
+    Args:
+        agency: A dictionary with agency fields: name, type, tier,
+            and optionally toptier_name.
+
+    Returns:
+        AgencySpec: The corresponding dataclass instance.
+
+    Raises:
+        ValidationError: If required fields are missing or invalid.
+    """
+    from ..exceptions import ValidationError
+
+    # Validate required fields
+    if "name" not in agency:
+        raise ValidationError("Agency specification must include 'name' field")
+    if "type" not in agency:
+        raise ValidationError("Agency specification must include 'type' field")
+    if "tier" not in agency:
+        raise ValidationError("Agency specification must include 'tier' field")
+
+    # Validate type and tier values
+    valid_types = {"awarding", "funding"}
+    valid_tiers = {"toptier", "subtier"}
+
+    if agency["type"] not in valid_types:
+        raise ValidationError(
+            f"Agency type must be 'awarding' or 'funding', got: {agency['type']}"
+        )
+    if agency["tier"] not in valid_tiers:
+        raise ValidationError(
+            f"Agency tier must be 'toptier' or 'subtier', got: {agency['tier']}"
+        )
+
+    return AgencySpec(**agency)

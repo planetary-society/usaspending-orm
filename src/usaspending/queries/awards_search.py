@@ -64,7 +64,7 @@ for contract in contracts:
 grants = (
     client.awards.search()
     .grants()  # Filter to grant types
-    .agencies("Department of Education")
+    .agency("Department of Education")
     .fiscal_year(2023)
 )
 
@@ -84,7 +84,7 @@ from datetime import date
 results = (
     client.awards.search()
     .contracts()
-    .agencies("National Aeronautics and Space Administration")
+    .agency("National Aeronautics and Space Administration")
     .time_period("2020-03-01", date.today().isoformat())
     .place_of_performance_locations(
         {"state_code": "CA", "country_code": "USA"}
@@ -132,7 +132,6 @@ from usaspending.models.loan import Loan
 from usaspending.queries.query_builder import QueryBuilder
 from usaspending.logging_config import USASpendingLogger
 from usaspending.queries.filters import (
-    AgencyFilter,
     AwardAmountFilter,
     AwardDateType,
     KeywordsFilter,
@@ -142,8 +141,6 @@ from usaspending.queries.filters import (
     TieredCodeFilter,
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
-    parse_agency_tier,
-    parse_agency_type,
     parse_award_amount,
     parse_award_date_type,
     parse_location_scope,
@@ -812,67 +809,56 @@ class AwardsSearch(QueryBuilder["Award"]):
         )
         return clone
 
-    def agencies(
-        self,
-        name: str,
-        agency_type: str = "awarding",
-        tier: str = "toptier",
-    ) -> AwardsSearch:
+    def agencies(self, *agencies: dict[str, str]) -> AwardsSearch:
         """
-        Filter awards by a specific awarding or funding agency.
+        Filter awards by one or more awarding or funding agencies.
 
         Args:
-            name: The name of the agency (e.g., "Department of Defense").
-            agency_type: Whether to filter by "awarding" agency (who manages
-                the award) or "funding" agency (who provides the money).
-                Defaults to "awarding". Case-insensitive.
-            tier: Whether to filter by "toptier" agency (main department) or
-                "subtier" agency (sub-agency or office). Defaults to "toptier".
-                Case-insensitive.
+            *agencies: One or more agency specifications as dictionaries.
+                Each dictionary must contain:
+                - name: Agency name (required, e.g., "Department of Defense")
+                - type: "awarding" or "funding" (required)
+                - tier: "toptier" or "subtier" (required)
+                - toptier_name: Parent agency name (optional, for scoping subtiers)
 
         Returns:
             AwardsSearch: A new instance with the agency filter applied.
 
         Raises:
-            ValidationError: If agency_type is not "awarding" or "funding",
-                or if tier is not "toptier" or "subtier".
+            ValidationError: If required fields are missing or invalid.
 
         Example:
-            >>> # Find all DOD contracts
-            >>> dod_contracts = (
-            ...     client.awards.search()
-            ...     .contracts()
-            ...     .agencies("Department of Defense")
-            ... )
-
-            >>> # Find awards funded by NASA (not necessarily awarded by them)
-            >>> nasa_funded = (
+            >>> # Find DOD and NASA contracts
+            >>> multi_agency = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .agencies(
-            ...         "National Aeronautics and Space Administration",
-            ...         agency_type="funding"
+            ...         {"name": "Department of Defense", "type": "awarding", "tier": "toptier"},
+            ...         {"name": "National Aeronautics and Space Administration", "type": "awarding", "tier": "toptier"},
             ...     )
             ... )
 
-            >>> # Find sub-agency awards
-            >>> sub_agency_awards = (
+            >>> # Find awards with specific subtier agency scoped to parent
+            >>> subtier_awards = (
             ...     client.awards.search()
             ...     .grants()
             ...     .agencies(
-            ...         "National Institute of Health",
-            ...         tier="subtier"
+            ...         {
+            ...             "name": "Office of Inspector General",
+            ...             "type": "awarding",
+            ...             "tier": "subtier",
+            ...             "toptier_name": "Department of Defense"
+            ...         }
             ...     )
             ... )
         """
-        # Convert string inputs to enums
-        agency_type_enum = parse_agency_type(agency_type)
-        tier_enum = parse_agency_tier(tier)
+        from .filters import parse_agency_spec, AgencyFilter
+
+        # Parse each agency dict into AgencySpec objects
+        agency_specs = [parse_agency_spec(agency) for agency in agencies]
 
         clone = self._clone()
-        clone._filter_objects.append(
-            AgencyFilter(agency_type=agency_type_enum, tier=tier_enum, name=name)
-        )
+        clone._filter_objects.append(AgencyFilter(agencies=agency_specs))
         return clone
 
     def agency(
@@ -880,6 +866,7 @@ class AwardsSearch(QueryBuilder["Award"]):
         name: str,
         agency_type: str = "awarding",
         tier: str = "toptier",
+        toptier_name: str = None,
     ) -> AwardsSearch:
         """
         Helper method: Filter awards by a single agency (wraps agencies()).
@@ -891,10 +878,10 @@ class AwardsSearch(QueryBuilder["Award"]):
             name: The name of the agency (e.g., "Department of Defense").
             agency_type: Whether to filter by "awarding" agency (who manages
                 the award) or "funding" agency (who provides the money).
-                Defaults to "awarding". Case-insensitive.
+                Defaults to "awarding".
             tier: Whether to filter by "toptier" agency (main department) or
                 "subtier" agency (sub-agency or office). Defaults to "toptier".
-                Case-insensitive.
+            toptier_name: Parent agency name (optional, for scoping subtiers).
 
         Returns:
             AwardsSearch: A new instance with the agency filter applied.
@@ -907,7 +894,14 @@ class AwardsSearch(QueryBuilder["Award"]):
             ...     .agency("National Aeronautics and Space Administration")
             ... )
         """
-        return self.agencies(name, agency_type=agency_type, tier=tier)
+        agency_dict = {
+            "name": name,
+            "type": agency_type,
+            "tier": tier,
+        }
+        if toptier_name:
+            agency_dict["toptier_name"] = toptier_name
+        return self.agencies(agency_dict)
 
     def recipient_search_text(self, *search_terms: str) -> AwardsSearch:
         """

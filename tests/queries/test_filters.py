@@ -7,6 +7,7 @@ import datetime
 # Assuming the filter classes are in this location
 from usaspending.queries.filters import (
     AgencyFilter,
+    AgencySpec,
     AgencyTier,
     AgencyType,
     AwardAmount,
@@ -107,29 +108,55 @@ def test_treasury_account_components_filter_serialization():
 
 def test_agency_filter_serialization():
     """
-    Tests that AgencyFilter serializes a single agency correctly.
+    Tests that AgencyFilter serializes agencies correctly.
     """
-    # Arrange
-    agency_filter = AgencyFilter(
-        agency_type=AgencyType.FUNDING,
-        tier=AgencyTier.TOPTIER,
+    
+    agency_spec = AgencySpec(
         name="Department of Pizza",
+        type="funding",
+        tier="toptier"
     )
+    
+    agency_spec_2 = AgencySpec(
+        name="Department of Burgers",
+        type="awarding",
+        tier="toptier"
+    )
+    
+    # Start with a single agency
+    agency_filter = AgencyFilter(agencies=[agency_spec])
     expected_dict = {
         "agencies": [
             {
+                "name": "Department of Pizza",
                 "type": "funding",
                 "tier": "toptier",
-                "name": "Department of Pizza",
             }
         ]
     }
-
-    # Act
+    
     result_dict = agency_filter.to_dict()
-
-    # Assert
     assert result_dict == expected_dict
+    
+    # Now test with two agencies
+    dual_agency_filter = AgencyFilter(agencies=[agency_spec, agency_spec_2])
+    dual_expected_dict = {
+        "agencies": [
+            {
+                "name": "Department of Pizza",
+                "type": "funding",
+                "tier": "toptier",
+            },
+            {
+                "name": "Department of Burgers",
+                "type": "awarding",
+                "tier": "toptier",
+            }
+        ]
+    }
+    
+    result_dict = dual_agency_filter.to_dict()
+    assert result_dict == dual_expected_dict
 
 
 def test_location_filter_for_state():
