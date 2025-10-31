@@ -134,14 +134,18 @@ The library uses lazy-loading to avoid unnecessary API calls. Missing award and 
 Use the client as a context manager (recommended) or explicitly call `close()`:
 
 ```python
-# Pattern 1: Access all data within the context (recommended)
 with USASpendingClient() as client:
     awards = client.awards.search().agencies("NASA").all()
     for award in awards:
         # Access lazy-loaded properties inside the context
-        print(f"{award.recipient_name}: ${award.total_obligation:,.2f}")
+        print(f"{award.recipient.name}: ${award.total_obligation:,.2f}")
         print(f"Subawards: {award.subaward_count}")
 # Session automatically closed here
+
+# Or explicitly manage session
+client = USASpendingClient()
+awards = client.awards.search().agencies("NASA").all()
+client.close()
 ```
 
 Accessing related properties after the client session closes raises a `DetachedInstanceError`:
