@@ -54,7 +54,7 @@ class TestFundingResource:
         assert hasattr(query, "__iter__")
 
         # Should have FundingSearch-specific methods
-        assert hasattr(query, "for_award")
+        assert hasattr(query, "award_id")
         assert hasattr(query, "order_by")
 
     def test_funding_query_chaining(self, mock_usa_client):

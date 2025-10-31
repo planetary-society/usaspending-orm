@@ -64,13 +64,13 @@ class TestSubAwardsResource:
         assert hasattr(query, "__iter__")
 
         # Should have AwardsSearch filter methods
-        assert hasattr(query, "with_award_types")
-        assert hasattr(query, "with_keywords")
-        assert hasattr(query, "in_time_period")
-        assert hasattr(query, "for_agency")
+        assert hasattr(query, "award_type_codes")
+        assert hasattr(query, "keywords")
+        assert hasattr(query, "time_period")
+        assert hasattr(query, "agency")
 
         # Should have SubAwardsSearch-specific methods
-        assert hasattr(query, "for_award")
+        assert hasattr(query, "award_id")
 
     def test_subawards_query_chaining(self, mock_usa_client):
         """Test that query builder methods can be chained."""

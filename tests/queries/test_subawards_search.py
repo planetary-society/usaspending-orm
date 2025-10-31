@@ -184,14 +184,14 @@ class TestSubAwardsSearch:
         search = SubAwardsSearch(mock_usa_client)
 
         # Should have all AwardsSearch filter methods
-        assert hasattr(search, "with_keywords")
-        assert hasattr(search, "in_time_period")
-        assert hasattr(search, "for_agency")
-        assert hasattr(search, "with_award_types")
-        assert hasattr(search, "with_place_of_performance_scope")
-        assert hasattr(search, "with_place_of_performance_locations")
-        assert hasattr(search, "with_recipient_locations")
-        assert hasattr(search, "with_award_amounts")
+        assert hasattr(search, "keywords")
+        assert hasattr(search, "time_period")
+        assert hasattr(search, "agency")
+        assert hasattr(search, "award_type_codes")
+        assert hasattr(search, "place_of_performance_scope")
+        assert hasattr(search, "place_of_performance_locations")
+        assert hasattr(search, "recipient_locations")
+        assert hasattr(search, "award_amounts")
 
     def test_immutability(self, mock_usa_client):
         """Test that SubAwardsSearch maintains immutability."""
