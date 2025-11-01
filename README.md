@@ -288,7 +288,7 @@ This library was initially developed to serve the needs of The Planetary Society
 
 We have open-sourced the project to enable others to better use USASpending data. 
 
-[The Planetary Society](planetary.org) is an independent nonprofit organization that empowers the world's citizens to advance space science and exploration. The organization is supported by individuals across the world, and does not accept government grants nor does it have major aerospace donations.
+[The Planetary Society](https://planetary.org) is an independent nonprofit organization that empowers the world's citizens to advance space science and exploration. The organization is supported by individuals across the world, and does not accept government grants nor does it have major aerospace donations.
 
 Please consider supporting our work by [becoming a member](https://www.planetary.org/join).
 
