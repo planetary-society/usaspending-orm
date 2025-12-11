@@ -24,8 +24,8 @@ class SubTierAgency(BaseModel):
         """Initialize SubTierAgency model.
 
         Args:
-            data: Raw sub-agency data from API
-            client: USASpendingClient client instance
+            data: Raw sub-agency data from API.
+            client: USASpendingClient client instance.
         """
         # Check if this data includes office_agency_name (from award context)
         office_agency_name = data.get("office_agency_name")
@@ -41,34 +41,58 @@ class SubTierAgency(BaseModel):
 
     @property
     def name(self) -> Optional[str]:
-        """Name of the subtier agency."""
+        """Name of the subtier agency.
+
+        Returns:
+            Optional[str]: The name of the subtier agency, or None.
+        """
         return contracts_titlecase(self.get_value("name"))
 
     @property
     def code(self) -> Optional[str]:
-        """Code of the subtier agency."""
+        """Code of the subtier agency.
+
+        Returns:
+            Optional[str]: The subtier agency code, or None.
+        """
         return self.get_value("code")
 
     @property
     def abbreviation(self) -> Optional[str]:
-        """Abbreviation of the subtier agency."""
+        """Abbreviation of the subtier agency.
+
+        Returns:
+            Optional[str]: The subtier agency abbreviation, or None.
+        """
         return self.get_value("abbreviation")
 
     @property
     def total_obligations(self) -> Optional[Decimal]:
-        """Total obligations for this subtier agency."""
+        """Total obligations for this subtier agency.
+
+        Returns:
+            Optional[Decimal]: The total obligations, or None.
+        """
         obligations = self.get_value("total_obligations")
         return to_decimal(obligations)
 
     @property
     def transaction_count(self) -> Optional[int]:
-        """Number of transactions for this subtier agency."""
+        """Number of transactions for this subtier agency.
+
+        Returns:
+            Optional[int]: The transaction count, or None.
+        """
         count = self.get_value("transaction_count")
         return to_int(count)
 
     @property
     def new_award_count(self) -> Optional[int]:
-        """Number of new awards for this subtier agency."""
+        """Number of new awards for this subtier agency.
+
+        Returns:
+            Optional[int]: The new award count, or None.
+        """
         count = self.get_value("new_award_count")
         return to_int(count)
 
@@ -77,7 +101,7 @@ class SubTierAgency(BaseModel):
         """List of offices under this subtier agency.
 
         Returns:
-            List of SubTierAgency instances representing offices
+            List[SubTierAgency]: A list of SubTierAgency instances representing offices.
         """
         children_data = self.get_value("children", default=[])
         if not isinstance(children_data, list):
@@ -92,7 +116,11 @@ class SubTierAgency(BaseModel):
         return offices
 
     def __repr__(self) -> str:
-        """String representation of SubTierAgency."""
+        """String representation of SubTierAgency.
+
+        Returns:
+            str: String containing the agency code and name.
+        """
         name = self.name or "?"
         code = self.code or "?"
         return f"<SubTierAgency {code}: {name}>"

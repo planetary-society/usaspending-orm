@@ -9,9 +9,18 @@ from ..exceptions import ValidationError, DetachedInstanceError
 
 
 class BaseModel:
-    """Base class for all models with fundamental behaviors."""
+    """Base class for all models with fundamental behaviors.
+
+    This class provides the basic structure for data-holding models,
+    including initialization, data validation, and dictionary conversion.
+    """
 
     def __init__(self, data: Dict[str, Any]):
+        """Initialize the model with data.
+
+        Args:
+            data: A dictionary containing the model data.
+        """
         self._data = data or {}
 
     @staticmethod
@@ -21,20 +30,19 @@ class BaseModel:
         id_field: Optional[str] = None,
         allow_string_id: bool = False,
     ) -> Dict[str, Any]:
-        """
-        Validate and normalize initialization data for models.
+        """Validate and normalize initialization data for models.
 
         Args:
-            data_or_id: Input data (dict, string, or other type)
-            model_name: Name of the model for error messages
-            id_field: Field name for ID when string is provided
-            allow_string_id: Whether to accept string as ID
+            data_or_id: Input data (dict, string, or other type).
+            model_name: Name of the model for error messages.
+            id_field: Field name for ID when string is provided.
+            allow_string_id: Whether to accept string as ID.
 
         Returns:
-            Normalized dictionary of data
+            Normalized dictionary of data.
 
         Raises:
-            ValidationError: If data is invalid
+            ValidationError: If data is invalid (None, wrong type, or empty string ID).
         """
         if data_or_id is None:
             raise ValidationError(
@@ -68,15 +76,34 @@ class BaseModel:
 
     @property
     def raw(self) -> Dict[str, Any]:
-        """Get raw data dictionary."""
+        """Get the underlying raw data dictionary.
+
+        Returns:
+            Dict[str, Any]: The raw data dictionary used to initialize the model.
+        """
         return self._data
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
+        """Convert the model data to a dictionary.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the model data.
+        """
         return self._data
 
-    def get_value(self, keys: List[str], default: Any = None) -> Any:
-        """Return the first non-None value from the given keys."""
+    def get_value(self, keys: List[str] | str, default: Any = None) -> Any:
+        """Return the first non-None value from the given keys.
+
+        Args:
+            keys: A string key or a list of string keys to search for.
+            default: The value to return if no key is found or values are None.
+
+        Returns:
+            Any: The value found for the first matching key, or the default value.
+
+        Raises:
+            TypeError: If the underlying data is not a dictionary.
+        """
         if not isinstance(keys, list):
             keys = [keys]
 
@@ -91,9 +118,20 @@ class BaseModel:
 
 
 class ClientAwareModel(BaseModel):
-    """Base class for all models that need API client access."""
+    """Base class for all models that need API client access.
+
+    This class extends BaseModel to include a weak reference to the USASpendingClient,
+    allowing models to fetch additional data or lazy-load properties without
+    creating circular references.
+    """
 
     def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
+        """Initialize the client-aware model.
+
+        Args:
+            data: A dictionary containing the model data.
+            client: The USASpendingClient instance to associate with this model.
+        """
         super().__init__(data)
         self._client_ref = ref(client)  # Weak reference prevents circular refs
 

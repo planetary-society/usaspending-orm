@@ -27,21 +27,38 @@ class DownloadStatus(BaseModel):
 
     @property
     def file_name(self) -> Optional[str]:
+        """Name of the downloaded file.
+
+        Returns:
+            Optional[str]: The file name, or None.
+        """
         return self.get_value("file_name")
 
     @property
     def message(self) -> Optional[str]:
-        """A human readable error message if the status is failed, otherwise null."""
+        """Error message if the status is failed.
+
+        Returns:
+            Optional[str]: A human readable error message, or None.
+        """
         return self.get_value("message")
 
     @property
     def seconds_elapsed(self) -> Optional[float]:
-        """Time taken to generate the file or time taken so far."""
+        """Time elapsed for the download job.
+
+        Returns:
+            Optional[float]: Time in seconds, or None.
+        """
         return to_float(self.get_value("seconds_elapsed"))
 
     @property
     def api_status(self) -> DownloadState:
-        """Current state of the request from the API."""
+        """Current state of the request from the API.
+
+        Returns:
+            DownloadState: The current download state.
+        """
         status_str = self.get_value("status")
         if status_str:
             try:
@@ -52,23 +69,46 @@ class DownloadStatus(BaseModel):
 
     @property
     def total_columns(self) -> Optional[int]:
+        """Total number of columns in the result.
+
+        Returns:
+            Optional[int]: The column count, or None.
+        """
         return to_int(self.get_value("total_columns"))
 
     @property
     def total_rows(self) -> Optional[int]:
+        """Total number of rows in the result.
+
+        Returns:
+            Optional[int]: The row count, or None.
+        """
         return to_int(self.get_value("total_rows"))
 
     @property
     def total_size_kb(self) -> Optional[float]:
-        """Estimated file size in kilobytes."""
+        """Estimated file size in kilobytes.
+
+        Returns:
+            Optional[float]: The file size in KB, or None.
+        """
         return to_float(self.get_value("total_size"))
 
     @property
     def file_url(self) -> Optional[str]:
-        """The URL for the file (relative path)."""
+        """URL for the file (relative path).
+
+        Returns:
+            Optional[str]: The file URL, or None.
+        """
         return self.get_value("file_url")
 
     def __repr__(self) -> str:
+        """String representation of DownloadStatus.
+
+        Returns:
+            str: String containing status and file name.
+        """
         return (
             f"<DownloadStatus status='{self.api_status.value}' file='{self.file_name}'>"
         )

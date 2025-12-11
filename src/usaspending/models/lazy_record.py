@@ -10,11 +10,17 @@ class LazyRecord(ClientAwareModel):
     """Enhanced LazyRecord that maintains client reference."""
 
     def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
+        """Initialize LazyRecord.
+
+        Args:
+            data: Initial data dictionary.
+            client: The USASpendingClient instance.
+        """
         super().__init__(data, client)
         self._details_fetched = False
 
     def _ensure_details(self) -> None:
-        """Fetch full details using the client."""
+        """Fetch full details using the client if not already fetched."""
         if self._details_fetched:
             return
 
@@ -44,24 +50,41 @@ class LazyRecord(ClientAwareModel):
         self._ensure_details()
 
     def _fetch_details(self) -> Optional[Dict[str, Any]]:
-        """Override in subclasses."""
+        """Fetch details from the source.
+
+        Override this method in subclasses to implement the specific
+        fetching logic.
+
+        Returns:
+            Optional[Dict[str, Any]]: The fetched data dictionary, or None.
+
+        Raises:
+            NotImplementedError: If not implemented in subclass.
+        """
         raise NotImplementedError
 
     def _lazy_get(self, *keys: str, default: Any = None) -> Any:
-        """Get value, triggering lazy load if needed."""
+        """Get value, triggering lazy load if needed.
 
-        keys = list(keys)
+        Args:
+            *keys: Variable length argument list of keys to look up.
+            default: Default value to return if no key is found.
+
+        Returns:
+            Any: The value found for the first matching key, or the default value.
+        """
+        keys_list = list(keys)
 
         # If we've already lazy-loaded details, return whatever
         # values are present in the data
         if self._details_fetched:
-            return self.get_value(keys, default=default)
+            return self.get_value(keys_list, default=default)
 
         # Check if any of the keys exist in the current data
         key_found = False
         value = None
 
-        for key in keys:
+        for key in keys_list:
             if key in self._data:
                 value = self._data[key]
                 key_found = True
@@ -77,6 +100,6 @@ class LazyRecord(ClientAwareModel):
             self._details_fetched = True
 
             # Attempt to return the value again
-            value = self.get_value(keys, default=default)
+            value = self.get_value(keys_list, default=default)
 
         return value
