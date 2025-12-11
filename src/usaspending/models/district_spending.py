@@ -21,14 +21,18 @@ class DistrictSpending(Spending):
         """Initialize DistrictSpending model.
 
         Args:
-            data: Raw district spending data from API
-            client: USASpendingClient client instance
+            data: Raw district spending data from API.
+            client: USASpendingClient client instance.
         """
         super().__init__(data, client)
 
     @property
     def district_code(self) -> Optional[str]:
-        """Congressional district code."""
+        """Congressional district code.
+
+        Returns:
+            Optional[str]: The district code, or None.
+        """
         return self.code
 
     @property
@@ -36,6 +40,9 @@ class DistrictSpending(Spending):
         """Extract state code from district name if available.
 
         District names typically follow format like 'TX-12' or 'MS-MULTIPLE DISTRICTS'.
+
+        Returns:
+            Optional[str]: The extracted state code, or None.
         """
         if self.name:
             # Names like "TX-12" or "MS-MULTIPLE DISTRICTS"
@@ -49,6 +56,9 @@ class DistrictSpending(Spending):
         """Extract district number from district name if available.
 
         Returns the numeric part or special designation like 'MULTIPLE DISTRICTS'.
+
+        Returns:
+            Optional[str]: The extracted district number, or None.
         """
         if self.name:
             # Names like "TX-12" or "MS-MULTIPLE DISTRICTS"
@@ -59,12 +69,20 @@ class DistrictSpending(Spending):
 
     @property
     def is_multiple_districts(self) -> bool:
-        """Check if this represents multiple districts in a state."""
+        """Check if this represents multiple districts in a state.
+
+        Returns:
+            bool: True if it represents multiple districts, False otherwise.
+        """
         district_num = self.district_number
         return district_num is not None and "MULTIPLE" in district_num.upper()
 
     def __repr__(self) -> str:
-        """String representation of DistrictSpending."""
+        """String representation of DistrictSpending.
+
+        Returns:
+            str: String containing district name and amount.
+        """
         name = self.name or "Unknown District"
         amount = self.amount or 0
         return f"<DistrictSpending {name}: ${amount:,.2f}>"

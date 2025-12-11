@@ -49,6 +49,12 @@ class SubAward(ClientAwareModel):
     def __init__(
         self, data: Dict[str, Any], client: Optional[USASpendingClient] = None
     ):
+        """Initialize SubAward instance.
+
+        Args:
+            data: Dictionary containing subaward data.
+            client: USASpendingClient instance.
+        """
         super().__init__(data, client)
 
     # Contract Subaward fields
@@ -104,7 +110,11 @@ class SubAward(ClientAwareModel):
 
     @cached_property
     def place_of_performance(self) -> Optional[Location]:
-        """Place of performance details for the subaward."""
+        """Place of performance details for the subaward.
+
+        Returns:
+            Optional[Location]: The location object, or None.
+        """
         pop_data = self.raw.get("Sub-Award Primary Place of Performance")
         if pop_data:
             return Location(pop_data)
@@ -113,7 +123,11 @@ class SubAward(ClientAwareModel):
 
     @cached_property
     def recipient(self) -> Optional[Recipient]:
-        """Sub-award recipient and location."""
+        """Sub-award recipient and location.
+
+        Returns:
+            Optional[Recipient]: The recipient object, or None.
+        """
         recipient = Recipient(
             {
                 "recipient_name": self.get_value(["Sub-Awardee Name"]),
@@ -133,6 +147,11 @@ class SubAward(ClientAwareModel):
 
     @cached_property
     def parent_award(self) -> Optional[Award]:
+        """Prime award associated with this subaward.
+
+        Returns:
+            Optional[Award]: The prime award object, or None.
+        """
         if self.prime_award_generated_internal_id:
             return Award(
                 {"generated_unique_award_id": self.prime_award_generated_internal_id},
@@ -143,128 +162,228 @@ class SubAward(ClientAwareModel):
 
     @property
     def id(self) -> Optional[str]:
-        """Internal subaward identifier."""
+        """Internal subaward identifier.
+
+        Returns:
+            Optional[str]: The internal ID, or None.
+        """
         return self.raw.get("internal_id")
 
     @property
     def sub_award_id(self) -> Optional[str]:
-        """Subaward identifier."""
+        """Subaward identifier.
+
+        Returns:
+            Optional[str]: The subaward ID, or None.
+        """
         return self.raw.get("Sub-Award ID")
 
     @property
     def sub_award_type(self) -> Optional[str]:
-        """Type of subaward (e.g., sub-contract, sub-grant)."""
+        """Type of subaward (e.g., sub-contract, sub-grant).
+
+        Returns:
+            Optional[str]: The subaward type, or None.
+        """
         return self.raw.get("Sub-Award Type")
 
     @property
     def sub_awardee_name(self) -> Optional[str]:
-        """Name of the subaward recipient."""
+        """Name of the subaward recipient.
+
+        Returns:
+            Optional[str]: The recipient name, or None.
+        """
         name = self.raw.get("Sub-Awardee Name")
         return contracts_titlecase(name) if name else None
 
     @property
     def sub_award_date(self) -> Optional[date]:
-        """Date the subaward was issued."""
+        """Date the subaward was issued.
+
+        Returns:
+            Optional[date]: The subaward date, or None.
+        """
         return to_date(self.raw.get("Sub-Award Date"))
 
     @property
     def sub_award_amount(self) -> Optional[Decimal]:
-        """Amount of the subaward."""
+        """Amount of the subaward.
+
+        Returns:
+            Optional[Decimal]: The subaward amount, or None.
+        """
         return to_decimal(self.raw.get("Sub-Award Amount"))
 
     @property
     def awarding_agency(self) -> Optional[str]:
-        """Name of the awarding agency."""
+        """Name of the awarding agency.
+
+        Returns:
+            Optional[str]: The awarding agency name, or None.
+        """
         return self.raw.get("Awarding Agency")
 
     @property
     def awarding_sub_agency(self) -> Optional[str]:
-        """Name of the awarding sub-agency."""
+        """Name of the awarding sub-agency.
+
+        Returns:
+            Optional[str]: The awarding sub-agency name, or None.
+        """
         return self.raw.get("Awarding Sub Agency")
 
     @property
     def prime_award_id(self) -> Optional[str]:
-        """Prime award identifier (PIID/FAIN/URI)."""
+        """Prime award identifier (PIID/FAIN/URI).
+
+        Returns:
+            Optional[str]: The prime award ID, or None.
+        """
         return self.raw.get("Prime Award ID")
 
     @property
     def prime_recipient_name(self) -> Optional[str]:
-        """Name of the prime award recipient."""
+        """Name of the prime award recipient.
+
+        Returns:
+            Optional[str]: The prime recipient name, or None.
+        """
         name = self.raw.get("Prime Recipient Name")
         return contracts_titlecase(name) if name else None
 
     @property
     def prime_award_recipient_id(self) -> Optional[str]:
-        """Prime award recipient identifier."""
+        """Prime award recipient identifier.
+
+        Returns:
+            Optional[str]: The prime recipient ID, or None.
+        """
         return self.raw.get("prime_award_recipient_id")
 
     @property
     def sub_award_description(self) -> Optional[str]:
-        """Description of the subaward."""
+        """Description of the subaward.
+
+        Returns:
+            Optional[str]: The description, or None.
+        """
         desc = self.raw.get("Sub-Award Description")
         return smart_sentence_case(desc) if desc else None
 
     @property
     def subaward_description_sorted(self) -> Optional[str]:
-        """Sorted version of the subaward description for API internal use."""
+        """Sorted version of the subaward description for API internal use.
+
+        Returns:
+            Optional[str]: The sorted description, or None.
+        """
         return self.raw.get("subaward_description_sorted")
 
     @property
     def sub_recipient_uei(self) -> Optional[str]:
-        """Sub-recipient Unique Entity Identifier."""
+        """Sub-recipient Unique Entity Identifier.
+
+        Returns:
+            Optional[str]: The sub-recipient UEI, or None.
+        """
         return self.raw.get("Sub-Recipient UEI")
 
     @property
     def prime_award_recipient_uei(self) -> Optional[str]:
-        """Prime award recipient Unique Entity Identifier."""
+        """Prime award recipient Unique Entity Identifier.
+
+        Returns:
+            Optional[str]: The prime recipient UEI, or None.
+        """
         return self.raw.get("Prime Award Recipient UEI")
 
     @property
     def prime_award_generated_internal_id(self) -> Optional[str]:
-        """USASpending-generated unique identifier for the prime award."""
+        """USASpending-generated unique identifier for the prime award.
+
+        Returns:
+            Optional[str]: The generated internal ID, or None.
+        """
         return self.raw.get("prime_award_generated_internal_id")
 
     @property
     def prime_award_internal_id(self) -> Optional[int]:
-        """Internal database ID for the prime award."""
+        """Internal database ID for the prime award.
+
+        Returns:
+            Optional[int]: The internal ID, or None.
+        """
         val = self.raw.get("prime_award_internal_id")
         return int(val) if val is not None else None
 
     @property
     def naics(self) -> Optional[str]:
-        """NAICS code for contract subawards."""
+        """NAICS code for contract subawards.
+
+        Returns:
+            Optional[str]: The NAICS code, or None.
+        """
         return self.raw.get("NAICS")
 
     @property
     def psc(self) -> Optional[str]:
-        """Product Service Code for contract subawards."""
+        """Product Service Code for contract subawards.
+
+        Returns:
+            Optional[str]: The PSC, or None.
+        """
         return self.raw.get("PSC")
 
     @property
     def assistance_listing(self) -> Optional[str]:
-        """Assistance listing for grant subawards."""
+        """Assistance listing for grant subawards.
+
+        Returns:
+            Optional[str]: The assistance listing, or None.
+        """
         return self.raw.get("Assistance Listing")
 
     def __repr__(self) -> str:
-        """String representation of SubAward."""
+        """String representation of SubAward.
+
+        Returns:
+            str: String containing ID, name, and amount.
+        """
         return f"<SubAward {self.sub_award_id or '?'} {self.sub_awardee_name or '?'} ${self.sub_award_amount or 0:,.2f}>"
 
     @property
     def name(self) -> Optional[str]:
-        """Alias for sub_awardee_name."""
+        """Alias for sub_awardee_name.
+
+        Returns:
+            Optional[str]: The sub-awardee name, or None.
+        """
         return self.sub_awardee_name
 
     @property
     def amount(self) -> Optional[float]:
-        """Alias for sub_award_amount."""
+        """Alias for sub_award_amount.
+
+        Returns:
+            Optional[float]: The subaward amount as a float, or None.
+        """
         return self.sub_award_amount
 
     @property
     def description(self) -> Optional[str]:
-        """Alias for sub_award_description."""
+        """Alias for sub_award_description.
+
+        Returns:
+            Optional[str]: The description, or None.
+        """
         return self.sub_award_description
 
     @property
     def award_date(self) -> Optional[date]:
-        """Alias for sub_award_date."""
+        """Alias for sub_award_date.
+
+        Returns:
+            Optional[date]: The award date, or None.
+        """
         return self.sub_award_date
