@@ -394,7 +394,16 @@ def parse_location_spec(location: dict[str, str]) -> LocationSpec:
     Returns:
         LocationSpec: The corresponding dataclass instance.
     """
-    return LocationSpec(**location)
+     # Map user-friendly keys to dataclass field names         
+    key_mapping = {
+          "country": "country_code",                            
+          "state": "state_code",
+          "county": "county_code",
+          "city": "city_name",
+          "zip": "zip_code",                           
+      }
+    normalized = {key_mapping.get(k, k): v for k, v in location.items()}
+    return LocationSpec(**normalized)
 
 
 def parse_agency_spec(agency: dict[str, str]) -> AgencySpec:
