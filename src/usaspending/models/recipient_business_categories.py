@@ -167,10 +167,10 @@ def get_category_group(code: str) -> str:
     Use get_all_groups_for_code() to get all groups.
 
     Args:
-        code: Business category code (e.g., "small_business", "nonprofit")
+        code: Business category code (e.g., "small_business", "nonprofit").
 
     Returns:
-        Primary category group name (e.g., "category_business", "nonprofit") or empty string if not found
+        str: Primary category group name (e.g., "category_business", "nonprofit") or empty string if not found.
     """
     if not isinstance(code, str):
         return ""
@@ -192,10 +192,10 @@ def get_all_groups_for_code(code: str) -> list[str]:
     Handles categories that belong to multiple groups (e.g., emerging_small_business).
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        List of all category group names the code belongs to
+        list[str]: List of all category group names the code belongs to.
     """
     if not isinstance(code, str):
         return []
@@ -218,10 +218,10 @@ def is_valid_business_category(code: str) -> bool:
     """Check if a code is a valid business category.
 
     Args:
-        code: Business category code to validate
+        code: Business category code to validate.
 
     Returns:
-        True if the code is valid, False otherwise
+        bool: True if the code is valid, False otherwise.
     """
     if not isinstance(code, str):
         return False
@@ -232,10 +232,10 @@ def get_description(code: str) -> str:
     """Get the description for a given business category code.
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        Description string or empty string if not found
+        str: Description string or empty string if not found.
     """
     if not isinstance(code, str):
         return ""
@@ -247,10 +247,10 @@ def is_small_business(code: str) -> bool:
     """Check if a code represents a small business.
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        True if the code represents a small business
+        bool: True if the code represents a small business.
     """
     if not isinstance(code, str):
         return False
@@ -284,10 +284,10 @@ def is_minority_owned(code: str) -> bool:
     """Check if a code represents a minority-owned business.
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        True if the code represents a minority-owned business
+        bool: True if the code represents a minority-owned business.
     """
     if not isinstance(code, str):
         return False
@@ -298,10 +298,10 @@ def is_women_owned(code: str) -> bool:
     """Check if a code represents a women-owned business.
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        True if the code represents a women-owned business
+        bool: True if the code represents a women-owned business.
     """
     if not isinstance(code, str):
         return False
@@ -312,10 +312,10 @@ def is_veteran_owned(code: str) -> bool:
     """Check if a code represents a veteran-owned business.
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        True if the code represents a veteran-owned business
+        bool: True if the code represents a veteran-owned business.
     """
     if not isinstance(code, str):
         return False
@@ -326,10 +326,10 @@ def is_government_entity(code: str) -> bool:
     """Check if a code represents a government entity.
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        True if the code represents a government entity
+        bool: True if the code represents a government entity.
     """
     if not isinstance(code, str):
         return False
@@ -340,10 +340,10 @@ def is_educational_institution(code: str) -> bool:
     """Check if a code represents an educational institution.
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        True if the code represents an educational institution
+        bool: True if the code represents an educational institution.
     """
     if not isinstance(code, str):
         return False
@@ -354,10 +354,10 @@ def is_nonprofit_organization(code: str) -> bool:
     """Check if a code represents a nonprofit organization.
 
     Args:
-        code: Business category code
+        code: Business category code.
 
     Returns:
-        True if the code represents a nonprofit organization
+        bool: True if the code represents a nonprofit organization.
     """
     if not isinstance(code, str):
         return False

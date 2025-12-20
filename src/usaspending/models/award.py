@@ -29,7 +29,12 @@ logger = USASpendingLogger.get_logger(__name__)
 
 
 class Award(LazyRecord):
-    """Rich wrapper around a USAspending award record."""
+    """Rich wrapper around a USAspending award record.
+
+    This class serves as the base for all award types (Contract, Grant, IDV, Loan)
+    and provides access to common fields and related resources like recipients,
+    agencies, transactions, and subawards.
+    """
 
     # Base fields common to all award types
     SEARCH_FIELDS = [
@@ -65,12 +70,13 @@ class Award(LazyRecord):
     ]
 
     def __init__(self, data_or_id: Dict[str, Any] | str, client: USASpendingClient):
-        """
-        Initialize Award instance.
+        """Initialize Award instance.
 
         Args:
-            data_or_id (Dict[str, Any] | str): Either a dictionary containing award data (must include 'generated_unique_award_id'), or a string representing the unique award identifier. If a dictionary is provided with additional properties, those will be used to populate the instance.
-            client (USASpendingClient): USASpendingClient client instance.
+            data_or_id: Either a dictionary containing award data (must include 'generated_unique_award_id'),
+                or a string representing the unique award identifier.
+                If a dictionary is provided with additional properties, those will be used to populate the instance.
+            client: USASpendingClient client instance.
 
         Raises:
             ValidationError: If data_or_id is not a dict or string, or if required keys are missing.
@@ -136,15 +142,7 @@ class Award(LazyRecord):
         """The award identifier used across USASpending and its Broker systems.
 
         The code is created by combining various identifiers of award type, awarding
-        agency codes, and other standard identifiers:
-
-        Procurement Award ID Formats (FPDS):
-        `upper('CONT_AWD' + '_' + Coalesce(<piid>,'-NONE-') + '_' +  Coalesce(<agency_id>,'-NONE-') + '_' + Coalesce(<parent_award_id>,'-NONE-') + '_' +  Coalesce(<referenced_idv_agency_iden>,'-NONE-'))`
-        `upper('CONT_IDV' + '_' + Coalesce(<piid>,'-NONE-') + '_' +  Coalesce(<agency_id>,'-NONE-'))`
-
-        Assistance Award ID Formats (FABS)
-        `upper('ASST_AGG' + '_' +  Coalesce(<uri>,'-NONE-') + '_' +  Coalesce(<awarding_sub_tier_agency_c>,'-NONE-'))`
-        `upper('ASST_NON' + '_' +  Coalesce(<fain>,'-NONE-') + '_' +  Coalesce(<awarding_sub_tier_agency_c>,'-NONE-'))`
+        agency codes, and other standard identifiers.
 
         Returns:
             Optional[str]: The generated unique award identifier.
@@ -153,8 +151,7 @@ class Award(LazyRecord):
         return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
     def _derived_award_identifier(self) -> Optional[str]:
-        """
-        Extract the award identifier (PIID, FAIN, or URI) from generated_unique_award_id.
+        """Extract the award identifier (PIID, FAIN, or URI) from generated_unique_award_id.
 
         Parses the generated ID format to extract the original identifier:
         - CONT_AWD_<piid>_<agency>_<parent>_<ref> -> returns piid
@@ -163,7 +160,7 @@ class Award(LazyRecord):
         - ASST_AGG_<uri>_<agency> -> returns uri
 
         Returns:
-            The extracted identifier or None if not found or is "-NONE-"
+            Optional[str]: The extracted identifier or None if not found or is "-NONE-".
         """
         gen_id = self.generated_unique_award_id
         if not gen_id:
@@ -206,11 +203,7 @@ class Award(LazyRecord):
         Use this property for a unified identifier, and refer to subclass documentation for type-specific identifiers.
 
         Returns:
-            str: The award identifier (PIID, FAIN, or URI).
-
-        Example:
-            contract = Contract(...)
-            print(contract.award_identifier)  # Returns PIID for contracts
+            str: The award identifier (PIID, FAIN, or URI), or empty string if not found.
         """
         # Derive from generated_unique_award_id
         derived_award_id = self._derived_award_identifier()
@@ -249,9 +242,6 @@ class Award(LazyRecord):
     def type_description(self) -> Optional[str]:
         """Plain text description of the award type.
 
-        Retrieves a description for the award type using a lazy getter,
-        prioritizing "Contract Award Type" and "Award Type" keys.
-
         Returns:
             Optional[str]: The description of the award type, or empty string if not available.
         """
@@ -276,20 +266,10 @@ class Award(LazyRecord):
         """The amount of money the government is obligated to pay for the award.
 
         This is a system generated element providing the sum of all the amounts
-        entered in the "Action Obligation" field for a particular PIID and Agency.
-
-        Example: Contract has 9 Modifications under "Transaction Number" as '1'
-        and 9 modifications with the same PIID under "Transaction Number" as '2'.
-        The base contracts and all the modifications have "Action Obligation" as $10
-        each. The value for the field "Total Obligated Amount" when the either of
-        the bases or the modification is retrieved through atom feeds will be $200
-        ($100 under Transaction Number 1 + $100 under Transaction Number 2).
-        "Total Obligated Amount" is generated irrespective of the "Transaction Number"
-        on the Awards.
+        entered in the "Action Obligation" field.
 
         Returns:
             Decimal: The total obligated amount for the award or 0.00.
-
         """
         return to_decimal(
             self._lazy_get("total_obligation", "Award Amount")
@@ -344,7 +324,7 @@ class Award(LazyRecord):
 
     @property
     def total_account_obligation(self) -> Optional[Decimal]:
-        """Total amount obligated for this award.
+        """Total amount obligated for this award from associated federal accounts.
 
         Returns:
             Optional[Decimal]: The total account obligation amount, or None if not available.
@@ -638,7 +618,7 @@ class Award(LazyRecord):
         """Load agency data from either nested or flat structure.
 
         Args:
-            agency_type (str): Either "funding" or "awarding".
+            agency_type: Either "funding" or "awarding".
 
         Returns:
             Optional[Dict[str, Any]]: Processed agency data dict or None if not available.
@@ -811,6 +791,9 @@ class Award(LazyRecord):
             >>> award.transactions.count()  # Get count without loading all data
             >>> award.transactions.limit(10).all()  # Get first 10 transactions
             >>> list(award.transactions)  # Iterate through all transactions
+
+        Returns:
+            TransactionsSearch: The query builder for transactions.
         """
         return self._client.transactions.award_id(self.generated_unique_award_id)
 
@@ -824,6 +807,9 @@ class Award(LazyRecord):
             >>> award.funding.count()  # Get count without loading all data
             >>> award.funding.order_by("fiscal_date", "asc").all()  # Get all funding records sorted by date
             >>> list(award.funding.limit(10))  # Iterate through first 10 funding records
+
+        Returns:
+            FundingSearch: The query builder for funding.
         """
         return self._client.funding.award_id(self.generated_unique_award_id)
 
@@ -834,8 +820,8 @@ class Award(LazyRecord):
         Returns:
             SubAwardsSearch: Query builder object for subawards (implemented in subclasses).
 
-        Note:
-            Implemented in subclasses.
+        Raises:
+            NotImplementedError: If not implemented in the subclass.
         """
         raise NotImplementedError()
 
@@ -847,8 +833,8 @@ class Award(LazyRecord):
         Returns:
             Optional[AwardType]: Download type ('contract', 'assistance', or 'idv').
 
-        Note:
-            Implementation varies by model subclass.
+        Raises:
+            NotImplementedError: If not implemented in the subclass.
         """
         from .contract import Contract
         from .grant import Grant
@@ -866,18 +852,17 @@ class Award(LazyRecord):
     def download(
         self, file_format: FileFormat = "csv", destination_dir: Optional[str] = None
     ) -> "DownloadJob":
-        """
-        Queue a download job for this award's detailed data.
+        """Queue a download job for this award's detailed data.
 
         This utilizes the USASpending bulk download API, which queues the request
         and processes it asynchronously.
 
         Args:
-            file_format: The format of the file(s) in the zip file containing the data
+            file_format: The format of the file(s) in the zip file containing the data.
             destination_dir: Directory where the file will be saved (defaults to CWD).
 
         Returns:
-            A DownloadJob object. Use job.wait_for_completion() to block until finished.
+            DownloadJob: A DownloadJob object. Use job.wait_for_completion() to block until finished.
 
         Raises:
             ConfigurationError: If the Award instance lacks a client reference.

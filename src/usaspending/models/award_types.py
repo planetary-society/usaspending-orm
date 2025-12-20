@@ -73,10 +73,10 @@ def get_category_for_code(code: str) -> str:
     """Get the category name for a given award type code.
 
     Args:
-        code: Award type code (e.g., "A", "02", "IDV_A")
+        code: Award type code (e.g., "A", "02", "IDV_A").
 
     Returns:
-        Category name (e.g., "contracts", "grants", "idvs") or empty string if not found
+        str: Category name (e.g., "contracts", "grants", "idvs") or empty string if not found.
     """
     if not isinstance(code, str):
         return ""
@@ -90,10 +90,10 @@ def is_valid_award_type(code: str) -> bool:
     """Check if a code is a valid award type.
 
     Args:
-        code: Award type code to validate
+        code: Award type code to validate.
 
     Returns:
-        True if the code is valid, False otherwise
+        bool: True if the code is valid, False otherwise.
     """
     if not isinstance(code, str):
         return False
@@ -104,10 +104,10 @@ def get_description(code: str) -> str:
     """Get the description for a given award type code.
 
     Args:
-        code: Award type code
+        code: Award type code.
 
     Returns:
-        Description string or empty string if not found
+        str: Description string or empty string if not found.
     """
     if not isinstance(code, str):
         return ""

@@ -14,15 +14,17 @@ if TYPE_CHECKING:
 def create_award(
     data_or_id: Dict[str, Any] | str, client: Optional[USASpendingClient] = None
 ) -> Award:
-    """
-    Factory function to create the appropriate Award subclass based on the award data.
+    """Create the appropriate Award subclass based on the award data.
 
     Args:
-        data_or_id: Award data dictionary or unique award ID string
-        client: Optional USASpendingClient instance
+        data_or_id: Award data dictionary or unique award ID string.
+        client: Optional USASpendingClient instance.
 
     Returns:
-        Appropriate Award subclass instance (Contract, Grant, IDV, Loan, or base Award)
+        Award: Appropriate Award subclass instance (Contract, Grant, IDV, Loan, or base Award).
+
+    Raises:
+        ValidationError: If input is neither a dictionary nor a string.
     """
     # Import here to avoid circular imports
     from .award import Award

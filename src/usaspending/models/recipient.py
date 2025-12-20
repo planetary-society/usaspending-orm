@@ -21,6 +21,12 @@ if TYPE_CHECKING:
 
 
 class Recipient(LazyRecord):
+    """Represents an award recipient.
+
+    This class provides access to recipient details, including name, IDs,
+    location, and business categories.
+    """
+
     # compiled once at import time
     _LIST_SUFFIX_RE = re.compile(
         r"""
@@ -36,6 +42,12 @@ class Recipient(LazyRecord):
         data_or_id: Dict[str, Any] | str,
         client: Optional[USASpendingClient] = None,
     ):
+        """Initialize Recipient.
+
+        Args:
+            data_or_id: Dictionary containing recipient data or recipient ID string.
+            client: USASpendingClient instance.
+        """
         # Use the base validation method
         raw = self.validate_init_data(
             data_or_id, "Recipient", id_field="recipient_id", allow_string_id=True
@@ -49,7 +61,11 @@ class Recipient(LazyRecord):
         super().__init__(raw, client)
 
     def _fetch_details(self) -> Optional[Dict[str, Any]]:
-        """Fetch full recipient details from the API."""
+        """Fetch full recipient details from the API.
+
+        Returns:
+            Optional[Dict[str, Any]]: The recipient details dictionary, or None.
+        """
         recipient_id = self.recipient_id
         if not recipient_id:
             logger.error(
@@ -68,10 +84,16 @@ class Recipient(LazyRecord):
 
     @staticmethod
     def _clean_recipient_id(rid: str) -> str:
-        """
-        Normalise list-annotated recipient IDs.
-        Sometimes these look like "abc123-['C','R']".
-        This will select the first letter after the dash,
+        """Normalise list-annotated recipient IDs.
+
+        Sometimes these look like "abc123-['C','R']". This will select the
+        first letter after the dash.
+
+        Args:
+            rid: The raw recipient ID string.
+
+        Returns:
+            str: The normalized recipient ID.
         """
         if not isinstance(rid, str):
             return rid  # defensive; shouldn't happen
@@ -95,19 +117,30 @@ class Recipient(LazyRecord):
 
     @property
     def recipient_id(self) -> Optional[str]:
+        """Recipient identifier (hash).
+
+        Returns:
+            Optional[str]: The recipient ID/hash, or None.
+        """
         return self.get_value(["recipient_id", "recipient_hash"], default=None)
 
     @property
     def name(self) -> Optional[str]:
+        """Recipient name.
+
+        Returns:
+            Optional[str]: The recipient name in title case, or None.
+        """
         return contracts_titlecase(
             self._lazy_get("name", "recipient_name", "Recipient Name", default=None)
         )
 
     @property
     def alternate_names(self) -> List[Optional[str]]:
-        """
-        Returns a list of alternate names for the recipient, formatted in title case.
-        If no alternate names are available, returns an empty list.
+        """List of alternate names for the recipient.
+
+        Returns:
+            List[Optional[str]]: List of alternate names in title case, or empty list.
         """
         names = self._lazy_get("alternate_names", default=[])
         if isinstance(names, list):
@@ -119,20 +152,35 @@ class Recipient(LazyRecord):
 
     @property
     def duns(self) -> Optional[str]:
+        """DUNS number.
+
+        Returns:
+            Optional[str]: The DUNS number, or None.
+        """
         return self._lazy_get(
             "duns", "recipient_unique_id", "Recipient DUNS Number", default=None
         )
 
     @property
     def uei(self) -> Optional[str]:
+        """Unique Entity Identifier (UEI).
+
+        Returns:
+            Optional[str]: The UEI, or None.
+        """
         return self._lazy_get("uei", "recipient_uei")
 
     @cached_property
     def parent(self) -> Optional["Recipient"]:
+        """Parent recipient.
+
+        Returns:
+            Optional[Recipient]: The parent Recipient object, or None.
+        """
         pid = self._lazy_get("parent_id")
 
         # Don't load a parent if parent id is missing or
-        # the parent recipient_id is theh same as the current one
+        # the parent recipient_id is the same as the current one
         if not pid or pid == self.recipient_id:
             return None
         else:
@@ -148,6 +196,11 @@ class Recipient(LazyRecord):
 
     @cached_property
     def parents(self) -> List["Recipient"]:
+        """List of parent recipients.
+
+        Returns:
+            List[Recipient]: List of parent Recipient objects.
+        """
         plist = []
         # Use _lazy_get to ensure parents data is loaded if not present
         parents_data = self._lazy_get("parents", default=[])
@@ -172,33 +225,72 @@ class Recipient(LazyRecord):
 
     @property
     def business_types(self) -> List[str]:
+        """Business types/categories.
+
+        Returns:
+            List[str]: List of business type strings.
+        """
         return self._lazy_get("business_types", "business_categories", default=[])
 
     @property
     def business_categories(self) -> List[str]:
+        """Alias for business_types.
+
+        Returns:
+            List[str]: List of business category strings.
+        """
         return self.business_types
 
     @cached_property
     def location(self) -> Optional[Location]:
-        """Get recipient location - shares same client."""
+        """Recipient location.
+
+        Returns:
+            Optional[Location]: The Location object, or None.
+        """
         data = self._lazy_get("location")
         return Location(data, self._client) if data else None
 
     @property
     def total_transaction_amount(self) -> Optional[Decimal]:
+        """Total transaction amount.
+
+        Returns:
+            Optional[Decimal]: The total transaction amount, or None.
+        """
         return to_decimal(self._lazy_get("total_transaction_amount"))
 
     @property
-    def total_transactions(self):
+    def total_transactions(self) -> Optional[int]:
+        """Total number of transactions.
+
+        Returns:
+            Optional[int]: The total transaction count, or None.
+        """
         return self._lazy_get("total_transactions")
 
     @property
     def total_face_value_loan_amount(self) -> Optional[Decimal]:
+        """Total face value of loan amount.
+
+        Returns:
+            Optional[Decimal]: The total face value loan amount, or None.
+        """
         return to_decimal(self._lazy_get("total_face_value_loan_amount"))
 
     @property
-    def total_face_value_loan_transactions(self):
+    def total_face_value_loan_transactions(self) -> Optional[int]:
+        """Total number of loan transactions.
+
+        Returns:
+            Optional[int]: The total loan transaction count, or None.
+        """
         return self._lazy_get("total_face_value_loan_transactions")
 
     def __repr__(self) -> str:
+        """String representation of Recipient.
+
+        Returns:
+            str: String containing recipient name and ID.
+        """
         return f"<Recipient {self.name or '?'} ({self.recipient_id})>"
