@@ -10,6 +10,7 @@ from ..models.subaward import SubAward
 from .awards_search import AwardsSearch
 from ..logging_config import USASpendingLogger
 from ..models.award_types import get_category_for_code
+from ..utils.validations import validate_non_empty_string
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -189,11 +190,10 @@ class SubAwardsSearch(AwardsSearch):
             >>> for sub in subawards:
             ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount:,.2f}")
         """
-        if not award_id:
-            raise ValidationError("award_id cannot be empty")
+        validated_id = validate_non_empty_string(award_id, "award_id")
 
         clone = self._clone()
-        clone._award_id = str(award_id).strip()
+        clone._award_id = validated_id
         return clone
 
     def time_period(
@@ -241,8 +241,14 @@ class SubAwardsSearch(AwardsSearch):
         if date_type:
             valid_subaward_date_types = {"action_date", "last_modified_date"}
             date_type_lower = date_type.lower().replace("_", "")
-            normalized = "action_date" if date_type_lower == "actiondate" else (
-                "last_modified_date" if date_type_lower in ("lastmodified", "lastmodifieddate") else None
+            normalized = (
+                "action_date"
+                if date_type_lower == "actiondate"
+                else (
+                    "last_modified_date"
+                    if date_type_lower in ("lastmodified", "lastmodifieddate")
+                    else None
+                )
             )
             if normalized not in valid_subaward_date_types:
                 raise ValidationError(

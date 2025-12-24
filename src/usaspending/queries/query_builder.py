@@ -40,6 +40,7 @@ from .filters import (
 )
 
 from ..logging_config import USASpendingLogger, log_query_execution
+from ..utils.validations import parse_date_string, validate_non_empty_string
 
 T = TypeVar("T")
 
@@ -452,23 +453,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .time_period("2024-01-01", "2024-03-31", new_awards_only=True)
             ... )
         """
-
         # Parse string dates if needed
-        if isinstance(start_date, str):
-            try:
-                start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
-            except ValueError:
-                raise ValidationError(
-                    f"Invalid start_date format: '{start_date}'. Expected 'YYYY-MM-DD'."
-                )
-
-        if isinstance(end_date, str):
-            try:
-                end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
-            except ValueError:
-                raise ValidationError(
-                    f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'."
-                )
+        start_date = parse_date_string(start_date, "start_date")
+        end_date = parse_date_string(end_date, "end_date")
 
         # Validate minimum date (API only supports data from FY2008 onwards)
         if start_date < MIN_API_DATE:
@@ -544,13 +531,43 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         # FY 2024 ran from October 1, 2023 to September 30, 2024.
         start_date = datetime.date(year - 1, 10, 1)
         end_date = datetime.date(year, 9, 30)
-        
+
         return self.time_period(
             start_date=start_date,
             end_date=end_date,
             new_awards_only=new_awards_only,
             date_type=date_type,
         )
+
+    def _add_scope_filter(self: T, key: str, scope: str) -> T:
+        """Add a location scope filter (domestic/foreign).
+
+        Args:
+            key: The filter key (e.g., "place_of_performance_scope").
+            scope: Either "domestic" or "foreign".
+
+        Returns:
+            A new instance with the scope filter applied.
+        """
+        location_scope = parse_location_scope(scope)
+        clone = self._clone()
+        clone._filter_objects.append(LocationScopeFilter(key=key, scope=location_scope))
+        return clone
+
+    def _add_location_filter(self: T, key: str, locations: tuple[dict, ...]) -> T:
+        """Add a location filter with parsed LocationSpec objects.
+
+        Args:
+            key: The filter key (e.g., "place_of_performance_locations").
+            locations: Location specification dictionaries.
+
+        Returns:
+            A new instance with the location filter applied.
+        """
+        location_specs = [parse_location_spec(loc) for loc in locations]
+        clone = self._clone()
+        clone._filter_objects.append(LocationFilter(key=key, locations=location_specs))
+        return clone
 
     def place_of_performance_scope(self: T, scope: str) -> T:
         """
@@ -572,17 +589,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .place_of_performance_scope("foreign")
             ... )
         """
-        location_scope = parse_location_scope(scope)
+        return self._add_scope_filter("place_of_performance_scope", scope)
 
-        clone = self._clone()
-        clone._filter_objects.append(
-            LocationScopeFilter(key="place_of_performance_scope", scope=location_scope)
-        )
-        return clone
-
-    def place_of_performance_locations(
-        self: T, *locations: dict[str, str]
-    ) -> T:
+    def place_of_performance_locations(self: T, *locations: dict[str, str]) -> T:
         """
         Filter by specific geographic places of performance.
 
@@ -610,16 +619,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     )
             ... )
         """
-        # Convert dicts to LocationSpec objects internally
-        location_specs = [parse_location_spec(loc) for loc in locations]
-
-        clone = self._clone()
-        clone._filter_objects.append(
-            LocationFilter(
-                key="place_of_performance_locations", locations=location_specs
-            )
-        )
-        return clone
+        return self._add_location_filter("place_of_performance_locations", locations)
 
     def recipient_scope(self: T, scope: str) -> T:
         """
@@ -641,13 +641,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .recipient_scope("foreign")
             ... )
         """
-        location_scope = parse_location_scope(scope)
-
-        clone = self._clone()
-        clone._filter_objects.append(
-            LocationScopeFilter(key="recipient_scope", scope=location_scope)
-        )
-        return clone
+        return self._add_scope_filter("recipient_scope", scope)
 
     def recipient_locations(self: T, *locations: dict[str, str]) -> T:
         """
@@ -676,14 +670,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     )
             ... )
         """
-        # Convert dicts to LocationSpec objects internally
-        location_specs = [parse_location_spec(loc) for loc in locations]
-
-        clone = self._clone()
-        clone._filter_objects.append(
-            LocationFilter(key="recipient_locations", locations=location_specs)
-        )
-        return clone
+        return self._add_location_filter("recipient_locations", locations)
 
     # ==========================================================================
     # Groups 3-6: Agency, Award, Code Filters, and Convenience Methods
@@ -740,7 +727,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         clone._filter_objects.append(AgencyFilter(agencies=agency_specs))
         return clone
 
-
     def agency(
         self,
         name: str,
@@ -783,7 +769,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             agency_dict["toptier_name"] = toptier_name
         return self.agencies(agency_dict)
 
-
     def recipient_search_text(self: T, search_term: str) -> T:
         """
         Search for awards by recipient name, UEI, or DUNS.
@@ -816,15 +801,13 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .recipient_search_text("ABCD1234567890")
             ... )
         """
-        if not search_term or not search_term.strip():
-            raise ValidationError("recipient_search_text cannot be empty")
+        validated_term = validate_non_empty_string(search_term, "recipient_search_text")
 
         clone = self._clone()
         clone._filter_objects.append(
-            SimpleListFilter(key="recipient_search_text", values=[search_term.strip()])
+            SimpleListFilter(key="recipient_search_text", values=[validated_term])
         )
         return clone
-
 
     def recipient_type_names(self: T, *type_names: str) -> T:
         """
@@ -858,7 +841,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             SimpleListFilter(key="recipient_type_names", values=list(type_names))
         )
         return clone
-
 
     def award_ids(self: T, *award_ids: str) -> T:
         """
@@ -895,7 +877,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             SimpleListFilter(key="award_ids", values=list(award_ids))
         )
         return clone
-
 
     def award_amounts(
         self, *amounts: Union[dict[str, float], tuple[Optional[float], Optional[float]]]
@@ -947,7 +928,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
         return clone
 
-
     def award_type_codes(self: T, *award_codes: str) -> T:
         """
         Filter by one or more award type codes.
@@ -991,7 +971,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         )
         return clone
 
-
     def contracts(self: T) -> T:
         """
         Filter to search for contract awards only.
@@ -1010,7 +989,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ... )
         """
         return self.award_type_codes(*CONTRACT_CODES)
-
 
     def idvs(self: T) -> T:
         """
@@ -1032,7 +1010,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*IDV_CODES)
 
-
     def loans(self: T) -> T:
         """
         Filter to search for loan awards only.
@@ -1052,7 +1029,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ... )
         """
         return self.award_type_codes(*LOAN_CODES)
-
 
     def grants(self: T) -> T:
         """
@@ -1074,7 +1050,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*GRANT_CODES)
 
-
     def direct_payments(self: T) -> T:
         """
         Filter to search for direct payment awards only.
@@ -1095,7 +1070,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*DIRECT_PAYMENT_CODES)
 
-
     def other_assistance(self: T) -> T:
         """
         Filter to search for other assistance awards.
@@ -1115,7 +1089,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ... )
         """
         return self.award_type_codes(*OTHER_CODES)
-
 
     def program_numbers(self: T, *program_numbers: str) -> T:
         """
@@ -1151,7 +1124,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             SimpleListFilter(key="program_numbers", values=list(program_numbers))
         )
         return clone
-
 
     def naics_codes(
         self,
@@ -1197,7 +1169,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             )
         )
         return clone
-
 
     def psc_codes(
         self,
@@ -1269,7 +1240,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         )
         return clone
 
-
     def contract_pricing_type_codes(self: T, *type_codes: str) -> T:
         """
         Filter contracts by pricing type.
@@ -1297,7 +1267,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             SimpleListFilter(key="contract_pricing_type_codes", values=list(type_codes))
         )
         return clone
-
 
     def set_aside_type_codes(self: T, *type_codes: str) -> T:
         """
@@ -1327,7 +1296,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         )
         return clone
 
-
     def extent_competed_type_codes(self: T, *type_codes: str) -> T:
         """
         Filter contracts by competition level.
@@ -1354,7 +1322,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             SimpleListFilter(key="extent_competed_type_codes", values=list(type_codes))
         )
         return clone
-
 
     def tas_codes(
         self,
@@ -1394,10 +1361,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         )
         return clone
 
-
-    def treasury_account_components(
-        self, *components: dict[str, str]
-    ) -> T:
+    def treasury_account_components(self, *components: dict[str, str]) -> T:
         """
         Filter by specific components of Treasury Accounts.
 
@@ -1433,7 +1397,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             TreasuryAccountComponentsFilter(components=list(components))
         )
         return clone
-
 
     def def_codes(self: T, *def_codes: str) -> T:
         """
@@ -1494,12 +1457,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .description("climate change research")
             ... )
         """
-        if not text or not text.strip():
-            raise ValidationError("description text cannot be empty")
+        validated_text = validate_non_empty_string(text, "description")
 
         clone = self._clone()
         clone._filter_objects.append(
-            SimpleStringFilter(key="description", value=text.strip())
+            SimpleStringFilter(key="description", value=validated_text)
         )
         return clone
 
@@ -1588,4 +1550,3 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             SimpleListFilter(key="program_activities", values=list(activities))
         )
         return clone
-

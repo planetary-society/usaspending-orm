@@ -12,6 +12,7 @@ from usaspending.models.district_spending import DistrictSpending
 from usaspending.models.state_spending import StateSpending
 from usaspending.queries.query_builder import SearchQueryBuilder
 from usaspending.logging_config import USASpendingLogger
+from usaspending.utils.validations import validate_non_empty_string
 # Note: We don't use SimpleListFilter for recipient_id as the API expects a string, not an array
 
 # Import award type codes from models
@@ -265,10 +266,8 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         Raises:
             ValidationError: If recipient_id is empty.
         """
-        if not recipient_id:
-            raise ValidationError("recipient_id cannot be empty")
+        validated_id = validate_non_empty_string(recipient_id, "recipient_id")
 
         clone = self._clone()
-        clone._recipient_id = str(recipient_id).strip()
+        clone._recipient_id = validated_id
         return clone
-

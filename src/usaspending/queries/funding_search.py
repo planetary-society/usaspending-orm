@@ -8,6 +8,7 @@ from ..exceptions import ValidationError
 from ..models.funding import Funding
 from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
+from ..utils.validations import validate_non_empty_string
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -122,11 +123,10 @@ class FundingSearch(QueryBuilder["Funding"]):
         Returns:
             A new FundingSearch instance with the award filter applied.
         """
-        if not award_id:
-            raise ValidationError("award_id cannot be empty")
+        validated_id = validate_non_empty_string(award_id, "award_id")
 
         clone = self._clone()
-        clone._award_id = str(award_id).strip()
+        clone._award_id = validated_id
         return clone
 
     def order_by(self, field: str, direction: str = "desc") -> FundingSearch:

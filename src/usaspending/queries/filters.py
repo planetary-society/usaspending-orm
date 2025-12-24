@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any, ClassVar, Literal, Optional, Union
 
 from ..exceptions import ValidationError
+from ..utils.validations import parse_enum_value
 
 # ==============================================================================
 # Constants
@@ -325,8 +326,7 @@ class TreasuryAccountComponentsFilter(BaseFilter):
 
 
 def parse_location_scope(scope: str) -> LocationScope:
-    """
-    Convert a string to a LocationScope enum value.
+    """Convert a string to a LocationScope enum value.
 
     Args:
         scope: Either "domestic" or "foreign" (case-insensitive).
@@ -337,18 +337,11 @@ def parse_location_scope(scope: str) -> LocationScope:
     Raises:
         ValidationError: If scope is not "domestic" or "foreign".
     """
-    scope_lower = scope.lower()
-    if scope_lower == "domestic":
-        return LocationScope.DOMESTIC
-    elif scope_lower == "foreign":
-        return LocationScope.FOREIGN
-    else:
-        raise ValidationError("scope must be 'domestic' or 'foreign'")
+    return parse_enum_value(scope, LocationScope, "scope", normalize=False)
 
 
 def parse_agency_type(agency_type: str) -> AgencyType:
-    """
-    Convert a string to an AgencyType enum value.
+    """Convert a string to an AgencyType enum value.
 
     Args:
         agency_type: Either "awarding" or "funding" (case-insensitive).
@@ -359,18 +352,11 @@ def parse_agency_type(agency_type: str) -> AgencyType:
     Raises:
         ValidationError: If agency_type is not "awarding" or "funding".
     """
-    agency_type_lower = agency_type.lower()
-    if agency_type_lower == "awarding":
-        return AgencyType.AWARDING
-    elif agency_type_lower == "funding":
-        return AgencyType.FUNDING
-    else:
-        raise ValidationError("agency_type must be 'awarding' or 'funding'")
+    return parse_enum_value(agency_type, AgencyType, "agency_type", normalize=False)
 
 
 def parse_agency_tier(tier: str) -> AgencyTier:
-    """
-    Convert a string to an AgencyTier enum value.
+    """Convert a string to an AgencyTier enum value.
 
     Args:
         tier: Either "toptier" or "subtier" (case-insensitive).
@@ -381,18 +367,11 @@ def parse_agency_tier(tier: str) -> AgencyTier:
     Raises:
         ValidationError: If tier is not "toptier" or "subtier".
     """
-    tier_lower = tier.lower()
-    if tier_lower == "toptier":
-        return AgencyTier.TOPTIER
-    elif tier_lower == "subtier":
-        return AgencyTier.SUBTIER
-    else:
-        raise ValidationError("tier must be 'toptier' or 'subtier'")
+    return parse_enum_value(tier, AgencyTier, "tier", normalize=False)
 
 
 def parse_award_date_type(date_type: str) -> AwardDateType:
-    """
-    Convert a string to an AwardDateType enum value.
+    """Convert a string to an AwardDateType enum value.
 
     Handles flexible input formats including underscores and variations.
 
@@ -406,20 +385,7 @@ def parse_award_date_type(date_type: str) -> AwardDateType:
     Raises:
         ValidationError: If date_type is not a valid option.
     """
-    date_type_lower = date_type.lower().replace("_", "")
-    if date_type_lower == "actiondate":
-        return AwardDateType.ACTION_DATE
-    elif date_type_lower == "datesigned":
-        return AwardDateType.DATE_SIGNED
-    elif date_type_lower in ["lastmodified", "lastmodifieddate"]:
-        return AwardDateType.LAST_MODIFIED
-    elif date_type_lower == "newardsonly":
-        return AwardDateType.NEW_AWARDS_ONLY
-    else:
-        raise ValidationError(
-            f"Invalid date_type: '{date_type}'. Must be one of: "
-            "'action_date', 'date_signed', 'last_modified_date', 'new_awards_only'"
-        )
+    return parse_enum_value(date_type, AwardDateType, "date_type", normalize=True)
 
 
 def parse_award_amount(

@@ -9,6 +9,7 @@ from ..exceptions import ValidationError
 from ..models.transaction import Transaction
 from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
+from ..utils.validations import parse_date_string, validate_non_empty_string
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -23,15 +24,17 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     """
 
     # Valid sort fields per API documentation
-    VALID_SORT_FIELDS = frozenset({
-        "modification_number",
-        "action_date",
-        "federal_action_obligation",
-        "face_value_loan_guarantee",
-        "original_loan_subsidy_cost",
-        "action_type_description",
-        "description",
-    })
+    VALID_SORT_FIELDS = frozenset(
+        {
+            "modification_number",
+            "action_date",
+            "federal_action_obligation",
+            "face_value_loan_guarantee",
+            "original_loan_subsidy_cost",
+            "action_type_description",
+            "description",
+        }
+    )
 
     def __init__(self, client: "USASpendingClient"):
         """
@@ -134,11 +137,10 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         Returns:
             A new `TransactionsSearch` instance with the award filter applied.
         """
-        if not award_id:
-            raise ValidationError("award_id cannot be empty")
+        validated_id = validate_non_empty_string(award_id, "award_id")
 
         clone = self._clone()
-        clone._award_id = str(award_id).strip()
+        clone._award_id = validated_id
         return clone
 
     def since(self, date: str) -> "TransactionsSearch":
@@ -157,11 +159,8 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         Example:
             >>> transactions = award.transactions.since("2024-01-01").all()
         """
-        # Validate date format
-        try:
-            datetime.strptime(date, "%Y-%m-%d")
-        except ValueError:
-            raise ValidationError("Date must be in YYYY-MM-DD format")
+        # Validate date format (parse_date_string validates and returns a date object)
+        parse_date_string(date, "since_date")
 
         clone = self._clone()
         clone._client_filters["since_date"] = date
@@ -183,11 +182,8 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         Example:
             >>> transactions = award.transactions.until("2024-12-31").all()
         """
-        # Validate date format
-        try:
-            datetime.strptime(date, "%Y-%m-%d")
-        except ValueError:
-            raise ValidationError("Date must be in YYYY-MM-DD format")
+        # Validate date format (parse_date_string validates and returns a date object)
+        parse_date_string(date, "until_date")
 
         clone = self._clone()
         clone._client_filters["until_date"] = date
