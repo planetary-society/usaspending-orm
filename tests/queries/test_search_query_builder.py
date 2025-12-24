@@ -104,6 +104,31 @@ class TestTimePeriodFilter:
                 end_date="2024-12-31",
             )
 
+    def test_time_period_rejects_date_before_fy2008_start(self, search_builder):
+        """Test time_period rejects start_date before FY2008 (2007-10-01)."""
+        with pytest.raises(ValidationError, match="before the minimum supported date"):
+            search_builder.time_period(
+                start_date="2007-09-30",  # One day before FY2008
+                end_date="2008-09-30",
+            )
+
+    def test_time_period_rejects_end_date_before_fy2008(self, search_builder):
+        """Test time_period rejects end_date before FY2008."""
+        with pytest.raises(ValidationError, match="before the minimum supported date"):
+            search_builder.time_period(
+                start_date="2007-10-01",  # Valid
+                end_date="2007-09-30",  # Invalid - before FY2008
+            )
+
+    def test_time_period_accepts_fy2008_start_date(self, search_builder):
+        """Test time_period accepts dates starting from FY2008."""
+        # 2007-10-01 is the first day of FY2008 and should be valid
+        result = search_builder.time_period(
+            start_date="2007-10-01",
+            end_date="2008-09-30",
+        )
+        assert len(result._filter_objects) == 1
+
 
 class TestFiscalYearFilter:
     """Test fiscal_year convenience method."""
@@ -201,12 +226,22 @@ class TestRecipientFilters:
         }
 
     def test_recipient_search_text(self, search_builder):
-        """Test recipient_search_text filter."""
-        result = search_builder.recipient_search_text("SpaceX", "123456789")
+        """Test recipient_search_text filter with single term."""
+        result = search_builder.recipient_search_text("SpaceX")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
-        assert filter_dict == {"recipient_search_text": ["SpaceX", "123456789"]}
+        assert filter_dict == {"recipient_search_text": ["SpaceX"]}
+
+    def test_recipient_search_text_empty_raises_error(self, search_builder):
+        """Test recipient_search_text rejects empty string."""
+        with pytest.raises(ValidationError, match="cannot be empty"):
+            search_builder.recipient_search_text("")
+
+    def test_recipient_search_text_whitespace_raises_error(self, search_builder):
+        """Test recipient_search_text rejects whitespace-only string."""
+        with pytest.raises(ValidationError, match="cannot be empty"):
+            search_builder.recipient_search_text("   ")
 
     def test_recipient_type_names(self, search_builder):
         """Test recipient_type_names filter."""
@@ -365,23 +400,39 @@ class TestClassificationCodeFilters:
         assert filter_dict == {"program_numbers": ["10.001", "10.002"]}
 
     def test_naics_codes(self, search_builder):
-        """Test naics_codes filter with require and exclude."""
+        """Test naics_codes filter with require and exclude using flat arrays."""
         result = search_builder.naics_codes(
-            require=[["54"], ["541512"]],
-            exclude=[["541519"]],
+            require=["54", "541512"],
+            exclude=["541519"],
         )
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
+        # Per API docs, NAICS uses flat arrays (not nested like TAS/PSC)
         assert filter_dict == {
             "naics_codes": {
-                "require": [[["54"]], [["541512"]]],
-                "exclude": [[["541519"]]],
+                "require": ["54", "541512"],
+                "exclude": ["541519"],
             }
         }
 
-    def test_psc_codes(self, search_builder):
-        """Test psc_codes filter."""
+    def test_naics_codes_require_only(self, search_builder):
+        """Test naics_codes filter with only require."""
+        result = search_builder.naics_codes(require=["62"])
+
+        filter_dict = result._filter_objects[0].to_dict()
+        assert filter_dict == {"naics_codes": {"require": ["62"]}}
+
+    def test_psc_codes_simple_format(self, search_builder):
+        """Test psc_codes filter with simple list format."""
+        result = search_builder.psc_codes("1510", "1520")
+
+        assert len(result._filter_objects) == 1
+        filter_dict = result._filter_objects[0].to_dict()
+        assert filter_dict == {"psc_codes": ["1510", "1520"]}
+
+    def test_psc_codes_hierarchical_format(self, search_builder):
+        """Test psc_codes filter with hierarchical require/exclude format."""
         result = search_builder.psc_codes(
             require=[["Service", "R"]],
             exclude=[["Service", "R499"]],
@@ -395,6 +446,11 @@ class TestClassificationCodeFilters:
                 "exclude": [["Service", "R499"]],
             }
         }
+
+    def test_psc_codes_mixed_format_raises_error(self, search_builder):
+        """Test psc_codes rejects mixing simple codes with require/exclude."""
+        with pytest.raises(ValidationError, match="Cannot mix"):
+            search_builder.psc_codes("1510", require=[["Service", "R"]])
 
     def test_contract_pricing_type_codes(self, search_builder):
         """Test contract_pricing_type_codes filter."""
@@ -492,3 +548,62 @@ class TestMethodChaining:
         assert len(result1._filter_objects) == 1
         assert len(result2._filter_objects) == 1
         assert len(result3._filter_objects) == 2  # Chained from result1
+
+
+# ==============================================================================
+# Subaward Date Type Restriction Tests
+# ==============================================================================
+
+
+class TestSubAwardTimePeriodRestrictions:
+    """Test that SubAwardsSearch restricts date_type options per API docs."""
+
+    @pytest.fixture
+    def subaward_builder(self, mock_usa_client):
+        """Create a SubAwardsSearch instance."""
+        from usaspending.queries.subawards_search import SubAwardsSearch
+        return SubAwardsSearch(mock_usa_client)
+
+    def test_subaward_accepts_action_date(self, subaward_builder):
+        """Test that subaward search accepts action_date date_type."""
+        result = subaward_builder.time_period(
+            start_date="2024-01-01",
+            end_date="2024-12-31",
+            date_type="action_date",
+        )
+        assert len(result._filter_objects) == 1
+
+    def test_subaward_accepts_last_modified_date(self, subaward_builder):
+        """Test that subaward search accepts last_modified_date date_type."""
+        result = subaward_builder.time_period(
+            start_date="2024-01-01",
+            end_date="2024-12-31",
+            date_type="last_modified_date",
+        )
+        assert len(result._filter_objects) == 1
+
+    def test_subaward_rejects_date_signed(self, subaward_builder):
+        """Test that subaward search rejects date_signed date_type."""
+        with pytest.raises(ValidationError, match="Only 'action_date' or 'last_modified_date'"):
+            subaward_builder.time_period(
+                start_date="2024-01-01",
+                end_date="2024-12-31",
+                date_type="date_signed",
+            )
+
+    def test_subaward_rejects_new_awards_only_flag(self, subaward_builder):
+        """Test that subaward search rejects new_awards_only parameter."""
+        with pytest.raises(ValidationError, match="not supported for subaward"):
+            subaward_builder.time_period(
+                start_date="2024-01-01",
+                end_date="2024-12-31",
+                new_awards_only=True,
+            )
+
+    def test_subaward_default_date_type(self, subaward_builder):
+        """Test that subaward search works with no date_type (defaults to action_date)."""
+        result = subaward_builder.time_period(
+            start_date="2024-01-01",
+            end_date="2024-12-31",
+        )
+        assert len(result._filter_objects) == 1

@@ -15,6 +15,10 @@ from ..exceptions import ValidationError
 # Earliest fiscal year supported by USASpending.gov
 MIN_FISCAL_YEAR = 2008
 
+# Earliest date supported by USASpending.gov API (start of MIN_FISCAL_YEAR)
+# Fiscal years begin on October 1 of the prior calendar year
+MIN_API_DATE = datetime.date(MIN_FISCAL_YEAR - 1, 10, 1)
+
 # ==============================================================================
 # Helper Enums and Dataclasses
 # ==============================================================================
@@ -261,10 +265,37 @@ class NAICSFilter(BaseFilter):
 
 
 @dataclass(frozen=True)
-class TieredCodeFilter(BaseFilter):
-    """Handles filters with hierarchical 'require' and 'exclude' structure like PSC/TAS."""
+class PSCFilter(BaseFilter):
+    """Filter by Product and Service Codes (PSC).
 
-    key: Literal["psc_codes", "tas_codes"]
+    Supports two formats per API documentation:
+    1. Simple list: ["1510", "1520"] - direct code matching
+    2. Hierarchical require/exclude: {"require": [[...]], "exclude": [[...]]}
+    """
+
+    key: ClassVar[str] = "psc_codes"
+    codes: list[str] = field(default_factory=list)  # Simple format
+    require: list[list[str]] = field(default_factory=list)  # Hierarchical format
+    exclude: list[list[str]] = field(default_factory=list)  # Hierarchical format
+
+    def to_dict(self) -> dict[str, Any]:
+        # If simple codes are provided, use simple list format
+        if self.codes:
+            return {self.key: self.codes}
+        # Otherwise use hierarchical require/exclude format
+        data: dict[str, list[list[str]]] = {}
+        if self.require:
+            data["require"] = self.require
+        if self.exclude:
+            data["exclude"] = self.exclude
+        return {self.key: data}
+
+
+@dataclass(frozen=True)
+class TieredCodeFilter(BaseFilter):
+    """Handles filters with hierarchical 'require' and 'exclude' structure for TAS codes."""
+
+    key: Literal["tas_codes"]
     require: list[list[str]] = field(default_factory=list)
     exclude: list[list[str]] = field(default_factory=list)
 
@@ -425,7 +456,16 @@ def parse_award_amount(
 
 def parse_location_spec(location: dict[str, str]) -> LocationSpec:
     """
-    Convert a dictionary to a LocationSpec dataclass.
+    Convert a dictionary to a LocationSpec dataclass with validation.
+
+    Per USASpending API documentation, location objects have the following rules:
+    - country is required
+    - county requires state to be specified
+    - county and district_original are mutually exclusive
+    - county and district_current are mutually exclusive
+    - district_original and district_current are mutually exclusive
+    - district_original/district_current require state to be specified
+    - district_original/district_current require country to be "USA"
 
     Args:
         location: A dictionary with location fields like country_code,
@@ -433,16 +473,60 @@ def parse_location_spec(location: dict[str, str]) -> LocationSpec:
 
     Returns:
         LocationSpec: The corresponding dataclass instance.
+
+    Raises:
+        ValidationError: If location specification violates API rules.
     """
-     # Map user-friendly keys to dataclass field names         
+    # Map user-friendly keys to dataclass field names
     key_mapping = {
-          "country": "country_code",                            
-          "state": "state_code",
-          "county": "county_code",
-          "city": "city_name",
-          "zip": "zip_code",                           
-      }
+        "country": "country_code",
+        "state": "state_code",
+        "county": "county_code",
+        "city": "city_name",
+        "zip": "zip_code",
+    }
     normalized = {key_mapping.get(k, k): v for k, v in location.items()}
+
+    # Check for required country field
+    country = normalized.get("country_code", "")
+    if not country:
+        raise ValidationError("Location must include 'country' or 'country_code'")
+
+    # Determine what fields are present
+    has_state = bool(normalized.get("state_code"))
+    has_county = bool(normalized.get("county_code"))
+    has_district_original = bool(normalized.get("district_original"))
+    has_district_current = bool(normalized.get("district_current"))
+
+    # Validation: county requires state
+    if has_county and not has_state:
+        raise ValidationError(
+            "county requires state to be specified in location filter"
+        )
+
+    # Validation: county and district are mutually exclusive
+    if has_county and (has_district_original or has_district_current):
+        raise ValidationError(
+            "county and district are mutually exclusive in location filter"
+        )
+
+    # Validation: district_original and district_current are mutually exclusive
+    if has_district_original and has_district_current:
+        raise ValidationError(
+            "district_original and district_current are mutually exclusive"
+        )
+
+    # Validation: district requires state and USA country
+    if has_district_original or has_district_current:
+        if not has_state:
+            raise ValidationError(
+                "district requires state to be specified in location filter"
+            )
+        if country.upper() != "USA":
+            raise ValidationError(
+                "district is only valid for USA locations (country must be 'USA')"
+            )
+
     return LocationSpec(**normalized)
 
 

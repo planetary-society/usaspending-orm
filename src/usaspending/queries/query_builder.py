@@ -26,8 +26,10 @@ from .filters import (
     SimpleStringFilter,
     AwardAmountFilter,
     NAICSFilter,
+    PSCFilter,
     TieredCodeFilter,
     TreasuryAccountComponentsFilter,
+    MIN_API_DATE,
     parse_award_date_type,
     parse_fiscal_year,
     parse_location_scope,
@@ -416,9 +418,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
         Args:
             start_date: The start date of the period. Can be a datetime.date
-                object or string in "YYYY-MM-DD" format.
+                object or string in "YYYY-MM-DD" format. Must be on or after
+                2007-10-01 (start of FY2008).
             end_date: The end date of the period. Can be a datetime.date
-                object or string in "YYYY-MM-DD" format.
+                object or string in "YYYY-MM-DD" format. Must be on or after
+                2007-10-01 (start of FY2008).
             new_awards_only: If True, only returns awards that started within
                 the given date range. Defaults to False.
             date_type: The type of date to filter on. Can be a string:
@@ -430,7 +434,8 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             A new instance with the time period filter applied.
 
         Raises:
-            ValidationError: If string dates are not in valid "YYYY-MM-DD" format.
+            ValidationError: If string dates are not in valid "YYYY-MM-DD" format,
+                or if dates are before 2007-10-01 (FY2008).
 
         Example:
             >>> # Find all contracts from 2023
@@ -464,6 +469,18 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                 raise ValidationError(
                     f"Invalid end_date format: '{end_date}'. Expected 'YYYY-MM-DD'."
                 )
+
+        # Validate minimum date (API only supports data from FY2008 onwards)
+        if start_date < MIN_API_DATE:
+            raise ValidationError(
+                f"start_date {start_date} is before the minimum supported date "
+                f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
+            )
+        if end_date < MIN_API_DATE:
+            raise ValidationError(
+                f"end_date {end_date} is before the minimum supported date "
+                f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
+            )
 
         # Convert string date_type to enum if needed
         date_type_enum = None
@@ -767,18 +784,22 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         return self.agencies(agency_dict)
 
 
-    def recipient_search_text(self: T, *search_terms: str) -> T:
+    def recipient_search_text(self: T, search_term: str) -> T:
         """
         Search for awards by recipient name, UEI, or DUNS.
 
         This performs a text search across recipient identifiers and names.
+        Per API documentation, only a single search term is supported.
 
         Args:
-            *search_terms: Text to search for across recipient name,
+            search_term: Text to search for across recipient name,
                 UEI (Unique Entity Identifier), and DUNS number fields.
 
         Returns:
             T: A new instance with the recipient search filter applied.
+
+        Raises:
+            ValidationError: If search_term is empty.
 
         Example:
             >>> # Search by company name
@@ -795,9 +816,12 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .recipient_search_text("ABCD1234567890")
             ... )
         """
+        if not search_term or not search_term.strip():
+            raise ValidationError("recipient_search_text cannot be empty")
+
         clone = self._clone()
         clone._filter_objects.append(
-            SimpleListFilter(key="recipient_search_text", values=list(search_terms))
+            SimpleListFilter(key="recipient_search_text", values=[search_term.strip()])
         )
         return clone
 
@@ -1138,10 +1162,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter by North American Industry Classification System (NAICS) codes.
 
         NAICS codes classify business establishments for statistical purposes.
+        The API uses prefix matching, so "33" will match all codes starting with "33".
 
         Args:
-            require: A list of NAICS codes that must be present.
-            exclude: A list of NAICS codes to exclude from results.
+            require: A list of NAICS code prefixes that must be present.
+            exclude: A list of NAICS code prefixes to exclude from results.
 
         Returns:
             T: A new instance with the NAICS filter applied.
@@ -1165,12 +1190,10 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ... )
         """
         clone = self._clone()
-        # The API expects a list of lists, but for NAICS, each list contains one element.
-        require_list = [[code] for code in require] if require else []
-        exclude_list = [[code] for code in exclude] if exclude else []
         clone._filter_objects.append(
-            TieredCodeFilter(
-                key="naics_codes", require=require_list, exclude=exclude_list
+            NAICSFilter(
+                require=list(require) if require else [],
+                exclude=list(exclude) if exclude else [],
             )
         )
         return clone
@@ -1178,16 +1201,20 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def psc_codes(
         self,
+        *codes: str,
         require: Optional[list[list[str]]] = None,
         exclude: Optional[list[list[str]]] = None,
     ) -> T:
         """
         Filter by Product and Service Codes (PSC).
 
-        PSCs describe what the government is buying. They use a hierarchical
-        structure with categories and subcategories.
+        PSCs describe what the government is buying. Supports two formats:
+
+        1. Simple list format: Pass codes directly as arguments
+        2. Hierarchical format: Use require/exclude with nested path lists
 
         Args:
+            *codes: Simple PSC codes for direct matching (e.g., "1510", "1520").
             require: A list of PSC code paths to require. Each path is a list
                 representing the hierarchy (e.g., [["Service", "B", "B5"]]).
             exclude: A list of PSC code paths to exclude.
@@ -1195,8 +1222,18 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Returns:
             T: A new instance with the PSC filter applied.
 
+        Raises:
+            ValidationError: If both simple codes and require/exclude are provided.
+
         Example:
-            >>> # Find IT service contracts
+            >>> # Simple format - direct code matching
+            >>> contracts = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .psc_codes("1510", "1520")
+            ... )
+
+            >>> # Hierarchical format - for tree-based filtering
             >>> it_services = (
             ...     client.awards.search()
             ...     .contracts()
@@ -1215,10 +1252,17 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     )
             ... )
         """
+        # Validate that user doesn't mix formats
+        if codes and (require or exclude):
+            raise ValidationError(
+                "Cannot mix simple PSC codes with require/exclude format. "
+                "Use either psc_codes('1510', '1520') or psc_codes(require=[...], exclude=[...])."
+            )
+
         clone = self._clone()
         clone._filter_objects.append(
-            TieredCodeFilter(
-                key="psc_codes",
+            PSCFilter(
+                codes=list(codes) if codes else [],
                 require=require or [],
                 exclude=exclude or [],
             )

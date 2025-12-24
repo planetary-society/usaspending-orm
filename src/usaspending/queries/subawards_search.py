@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, TYPE_CHECKING, Optional
+import datetime
+from typing import Any, Dict, TYPE_CHECKING, Optional, Union
 
 from ..exceptions import ValidationError
 from ..models.subaward import SubAward
@@ -194,3 +195,65 @@ class SubAwardsSearch(AwardsSearch):
         clone = self._clone()
         clone._award_id = str(award_id).strip()
         return clone
+
+    def time_period(
+        self,
+        start_date: Union[datetime.date, str],
+        end_date: Union[datetime.date, str],
+        new_awards_only: bool = False,
+        date_type: Optional[str] = None,
+    ) -> SubAwardsSearch:
+        """
+        Filter subawards by a specific date range.
+
+        Per API documentation, subaward searches only support the following date types:
+        - action_date (default)
+        - last_modified_date
+
+        Args:
+            start_date: The start date of the period.
+            end_date: The end date of the period.
+            new_awards_only: NOT SUPPORTED for subawards. Will raise an error if True.
+            date_type: The type of date to filter on. Only "action_date" or
+                "last_modified_date" are valid for subawards.
+
+        Returns:
+            SubAwardsSearch: A new instance with the time period filter applied.
+
+        Raises:
+            ValidationError: If new_awards_only is True or date_type is invalid.
+
+        Example:
+            >>> subawards = (
+            ...     client.subawards
+            ...     .contracts()
+            ...     .time_period("2024-01-01", "2024-12-31")
+            ... )
+        """
+        # Validate subaward-specific restrictions
+        if new_awards_only:
+            raise ValidationError(
+                "new_awards_only is not supported for subaward searches. "
+                "This filter is only available for award searches."
+            )
+
+        # Validate date_type if provided
+        if date_type:
+            valid_subaward_date_types = {"action_date", "last_modified_date"}
+            date_type_lower = date_type.lower().replace("_", "")
+            normalized = "action_date" if date_type_lower == "actiondate" else (
+                "last_modified_date" if date_type_lower in ("lastmodified", "lastmodifieddate") else None
+            )
+            if normalized not in valid_subaward_date_types:
+                raise ValidationError(
+                    f"Invalid date_type '{date_type}' for subaward searches. "
+                    "Only 'action_date' or 'last_modified_date' are supported."
+                )
+
+        # Call parent implementation with validated parameters
+        return super().time_period(
+            start_date=start_date,
+            end_date=end_date,
+            new_awards_only=False,
+            date_type=date_type,
+        )
