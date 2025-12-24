@@ -51,3 +51,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 pythonpath = "src"
+markers = [
+    "integration: marks tests as integration tests (hit real USASpending API, run with: pytest -m integration)",
+]
+addopts = "-m 'not integration'"
