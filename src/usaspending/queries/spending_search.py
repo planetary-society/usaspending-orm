@@ -12,9 +12,7 @@ from usaspending.models.district_spending import DistrictSpending
 from usaspending.models.state_spending import StateSpending
 from usaspending.queries.query_builder import SearchQueryBuilder
 from usaspending.logging_config import USASpendingLogger
-from usaspending.queries.filters import (
-    SimpleListFilter,
-)
+# Note: We don't use SimpleListFilter for recipient_id as the API expects a string, not an array
 
 # Import award type codes from models
 # These are defined by USASpending.gov and represent different categories of awards
@@ -46,6 +44,7 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         self._category: Optional[SpendingCategory] = None
         self._spending_level: SpendingLevel = "transactions"
         self._subawards: bool = False
+        self._recipient_id: Optional[str] = None
 
     @property
     def _endpoint(self) -> str:
@@ -67,6 +66,7 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         clone._category = self._category
         clone._spending_level = self._spending_level
         clone._subawards = self._subawards
+        clone._recipient_id = self._recipient_id
         return clone
 
     def _build_payload(self, page: int) -> dict[str, Any]:
@@ -78,6 +78,10 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
             )
 
         final_filters = self._aggregate_filters()
+
+        # Add recipient_id as a string (not an array) per API requirements
+        if self._recipient_id:
+            final_filters["recipient_id"] = self._recipient_id
 
         payload = {
             "filters": final_filters,
@@ -247,15 +251,24 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         """
         Filter by specific recipient ID.
 
+        The recipient ID is a unique identifier that includes the recipient hash
+        and level suffix (e.g., "abc123-P" for parent, "abc123-C" for child).
+
+        Note: This filter is not supported when using subawards mode.
+
         Args:
             recipient_id: Unique identifier for the recipient.
 
         Returns:
             A new SpendingSearch instance with the filter applied.
+
+        Raises:
+            ValidationError: If recipient_id is empty.
         """
+        if not recipient_id:
+            raise ValidationError("recipient_id cannot be empty")
+
         clone = self._clone()
-        clone._filter_objects.append(
-            SimpleListFilter(key="recipient_id", values=[recipient_id])
-        )
+        clone._recipient_id = str(recipient_id).strip()
         return clone
 

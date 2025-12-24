@@ -22,6 +22,17 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     on transaction data. This class follows a fluent interface pattern.
     """
 
+    # Valid sort fields per API documentation
+    VALID_SORT_FIELDS = frozenset({
+        "modification_number",
+        "action_date",
+        "federal_action_obligation",
+        "face_value_loan_guarantee",
+        "original_loan_subsidy_cost",
+        "action_type_description",
+        "description",
+    })
+
     def __init__(self, client: "USASpendingClient"):
         """
         Initializes the TransactionsSearch query builder.
@@ -60,6 +71,11 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             "limit": self._get_effective_page_size(),
             "page": page,
         }
+
+        # Add sort parameters if specified
+        if self._order_by:
+            payload["sort"] = self._order_by
+            payload["order"] = self._order_direction
 
         # Add any additional filters if they exist
         final_filters = self._aggregate_filters()
@@ -175,6 +191,49 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
 
         clone = self._clone()
         clone._client_filters["until_date"] = date
+        return clone
+
+    def order_by(self, field: str, direction: str = "desc") -> "TransactionsSearch":
+        """
+        Set the sort order for transaction results.
+
+        Args:
+            field: The field to sort by. Valid fields are:
+                - modification_number
+                - action_date (default)
+                - federal_action_obligation
+                - face_value_loan_guarantee
+                - original_loan_subsidy_cost
+                - action_type_description
+                - description
+            direction: Sort direction - 'asc' or 'desc' (default: 'desc')
+
+        Returns:
+            A new TransactionsSearch instance with the sort configuration applied.
+
+        Raises:
+            ValidationError: If the field or direction is invalid.
+
+        Example:
+            >>> transactions = (
+            ...     client.transactions.award_id("ABC123")
+            ...     .order_by("federal_action_obligation", "desc")
+            ... )
+        """
+        if field not in self.VALID_SORT_FIELDS:
+            raise ValidationError(
+                f"Invalid sort field '{field}'. "
+                f"Valid fields: {', '.join(sorted(self.VALID_SORT_FIELDS))}"
+            )
+
+        if direction not in ("asc", "desc"):
+            raise ValidationError(
+                f"Invalid sort direction '{direction}'. Must be 'asc' or 'desc'."
+            )
+
+        clone = self._clone()
+        clone._order_by = field
+        clone._order_direction = direction
         return clone
 
     def _apply_client_filters(self, transaction: Transaction) -> bool:

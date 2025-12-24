@@ -136,9 +136,9 @@ class TestFiscalYearFilter:
         }
 
     def test_fiscal_year_invalid_year(self, search_builder):
-        """Test fiscal_year rejects invalid year format."""
-        with pytest.raises(ValidationError, match="4-digit integer"):
-            search_builder.fiscal_year(year=24)  # Should be 2024
+        """Test fiscal_year rejects year before 2008."""
+        with pytest.raises(ValidationError, match="Must be >= 2008"):
+            search_builder.fiscal_year(year=24)  # Invalid: too low
 
 
 class TestPlaceOfPerformanceFilters:

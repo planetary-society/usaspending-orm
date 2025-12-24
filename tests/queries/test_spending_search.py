@@ -116,10 +116,34 @@ class TestFilterMethods:
 
         filtered_search = search.recipient_id(recipient_id)
 
-        assert len(filtered_search._filter_objects) == 1
-        filter_dict = filtered_search._filter_objects[0].to_dict()
-        assert "recipient_id" in filter_dict
-        assert filter_dict["recipient_id"] == [recipient_id]
+        # Recipient ID is stored directly (not in filter_objects) and sent as
+        # a string to the API (not wrapped in an array)
+        assert filtered_search._recipient_id == recipient_id
+
+    def test_recipient_id_in_payload(self, mock_usa_client):
+        """Test that recipient_id appears as string (not array) in payload."""
+        search = (
+            SpendingSearch(mock_usa_client)
+            .by_recipient()
+            .recipient_id("test-recipient-id")
+        )
+
+        payload = search._build_payload(1)
+
+        # Verify recipient_id is in filters as a string, not an array
+        assert "recipient_id" in payload["filters"]
+        assert payload["filters"]["recipient_id"] == "test-recipient-id"
+        assert not isinstance(payload["filters"]["recipient_id"], list)
+
+    def test_recipient_id_validation(self, mock_usa_client):
+        """Test recipient_id validation for empty values."""
+        search = SpendingSearch(mock_usa_client)
+
+        with pytest.raises(ValidationError, match="recipient_id cannot be empty"):
+            search.recipient_id("")
+
+        with pytest.raises(ValidationError, match="recipient_id cannot be empty"):
+            search.recipient_id(None)
 
 
 class TestResultTransformation:

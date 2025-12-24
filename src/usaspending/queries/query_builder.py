@@ -23,10 +23,13 @@ from .filters import (
     LocationScopeFilter,
     LocationFilter,
     SimpleListFilter,
+    SimpleStringFilter,
     AwardAmountFilter,
+    NAICSFilter,
     TieredCodeFilter,
     TreasuryAccountComponentsFilter,
     parse_award_date_type,
+    parse_fiscal_year,
     parse_location_scope,
     parse_location_spec,
     parse_agency_spec,
@@ -517,13 +520,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .fiscal_year(2023, new_awards_only=True)
             ... )
         """
-        
+        # Validate fiscal year (must be >= 2008, earliest supported by USASpending.gov)
+        year = parse_fiscal_year(year)
+
         # A fiscal year is negatively offset to the calendar year by 3 months. For example,
         # FY 2024 ran from October 1, 2023 to September 30, 2024.
-
-        if not isinstance(year, int) or year < 1000 or year > 9999:
-            raise ValidationError(f"Fiscal year must be provided as a 4-digit integer: {year}")
-
         start_date = datetime.date(year - 1, 10, 1)
         end_date = datetime.date(year, 9, 30)
         
@@ -1425,6 +1426,122 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         clone = self._clone()
         clone._filter_objects.append(
             SimpleListFilter(key="def_codes", values=list(def_codes))
+        )
+        return clone
+
+    def description(self: T, text: str) -> T:
+        """
+        Filter awards by description text.
+
+        Unlike keywords(), this filter specifically searches the award
+        description field only, rather than multiple text fields.
+
+        Args:
+            text: The text to search for in award descriptions.
+
+        Returns:
+            T: A new instance with the description filter applied.
+
+        Example:
+            >>> # Find contracts with "climate" in description
+            >>> climate_contracts = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .description("climate change research")
+            ... )
+        """
+        if not text or not text.strip():
+            raise ValidationError("description text cannot be empty")
+
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleStringFilter(key="description", value=text.strip())
+        )
+        return clone
+
+    def program_activity(self: T, *activity_codes: int) -> T:
+        """
+        Filter by program activity codes.
+
+        Program activity codes are numeric identifiers that categorize
+        federal programs for budgeting and reporting purposes.
+
+        Args:
+            *activity_codes: One or more program activity codes as integers.
+
+        Returns:
+            T: A new instance with the program activity filter applied.
+
+        Example:
+            >>> # Find awards for specific program activities
+            >>> programs = (
+            ...     client.awards.search()
+            ...     .grants()
+            ...     .program_activity(1, 2, 3)
+            ... )
+        """
+        if not activity_codes:
+            raise ValidationError("At least one program activity code is required")
+
+        # Validate all codes are integers
+        for code in activity_codes:
+            if not isinstance(code, int):
+                raise ValidationError(
+                    f"Program activity codes must be integers, got {type(code).__name__}"
+                )
+
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="program_activity", values=list(activity_codes))
+        )
+        return clone
+
+    def program_activities(
+        self: T,
+        *activities: dict[str, str],
+    ) -> T:
+        """
+        Filter by program activities using name or code.
+
+        This filter allows searching by program activity name, code, or both.
+        Each activity specification must include at least a name or code.
+
+        Args:
+            *activities: One or more activity specifications as dictionaries.
+                Each dictionary can contain:
+                - name: The program activity name (optional if code provided)
+                - code: The program activity code (optional if name provided)
+
+        Returns:
+            T: A new instance with the program activities filter applied.
+
+        Raises:
+            ValidationError: If an activity has neither name nor code.
+
+        Example:
+            >>> # Filter by specific program activities
+            >>> programs = (
+            ...     client.awards.search()
+            ...     .grants()
+            ...     .program_activities(
+            ...         {"name": "Research and Development"},
+            ...         {"code": "0001"}
+            ...     )
+            ... )
+        """
+        if not activities:
+            raise ValidationError("At least one program activity is required")
+
+        # Validate each activity has at least name or code
+        for activity in activities:
+            if "name" not in activity and "code" not in activity:
+                raise ValidationError(
+                    "Each program activity must have at least a 'name' or 'code' field"
+                )
+
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="program_activities", values=list(activities))
         )
         return clone
 

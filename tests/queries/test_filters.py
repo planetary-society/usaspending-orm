@@ -5,6 +5,9 @@ from __future__ import annotations
 import datetime
 
 # Assuming the filter classes are in this location
+import pytest
+
+from usaspending.exceptions import ValidationError
 from usaspending.queries.filters import (
     AgencyFilter,
     AgencySpec,
@@ -14,6 +17,8 @@ from usaspending.queries.filters import (
     KeywordsFilter,
     LocationSpec,
     LocationFilter,
+    MIN_FISCAL_YEAR,
+    parse_fiscal_year,
     SimpleListFilter,
     TieredCodeFilter,
     TimePeriodFilter,
@@ -274,3 +279,46 @@ def test_keywords_filter():
 
     # Assert
     assert result_dict == expected_dict
+
+
+# ==============================================================================
+# Fiscal Year Validation Tests
+# ==============================================================================
+
+
+class TestParseFiscalYear:
+    """Tests for parse_fiscal_year validation function."""
+
+    def test_valid_integer_year(self):
+        """Test that valid integer years are accepted."""
+        assert parse_fiscal_year(2024) == 2024
+        assert parse_fiscal_year(2008) == 2008  # Minimum valid year
+        assert parse_fiscal_year(2100) == 2100
+
+    def test_valid_string_year(self):
+        """Test that valid string years are converted to integers."""
+        assert parse_fiscal_year("2024") == 2024
+        assert parse_fiscal_year("2008") == 2008
+
+    def test_year_before_2008_raises_error(self):
+        """Test that years before 2008 raise ValidationError."""
+        with pytest.raises(ValidationError, match="Must be >= 2008"):
+            parse_fiscal_year(2007)
+
+        with pytest.raises(ValidationError, match="Must be >= 2008"):
+            parse_fiscal_year(1999)
+
+        with pytest.raises(ValidationError, match="Must be >= 2008"):
+            parse_fiscal_year("2007")
+
+    def test_invalid_string_raises_error(self):
+        """Test that non-numeric strings raise ValidationError."""
+        with pytest.raises(ValidationError, match="Must be an integer"):
+            parse_fiscal_year("invalid")
+
+        with pytest.raises(ValidationError, match="Must be an integer"):
+            parse_fiscal_year("twenty-twenty")
+
+    def test_min_fiscal_year_constant(self):
+        """Test that MIN_FISCAL_YEAR constant is set correctly."""
+        assert MIN_FISCAL_YEAR == 2008

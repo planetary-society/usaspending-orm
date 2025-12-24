@@ -1,7 +1,7 @@
 """Recipient resource implementation."""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
@@ -19,23 +19,37 @@ class RecipientsResource(BaseResource):
     Provides access to recipient search and retrieval endpoints.
     """
 
-    def find_by_recipient_id(self, recipient_id: str) -> Optional["Recipient"]:
+    def find_by_recipient_id(
+        self,
+        recipient_id: str,
+        year: Optional[Union[int, str]] = None,
+    ) -> Optional["Recipient"]:
         """Retrieve a single recipient by ID.
 
         Args:
-            recipient_id: Unique recipient identifier
+            recipient_id: Unique recipient identifier (hash + level suffix,
+                e.g., "abc123def-R" for regular or "abc123def-P" for parent)
+            year: Optional fiscal year for recipient data. Can be:
+                - An integer fiscal year (e.g., 2024)
+                - "latest" to get the most recent fiscal year's data
+                - "all" to get aggregated data across all years
+                - None (default) to use the API's default behavior
 
         Returns:
             Recipient model instance
 
         Raises:
-            ValidationError: If recipient_id is invalid
+            ValidationError: If recipient_id is invalid or year format is invalid
             APIError: If recipient not found
+
+        Example:
+            >>> recipient = client.recipients.find_by_recipient_id("abc123-R", year=2024)
+            >>> recipient = client.recipients.find_by_recipient_id("abc123-P", year="latest")
         """
-        logger.debug(f"Retrieving recipient by ID: {recipient_id}")
+        logger.debug(f"Retrieving recipient by ID: {recipient_id}, year: {year}")
         from ..queries.recipient_query import RecipientQuery
 
-        return RecipientQuery(self._client).find_by_id(recipient_id)
+        return RecipientQuery(self._client).find_by_id(recipient_id, year=year)
 
     def search(self) -> "RecipientsSearch":
         """Create a new recipient search query builder.

@@ -73,15 +73,17 @@ class TestMockClientExamples:
         mock_usa_client.set_error_response(
             MockUSASpendingClient.Endpoints.AWARD_COUNT,
             error_code=400,
-            detail="Invalid award type code: X",
+            detail="Server-side validation error",
         )
 
         # Should raise APIError when calling count()
+        # Note: We use a valid award type code ("A") because client-side validation
+        # now catches invalid codes before they reach the API
         with pytest.raises(APIError) as exc_info:
-            list(mock_usa_client.awards.search().award_type_codes("X"))
+            list(mock_usa_client.awards.search().award_type_codes("A"))
 
         assert exc_info.value.status_code == 400
-        assert "Invalid award type code" in str(exc_info.value)
+        assert "Server-side validation error" in str(exc_info.value)
 
     def test_fixture_loading(self, mock_usa_client):
         """Test loading responses from fixture files."""

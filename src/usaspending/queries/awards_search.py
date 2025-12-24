@@ -142,6 +142,7 @@ from ..models.award_types import (
     LOAN_CODES,
     GRANT_CODES,
     AWARD_TYPE_GROUPS,
+    ALL_AWARD_CODES,
 )
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -572,8 +573,9 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             AwardsSearch: A new instance with the award type filter applied.
 
         Raises:
-            ValidationError: If mixing different award type categories
-                (e.g., contracts and grants in the same query).
+            ValidationError: If any award type code is invalid, or if mixing
+                different award type categories (e.g., contracts and grants
+                in the same query).
 
         Example:
             >>> # Search for specific contract types
@@ -592,6 +594,15 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             >>> # client.awards.search().award_type_codes("A", "02")  # Contract + Grant
         """
         new_codes = set(award_codes)
+
+        # Validate that all codes are valid award type codes
+        invalid_codes = [code for code in new_codes if code not in ALL_AWARD_CODES]
+        if invalid_codes:
+            raise ValidationError(
+                f"Invalid award type code(s): {', '.join(sorted(invalid_codes))}. "
+                f"Valid codes are: {', '.join(sorted(ALL_AWARD_CODES))}"
+            )
+
         self._validate_single_award_type_category(new_codes)
 
         clone = self._clone()

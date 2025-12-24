@@ -9,6 +9,13 @@ from typing import Any, ClassVar, Literal, Optional, Union
 from ..exceptions import ValidationError
 
 # ==============================================================================
+# Constants
+# ==============================================================================
+
+# Earliest fiscal year supported by USASpending.gov
+MIN_FISCAL_YEAR = 2008
+
+# ==============================================================================
 # Helper Enums and Dataclasses
 # ==============================================================================
 
@@ -194,6 +201,17 @@ class SimpleListFilter(BaseFilter):
 
 
 @dataclass(frozen=True)
+class SimpleStringFilter(BaseFilter):
+    """A generic filter for API keys that accept a single string value."""
+
+    key: str
+    value: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {self.key: self.value}
+
+
+@dataclass(frozen=True)
 class AwardAmount:
     """Represents a single award amount range for filtering."""
 
@@ -221,10 +239,32 @@ class AwardAmountFilter(BaseFilter):
 
 
 @dataclass(frozen=True)
-class TieredCodeFilter(BaseFilter):
-    """Handles filters with a 'require' and 'exclude' structure like NAICS."""
+class NAICSFilter(BaseFilter):
+    """Filter by NAICS codes with require/exclude structure using flat arrays.
 
-    key: Literal["naics_codes", "psc_codes", "tas_codes"]
+    Per API documentation, NAICS codes use flat string arrays (not nested arrays
+    like TAS/PSC codes). The API will match codes that START WITH the provided
+    prefixes, allowing for hierarchical filtering.
+    """
+
+    key: ClassVar[str] = "naics_codes"
+    require: list[str] = field(default_factory=list)
+    exclude: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, dict[str, list[str]]]:
+        data: dict[str, list[str]] = {}
+        if self.require:
+            data["require"] = self.require
+        if self.exclude:
+            data["exclude"] = self.exclude
+        return {self.key: data}
+
+
+@dataclass(frozen=True)
+class TieredCodeFilter(BaseFilter):
+    """Handles filters with hierarchical 'require' and 'exclude' structure like PSC/TAS."""
+
+    key: Literal["psc_codes", "tas_codes"]
     require: list[list[str]] = field(default_factory=list)
     exclude: list[list[str]] = field(default_factory=list)
 
@@ -444,3 +484,43 @@ def parse_agency_spec(agency: dict[str, str]) -> AgencySpec:
         )
 
     return AgencySpec(**agency)
+
+
+def parse_fiscal_year(year: Union[int, str]) -> int:
+    """
+    Validate and parse a fiscal year value.
+
+    USASpending.gov data begins in fiscal year 2008, so any year before that
+    is invalid.
+
+    Args:
+        year: Fiscal year as integer or string (e.g., 2024 or "2024").
+
+    Returns:
+        int: Validated fiscal year.
+
+    Raises:
+        ValidationError: If year is not a valid fiscal year (must be >= 2008).
+
+    Example:
+        >>> parse_fiscal_year(2024)
+        2024
+        >>> parse_fiscal_year("2024")
+        2024
+        >>> parse_fiscal_year(2007)  # Raises ValidationError
+    """
+    if isinstance(year, str):
+        try:
+            year = int(year)
+        except ValueError:
+            raise ValidationError(
+                f"Invalid fiscal year: '{year}'. Must be an integer >= {MIN_FISCAL_YEAR}."
+            )
+
+    if not isinstance(year, int) or year < MIN_FISCAL_YEAR:
+        raise ValidationError(
+            f"Invalid fiscal year: {year}. Must be >= {MIN_FISCAL_YEAR} "
+            "(earliest year supported by USASpending.gov)."
+        )
+
+    return year
