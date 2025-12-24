@@ -10,22 +10,41 @@ from usaspending.config import config
 
 
 @pytest.fixture(autouse=True)
-def default_test_config():
+def default_test_config(request):
     """
     This fixture automatically sets the baseline configuration for all tests.
     It runs before any other test-specific fixture.
 
+    For integration tests (marked with @pytest.mark.integration), we use
+    production-like settings. For all other tests, we use minimal timeout
+    settings to prevent accidental API calls.
+
     Note: No logging configuration is needed here - the library uses NullHandler
     by default, so tests run silently unless explicitly configured.
     """
-    config.configure(
-        cache_enabled=False,
-        max_retries=0,
-        timeout=0.01,
-        retry_delay=0.01,
-        retry_backoff=0.01,
-        rate_limit_calls=10000,
-    )
+    # Check if this is an integration test
+    is_integration = request.node.get_closest_marker("integration") is not None
+
+    if is_integration:
+        # Use production-like settings for integration tests
+        config.configure(
+            cache_enabled=False,
+            max_retries=2,
+            timeout=30,
+            retry_delay=2.0,
+            retry_backoff=2.0,
+            rate_limit_calls=100,
+        )
+    else:
+        # Use minimal settings for unit tests to prevent accidental API calls
+        config.configure(
+            cache_enabled=False,
+            max_retries=0,
+            timeout=0.01,
+            retry_delay=0.01,
+            retry_backoff=0.01,
+            rate_limit_calls=10000,
+        )
 
 
 @pytest.fixture

@@ -278,6 +278,39 @@ logging.basicConfig(
 
 USASpending Python Wrapper is under active development. The API is stabilizing but may change as we refine the abstractions based on real-world usage. We welcome feedback on the interface design and feature priorities.
 
+## Testing
+
+The library includes both unit tests and integration tests.
+
+### Running Unit Tests
+
+Unit tests run against mocked API responses and do not require network access:
+
+```bash
+# Run all unit tests (default, excludes integration tests)
+pytest
+
+# Run with verbose output
+pytest -v
+```
+
+### Running Integration Tests
+
+Integration tests hit the real USASpending.gov API to verify end-to-end functionality. These are **excluded by default** to avoid network dependencies during normal development.
+
+```bash
+# Run only integration tests
+pytest -m integration
+
+# Run integration tests with verbose output
+pytest -m integration -v
+
+# Run all tests including integration
+pytest -m ""
+```
+
+Integration tests verify connectivity and response structure for all major resources including awards, recipients, agencies, spending, and award-related data (transactions, funding, subawards).
+
 ## Contributing
 
 We welcome contributions to improve and expand the implementation and functionality.
