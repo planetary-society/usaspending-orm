@@ -418,25 +418,32 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter by a specific date range.
 
         Args:
-            start_date: The start date of the period. Can be a datetime.date
-                object or string in "YYYY-MM-DD" format. Must be on or after
-                2007-10-01 (start of FY2008).
-            end_date: The end date of the period. Can be a datetime.date
-                object or string in "YYYY-MM-DD" format. Must be on or after
-                2007-10-01 (start of FY2008).
-            new_awards_only: If True, only returns awards that started within
-                the given date range. Defaults to False.
-            date_type: The type of date to filter on. Can be a string:
-                "action_date", "date_signed", "last_modified_date", or
-                "new_awards_only". If not specified, uses default date type.
-                Case-insensitive.
+            start_date: Start of date range. Accepts datetime.date or "YYYY-MM-DD" string.
+            end_date: End of date range. Accepts datetime.date or "YYYY-MM-DD" string.
+            new_awards_only: If True, only includes awards that started in the period.
+            date_type: The date field to filter on (case-insensitive).
+
+        Valid Date Types:
+            "action_date" (default): The date the action (transaction) occurred.
+                Most common choice for spending analysis.
+            "date_signed": The date the award was signed/executed.
+                Useful for tracking when commitments were made.
+            "last_modified_date": When the record was last updated.
+                Useful for finding recently changed records.
+            "new_awards_only": Only awards that originated in the period.
+                Equivalent to setting new_awards_only=True.
+
+        Validation Rules:
+            - Minimum date: 2007-10-01 (start of FY2008)
+            - USASpending.gov data begins with FY2008
+            - String dates must be in YYYY-MM-DD format
+            - Dates before the minimum raise ValidationError
 
         Returns:
-            A new instance with the time period filter applied.
+            T: A new instance with the time period filter applied.
 
         Raises:
-            ValidationError: If string dates are not in valid "YYYY-MM-DD" format,
-                or if dates are before 2007-10-01 (FY2008).
+            ValidationError: If date format is invalid or date is before 2007-10-01.
 
         Example:
             >>> # Find all contracts from 2023
@@ -446,12 +453,30 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .time_period("2023-01-01", "2023-12-31")
             ... )
 
-            >>> # Find only NEW grants started in Q1 2024
+            >>> # Find NEW grants started in Q1 2024
             >>> new_grants = (
             ...     client.awards.search()
             ...     .grants()
             ...     .time_period("2024-01-01", "2024-03-31", new_awards_only=True)
             ... )
+
+            >>> # Find awards by signature date
+            >>> signed_2024 = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .time_period("2024-01-01", "2024-12-31", date_type="date_signed")
+            ... )
+
+            >>> # Find recently modified records
+            >>> recent_changes = (
+            ...     client.awards.search()
+            ...     .grants()
+            ...     .time_period("2024-11-01", "2024-12-31", date_type="last_modified_date")
+            ... )
+
+        Note:
+            For subaward searches, only "action_date" and "last_modified_date"
+            are supported. See SubAwardsSearch.time_period() for details.
         """
         # Parse string dates if needed
         start_date = parse_date_string(start_date, "start_date")
@@ -681,18 +706,42 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter awards by one or more awarding or funding agencies.
 
         Args:
-            *agencies: One or more agency specifications as dictionaries.
-                Each dictionary must contain:
-                - name: Agency name (required, e.g., "Department of Defense")
-                - type: "awarding" or "funding" (required)
-                - tier: "toptier" or "subtier" (required)
-                - toptier_name: Parent agency name (optional, for scoping subtiers)
+            *agencies: Agency specification dictionaries with required and optional fields.
+
+        Required Fields:
+            name (str): The agency name. Must match exactly (case-insensitive).
+                Examples: "Department of Defense", "Small Business Administration"
+
+            type (str): Whether this is the awarding or funding agency.
+                "awarding": The agency that manages/administers the award
+                "funding": The agency that provides the money (may differ from awarding)
+
+            tier (str): The organizational level.
+                "toptier": Top-level department (e.g., "Department of Defense")
+                "subtier": Sub-agency or office (e.g., "Army", "Defense Logistics Agency")
+
+        Optional Fields:
+            toptier_name (str): Parent agency name to disambiguate subtiers.
+                Required when the subtier name exists under multiple toptiers.
+                Example: "Office of Inspector General" exists in many departments.
 
         Returns:
             T: A new instance with the agency filter applied.
 
         Raises:
-            ValidationError: If required fields are missing or invalid.
+            ValidationError: If required fields (name, type, tier) are missing
+                or contain invalid values.
+
+        Common Agency Combinations:
+            Top-tier Awarding: Find who is managing the award
+                {"name": "Department of Defense", "type": "awarding", "tier": "toptier"}
+
+            Top-tier Funding: Find who is paying for the award
+                {"name": "Department of Energy", "type": "funding", "tier": "toptier"}
+
+            Subtier with Parent: Disambiguate common subtier names
+                {"name": "Office of Inspector General", "type": "awarding",
+                 "tier": "subtier", "toptier_name": "Department of Defense"}
 
         Example:
             >>> # Find DOD and NASA contracts
@@ -705,19 +754,32 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     )
             ... )
 
-            >>> # Find awards with specific subtier agency scoped to parent
-            >>> subtier_awards = (
+            >>> # Find awards funded by DOE but managed by other agencies
+            >>> doe_funded = (
             ...     client.awards.search()
-            ...     .grants()
+            ...     .contracts()
+            ...     .agencies(
+            ...         {"name": "Department of Energy", "type": "funding", "tier": "toptier"}
+            ...     )
+            ... )
+
+            >>> # Find specific subtier with disambiguation
+            >>> army_awards = (
+            ...     client.awards.search()
+            ...     .contracts()
             ...     .agencies(
             ...         {
-            ...             "name": "Office of Inspector General",
+            ...             "name": "Department of the Army",
             ...             "type": "awarding",
             ...             "tier": "subtier",
             ...             "toptier_name": "Department of Defense"
             ...         }
             ...     )
             ... )
+
+        Note:
+            Multiple agencies use OR logic. An award matches if it involves
+            any of the specified agencies.
         """
 
         # Parse each agency dict into AgencySpec objects
@@ -814,26 +876,97 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter awards by recipient or business types.
 
         Args:
-            *type_names: The names of recipient types. Common values include:
-                "small_business", "woman_owned_business", "veteran_owned_business",
-                "minority_owned_business", "nonprofit", "higher_education", etc.
+            *type_names: One or more recipient type names (case-sensitive).
+
+        Valid Recipient Types:
+            Small Business Types:
+                "small_business": Small Business
+                "other_than_small_business": Other Than Small Business
+                "category_business": Category Business
+
+            Socioeconomic Business Types:
+                "woman_owned_business": Woman-Owned Business
+                "sba_certified_8a_program_participant": 8(a) Program Participant
+                "historically_underutilized_business_firm": HUBZone Firm
+                "service_disabled_veteran_owned_business": SDVOSB
+                "women_owned_small_business": Women-Owned Small Business
+                "economically_disadvantaged_women_owned_small_business": EDWOSB
+                "joint_venture_women_owned_small_business": Joint Venture WOSB
+                "joint_venture_economically_disadvantaged_women_owned_small_bus": JV EDWOSB
+                "veteran_owned_business": Veteran-Owned Business
+                "minority_owned_business": Minority-Owned Business
+                "subcontinent_asian_indian_american_owned": Subcontinent Asian Indian American Owned
+                "asian_pacific_american_owned_business": Asian Pacific American Owned
+                "black_american_owned_business": Black American Owned
+                "hispanic_american_owned_business": Hispanic American Owned
+                "native_american_owned_business": Native American Owned
+                "other_minority_owned_business": Other Minority Owned
+
+            Entity Types:
+                "corporate_entity_not_tax_exempt": Corporate Entity (Not Tax Exempt)
+                "corporate_entity_tax_exempt": Corporate Entity (Tax Exempt)
+                "partnership_or_limited_liability_partnership": Partnership/LLP
+                "sole_proprietorship": Sole Proprietorship
+                "limited_liability_corporation": LLC
+                "subchapter_s_corporation": Subchapter S Corporation
+
+            Government Entities:
+                "government": Government
+                "us_state_government": U.S. State Government
+                "county_local_government": County/Local Government
+                "city_local_government": City Government
+                "township_local_government": Township Government
+                "municipality_local_government": Municipality
+                "us_federal_government": U.S. Federal Government
+                "indian_tribe_federally_recognized": Federally Recognized Tribal Government
+                "foreign_government": Foreign Government
+                "regional_and_state_government": Regional/State Government
+
+            Nonprofit & Educational:
+                "nonprofit": Nonprofit Organization
+                "higher_education": Higher Education Institution
+                "private_university_or_college": Private University/College
+                "state_controlled_institution_of_higher_learning": State College
+                "hospital": Hospital
+                "foundation": Foundation
+
+            Other Types:
+                "individual": Individual
+                "foreign_entity": Foreign Entity
+                "for_profit_organization": For-Profit Organization
+                "other_nonprofit": Other Nonprofit
+                "other": Other
 
         Returns:
             T: A new instance with the recipient type filter applied.
 
+        Note:
+            Multiple types use OR logic (matches any specified type).
+            Type names are case-sensitive and use underscores.
+
         Example:
             >>> # Find contracts awarded to small businesses
-            >>> small_biz_contracts = (
+            >>> small_biz = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .recipient_type_names("small_business")
             ... )
 
             >>> # Find grants to universities and nonprofits
-            >>> education_grants = (
+            >>> education = (
             ...     client.awards.search()
             ...     .grants()
             ...     .recipient_type_names("higher_education", "nonprofit")
+            ... )
+
+            >>> # Find veteran-owned business contracts
+            >>> veteran = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .recipient_type_names(
+            ...         "veteran_owned_business",
+            ...         "service_disabled_veteran_owned_business"
+            ...     )
             ... )
         """
         clone = self._clone()
@@ -934,16 +1067,44 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
         **This filter is required** - the API requires at least one award type code.
 
-        Award type codes include:
-        - Contracts: A, B, C, D
-        - IDVs: IDV_A, IDV_B, IDV_B_A, IDV_B_B, IDV_B_C, IDV_C, IDV_D, IDV_E
-        - Grants: 02, 03, 04, 05
-        - Loans: 07, 08
-        - Direct Payments: 06, 10
-        - Other: 09, 11, -1
-
         Args:
-            *award_codes: A sequence of award type codes.
+            *award_codes: One or more award type codes from the categories below.
+
+        Valid Award Type Codes:
+            Contracts (Procurement):
+                "A": BPA Call
+                "B": Purchase Order
+                "C": Delivery Order
+                "D": Definitive Contract
+
+            Indefinite Delivery Vehicles (IDVs):
+                "IDV_A": GWAC (Government-Wide Acquisition Contract)
+                "IDV_B": IDC (Indefinite Delivery Contract)
+                "IDV_B_A": IDC / Requirements
+                "IDV_B_B": IDC / Indefinite Quantity
+                "IDV_B_C": IDC / Definite Quantity
+                "IDV_C": FSS (Federal Supply Schedule)
+                "IDV_D": BOA (Basic Ordering Agreement)
+                "IDV_E": BPA (Blanket Purchase Agreement)
+
+            Grants (Assistance):
+                "02": Block Grant
+                "03": Formula Grant
+                "04": Project Grant
+                "05": Cooperative Agreement
+
+            Loans:
+                "07": Direct Loan
+                "08": Guaranteed/Insured Loan
+
+            Direct Payments:
+                "06": Direct Payment for Specified Use
+                "10": Direct Payment with Unrestricted Use
+
+            Other Financial Assistance:
+                "09": Insurance
+                "11": Other Financial Assistance
+                "-1": Not Specified (unknown/legacy data)
 
         Returns:
             T: A new instance with the award type filter applied.
@@ -951,6 +1112,8 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Note:
             AwardsSearch overrides this method to add validation that prevents
             mixing different award type categories (e.g., contracts and grants).
+            This is because different award types have different available fields
+            and filtering options.
 
         Example:
             >>> # Search for specific contract types
@@ -964,6 +1127,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     client.awards.search()
             ...     .award_type_codes("02", "03", "04", "05")
             ... )
+
+        Reference:
+            https://api.usaspending.gov/api/v2/references/filter_tree/psc/
         """
         clone = self._clone()
         clone._filter_objects.append(
@@ -1134,32 +1300,80 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter by North American Industry Classification System (NAICS) codes.
 
         NAICS codes classify business establishments for statistical purposes.
-        The API uses prefix matching, so "33" will match all codes starting with "33".
+        The API uses **prefix matching**, so code "33" matches all codes starting
+        with "33" (e.g., 331110, 332710, 333999).
 
         Args:
-            require: A list of NAICS code prefixes that must be present.
-            exclude: A list of NAICS code prefixes to exclude from results.
+            require: NAICS code prefixes to include (matches if starts with).
+            exclude: NAICS code prefixes to exclude from results.
+
+        NAICS Code Structure:
+            2-digit: Sector (broadest classification)
+            3-digit: Subsector
+            4-digit: Industry Group
+            5-digit: NAICS Industry
+            6-digit: National Industry (most specific)
+
+        Common NAICS Sectors:
+            "11": Agriculture, Forestry, Fishing and Hunting
+            "21": Mining, Quarrying, and Oil/Gas Extraction
+            "22": Utilities
+            "23": Construction
+            "31-33": Manufacturing
+                "31": Food, Beverage, Tobacco, Textiles
+                "32": Wood, Paper, Petroleum, Chemicals, Plastics
+                "33": Metals, Machinery, Electronics, Transportation
+            "42": Wholesale Trade
+            "44-45": Retail Trade
+            "48-49": Transportation and Warehousing
+            "51": Information (Publishing, Broadcasting, Telecom, IT)
+            "52": Finance and Insurance
+            "53": Real Estate and Rental/Leasing
+            "54": Professional, Scientific, and Technical Services
+            "55": Management of Companies
+            "56": Administrative, Support, Waste Management
+            "61": Educational Services
+            "62": Health Care and Social Assistance
+            "71": Arts, Entertainment, and Recreation
+            "72": Accommodation and Food Services
+            "81": Other Services (Repair, Personal, Religious)
+            "92": Public Administration
 
         Returns:
             T: A new instance with the NAICS filter applied.
 
+        Note:
+            Use prefix matching strategically - "54" matches all professional
+            services (541110 Legal, 541330 Engineering, 541511 Custom Programming).
+
         Example:
-            >>> # Find healthcare contracts (NAICS 62)
-            >>> healthcare = (
+            >>> # Find all IT services contracts
+            >>> it_services = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .naics_codes(require=["62"])
+            ...     .naics_codes(require=["5415"])  # Computer Systems Design
             ... )
 
-            >>> # Find manufacturing contracts, excluding chemicals
+            >>> # Find manufacturing, excluding chemicals
             >>> manufacturing = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .naics_codes(
-            ...         require=["31", "32", "33"],  # Manufacturing codes
-            ...         exclude=["325"]  # Exclude chemical manufacturing
+            ...         require=["31", "32", "33"],
+            ...         exclude=["325"]  # Exclude Chemical Manufacturing
             ...     )
             ... )
+
+            >>> # Find aerospace manufacturing specifically
+            >>> aerospace = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .naics_codes(require=["336411", "336412", "336413"])
+            ... )
+
+        Reference:
+            U.S. Census Bureau NAICS Codes
+            https://www.census.gov/naics/
         """
         clone = self._clone()
         clone._filter_objects.append(
@@ -1180,48 +1394,96 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter by Product and Service Codes (PSC).
 
         PSCs describe what the government is buying. Supports two formats:
-
-        1. Simple list format: Pass codes directly as arguments
-        2. Hierarchical format: Use require/exclude with nested path lists
+        1. **Simple format**: Pass codes directly as string arguments
+        2. **Hierarchical format**: Use require/exclude with nested path lists
 
         Args:
-            *codes: Simple PSC codes for direct matching (e.g., "1510", "1520").
-            require: A list of PSC code paths to require. Each path is a list
-                representing the hierarchy (e.g., [["Service", "B", "B5"]]).
-            exclude: A list of PSC code paths to exclude.
+            *codes: PSC codes for exact matching (e.g., "1510", "D302").
+            require: PSC code paths to include (hierarchical format).
+            exclude: PSC code paths to exclude (hierarchical format).
+
+        PSC Code Structure:
+            Products (4-digit numeric codes starting with digits):
+                10-19: Weapons & Ammunition
+                20-29: Ships, Small Craft, and Pontoons
+                30-39: Mechanized Equipment and Vehicles
+                40-49: Electronics and Electrical Equipment
+                50-59: Clothing, Textiles, and Subsistence
+                60-69: Materials, Instruments, and Supplies
+                70-79: General Equipment
+                80-89: Containers, Packaging, and Packing
+                90-99: Non-Metallic Crude Materials
+
+            Services (Codes starting with letters):
+                A: Research and Development
+                B: Special Studies and Analysis
+                C: Architect and Engineering Services
+                D: IT and Telecommunications Services
+                    D3: IT and Telecom - Software Development
+                    D301: IT and Telecom - Facility Operation
+                    D302: IT and Telecom - Systems Development
+                E: Purchase of Structures and Facilities
+                F: Natural Resources and Conservation
+                G: Social Services
+                H: Quality Control, Testing, and Inspection
+                J: Maintenance, Repair, and Rebuilding of Equipment
+                K: Modification of Equipment
+                L: Technical Representative Services
+                M: Operation of Government-Owned Facilities
+                N: Installation of Equipment
+                P: Salvage Services
+                Q: Medical Services
+                R: Professional, Administrative, and Management Support
+                    R4: Program Management/Support
+                    R7: Administrative Support
+                S: Utilities and Housekeeping Services
+                T: Photographic, Mapping, and Publishing Services
+                U: Education and Training Services
+                V: Transportation, Travel, and Relocation Services
+                W: Lease or Rental of Equipment
+                Y: Construction of Structures and Facilities
+                Z: Maintenance, Repair, or Alteration of Real Property
+
+        Hierarchical Format:
+            Use nested lists representing the PSC tree path:
+            - ["Product", "15"] - All products in FSC 15 (Aircraft)
+            - ["Service", "D"] - All IT/Telecom services
+            - ["Service", "D", "D3"] - IT Software services specifically
 
         Returns:
             T: A new instance with the PSC filter applied.
 
         Raises:
-            ValidationError: If both simple codes and require/exclude are provided.
+            ValidationError: If both simple codes and require/exclude are used.
 
         Example:
-            >>> # Simple format - direct code matching
-            >>> contracts = (
+            >>> # Simple format - specific codes
+            >>> aircraft = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .psc_codes("1510", "1520")
+            ...     .psc_codes("1510", "1520", "1560")  # Aircraft and components
             ... )
 
-            >>> # Hierarchical format - for tree-based filtering
+            >>> # Hierarchical - all IT services
             >>> it_services = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .psc_codes(
-            ...         require=[["Service", "D"]],  # IT and Telecom services
-            ...     )
+            ...     .psc_codes(require=[["Service", "D"]])
             ... )
 
-            >>> # Find research services, excluding medical research
+            >>> # R&D services, excluding medical research
             >>> research = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .psc_codes(
-            ...         require=[["Service", "A"]],  # Research and Development
+            ...         require=[["Service", "A"]],
             ...         exclude=[["Service", "A", "AN"]]  # Exclude medical R&D
             ...     )
             ... )
+
+        Reference:
+            GSA PSC Manual
+            https://www.acquisition.gov/psc-manual
         """
         # Validate that user doesn't mix formats
         if codes and (require or exclude):
@@ -1242,17 +1504,46 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def contract_pricing_type_codes(self: T, *type_codes: str) -> T:
         """
-        Filter contracts by pricing type.
+        Filter contracts by pricing type (FAR Part 16).
 
-        Common pricing types include fixed-price, cost-reimbursement,
-        time-and-materials, etc.
+        Pricing types define how the contractor is compensated - fixed-price
+        contracts shift risk to the contractor, while cost-reimbursement
+        contracts shift risk to the government.
 
         Args:
-            *type_codes: The contract pricing type codes (e.g., "J" for
-                firm fixed price, "A" for cost plus fixed fee).
+            *type_codes: One or more contract pricing type codes.
+
+        Valid Pricing Type Codes:
+            Fixed-Price Contracts:
+                "A": Fixed Price Redetermination
+                "B": Fixed Price Level of Effort
+                "J": Firm Fixed Price
+                "K": Fixed Price with Economic Price Adjustment
+                "L": Fixed Price Incentive
+                "M": Fixed Price Award Fee
+
+            Cost-Reimbursement Contracts:
+                "R": Cost Plus Award Fee
+                "S": Cost No Fee
+                "T": Cost Sharing
+                "U": Cost Plus Fixed Fee
+                "V": Cost Plus Incentive Fee
+
+            Time and Materials / Labor Hour:
+                "Y": Time and Materials
+                "Z": Labor Hours
+
+            Other:
+                "1": Order Dependent (for IDVs - pricing varies by order)
+                "2": Combination (multiple pricing types)
+                "3": Other
 
         Returns:
             T: A new instance with the pricing type filter applied.
+
+        Note:
+            This filter applies only to contract awards (types A, B, C, D
+            and IDVs). It has no effect on grants, loans, or other assistance.
 
         Example:
             >>> # Find firm fixed price contracts
@@ -1261,6 +1552,17 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .contracts()
             ...     .contract_pricing_type_codes("J")
             ... )
+
+            >>> # Find cost-reimbursement contracts
+            >>> cost_plus = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .contract_pricing_type_codes("R", "S", "T", "U", "V")
+            ... )
+
+        Reference:
+            FAR Part 16 - Types of Contracts
+            https://www.acquisition.gov/far/part-16
         """
         clone = self._clone()
         clone._filter_objects.append(
@@ -1273,22 +1575,73 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter contracts by set-aside type.
 
         Set-asides reserve contracts for specific types of businesses
-        (e.g., small businesses, minority-owned businesses).
+        (e.g., small businesses, minority-owned, veteran-owned).
 
         Args:
-            *type_codes: The set-aside type codes (e.g., "SBA" for small
-                business set-aside, "NONE" for no set-aside).
+            *type_codes: One or more set-aside type codes.
+
+        Valid Set-Aside Codes:
+            No Set-Aside:
+                "NONE": No Set-Aside Used
+
+            Small Business Programs:
+                "SBA": Small Business Set-Aside - Total
+                "SBP": Small Business Set-Aside - Partial
+
+            8(a) Business Development Program:
+                "8A": 8(a) Competed
+                "8AN": 8(a) Sole Source
+
+            HUBZone Program:
+                "HZC": HUBZone Set-Aside
+                "HZS": HUBZone Sole Source
+
+            Service-Disabled Veteran-Owned Small Business (SDVOSB):
+                "SDVOSBC": SDVOSB Set-Aside
+                "SDVOSBS": SDVOSB Sole Source
+
+            Women-Owned Small Business (WOSB):
+                "WOSB": WOSB Set-Aside
+                "WOSBSS": WOSB Sole Source
+                "EDWOSB": Economically Disadvantaged WOSB Set-Aside
+                "EDWOSBSS": Economically Disadvantaged WOSB Sole Source
+
+            Veteran-Owned Small Business:
+                "VSA": Veteran-Owned Small Business Set-Aside
+                "VSS": Veteran-Owned Small Business Sole Source
+
+            Other:
+                "IEE": Indian Economic Enterprise
+                "ISBEE": Indian Small Business Economic Enterprise
+                "RSB": Emerging Small Business Set-Aside
+                "HS2": Combined HUBZone/8(a)
+                "HS3": HUBZone/Small Business Set-Aside
 
         Returns:
             T: A new instance with the set-aside filter applied.
 
+        Note:
+            This filter applies only to contract awards. Multiple codes use
+            OR logic (matches any specified set-aside type).
+
         Example:
             >>> # Find small business set-aside contracts
-            >>> small_biz_setaside = (
+            >>> small_biz = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .set_aside_type_codes("SBA")
+            ...     .set_aside_type_codes("SBA", "SBP")
             ... )
+
+            >>> # Find veteran-owned business contracts
+            >>> veteran_owned = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .set_aside_type_codes("SDVOSBC", "SDVOSBS", "VSA", "VSS")
+            ... )
+
+        Reference:
+            FAR Part 19 - Small Business Programs
+            https://www.acquisition.gov/far/part-19
         """
         clone = self._clone()
         clone._filter_objects.append(
@@ -1298,24 +1651,55 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def extent_competed_type_codes(self: T, *type_codes: str) -> T:
         """
-        Filter contracts by competition level.
+        Filter contracts by extent of competition.
 
-        Indicates how much competition was involved in awarding the contract.
+        Indicates how much competition was involved in awarding the contract,
+        ranging from full and open competition to sole source awards.
 
         Args:
-            *type_codes: The extent competed type codes (e.g., "A" for
-                full and open competition, "G" for not competed).
+            *type_codes: One or more extent competed type codes.
+
+        Valid Competition Codes:
+            Full Competition:
+                "A": Full and Open Competition
+                "D": Full and Open Competition after Exclusion of Sources
+                "E": Follow On to Competed Action
+                "F": Competed under SAP (Simplified Acquisition Procedures)
+
+            Limited Competition:
+                "B": Not Available for Competition
+                "C": Not Competed
+                "G": Not Competed under SAP
+
+            Delivery/Task Orders:
+                "CDO": Competitive Delivery Order
+                "NDO": Non-Competitive Delivery Order
 
         Returns:
             T: A new instance with the competition filter applied.
 
+        Note:
+            This filter applies only to contract awards. It helps identify
+            whether awards were competitively bid or sole-sourced.
+
         Example:
-            >>> # Find fully competed contracts
+            >>> # Find fully competed contracts only
             >>> competed = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .extent_competed_type_codes("A")
+            ...     .extent_competed_type_codes("A", "D")
             ... )
+
+            >>> # Find sole source / non-competed contracts
+            >>> sole_source = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .extent_competed_type_codes("B", "C", "NDO")
+            ... )
+
+        Reference:
+            FAR Part 6 - Competition Requirements
+            https://www.acquisition.gov/far/part-6
         """
         clone = self._clone()
         clone._filter_objects.append(
@@ -1402,33 +1786,75 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         Filter by Disaster Emergency Fund (DEF) codes.
 
-        DEF codes identify awards related to specific disaster or emergency
-        funding legislation (e.g., COVID-19 relief, infrastructure funding).
+        DEF codes identify awards funded through specific disaster or emergency
+        appropriations legislation. Use this to find COVID-19 relief spending,
+        infrastructure investments, and other emergency funding.
 
         Args:
-            *def_codes: The DEF codes. Common codes include:
-                - "L", "M", "N", "O", "P": COVID-19 related
-                - "Z": Infrastructure Investment and Jobs Act
-                - Others defined by specific legislation
+            *def_codes: One or more DEF codes.
+
+        Valid DEF Codes:
+            COVID-19 Relief (2020-2021):
+                "L": Coronavirus Preparedness and Response Supplemental
+                     (P.L. 116-123, March 2020)
+                "M": Families First Coronavirus Response Act
+                     (P.L. 116-127, March 2020)
+                "N": CARES Act - Coronavirus Aid, Relief, and Economic Security
+                     (P.L. 116-136, March 2020)
+                "O": Paycheck Protection Program and Health Care Enhancement
+                     (P.L. 116-139, April 2020)
+                "P": Coronavirus Response and Relief Supplemental
+                     (P.L. 116-260, December 2020)
+                "U": American Rescue Plan Act
+                     (P.L. 117-2, March 2021)
+
+            Infrastructure (2021+):
+                "Z": Infrastructure Investment and Jobs Act (IIJA)
+                     (P.L. 117-58, November 2021)
+
+            Inflation Reduction Act (2022+):
+                "1": IRA - Climate and Energy (P.L. 117-169)
+                "2": IRA - Healthcare (P.L. 117-169)
+
+            Legacy Disaster Codes:
+                "A": Disaster Relief - General
+                "B": Disaster Relief (Hurricane Sandy, etc.)
+                "C": Disaster Relief (legacy)
+                "D": Disaster Relief (legacy)
 
         Returns:
             T: A new instance with the DEF code filter applied.
 
+        Note:
+            Multiple codes use OR logic (matches any specified code).
+            DEF codes are assigned at the transaction level, so awards may
+            have multiple funding sources with different DEF codes.
+
         Example:
-            >>> # Find COVID-19 relief contracts
-            >>> covid_contracts = (
+            >>> # Find all COVID-19 relief spending
+            >>> covid = (
             ...     client.awards.search()
             ...     .contracts()
-            ...     .def_codes("L", "M", "N", "O", "P")
-            ...     .fiscal_year(2021)
+            ...     .def_codes("L", "M", "N", "O", "P", "U")
             ... )
 
-            >>> # Find infrastructure awards
+            >>> # Find Infrastructure Investment and Jobs Act awards
             >>> infrastructure = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .def_codes("Z")
             ... )
+
+            >>> # Find Inflation Reduction Act climate investments
+            >>> ira_climate = (
+            ...     client.awards.search()
+            ...     .grants()
+            ...     .def_codes("1")
+            ... )
+
+        Reference:
+            USASpending.gov COVID-19 Spending Profile
+            https://www.usaspending.gov/disaster/covid-19
         """
         clone = self._clone()
         clone._filter_objects.append(

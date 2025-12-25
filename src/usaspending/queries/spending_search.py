@@ -183,8 +183,26 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         """
         Configure search to return spending grouped by recipient.
 
+        Groups spending data by recipient entity, returning aggregated
+        amounts for each unique recipient that matches the filter criteria.
+
         Returns:
-            A new SpendingSearch instance configured for recipient spending.
+            SpendingSearch: A new instance configured for recipient spending.
+
+        Note:
+            Results are returned as RecipientSpending model instances
+            with recipient name, UEI, and aggregated spending totals.
+
+        Example:
+            >>> # Find top recipients of DOD contracts
+            >>> top_recipients = (
+            ...     client.spending.search()
+            ...     .by_recipient()
+            ...     .agency("Department of Defense")
+            ...     .contracts()
+            ...     .fiscal_year(2024)
+            ...     .limit(10)
+            ... )
         """
         clone = self._clone()
         clone._category = "recipient"
@@ -194,8 +212,27 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         """
         Configure search to return spending grouped by congressional district.
 
+        Groups spending data by the congressional district of the place of
+        performance, returning aggregated amounts per district.
+
         Returns:
-            A new SpendingSearch instance configured for district spending.
+            SpendingSearch: A new instance configured for district spending.
+
+        Note:
+            Results are returned as DistrictSpending model instances
+            with state, district number, and aggregated spending totals.
+
+        Example:
+            >>> # Find spending by congressional district for a state
+            >>> ca_districts = (
+            ...     client.spending.search()
+            ...     .by_district()
+            ...     .place_of_performance_locations(
+            ...         {"state_code": "CA", "country_code": "USA"}
+            ...     )
+            ...     .contracts()
+            ...     .fiscal_year(2024)
+            ... )
         """
         clone = self._clone()
         clone._category = "district"
@@ -205,8 +242,25 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         """
         Configure search to return spending grouped by state/territory.
 
+        Groups spending data by U.S. state or territory based on the
+        place of performance, returning aggregated amounts per state.
+
         Returns:
-            A new SpendingSearch instance configured for state spending.
+            SpendingSearch: A new instance configured for state spending.
+
+        Note:
+            Results are returned as StateSpending model instances
+            with state code, name, and aggregated spending totals.
+            Includes all U.S. states and territories.
+
+        Example:
+            >>> # Find total grant spending by state
+            >>> state_spending = (
+            ...     client.spending.search()
+            ...     .by_state()
+            ...     .grants()
+            ...     .fiscal_year(2024)
+            ... )
         """
         clone = self._clone()
         clone._category = "state"
@@ -220,11 +274,51 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         """
         Set the spending level for data aggregation.
 
+        Controls how spending amounts are aggregated when grouping by
+        recipient, district, or state.
+
         Args:
-            level: The spending level - "transactions", "awards", or "subawards"
+            level: The aggregation level.
+
+        Valid Spending Levels:
+            "transactions" (default): Aggregate at the transaction level.
+                Each transaction (modification) is counted separately.
+                Provides the most detailed spending data.
+
+            "awards": Aggregate at the award level.
+                Groups by unique awards rather than transactions.
+                Useful for counting distinct awards per category.
+
+            "subawards": Aggregate subaward spending only.
+                Includes only subaward amounts, not prime award data.
+                Useful for analyzing pass-through spending.
 
         Returns:
-            A new SpendingSearch instance with the spending level configured.
+            SpendingSearch: A new instance with the spending level configured.
+
+        Example:
+            >>> # Count distinct awards by recipient
+            >>> award_counts = (
+            ...     client.spending.search()
+            ...     .by_recipient()
+            ...     .spending_level("awards")
+            ...     .contracts()
+            ...     .fiscal_year(2024)
+            ... )
+
+            >>> # Analyze subaward spending by state
+            >>> subaward_spending = (
+            ...     client.spending.search()
+            ...     .by_state()
+            ...     .spending_level("subawards")
+            ...     .grants()
+            ... )
+
+        Note:
+            The spending level affects both the amounts returned and
+            what counts are aggregated. Transaction-level provides
+            the most granular data but may include multiple entries
+            per award.
         """
         clone = self._clone()
         clone._spending_level = level

@@ -492,17 +492,39 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         Set the sort field and direction for query results.
 
         Args:
-            field: The field name to sort by. Must be a valid field from the
-                current award type's available fields.
-            direction: The sort direction, either "asc" or "desc".
-                Defaults to "desc".
+            field: The field name to sort by (case-sensitive, with spaces).
+            direction: Sort direction - "asc" or "desc" (default: "desc").
+
+        Common Sort Fields (All Award Types):
+            "Award Amount": Total award value in dollars
+            "Award ID": Unique award identifier (PIID/FAIN/URI)
+            "Description": Award description text
+            "Start Date": Award start date
+            "Last Modified Date": When record was last updated
+            "Recipient Name": Name of the recipient entity
+            "Awarding Agency": Name of the awarding agency
+            "Funding Agency": Name of the funding agency
+
+        Contract-Specific Sort Fields:
+            "NAICS Code": North American Industry Classification
+            "PSC Code": Product/Service Code
+            "Recipient DUNS": DUNS number (legacy identifier)
+            "Recipient UEI": Unique Entity Identifier
+
+        Loan-Specific Sort Fields:
+            "Loan Value": Face value of the loan
+            "Subsidy Cost": Original subsidy cost
+
+        Grant/Assistance Sort Fields:
+            "CFDA Number": Assistance Listing (CFDA) number
+            "SAI Number": State Application Identifier
 
         Returns:
             AwardsSearch: A new instance with the ordering applied.
 
         Raises:
             ValidationError: If the field is not valid for the current
-                award type configuration.
+                award type configuration. Error message includes valid fields.
 
         Example:
             >>> # Sort contracts by award amount, highest first
@@ -512,12 +534,16 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             ...     .order_by("Award Amount", "desc")
             ... )
 
-            >>> # Sort grants by date, newest first
-            >>> grants = (
+            >>> # Sort by last modified date
+            >>> recent = (
             ...     client.awards.search()
             ...     .grants()
-            ...     .order_by("Start Date", "desc")
+            ...     .order_by("Last Modified Date", "desc")
             ... )
+
+        Note:
+            Valid fields depend on the award type filter. Contract-specific
+            fields only work with .contracts(), loan fields with .loans(), etc.
         """
         # Get the valid fields for the current award type configuration
         valid_fields = self._get_fields()

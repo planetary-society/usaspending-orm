@@ -147,17 +147,32 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         """
         Filter transactions to those on or after the specified date.
 
-        Note: This filter is applied client-side as the API endpoint
-        doesn't support date filtering for transactions.
-
         Args:
-            date: Date string in YYYY-MM-DD format
+            date: Date string in YYYY-MM-DD format.
 
         Returns:
-            A new TransactionsSearch instance with the date filter applied
+            TransactionsSearch: A new instance with the date filter applied.
+
+        Raises:
+            ValidationError: If date format is not YYYY-MM-DD.
+
+        Note:
+            This filter is applied **client-side** because the /transactions/
+            API endpoint doesn't support date filtering. All transactions are
+            fetched and then filtered locally, which may be slower for awards
+            with many transactions.
 
         Example:
-            >>> transactions = award.transactions.since("2024-01-01").all()
+            >>> # Get transactions from 2024 onwards
+            >>> recent = award.transactions.since("2024-01-01").all()
+
+            >>> # Combine with until() for a date range
+            >>> q1_2024 = (
+            ...     award.transactions
+            ...     .since("2024-01-01")
+            ...     .until("2024-03-31")
+            ...     .all()
+            ... )
         """
         # Validate date format (parse_date_string validates and returns a date object)
         parse_date_string(date, "since_date")
@@ -170,17 +185,31 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         """
         Filter transactions to those on or before the specified date.
 
-        Note: This filter is applied client-side as the API endpoint
-        doesn't support date filtering for transactions.
-
         Args:
-            date: Date string in YYYY-MM-DD format
+            date: Date string in YYYY-MM-DD format.
 
         Returns:
-            A new TransactionsSearch instance with the date filter applied
+            TransactionsSearch: A new instance with the date filter applied.
+
+        Raises:
+            ValidationError: If date format is not YYYY-MM-DD.
+
+        Note:
+            This filter is applied **client-side** because the /transactions/
+            API endpoint doesn't support date filtering. All transactions are
+            fetched and then filtered locally.
 
         Example:
-            >>> transactions = award.transactions.until("2024-12-31").all()
+            >>> # Get historical transactions only
+            >>> historical = award.transactions.until("2023-12-31").all()
+
+            >>> # Combine with since() for a date range
+            >>> fy2024 = (
+            ...     award.transactions
+            ...     .since("2023-10-01")
+            ...     .until("2024-09-30")
+            ...     .all()
+            ... )
         """
         # Validate date format (parse_date_string validates and returns a date object)
         parse_date_string(date, "until_date")
@@ -194,27 +223,41 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         Set the sort order for transaction results.
 
         Args:
-            field: The field to sort by. Valid fields are:
-                - modification_number
-                - action_date (default)
-                - federal_action_obligation
-                - face_value_loan_guarantee
-                - original_loan_subsidy_cost
-                - action_type_description
-                - description
-            direction: Sort direction - 'asc' or 'desc' (default: 'desc')
+            field: The field to sort by (case-sensitive).
+            direction: Sort direction - "asc" or "desc" (default: "desc").
+
+        Valid Sort Fields:
+            "modification_number": Transaction sequence/modification number
+            "action_date": Date the transaction action occurred
+            "federal_action_obligation": Dollar amount obligated
+            "face_value_loan_guarantee": Face value of loan (loans only)
+            "original_loan_subsidy_cost": Loan subsidy cost (loans only)
+            "action_type_description": Description of the action type
+            "description": Transaction description text
 
         Returns:
-            A new TransactionsSearch instance with the sort configuration applied.
+            TransactionsSearch: A new instance with the sort applied.
 
         Raises:
-            ValidationError: If the field or direction is invalid.
+            ValidationError: If field is not in the valid list, or direction
+                is not "asc" or "desc".
 
         Example:
+            >>> # Sort by obligation amount, largest first
             >>> transactions = (
             ...     client.transactions.award_id("ABC123")
             ...     .order_by("federal_action_obligation", "desc")
             ... )
+
+            >>> # Sort by date, oldest first
+            >>> historical = (
+            ...     award.transactions
+            ...     .order_by("action_date", "asc")
+            ... )
+
+        Note:
+            Loan-specific fields (face_value_loan_guarantee, original_loan_subsidy_cost)
+            are only populated for loan award transactions.
         """
         if field not in self.VALID_SORT_FIELDS:
             raise ValidationError(
