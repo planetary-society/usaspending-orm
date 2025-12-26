@@ -2,6 +2,7 @@
 
 ## Core API Documentation
 - **API v2 Endpoints**: https://api.usaspending.gov/docs/endpoints
+- **Search Filters Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/search_filters.md
 
 ## Key Endpoints Used in This Project
 Use web fetch to access the following official API documentation links for key endpoints utilized in this project.
