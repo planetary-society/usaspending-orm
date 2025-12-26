@@ -78,7 +78,7 @@ class Location(BaseModel):
         Returns:
             Optional[str]: State name in title case, or None.
         """
-        state_name = titlecase(self.get_value(["state_name", "state"]))
+        state_name = self.get_value(["state_name", "state"])
         if not isinstance(state_name, str):
             return None
         return titlecase(state_name)
@@ -113,10 +113,10 @@ class Location(BaseModel):
         Returns:
             Optional[str]: County name in title case, or None.
         """
-        county_name = titlecase(self.get_value(["county_name", "county"]))
+        county_name = self.get_value(["county_name", "county"])
         if not isinstance(county_name, str):
             return None
-        return county_name
+        return titlecase(county_name)
 
     @property
     def county_code(self) -> Optional[str]:

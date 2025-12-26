@@ -191,3 +191,36 @@ class TestTransaction:
         assert transaction.type == "A"
         assert transaction.action_date == date(2024, 1, 15)
         assert transaction.amt == 750000.0
+
+    def test_since_filters_by_action_date(self, mock_usa_client):
+        def transform(data):
+            data["page_metadata"]["hasNext"] = False
+            return data
+
+        mock_usa_client.set_fixture_response(
+            "/transactions/", "awards/transactions", transform=transform
+        )
+
+        results = list(
+            mock_usa_client.transactions.award_id("CONT_AWD_123").since("2025-06-10")
+        )
+
+        assert [tx.action_date for tx in results] == [
+            date(2025, 6, 23),
+            date(2025, 6, 13),
+        ]
+
+    def test_until_filters_by_action_date(self, mock_usa_client):
+        def transform(data):
+            data["page_metadata"]["hasNext"] = False
+            return data
+
+        mock_usa_client.set_fixture_response(
+            "/transactions/", "awards/transactions", transform=transform
+        )
+
+        results = list(
+            mock_usa_client.transactions.award_id("CONT_AWD_123").until("2025-06-10")
+        )
+
+        assert [tx.action_date for tx in results] == [date(2025, 6, 5)]

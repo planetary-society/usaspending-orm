@@ -56,6 +56,11 @@ class TestLocationSimpleFields:
         """Test state name field."""
         assert recipient_location.state_name == "Alabama"
 
+    def test_state_name_none(self):
+        """Test state name returns None when value is None."""
+        location = Location({"state_name": None})
+        assert location.state_name is None
+
     def test_country_name(self, recipient_location):
         """Test country name field."""
         assert recipient_location.country_name == "United States"
@@ -68,6 +73,11 @@ class TestLocationSimpleFields:
         """Test county name and code."""
         assert recipient_location.county_name == "Madison"
         assert recipient_location.county_code == "089"
+
+    def test_county_name_none(self):
+        """Test county name returns None when value is None."""
+        location = Location({"county_name": None})
+        assert location.county_name is None
 
     def test_congressional_code(self, recipient_location):
         """Test congressional code field."""

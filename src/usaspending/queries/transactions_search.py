@@ -290,14 +290,14 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             since_date = datetime.strptime(
                 self._client_filters["since_date"], "%Y-%m-%d"
             ).date()
-            if transaction.action_date and transaction.action_date.date() < since_date:
+            if transaction.action_date and transaction.action_date < since_date:
                 return False
 
         if "until_date" in self._client_filters:
             until_date = datetime.strptime(
                 self._client_filters["until_date"], "%Y-%m-%d"
             ).date()
-            if transaction.action_date and transaction.action_date.date() > until_date:
+            if transaction.action_date and transaction.action_date > until_date:
                 return False
 
         return True

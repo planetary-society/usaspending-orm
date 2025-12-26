@@ -41,9 +41,8 @@ class SingleResourceBase(ABC):
 
         if not cleaned_resource_id:
             raise ValidationError(
-                "No resource id found after cleaning. Original: %s. Cleaned: %s",
-                resource_id,
-                cleaned_resource_id,
+                f"No resource id found after cleaning. Original: {resource_id}. "
+                f"Cleaned: {cleaned_resource_id}"
             )
 
         # Construct valid endpoint

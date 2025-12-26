@@ -89,7 +89,7 @@ class RecipientsResource(BaseResource):
         recipients = RecipientsSearch(self._client).keyword(duns).limit(4)
         # Return the parent recipient if available, otherwise first result
         for r in recipients:
-            if "-P" in r.recipient_id:
+            if r.recipient_id and "-P" in r.recipient_id:
                 return r
         # Return first result if no parent found (avoids hanging len() call)
         return recipients.first()
@@ -112,7 +112,7 @@ class RecipientsResource(BaseResource):
         recipients = RecipientsSearch(self._client).keyword(uei).limit(4)
         # Return the parent recipient if available, otherwise first result
         for r in recipients:
-            if "-P" in r.recipient_id:
+            if r.recipient_id and "-P" in r.recipient_id:
                 return r
         # Return first result if no parent found (avoids hanging len() call)
         return recipients.first()
