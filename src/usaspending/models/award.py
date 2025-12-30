@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from ..queries.transactions_search import TransactionsSearch
     from ..queries.funding_search import FundingSearch
     from ..queries.subawards_search import SubAwardsSearch
+    from ..queries.award_accounts_query import AwardAccountsQuery
     from ..download.job import DownloadJob
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -812,6 +813,23 @@ class Award(LazyRecord):
             FundingSearch: The query builder for funding.
         """
         return self._client.funding.award_id(self.generated_unique_award_id)
+
+    @property
+    def accounts(self) -> "AwardAccountsQuery":
+        """Get accounts query builder for this award.
+
+        Returns an AwardAccountsQuery object for federal accounts
+        associated with this award's funding.
+
+        Examples:
+            >>> award.accounts.count()  # Get count without loading all data
+            >>> list(award.accounts)  # Iterate through all accounts
+            >>> award.accounts.order_by("amount", "desc").all()  # Sort by amount
+
+        Returns:
+            AwardAccountsQuery: The query builder for accounts.
+        """
+        return self._client.award_accounts.award_id(self.generated_unique_award_id)
 
     @property
     def subawards(self) -> "SubAwardsSearch":

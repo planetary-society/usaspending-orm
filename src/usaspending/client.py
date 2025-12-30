@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from .resources.subawards_resource import SubAwardsResource
     from .resources.agency_resource import AgencyResource
     from .resources.tas_resource import TASResource
+    from .resources.award_accounts_resource import AwardAccountsResource
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
@@ -205,6 +206,29 @@ class USASpendingClient:
 
             self._resources["tas"] = TASResource(self)
         return self._resources["tas"]
+
+    @property
+    def award_accounts(self) -> "AwardAccountsResource":
+        """Access award federal accounts endpoints.
+
+        Provides access to federal accounts associated with specific awards,
+        including funding agency information and obligated amounts.
+
+        Example:
+            >>> # Get accounts for an award
+            >>> award = client.awards.find_by_generated_id("CONT_AWD_123...")
+            >>> for account in award.accounts:
+            ...     print(f"{account.code}: ${account.obligated_amount:,.2f}")
+            >>>
+            >>> # Or access directly
+            >>> accounts = client.award_accounts.award_id("CONT_AWD_123...")
+            >>> print(f"Total accounts: {accounts.count()}")
+        """
+        if "award_accounts" not in self._resources:
+            from .resources.award_accounts_resource import AwardAccountsResource
+
+            self._resources["award_accounts"] = AwardAccountsResource(self)
+        return self._resources["award_accounts"]
 
     def _make_request(
         self,

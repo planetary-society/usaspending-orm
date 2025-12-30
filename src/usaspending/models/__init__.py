@@ -23,6 +23,7 @@ from .subtier_agency import SubTierAgency
 from .subaward import SubAward
 from .federal_account import FederalAccount
 from .treasury_account_symbol import TreasuryAccountSymbol
+from .award_account import AwardAccount
 
 # Spending models
 from .spending import Spending
@@ -67,6 +68,7 @@ __all__ = [
     "SubAward",
     "FederalAccount",
     "TreasuryAccountSymbol",
+    "AwardAccount",
     # Spending models
     "Spending",
     "RecipientSpending",
