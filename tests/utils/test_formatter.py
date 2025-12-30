@@ -244,3 +244,29 @@ class TestToDate:
         date1 = to_date("2025-06-15")
         date2 = date(2025, 6, 15)
         assert date1 == date2
+
+    def test_date_object_passthrough(self):
+        """Test that date objects are returned unchanged (idempotent behavior)."""
+        from datetime import date
+
+        input_date = date(2024, 8, 12)
+        result = to_date(input_date)
+
+        assert result is input_date  # Same object
+        assert result == date(2024, 8, 12)
+
+    def test_date_object_prevents_double_conversion_error(self):
+        """Test that passing a date object doesn't raise TypeError.
+
+        This was a bug where Award.start_date called to_date() on a value
+        that was already converted to a date by PeriodOfPerformance.
+        """
+        from datetime import date
+
+        # Simulate double conversion scenario
+        first_conversion = to_date("2024-08-12")
+        assert first_conversion == date(2024, 8, 12)
+
+        # Second conversion should not raise TypeError
+        second_conversion = to_date(first_conversion)
+        assert second_conversion == date(2024, 8, 12)

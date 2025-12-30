@@ -13,7 +13,7 @@ from ..logging_config import USASpendingLogger
 logger = USASpendingLogger.get_logger(__name__)
 
 
-def to_date(date_string: str) -> Optional[date]:
+def to_date(date_string: Union[str, date, None]) -> Optional[date]:
     """Convert date string to date object.
 
     Supports multiple date formats:
@@ -24,15 +24,20 @@ def to_date(date_string: str) -> Optional[date]:
     - YYYY-MM-DDTHH:MM:SS+/-HH:MM (ISO datetime with timezone offset)
 
     Note: For formats with time components, only the date portion is returned.
+    If input is already a date object, returns it unchanged.
 
     Args:
-        date_string: Date string in any supported format
+        date_string: Date string in any supported format, or a date object
 
     Returns:
         date object or None if parsing fails
     """
     if not date_string:
         return None
+
+    # If already a date object, return as-is
+    if isinstance(date_string, date):
+        return date_string
 
     # Define formats to try, in order of likelihood
     formats = [
