@@ -219,7 +219,6 @@ class MockUSASpendingClient(USASpendingClient):
         endpoint: str,
         items: List[Dict[str, Any]],
         page_size: int = 100,
-        auto_count: bool = True,
     ) -> None:
         """Automatically paginate a list of items.
 
@@ -227,7 +226,6 @@ class MockUSASpendingClient(USASpendingClient):
             endpoint: API endpoint
             items: List of all items to paginate
             page_size: Items per page
-            auto_count: Whether to automatically set up count endpoint
         """
         # Clear any existing responses and reset index
         self._responses[endpoint] = []
@@ -250,9 +248,8 @@ class MockUSASpendingClient(USASpendingClient):
                 ResponseBuilder.paginated_response([], has_next=False)
             )
 
-        # Automatically set up count endpoint if requested
-        if auto_count:
-            self._auto_setup_count_endpoint(endpoint, len(items))
+        # Automatically set up count endpoint (skips if already configured)
+        self._auto_setup_count_endpoint(endpoint, len(items))
 
     def set_fixture_response(
         self, endpoint: str, fixture_name: str, transform: Optional[callable] = None
@@ -309,22 +306,30 @@ class MockUSASpendingClient(USASpendingClient):
                 self.set_response(count_endpoint, error_data, status_code=error_code)
 
     def add_response_sequence(
-        self, endpoint: str, responses: List[Dict[str, Any]], auto_count: bool = True
+        self, endpoint: str, responses: List[Dict[str, Any]]
     ) -> None:
         """Add multiple responses for sequential calls.
+
+        Automatically sets hasNext=False on the last response if page_metadata
+        exists but hasNext is not specified.
 
         Args:
             endpoint: API endpoint
             responses: List of responses to return in sequence
-            auto_count: Whether to automatically set up count endpoint
         """
+        # Auto-set hasNext=False on last response if page_metadata exists
+        if responses:
+            last_response = responses[-1]
+            if "page_metadata" in last_response:
+                last_response["page_metadata"].setdefault("hasNext", False)
+
         # If no existing responses, reset the index
         if not self._responses[endpoint]:
             self._response_indices[endpoint] = 0
         self._responses[endpoint].extend(responses)
 
-        # Automatically set up count endpoint based on first response
-        if auto_count and responses:
+        # Automatically set up count endpoint based on first response (skips if already configured)
+        if responses:
             first_response = responses[0]
             if "results" in first_response and isinstance(
                 first_response["results"], list
@@ -351,6 +356,9 @@ class MockUSASpendingClient(USASpendingClient):
     ) -> None:
         """Automatically set up count endpoint for a search endpoint.
 
+        Only sets up the count endpoint if not already configured, allowing
+        tests to manually configure count endpoints without being overwritten.
+
         Args:
             search_endpoint: The search endpoint (e.g., "/search/spending_by_award/")
             total_count: Total number of items
@@ -364,6 +372,11 @@ class MockUSASpendingClient(USASpendingClient):
         }
 
         count_endpoint = count_endpoint_mapping.get(search_endpoint)
+
+        # Skip if count endpoint is already configured
+        if count_endpoint and count_endpoint in self._default_responses:
+            return
+
         if count_endpoint == "/search/spending_by_award_count/":
             # For awards, default to contracts category for backward compatibility
             self.mock_award_count(contracts=total_count)

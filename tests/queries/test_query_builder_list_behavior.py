@@ -160,7 +160,6 @@ class TestGetItemMethod:
                     "page_metadata": {"hasNext": True},
                 },
             ],
-            auto_count=False,  # Don't auto-setup count since we manually set it above
         )
 
         results = awards_search[95:105]

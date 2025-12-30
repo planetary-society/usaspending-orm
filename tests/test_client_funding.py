@@ -151,10 +151,9 @@ class TestClientFunding:
                 },
                 {
                     "results": fixture_data["results"][5:],
-                    "page_metadata": {"page": 2, "hasNext": False},
+                    "page_metadata": {"page": 2},  # hasNext auto-set to False
                 },
             ],
-            auto_count=False,
         )
 
         # Get all results with small page size
