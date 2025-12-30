@@ -60,6 +60,8 @@ from .transactions_search import TransactionsSearch
 from .funding_search import FundingSearch
 from .spending_search import SpendingSearch
 from .subawards_search import SubAwardsSearch
+from .federal_accounts_query import FederalAccountsQuery
+from .tas_codes_query import TASCodesQuery
 
 __all__ = [
     # Core query classes
@@ -78,6 +80,8 @@ __all__ = [
     "FundingSearch",
     "SpendingSearch",
     "SubAwardsSearch",
+    "FederalAccountsQuery",
+    "TASCodesQuery",
     "USASpendingError",
     "APIError",
     "HTTPError",

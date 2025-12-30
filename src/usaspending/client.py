@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from .resources.download_resource import DownloadResource
     from .resources.subawards_resource import SubAwardsResource
     from .resources.agency_resource import AgencyResource
+    from .resources.tas_resource import TASResource
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
@@ -181,6 +182,29 @@ class USASpendingClient:
 
             self._resources["agencies"] = AgencyResource(self)
         return self._resources["agencies"]
+
+    @property
+    def tas(self) -> "TASResource":
+        """Access TAS (Treasury Account Symbol) endpoints.
+
+        Provides access to the TAS filter tree hierarchy for discovering
+        agencies with Treasury Account Symbols and their federal accounts.
+
+        Example:
+            >>> # List all agencies with TAS
+            >>> for agency in client.tas.agencies:
+            ...     print(f"{agency.code}: {agency.name}")
+            >>>
+            >>> # Access federal accounts from an agency
+            >>> agency = client.agencies.find_by_toptier_code("080")
+            >>> for account in agency.federal_accounts:
+            ...     print(f"{account.code}: {account.title}")
+        """
+        if "tas" not in self._resources:
+            from .resources.tas_resource import TASResource
+
+            self._resources["tas"] = TASResource(self)
+        return self._resources["tas"]
 
     def _make_request(
         self,

@@ -21,6 +21,7 @@ from .award_types import (
 if TYPE_CHECKING:
     from ..client import USASpendingClient
     from ..queries.awards_search import AwardsSearch
+    from ..queries.federal_accounts_query import FederalAccountsQuery
     from .subtier_agency import SubTierAgency
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -66,11 +67,23 @@ class Agency(LazyRecord):
 
         Args:
             data: Toptier agency data merged with top-level agency fields.
+                Can be flat structure or nested with toptier_agency dict.
             client: USASpendingClient client instance.
             subtier_data: Optional subtier agency data for subtier_agency property.
         """
         # Use the base validation method (dict-only)
         raw = self.validate_init_data(data, "Agency", allow_string_id=False)
+
+        # Normalize nested toptier_agency structure to flat format
+        # This handles data from various API responses that may nest agency info
+        if "toptier_agency" in raw and isinstance(raw.get("toptier_agency"), dict):
+            toptier_data = raw.pop("toptier_agency")
+            # Merge toptier fields (toptier_code, name, abbreviation, etc.)
+            # without overwriting existing top-level keys
+            for key, value in toptier_data.items():
+                if key not in raw or raw[key] is None:
+                    raw[key] = value
+
         super().__init__(raw, client)
 
         # Store subtier data separately
@@ -480,6 +493,34 @@ class Agency(LazyRecord):
         except Exception as e:
             logger.debug(f"Could not fetch sub-agencies for {toptier_code}: {e}")
             return []
+
+    @property
+    def federal_accounts(self) -> "FederalAccountsQuery":
+        """Get federal accounts with TAS codes for this agency.
+
+        Returns a query-like object that supports iteration and .count().
+
+        Returns:
+            FederalAccountsQuery: Lazy query for federal accounts.
+
+        Example:
+            >>> agency = client.agencies.find_by_toptier_code("080")
+            >>> for account in agency.federal_accounts:
+            ...     print(f"{account.code}: {account.title}")
+            >>>
+            >>> # Get count
+            >>> print(len(agency.federal_accounts))
+            >>> print(agency.federal_accounts.count())
+            >>>
+            >>> # Access TAS codes from a federal account
+            >>> account = agency.federal_accounts[0]
+            >>> for tas in account.tas_codes:
+            ...     print(tas.id)
+        """
+        from ..queries.federal_accounts_query import FederalAccountsQuery
+
+        toptier_code = self.code or ""
+        return FederalAccountsQuery(self._client, toptier_code)
 
     def get_obligations(
         self,

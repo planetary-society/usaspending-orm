@@ -1,0 +1,641 @@
+{
+    "results": [
+        {
+            "id": "012",
+            "ancestors": [],
+            "description": "Department of Agriculture (USDA)",
+            "count": 1022,
+            "children": null
+        },
+        {
+            "id": "013",
+            "ancestors": [],
+            "description": "Department of Commerce (DOC)",
+            "count": 293,
+            "children": null
+        },
+        {
+            "id": "097",
+            "ancestors": [],
+            "description": "Department of Defense (DOD)",
+            "count": 1038,
+            "children": null
+        },
+        {
+            "id": "091",
+            "ancestors": [],
+            "description": "Department of Education (ED)",
+            "count": 444,
+            "children": null
+        },
+        {
+            "id": "089",
+            "ancestors": [],
+            "description": "Department of Energy (DOE)",
+            "count": 334,
+            "children": null
+        },
+        {
+            "id": "075",
+            "ancestors": [],
+            "description": "Department of Health and Human Services (HHS)",
+            "count": 1768,
+            "children": null
+        },
+        {
+            "id": "070",
+            "ancestors": [],
+            "description": "Department of Homeland Security (DHS)",
+            "count": 888,
+            "children": null
+        },
+        {
+            "id": "086",
+            "ancestors": [],
+            "description": "Department of Housing and Urban Development (HUD)",
+            "count": 494,
+            "children": null
+        },
+        {
+            "id": "015",
+            "ancestors": [],
+            "description": "Department of Justice (DOJ)",
+            "count": 307,
+            "children": null
+        },
+        {
+            "id": "1601",
+            "ancestors": [],
+            "description": "Department of Labor (DOL)",
+            "count": 452,
+            "children": null
+        },
+        {
+            "id": "019",
+            "ancestors": [],
+            "description": "Department of State (DOS)",
+            "count": 520,
+            "children": null
+        },
+        {
+            "id": "014",
+            "ancestors": [],
+            "description": "Department of the Interior (DOI)",
+            "count": 593,
+            "children": null
+        },
+        {
+            "id": "020",
+            "ancestors": [],
+            "description": "Department of the Treasury (TREAS)",
+            "count": 474,
+            "children": null
+        },
+        {
+            "id": "069",
+            "ancestors": [],
+            "description": "Department of Transportation (DOT)",
+            "count": 690,
+            "children": null
+        },
+        {
+            "id": "036",
+            "ancestors": [],
+            "description": "Department of Veterans Affairs (VA)",
+            "count": 121,
+            "children": null
+        },
+        {
+            "id": "068",
+            "ancestors": [],
+            "description": "Environmental Protection Agency (EPA)",
+            "count": 82,
+            "children": null
+        },
+        {
+            "id": "047",
+            "ancestors": [],
+            "description": "General Services Administration (GSA)",
+            "count": 109,
+            "children": null
+        },
+        {
+            "id": "080",
+            "ancestors": [],
+            "description": "National Aeronautics and Space Administration (NASA)",
+            "count": 191,
+            "children": null
+        },
+        {
+            "id": "049",
+            "ancestors": [],
+            "description": "National Science Foundation (NSF)",
+            "count": 90,
+            "children": null
+        },
+        {
+            "id": "031",
+            "ancestors": [],
+            "description": "Nuclear Regulatory Commission (NRC)",
+            "count": 11,
+            "children": null
+        },
+        {
+            "id": "024",
+            "ancestors": [],
+            "description": "Office of Personnel Management (OPM)",
+            "count": 39,
+            "children": null
+        },
+        {
+            "id": "073",
+            "ancestors": [],
+            "description": "Small Business Administration (SBA)",
+            "count": 72,
+            "children": null
+        },
+        {
+            "id": "028",
+            "ancestors": [],
+            "description": "Social Security Administration (SSA)",
+            "count": 53,
+            "children": null
+        },
+        {
+            "id": "072",
+            "ancestors": [],
+            "description": "Agency for International Development (USAID)",
+            "count": 304,
+            "children": null
+        },
+        {
+            "id": "310",
+            "ancestors": [],
+            "description": "Access Board (USAB)",
+            "count": 14,
+            "children": null
+        },
+        {
+            "id": "302",
+            "ancestors": [],
+            "description": "Administrative Conference of the U.S. (ACUS)",
+            "count": 9,
+            "children": null
+        },
+        {
+            "id": "166",
+            "ancestors": [],
+            "description": "African Development Foundation (USADF)",
+            "count": 15,
+            "children": null
+        },
+        {
+            "id": "074",
+            "ancestors": [],
+            "description": "American Battle Monuments Commission (ABMC)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "309",
+            "ancestors": [],
+            "description": "Appalachian Regional Commission (ARC)",
+            "count": 5,
+            "children": null
+        },
+        {
+            "id": "084",
+            "ancestors": [],
+            "description": "Armed Forces Retirement Home (AFRH)",
+            "count": 13,
+            "children": null
+        },
+        {
+            "id": "338",
+            "ancestors": [],
+            "description": "Committee for Purchase from People Who Are Blind or Severely Disabled (ABILITYONE)",
+            "count": 6,
+            "children": null
+        },
+        {
+            "id": "339",
+            "ancestors": [],
+            "description": "Commodity Futures Trading Commission (CFTC)",
+            "count": 29,
+            "children": null
+        },
+        {
+            "id": "581",
+            "ancestors": [],
+            "description": "Consumer Financial Protection Bureau (CFPB)",
+            "count": 2,
+            "children": null
+        },
+        {
+            "id": "061",
+            "ancestors": [],
+            "description": "Consumer Product Safety Commission (CPSC)",
+            "count": 16,
+            "children": null
+        },
+        {
+            "id": "485",
+            "ancestors": [],
+            "description": "Corporation for National and Community Service (CNCS)",
+            "count": 55,
+            "children": null
+        },
+        {
+            "id": "096",
+            "ancestors": [],
+            "description": "Corps of Engineers - Civil Works (USACE)",
+            "count": 31,
+            "children": null
+        },
+        {
+            "id": "542",
+            "ancestors": [],
+            "description": "Council of the Inspectors General on Integrity and Efficiency (CIGIE)",
+            "count": 3,
+            "children": null
+        },
+        {
+            "id": "9553",
+            "ancestors": [],
+            "description": "Court Services and Offender Supervision Agency (CSOSA)",
+            "count": 21,
+            "children": null
+        },
+        {
+            "id": "347",
+            "ancestors": [],
+            "description": "Defense Nuclear Facilities Safety Board (DNFSB)",
+            "count": 10,
+            "children": null
+        },
+        {
+            "id": "517",
+            "ancestors": [],
+            "description": "Delta Regional Authority (DRA)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "513",
+            "ancestors": [],
+            "description": "Denali Commission (DENALI)",
+            "count": 4,
+            "children": null
+        },
+        {
+            "id": "349",
+            "ancestors": [],
+            "description": "District of Columbia Courts (DC COURTS)",
+            "count": 15,
+            "children": null
+        },
+        {
+            "id": "525",
+            "ancestors": [],
+            "description": "Election Assistance Commission (EAC)",
+            "count": 21,
+            "children": null
+        },
+        {
+            "id": "045",
+            "ancestors": [],
+            "description": "Equal Employment Opportunity Commission (EEOC)",
+            "count": 16,
+            "children": null
+        },
+        {
+            "id": "1100",
+            "ancestors": [],
+            "description": "Executive Office of the President (EOP)",
+            "count": 184,
+            "children": null
+        },
+        {
+            "id": "083",
+            "ancestors": [],
+            "description": "Export-Import Bank of the United States (EXIM)",
+            "count": 30,
+            "children": null
+        },
+        {
+            "id": "027",
+            "ancestors": [],
+            "description": "Federal Communications Commission (FCC)",
+            "count": 21,
+            "children": null
+        },
+        {
+            "id": "360",
+            "ancestors": [],
+            "description": "Federal Election Commission (FEC)",
+            "count": 14,
+            "children": null
+        },
+        {
+            "id": "362",
+            "ancestors": [],
+            "description": "Federal Financial Institutions Examination Council (FFIEC)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "054",
+            "ancestors": [],
+            "description": "Federal Labor Relations Authority (FLRA)",
+            "count": 16,
+            "children": null
+        },
+        {
+            "id": "065",
+            "ancestors": [],
+            "description": "Federal Maritime Commission (FMC)",
+            "count": 14,
+            "children": null
+        },
+        {
+            "id": "093",
+            "ancestors": [],
+            "description": "Federal Mediation and Conciliation Service (FMCS)",
+            "count": 15,
+            "children": null
+        },
+        {
+            "id": "368",
+            "ancestors": [],
+            "description": "Federal Mine Safety and Health Review Commission (FMSHRC)",
+            "count": 10,
+            "children": null
+        },
+        {
+            "id": "029",
+            "ancestors": [],
+            "description": "Federal Trade Commission (FTC)",
+            "count": 2,
+            "children": null
+        },
+        {
+            "id": "005",
+            "ancestors": [],
+            "description": "Government Accountability Office (GAO)",
+            "count": 15,
+            "children": null
+        },
+        {
+            "id": "471",
+            "ancestors": [],
+            "description": "Gulf Coast Ecosystem Restoration Council (GCERC)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "474",
+            "ancestors": [],
+            "description": "Institute of Museum and Library Services (IMLS)",
+            "count": 17,
+            "children": null
+        },
+        {
+            "id": "164",
+            "ancestors": [],
+            "description": "Inter-American Foundation (IAF)",
+            "count": 17,
+            "children": null
+        },
+        {
+            "id": "034",
+            "ancestors": [],
+            "description": "International Trade Commission (USITC)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "3301",
+            "ancestors": [],
+            "description": "John F. Kennedy Center for the Performing Arts (KENNEDY CENTER)",
+            "count": 8,
+            "children": null
+        },
+        {
+            "id": "009",
+            "ancestors": [],
+            "description": "Legislative Branch Boards and Commissions (LEG ORGS)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "387",
+            "ancestors": [],
+            "description": "Marine Mammal Commission (MMC)",
+            "count": 5,
+            "children": null
+        },
+        {
+            "id": "389",
+            "ancestors": [],
+            "description": "Merit Systems Protection Board (MSPB)",
+            "count": 14,
+            "children": null
+        },
+        {
+            "id": "524",
+            "ancestors": [],
+            "description": "Millennium Challenge Corporation (MCC)",
+            "count": 2,
+            "children": null
+        },
+        {
+            "id": "487",
+            "ancestors": [],
+            "description": "Morris K. Udall and Stewart L. Udall Foundation (UDALL)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "088",
+            "ancestors": [],
+            "description": "National Archives and Records Administration (NARA)",
+            "count": 38,
+            "children": null
+        },
+        {
+            "id": "394",
+            "ancestors": [],
+            "description": "National Capital Planning Commission (NCPC)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "025",
+            "ancestors": [],
+            "description": "National Credit Union Administration (NCUA)",
+            "count": 11,
+            "children": null
+        },
+        {
+            "id": "417",
+            "ancestors": [],
+            "description": "National Endowment for the Arts (NEA)",
+            "count": 3,
+            "children": null
+        },
+        {
+            "id": "418",
+            "ancestors": [],
+            "description": "National Endowment for the Humanities (NEH)",
+            "count": 3,
+            "children": null
+        },
+        {
+            "id": "420",
+            "ancestors": [],
+            "description": "National Labor Relations Board (NLRB)",
+            "count": 15,
+            "children": null
+        },
+        {
+            "id": "421",
+            "ancestors": [],
+            "description": "National Mediation Board (NMB)",
+            "count": 11,
+            "children": null
+        },
+        {
+            "id": "424",
+            "ancestors": [],
+            "description": "National Transportation Safety Board (NTSB)",
+            "count": 15,
+            "children": null
+        },
+        {
+            "id": "431",
+            "ancestors": [],
+            "description": "Nuclear Waste Technical Review Board (NWTRB)",
+            "count": 6,
+            "children": null
+        },
+        {
+            "id": "432",
+            "ancestors": [],
+            "description": "Occupational Safety and Health Review Commission (OSHRC)",
+            "count": 10,
+            "children": null
+        },
+        {
+            "id": "434",
+            "ancestors": [],
+            "description": "Office of Government Ethics (OGE)",
+            "count": 13,
+            "children": null
+        },
+        {
+            "id": "071",
+            "ancestors": [],
+            "description": "Overseas Private Investment Corporation (OPIC)",
+            "count": 17,
+            "children": null
+        },
+        {
+            "id": "1125",
+            "ancestors": [],
+            "description": "Peace Corps (PC)",
+            "count": 17,
+            "children": null
+        },
+        {
+            "id": "1602",
+            "ancestors": [],
+            "description": "Pension Benefit Guaranty Corporation (PBGC)",
+            "count": 3,
+            "children": null
+        },
+        {
+            "id": "535",
+            "ancestors": [],
+            "description": "Privacy and Civil Liberties Oversight Board (PCLOB)",
+            "count": 6,
+            "children": null
+        },
+        {
+            "id": "290",
+            "ancestors": [],
+            "description": "Public Buildings Reform Board (PBRB)",
+            "count": 1,
+            "children": null
+        },
+        {
+            "id": "060",
+            "ancestors": [],
+            "description": "Railroad Retirement Board (RRB)",
+            "count": 41,
+            "children": null
+        },
+        {
+            "id": "050",
+            "ancestors": [],
+            "description": "Securities and Exchange Commission (SEC)",
+            "count": 2,
+            "children": null
+        },
+        {
+            "id": "090",
+            "ancestors": [],
+            "description": "Selective Service System (SSS)",
+            "count": 10,
+            "children": null
+        },
+        {
+            "id": "472",
+            "ancestors": [],
+            "description": "Surface Transportation Board (STB)",
+            "count": 10,
+            "children": null
+        },
+        {
+            "id": "010",
+            "ancestors": [],
+            "description": "The Judicial Branch (JUD BRANCH)",
+            "count": 14,
+            "children": null
+        },
+        {
+            "id": "514",
+            "ancestors": [],
+            "description": "U.S. Agency for Global Media (USAGM)",
+            "count": 40,
+            "children": null
+        },
+        {
+            "id": "077",
+            "ancestors": [],
+            "description": "U.S. International Development Finance Corporation (DFC)",
+            "count": 36,
+            "children": null
+        },
+        {
+            "id": "510",
+            "ancestors": [],
+            "description": "United States Chemical Safety Board (CSB)",
+            "count": 14,
+            "children": null
+        },
+        {
+            "id": "1133",
+            "ancestors": [],
+            "description": "United States Trade and Development Agency (USTDA)",
+            "count": 22,
+            "children": null
+        },
+        {
+            "id": "519",
+            "ancestors": [],
+            "description": "Vietnam Education Foundation (VEF)",
+            "count": 1,
+            "children": null
+        }
+    ]
+}

@@ -21,6 +21,8 @@ from .award_factory import create_award
 from .agency import Agency
 from .subtier_agency import SubTierAgency
 from .subaward import SubAward
+from .federal_account import FederalAccount
+from .treasury_account_symbol import TreasuryAccountSymbol
 
 # Spending models
 from .spending import Spending
@@ -63,6 +65,8 @@ __all__ = [
     "Agency",
     "SubTierAgency",
     "SubAward",
+    "FederalAccount",
+    "TreasuryAccountSymbol",
     # Spending models
     "Spending",
     "RecipientSpending",
