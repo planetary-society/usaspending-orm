@@ -1,5 +1,5 @@
 # usaspending/models/base_model.py
-from typing import Optional, Dict, Any, List, Set, TYPE_CHECKING
+from typing import Optional, Dict, Any, List, Set, TYPE_CHECKING, Union
 from weakref import ref
 
 if TYPE_CHECKING:
@@ -91,7 +91,7 @@ class BaseModel:
         """
         return self._data
 
-    def get_value(self, keys: List[str] | str, default: Any = None) -> Any:
+    def get_value(self, keys: Union[List[str], str], default: Any = None) -> Any:
         """Return the first non-None value from the given keys.
 
         Args:
@@ -132,6 +132,10 @@ class ClientAwareModel(BaseModel):
             data: A dictionary containing the model data.
             client: The USASpendingClient instance to associate with this model.
         """
+        if client is None:
+            raise ValidationError(
+                f"{self.__class__.__name__} requires a USASpendingClient instance."
+            )
         super().__init__(data)
         self._client_ref = ref(client)  # Weak reference prevents circular refs
 

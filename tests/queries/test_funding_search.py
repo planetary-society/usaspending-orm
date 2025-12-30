@@ -218,14 +218,8 @@ class TestFundingSearch:
         fixture_data = load_fixture("awards/award_funding_grant.json")
 
         # Set up mock to return paginated fixture data
-        # We need multiple responses because list() calls count() which consumes one response
         mock_usa_client.set_paginated_response(
             "/awards/funding/", fixture_data["results"], page_size=100
-        )
-
-        # Add another response for the actual iteration after count() consumes the first
-        mock_usa_client.add_response_sequence(
-            "/awards/funding/", [fixture_data], auto_count=False
         )
 
         search = FundingSearch(mock_usa_client).award_id("CONT_AWD_123")

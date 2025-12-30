@@ -359,6 +359,13 @@ class TestBaseModelValidation:
 class TestClientAwareModel:
     """Test the ClientAwareModel class and DetachedInstanceError."""
 
+    def test_init_requires_client(self) -> None:
+        """Test that ClientAwareModel requires a client instance."""
+        with pytest.raises(
+            ValidationError, match="requires a USASpendingClient instance"
+        ):
+            ClientAwareModel({"test": "data"}, None)
+
     def test_client_property_with_active_client(self):
         """Test that _client property returns client when active."""
         from unittest.mock import Mock

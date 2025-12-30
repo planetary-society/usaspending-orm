@@ -1,7 +1,7 @@
 """Factory for creating appropriate Award subclass instances."""
 
 from __future__ import annotations
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, Union
 
 from .award_types import get_category_for_code
 from ..exceptions import ValidationError
@@ -12,13 +12,13 @@ if TYPE_CHECKING:
 
 
 def create_award(
-    data_or_id: Dict[str, Any] | str, client: Optional[USASpendingClient] = None
+    data_or_id: Union[Dict[str, Any], str], client: USASpendingClient
 ) -> Award:
     """Create the appropriate Award subclass based on the award data.
 
     Args:
         data_or_id: Award data dictionary or unique award ID string.
-        client: Optional USASpendingClient instance.
+        client: USASpendingClient instance.
 
     Returns:
         Award: Appropriate Award subclass instance (Contract, Grant, IDV, Loan, or base Award).

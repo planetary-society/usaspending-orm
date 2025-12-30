@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
+from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union
 from functools import cached_property
 import re
 from decimal import Decimal
@@ -39,8 +39,8 @@ class Recipient(LazyRecord):
 
     def __init__(
         self,
-        data_or_id: Dict[str, Any] | str,
-        client: Optional[USASpendingClient] = None,
+        data_or_id: Union[Dict[str, Any], str],
+        client: USASpendingClient,
     ):
         """Initialize Recipient.
 

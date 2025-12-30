@@ -18,7 +18,7 @@ class RecipientSpending(Recipient):
     fields like recipient_id and UEI.
     """
 
-    def __init__(self, data: dict, client: Optional["USASpendingClient"] = None):
+    def __init__(self, data: dict, client: "USASpendingClient"):
         """Initialize RecipientSpending model.
 
         Args:

@@ -46,9 +46,7 @@ class SubAward(ClientAwareModel):
         ...     print(f"{subaward.sub_awardee_name}: ${subaward.sub_award_amount:,.2f}")
     """
 
-    def __init__(
-        self, data: Dict[str, Any], client: Optional[USASpendingClient] = None
-    ):
+    def __init__(self, data: Dict[str, Any], client: USASpendingClient):
         """Initialize SubAward instance.
 
         Args:
