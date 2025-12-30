@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from usaspending.exceptions import ValidationError
 from usaspending.queries.awards_search import AwardsSearch
 from tests.mocks.mock_client import MockUSASpendingClient
 
@@ -233,6 +234,40 @@ class TestMaxPagesWithLimit:
             )
             == 2
         )
+
+    def test_max_pages_zero_returns_empty(self, awards_search, mock_usa_client):
+        """Test that max_pages(0) returns no results and makes no requests."""
+        mock_usa_client.set_response(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
+            {"results": [{"Award ID": "1"}], "page_metadata": {"hasNext": True}},
+        )
+
+        results = list(awards_search.max_pages(0))
+
+        assert results == []
+        assert (
+            mock_usa_client.get_request_count(
+                MockUSASpendingClient.Endpoints.AWARD_SEARCH
+            )
+            == 0
+        )
+
+
+class TestPaginationValidation:
+    """Test validation for pagination-related inputs."""
+
+    def test_page_size_rejects_non_positive(self, awards_search):
+        """Test page_size rejects zero and negative values."""
+        with pytest.raises(ValidationError, match="page_size must be a positive"):
+            awards_search.page_size(0)
+
+        with pytest.raises(ValidationError, match="page_size must be a positive"):
+            awards_search.page_size(-5)
+
+    def test_max_pages_rejects_negative(self, awards_search):
+        """Test max_pages rejects negative values."""
+        with pytest.raises(ValidationError, match="max_pages must be non-negative"):
+            awards_search.max_pages(-1)
 
     def test_max_pages_stops_before_limit(self, awards_search, mock_usa_client):
         """Test that max_pages can stop iteration before limit is reached."""

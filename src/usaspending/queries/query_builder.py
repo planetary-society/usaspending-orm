@@ -91,18 +91,24 @@ class QueryBuilder(ABC, Generic[T]):
 
     def limit(self, num: int) -> "QueryBuilder[T]":
         """Set the total number of items to return across all pages."""
+        if num < 0:
+            raise ValidationError("limit must be non-negative")
         clone = self._clone()
         clone._total_limit = num
         return clone
 
     def page_size(self, num: int) -> "QueryBuilder[T]":
         """Set page size (max 100 per USASpending API)."""
+        if num <= 0:
+            raise ValidationError("page_size must be a positive integer")
         clone = self._clone()
         clone._page_size = min(num, 100)
         return clone
 
     def max_pages(self, num: int) -> "QueryBuilder[T]":
         """Limit total number of pages fetched."""
+        if num < 0:
+            raise ValidationError("max_pages must be non-negative")
         clone = self._clone()
         clone._max_pages = num
         return clone
@@ -134,7 +140,7 @@ class QueryBuilder(ABC, Generic[T]):
                 break
 
             # Check if we've reached the max pages limit
-            if self._max_pages and pages_fetched >= self._max_pages:
+            if self._max_pages is not None and pages_fetched >= self._max_pages:
                 logger.debug(f"Max pages limit ({self._max_pages}) reached")
                 break
 
