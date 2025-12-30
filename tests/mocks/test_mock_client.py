@@ -102,8 +102,49 @@ class TestMockUSASpendingClient:
         assert client._make_request("GET", "/test/sequence")["results"][0]["id"] == 2
         assert client._make_request("GET", "/test/sequence")["results"][0]["id"] == 3
 
-        # After sequence is exhausted, returns empty
-        assert client._make_request("GET", "/test/sequence")["results"] == []
+        # After sequence is exhausted, returns last response (for paginated iteration support)
+        # This allows count() to iterate through responses, then iteration to work correctly
+        assert client._make_request("GET", "/test/sequence")["results"][0]["id"] == 3
+
+    def test_reset_response_index(self):
+        """Test reset_response_index allows re-iteration through responses."""
+        client = MockUSASpendingClient()
+
+        responses = [
+            {"results": [{"id": 1}]},
+            {"results": [{"id": 2}]},
+        ]
+
+        client.add_response_sequence("/test/reset", responses)
+
+        # First iteration through responses
+        assert client._make_request("GET", "/test/reset")["results"][0]["id"] == 1
+        assert client._make_request("GET", "/test/reset")["results"][0]["id"] == 2
+
+        # Reset the index
+        client.reset_response_index("/test/reset")
+
+        # Should be able to iterate again from the beginning
+        assert client._make_request("GET", "/test/reset")["results"][0]["id"] == 1
+        assert client._make_request("GET", "/test/reset")["results"][0]["id"] == 2
+
+    def test_reset_response_index_all(self):
+        """Test reset_response_index with no arguments resets all endpoints."""
+        client = MockUSASpendingClient()
+
+        client.add_response_sequence("/test/a", [{"results": [{"id": "a1"}]}])
+        client.add_response_sequence("/test/b", [{"results": [{"id": "b1"}]}])
+
+        # Consume responses
+        client._make_request("GET", "/test/a")
+        client._make_request("GET", "/test/b")
+
+        # Reset all
+        client.reset_response_index()
+
+        # Both should be reset
+        assert client._make_request("GET", "/test/a")["results"][0]["id"] == "a1"
+        assert client._make_request("GET", "/test/b")["results"][0]["id"] == "b1"
 
     def test_request_tracking(self):
         """Test request tracking functionality."""

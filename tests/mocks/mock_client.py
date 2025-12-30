@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import time
 from collections import defaultdict
@@ -79,6 +80,7 @@ class MockUSASpendingClient(USASpendingClient):
 
         # Response storage
         self._responses: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        self._response_indices: Dict[str, int] = defaultdict(int)  # Track current index per endpoint
         self._default_responses: Dict[str, Dict[str, Any]] = {}
         self._error_responses: Dict[str, Dict[str, Any]] = {}
 
@@ -151,8 +153,16 @@ class MockUSASpendingClient(USASpendingClient):
 
         # Check for specific responses (with pagination support)
         if endpoint in self._responses and self._responses[endpoint]:
-            # Pop the next response in sequence
-            response = self._responses[endpoint].pop(0)
+            responses = self._responses[endpoint]
+            index = self._response_indices[endpoint]
+
+            # Get response at current index (or last response if exhausted)
+            if index < len(responses):
+                response = copy.deepcopy(responses[index])  # Don't mutate original
+                self._response_indices[endpoint] = index + 1
+            else:
+                # Return last response if index exceeds available responses
+                response = copy.deepcopy(responses[-1])
 
             # If it's a paginated response, update page metadata
             if "page_metadata" in response and json and "page" in json:
@@ -219,8 +229,9 @@ class MockUSASpendingClient(USASpendingClient):
             page_size: Items per page
             auto_count: Whether to automatically set up count endpoint
         """
-        # Clear any existing responses
+        # Clear any existing responses and reset index
         self._responses[endpoint] = []
+        self._response_indices[endpoint] = 0
 
         # Create pages
         for i in range(0, len(items), page_size):
@@ -307,6 +318,9 @@ class MockUSASpendingClient(USASpendingClient):
             responses: List of responses to return in sequence
             auto_count: Whether to automatically set up count endpoint
         """
+        # If no existing responses, reset the index
+        if not self._responses[endpoint]:
+            self._response_indices[endpoint] = 0
         self._responses[endpoint].extend(responses)
 
         # Automatically set up count endpoint based on first response
@@ -435,12 +449,28 @@ class MockUSASpendingClient(USASpendingClient):
     def reset(self) -> None:
         """Reset all mock state."""
         self._responses.clear()
+        self._response_indices.clear()
         self._default_responses.clear()
         self._error_responses.clear()
         self._request_history.clear()
         self._request_counts.clear()
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
+
+    def reset_response_index(self, endpoint: Optional[str] = None) -> None:
+        """Reset the response index for an endpoint (or all endpoints).
+
+        This allows re-iterating through the same responses without needing
+        to set them up again. Useful when testing multiple iterations or
+        when count() consumes responses before iteration.
+
+        Args:
+            endpoint: Specific endpoint to reset, or None to reset all endpoints.
+        """
+        if endpoint:
+            self._response_indices[endpoint] = 0
+        else:
+            self._response_indices.clear()
 
     def _make_uncached_request(
         self,
