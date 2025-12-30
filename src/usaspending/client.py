@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 import time
-from typing import Optional, Dict, Any, TYPE_CHECKING
+import uuid
+from typing import Optional, Dict, Any, TYPE_CHECKING, Tuple
 from urllib.parse import urljoin
 
 import requests
@@ -30,6 +31,40 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 
+def _freeze_cache_value(value: Any) -> Any:
+    """Convert nested values into a hashable structure for cachier keys.
+
+    Args:
+        value: Arbitrary value to convert into a hashable structure.
+
+    Returns:
+        Hashable representation of the input value.
+    """
+    if isinstance(value, (str, int, float, bool, type(None))):
+        return value
+
+    if isinstance(value, dict):
+        items = sorted(value.items(), key=lambda item: repr(item[0]))
+        return (
+            "dict",
+            tuple((_freeze_cache_value(k), _freeze_cache_value(v)) for k, v in items),
+        )
+
+    if isinstance(value, (list, tuple)):
+        return (type(value).__name__, tuple(_freeze_cache_value(v) for v in value))
+
+    if isinstance(value, set):
+        items = sorted(value, key=lambda item: repr(item))
+        return ("set", tuple(_freeze_cache_value(v) for v in items))
+
+    return ("repr", repr(value))
+
+
+def _cache_key(args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Tuple[Any, Any]:
+    """Build a stable cache key for cachier from args and kwargs."""
+    return (_freeze_cache_value(args), _freeze_cache_value(kwargs))
+
+
 class USASpendingClient:
     """Main client for USASpending API.
 
@@ -52,6 +87,7 @@ class USASpendingClient:
         self._session = self._create_session()
         self._closed = False
         self._request_count = 0
+        self._cache_namespace = uuid.uuid4().hex
 
         # Lazy-loaded components
         self._rate_limiter: Optional[RateLimiter] = None
@@ -243,7 +279,12 @@ class USASpendingClient:
             # Try cached version first if caching is enabled
             if config.cache_enabled:
                 cached_result = self._make_cached_request(
-                    method, endpoint, params=params, json=json, **kwargs
+                    self._cache_namespace,
+                    method,
+                    endpoint,
+                    params=params,
+                    json=json,
+                    **kwargs,
                 )
                 # Validate that cache returned proper data
                 if cached_result is not None and isinstance(cached_result, dict):
@@ -271,16 +312,28 @@ class USASpendingClient:
                 method, endpoint, params=params, json=json, **kwargs
             )
 
-    @cachier.cachier(wait_for_calc_timeout=config.cache_timeout)
+    @cachier.cachier(
+        wait_for_calc_timeout=config.cache_timeout, hash_func=_cache_key
+    )
     def _make_cached_request(
         self,
+        cache_namespace: str,
         method: str,
         endpoint: str,
         params: Optional[Dict[str, Any]] = None,
         json: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        """Internal cached request method."""
+        """Internal cached request method.
+
+        Args:
+            cache_namespace: Per-client namespace for cache isolation.
+            method: HTTP method (GET, POST, etc.)
+            endpoint: API endpoint (without base URL)
+            params: Query parameters
+            json: JSON body for POST requests
+            **kwargs: Additional arguments for requests
+        """
         return self._make_uncached_request(
             method, endpoint, params=params, json=json, **kwargs
         )
@@ -500,7 +553,11 @@ class USASpendingClient:
         def download_operation():
             """Inner function for retry handler."""
             response = self._session.get(download_url, stream=True, timeout=timeout)
-            response.raise_for_status()
+            if response.status_code >= 400:
+                raise HTTPError(
+                    f"HTTP {response.status_code}: {response.reason}",
+                    status_code=response.status_code,
+                )
 
             try:
                 with open(destination_path, "wb") as f:
