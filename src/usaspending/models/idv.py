@@ -1,13 +1,16 @@
 """IDV (Indefinite Delivery Vehicle) award model for USASpending data."""
 
 from __future__ import annotations
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 from functools import cached_property
 from decimal import Decimal
 
 from .award import Award
 from .location import Location
 from ..utils.formatter import to_decimal
+
+if TYPE_CHECKING:
+    from ..queries.idv_child_awards import IDVChildAwardsSearch
 
 
 class IDV(Award):
@@ -208,3 +211,32 @@ class IDV(Award):
             return None
 
         return Location(data, self._client)
+
+    @property
+    def child_awards(self) -> "IDVChildAwardsSearch":
+        """Query builder for child awards (delivery/task orders) under this IDV.
+
+        Returns an IDVChildAwardsSearch query builder that can be used to
+        retrieve, filter, and paginate child awards placed against this IDV.
+
+        Examples:
+            >>> idv = client.awards.find_by_generated_id("CONT_IDV_...")
+            >>> # Get all child awards
+            >>> for child in idv.child_awards:
+            ...     print(f"{child.piid}: ${child.obligated_amount:,.2f}")
+            >>>
+            >>> # Paginated access
+            >>> idv.child_awards.limit(10).all()
+            >>>
+            >>> # Count child awards
+            >>> idv.child_awards.count()
+            >>>
+            >>> # Sort by obligation amount
+            >>> idv.child_awards.order_by("obligated_amount", "desc").all()
+
+        Returns:
+            IDVChildAwardsSearch: Query builder for child awards.
+        """
+        from ..queries.idv_child_awards import IDVChildAwardsSearch
+
+        return IDVChildAwardsSearch(self._client, self.generated_unique_award_id)

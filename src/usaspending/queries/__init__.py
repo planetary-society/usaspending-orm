@@ -63,6 +63,7 @@ from .subawards_search import SubAwardsSearch
 from .federal_accounts_query import FederalAccountsQuery
 from .tas_codes_query import TASCodesQuery
 from .award_accounts_query import AwardAccountsQuery
+from .idv_child_awards import IDVChildAwardsSearch
 
 __all__ = [
     # Core query classes
@@ -84,6 +85,7 @@ __all__ = [
     "FederalAccountsQuery",
     "TASCodesQuery",
     "AwardAccountsQuery",
+    "IDVChildAwardsSearch",
     "USASpendingError",
     "APIError",
     "HTTPError",
