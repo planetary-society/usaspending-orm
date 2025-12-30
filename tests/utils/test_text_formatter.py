@@ -239,6 +239,31 @@ class TestTextFormatterSentenceCase:
         result = TextFormatter.to_sentence_case("SPACE ADMINISTRATION (NASA)")
         assert result == "Space administration (NASA)"
 
+    def test_acronym_expansion_reentrant_call_isolated(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that reentrant calls do not corrupt acronym expansion state."""
+        original_loader = TextFormatter._load_special_cases
+        call_count = {"count": 0}
+
+        def wrapped_loader(cls: type[TextFormatter]) -> list[str]:
+            """Proxy loader that triggers a reentrant call on second invocation."""
+            call_count["count"] += 1
+            if call_count["count"] == 2:
+                TextFormatter.to_sentence_case(
+                    "NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)"
+                )
+            return original_loader()
+
+        monkeypatch.setattr(
+            TextFormatter, "_load_special_cases", classmethod(wrapped_loader)
+        )
+
+        result = TextFormatter.to_sentence_case(
+            "NASA NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)"
+        )
+        assert result == "NASA National Aeronautics Space Administration (NASA)"
+
     def test_error_handling(self):
         """Test error handling returns original text."""
         # This should test the exception handling, though it's hard to trigger

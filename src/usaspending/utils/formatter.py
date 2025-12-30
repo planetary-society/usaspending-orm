@@ -1,4 +1,4 @@
-from typing import List, Any, Optional, Set
+from typing import List, Any, Optional, Set, Union
 from datetime import datetime, date
 import re
 import yaml
@@ -56,7 +56,7 @@ def to_date(date_string: str) -> Optional[date]:
     return None
 
 
-def round_to_millions(amount: int | float | Decimal) -> str:
+def round_to_millions(amount: Union[int, float, Decimal]) -> str:
     """
     Formats a monetary amount with commas and two decimal places, displaying as millions or billions when appropriate.
 
@@ -419,10 +419,7 @@ class TextFormatter:
                             last_n_words = words_before[-len(acronym_letters) :]
                             if [w[0].lower() for w in last_n_words] == acronym_letters:
                                 # Mark these words for capitalization
-                                cls._acronym_expansion_words = getattr(
-                                    cls, "_acronym_expansion_words", set()
-                                )
-                                cls._acronym_expansion_words.update(last_n_words)
+                                acronym_expansion_words.update(last_n_words)
                             else:
                                 # If direct match failed, try skipping small words
                                 # Filter out small words
@@ -439,12 +436,7 @@ class TextFormatter:
                                         w[0].lower() for w in last_n_content
                                     ] == acronym_letters:
                                         # Mark these words for capitalization
-                                        cls._acronym_expansion_words = getattr(
-                                            cls, "_acronym_expansion_words", set()
-                                        )
-                                        cls._acronym_expansion_words.update(
-                                            last_n_content
-                                        )
+                                        acronym_expansion_words.update(last_n_content)
 
                 # Return uppercase parenthetical if short enough
                 if len(paren_content) <= paren_max_len:
@@ -452,8 +444,8 @@ class TextFormatter:
                 else:
                     return full_match
 
-            # Initialize acronym expansion tracking
-            cls._acronym_expansion_words = set()
+            # Initialize acronym expansion tracking (local to this call)
+            acronym_expansion_words: set[str] = set()
 
             # Apply acronym expansion
             processed_text = re.sub(r"\(([^)]+)\)", expand_acronyms, processed_text)
@@ -464,10 +456,7 @@ class TextFormatter:
                 word_start = match.start()
 
                 # Check if word should be capitalized due to acronym expansion
-                if (
-                    hasattr(cls, "_acronym_expansion_words")
-                    and word in cls._acronym_expansion_words
-                ):
+                if word in acronym_expansion_words:
                     return word.capitalize()
 
                 # Check if word is a special case from YAML
@@ -493,10 +482,6 @@ class TextFormatter:
             processed_text = re.sub(
                 r"\b([a-zA-Z]+(?:-[a-zA-Z]+)*)\b", word_replacer, processed_text
             )
-
-            # Clean up acronym expansion tracking
-            if hasattr(cls, "_acronym_expansion_words"):
-                delattr(cls, "_acronym_expansion_words")
 
             return processed_text
 
