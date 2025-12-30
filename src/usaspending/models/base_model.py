@@ -1,5 +1,5 @@
 # usaspending/models/base_model.py
-from typing import Optional, Dict, Any, List, Set, TYPE_CHECKING, Union
+from typing import Optional, Dict, Any, List, Set, TYPE_CHECKING, Union, Iterable
 from weakref import ref
 
 if TYPE_CHECKING:
@@ -237,20 +237,22 @@ class ClientAwareModel(BaseModel):
                 return
             _visited.add(obj_id)
 
-            # Find and reattach all LazyRecord properties
-            for attr_name in dir(self):
-                # Skip private attributes and methods
-                if attr_name.startswith("_"):
-                    continue
+            def iter_lazy_records(value: Any) -> Iterable[LazyRecord]:
+                """Yield LazyRecord instances without triggering property access."""
+                if isinstance(value, LazyRecord):
+                    yield value
+                    return
 
-                try:
-                    attr = getattr(self, attr_name)
+                if isinstance(value, dict):
+                    for child_value in value.values():
+                        yield from iter_lazy_records(child_value)
+                    return
 
-                    # Recursively reattach LazyRecord instances
-                    if isinstance(attr, LazyRecord):
-                        attr.reattach(client, recursive=True, _visited=_visited)
+                if isinstance(value, (list, tuple, set)):
+                    for child_value in value:
+                        yield from iter_lazy_records(child_value)
 
-                except (AttributeError, Exception):
-                    # Skip properties that raise errors during access
-                    # (e.g., properties that require API calls, methods, etc.)
-                    pass
+            # Find and reattach cached LazyRecord references without touching properties
+            for attr_value in self.__dict__.values():
+                for nested in iter_lazy_records(attr_value):
+                    nested.reattach(client, recursive=True, _visited=_visited)
