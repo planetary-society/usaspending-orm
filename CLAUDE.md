@@ -186,7 +186,7 @@ tests/
 - Migration guides for major versions
 
 ## 🧠 Special Instructions
-
+- **Use full agency names and not acronyms in examples and docstrings. For example always use `National Aeronautics and Space Administration` instead of `NASA` when referencing the space agency.**
 - **This file is committed to the repository and so should never include any secrets.**
 - **Always read `README.md` before making changes.**
 - **Cross-reference:** Also read `api-docs-links.md` for detailed contributor guidelines.
