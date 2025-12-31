@@ -5,24 +5,26 @@ from __future__ import annotations
 from typing import Dict, Any, Optional, TYPE_CHECKING
 from decimal import Decimal
 
-from .base_model import BaseModel
+from .base_model import ClientAwareModel
 from ..utils.formatter import to_decimal, round_to_millions
 
 if TYPE_CHECKING:
     from .agency import Agency
     from .federal_account import FederalAccount
+    from ..client import USASpendingClient
 
 
-class Funding(BaseModel):
+class Funding(ClientAwareModel):
     """Represents federal account funding data for an award."""
 
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
         """Initialize Funding instance.
 
         Args:
             data: Raw funding data from API response.
+            client: The USASpendingClient instance.
         """
-        super().__init__(data)
+        super().__init__(data, client)
 
     @property
     def transaction_obligated_amount(self) -> Optional[Decimal]:

@@ -9,7 +9,7 @@ from usaspending.models.funding import Funding
 class TestFundingModel:
     """Test Funding model functionality."""
 
-    def test_funding_initialization(self):
+    def test_funding_initialization(self, mock_usa_client):
         """Test basic funding initialization."""
         data = {
             "transaction_obligated_amount": 20000.0,
@@ -18,7 +18,7 @@ class TestFundingModel:
             "funding_agency_name": "National Aeronautics and Space Administration",
         }
 
-        funding = Funding(data)
+        funding = Funding(data, client=mock_usa_client)
 
         assert funding.raw == data
         assert_decimal_equal(funding.transaction_obligated_amount, 20000.0)
@@ -29,7 +29,7 @@ class TestFundingModel:
             == "National Aeronautics and Space Administration"
         )
 
-    def test_funding_numeric_conversions(self):
+    def test_funding_numeric_conversions(self, mock_usa_client):
         """Test that numeric fields are properly converted."""
         data = {
             "transaction_obligated_amount": "20000.50",
@@ -43,7 +43,7 @@ class TestFundingModel:
             "reporting_fiscal_month": "6",
         }
 
-        funding = Funding(data)
+        funding = Funding(data, client=mock_usa_client)
 
         # Float conversions
         assert funding.transaction_obligated_amount == 20000.50
@@ -60,7 +60,7 @@ class TestFundingModel:
         assert funding.reporting_fiscal_quarter == 2
         assert funding.reporting_fiscal_month == 6
 
-    def test_funding_null_handling(self):
+    def test_funding_null_handling(self, mock_usa_client):
         """Test that null/None values are handled properly."""
         data = {
             "transaction_obligated_amount": None,
@@ -71,7 +71,7 @@ class TestFundingModel:
             "is_quarterly_submission": None,
         }
 
-        funding = Funding(data)
+        funding = Funding(data, client=mock_usa_client)
 
         assert funding.transaction_obligated_amount == 0.0
         assert funding.gross_outlay_amount == 0.0
@@ -80,7 +80,7 @@ class TestFundingModel:
         assert funding.reporting_fiscal_year is None
         assert funding.is_quarterly_submission is None
 
-    def test_funding_all_properties(self):
+    def test_funding_all_properties(self, mock_usa_client):
         """Test all funding properties with complete data."""
         data = {
             "transaction_obligated_amount": 20000.0,
@@ -106,7 +106,7 @@ class TestFundingModel:
             "is_quarterly_submission": False,
         }
 
-        funding = Funding(data)
+        funding = Funding(data, client=mock_usa_client)
 
         # Test all properties
         assert_decimal_equal(funding.transaction_obligated_amount, 20000.0)
@@ -146,7 +146,7 @@ class TestFundingModel:
         assert funding.reporting_fiscal_month == 9
         assert funding.is_quarterly_submission is False
 
-    def test_funding_repr_with_complete_data(self):
+    def test_funding_repr_with_complete_data(self, mock_usa_client):
         """Test string representation with complete data."""
         data = {
             "reporting_fiscal_year": 2020,
@@ -155,55 +155,55 @@ class TestFundingModel:
             "funding_agency_name": "National Aeronautics and Space Administration",
         }
 
-        funding = Funding(data)
+        funding = Funding(data, client=mock_usa_client)
         repr_str = repr(funding)
 
         assert "2020" in repr_str
         assert "06" in repr_str
         assert "130,834" in repr_str
 
-    def test_funding_repr_with_missing_data(self):
+    def test_funding_repr_with_missing_data(self, mock_usa_client):
         """Test string representation with missing data."""
         data = {}
 
-        funding = Funding(data)
+        funding = Funding(data, client=mock_usa_client)
 
         try:
             repr(funding)
         except Exception as e:
             assert False, f"Repr with missing data failed with exception: {e}"
 
-    def test_funding_repr_with_partial_data(self):
+    def test_funding_repr_with_partial_data(self, mock_usa_client):
         """Test string representation with partial data."""
         data = {"reporting_fiscal_year": 2020, "transaction_obligated_amount": 50000.0}
 
-        funding = Funding(data)
+        funding = Funding(data, client=mock_usa_client)
         repr_str = repr(funding)
 
         assert "Unknown Agency" in repr_str
         assert "2020-?" in repr_str
 
-    def test_funding_boolean_field(self):
+    def test_funding_boolean_field(self, mock_usa_client):
         """Test boolean field handling."""
         # Test True value
-        funding_quarterly = Funding({"is_quarterly_submission": True})
+        funding_quarterly = Funding({"is_quarterly_submission": True}, client=mock_usa_client)
         assert funding_quarterly.is_quarterly_submission is True
 
         # Test False value
-        funding_monthly = Funding({"is_quarterly_submission": False})
+        funding_monthly = Funding({"is_quarterly_submission": False}, client=mock_usa_client)
         assert funding_monthly.is_quarterly_submission is False
 
         # Test missing value
-        funding_missing = Funding({})
+        funding_missing = Funding({}, client=mock_usa_client)
         assert funding_missing.is_quarterly_submission is None
 
-    def test_funding_from_fixture_data(self, load_fixture):
+    def test_funding_from_fixture_data(self, load_fixture, mock_usa_client):
         """Test funding model with real fixture data."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
 
         # Test first result
         first_result = fixture_data["results"][0]
-        funding = Funding(first_result)
+        funding = Funding(first_result, client=mock_usa_client)
 
         expected_transaction_obligated = first_result.get(
             "transaction_obligated_amount"
@@ -266,8 +266,7 @@ class TestFundingFederalAccountProperty:
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
 
-        funding = Funding(first_result)
-        funding._client = mock_usa_client
+        funding = Funding(first_result, client=mock_usa_client)
 
         federal_account = funding.federal_account
 
@@ -282,8 +281,7 @@ class TestFundingFederalAccountProperty:
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
 
-        funding = Funding(first_result)
-        funding._client = mock_usa_client
+        funding = Funding(first_result, client=mock_usa_client)
 
         federal_account = funding.federal_account
 
@@ -293,28 +291,26 @@ class TestFundingFederalAccountProperty:
             first_result.get("funding_toptier_agency_id")
         )
 
-    def test_federal_account_code_returns_string(self, load_fixture):
+    def test_federal_account_code_returns_string(self, load_fixture, mock_usa_client):
         """Test federal_account_code property returns raw string."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
 
-        funding = Funding(first_result)
+        funding = Funding(first_result, client=mock_usa_client)
 
         assert funding.federal_account_code == first_result.get("federal_account")
         assert isinstance(funding.federal_account_code, str)
 
     def test_federal_account_returns_none_when_missing(self, mock_usa_client):
         """Test federal_account returns None when federal_account data is missing."""
-        funding = Funding({})
-        funding._client = mock_usa_client
+        funding = Funding({}, client=mock_usa_client)
 
         assert funding.federal_account is None
         assert funding.federal_account_code is None
 
     def test_federal_account_returns_none_when_code_is_none(self, mock_usa_client):
         """Test federal_account returns None when federal_account is explicitly None."""
-        funding = Funding({"federal_account": None})
-        funding._client = mock_usa_client
+        funding = Funding({"federal_account": None}, client=mock_usa_client)
 
         assert funding.federal_account is None
 
@@ -326,8 +322,7 @@ class TestFundingFederalAccountProperty:
         first_result = fixture_data["results"][0].copy()
         del first_result["funding_toptier_agency_id"]
 
-        funding = Funding(first_result)
-        funding._client = mock_usa_client
+        funding = Funding(first_result, client=mock_usa_client)
 
         federal_account = funding.federal_account
 
@@ -346,8 +341,7 @@ class TestFundingAgencyProperties:
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
 
-        funding = Funding(first_result)
-        funding._client = mock_usa_client
+        funding = Funding(first_result, client=mock_usa_client)
 
         agency = funding.funding_agency
 
@@ -362,8 +356,7 @@ class TestFundingAgencyProperties:
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
 
-        funding = Funding(first_result)
-        funding._client = mock_usa_client
+        funding = Funding(first_result, client=mock_usa_client)
 
         agency = funding.funding_agency
 
@@ -379,8 +372,7 @@ class TestFundingAgencyProperties:
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
 
-        funding = Funding(first_result)
-        funding._client = mock_usa_client
+        funding = Funding(first_result, client=mock_usa_client)
 
         agency = funding.awarding_agency
 
@@ -395,8 +387,7 @@ class TestFundingAgencyProperties:
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
 
-        funding = Funding(first_result)
-        funding._client = mock_usa_client
+        funding = Funding(first_result, client=mock_usa_client)
 
         agency = funding.awarding_agency
 
@@ -409,14 +400,81 @@ class TestFundingAgencyProperties:
 
     def test_funding_agency_returns_none_when_missing(self, mock_usa_client):
         """Test funding_agency returns None when toptier_agency_id is missing."""
-        funding = Funding({})
-        funding._client = mock_usa_client
+        funding = Funding({}, client=mock_usa_client)
 
         assert funding.funding_agency is None
 
     def test_awarding_agency_returns_none_when_missing(self, mock_usa_client):
         """Test awarding_agency returns None when toptier_agency_id is missing."""
-        funding = Funding({})
-        funding._client = mock_usa_client
+        funding = Funding({}, client=mock_usa_client)
 
         assert funding.awarding_agency is None
+
+
+class TestFundingClientAwareness:
+    """Tests for Funding model client awareness.
+
+    These tests verify that Funding properly accepts and uses a client parameter,
+    which is required for accessing related objects like Agency and FederalAccount.
+    """
+
+    def test_funding_accepts_client_parameter(self, mock_usa_client):
+        """Funding should accept a client parameter in constructor."""
+        data = {
+            "transaction_obligated_amount": 20000.0,
+            "funding_agency_name": "National Aeronautics and Space Administration",
+        }
+        # This should not raise TypeError
+        funding = Funding(data, client=mock_usa_client)
+        assert funding is not None
+
+    def test_funding_has_client_attribute(self, mock_usa_client):
+        """Funding should have _client attribute when created with client."""
+        data = {
+            "transaction_obligated_amount": 20000.0,
+            "funding_agency_name": "National Aeronautics and Space Administration",
+        }
+        funding = Funding(data, client=mock_usa_client)
+        assert hasattr(funding, "_client")
+
+    def test_awarding_agency_without_manual_client_assignment(
+        self, load_fixture, mock_usa_client
+    ):
+        """awarding_agency property should work without manual _client assignment."""
+        fixture_data = load_fixture("awards/award_funding_grant.json")
+        first_result = fixture_data["results"][0]
+
+        # Create Funding with client in constructor (no manual assignment)
+        funding = Funding(first_result, client=mock_usa_client)
+
+        # This should not raise AttributeError
+        agency = funding.awarding_agency
+        assert agency is not None
+
+    def test_funding_agency_without_manual_client_assignment(
+        self, load_fixture, mock_usa_client
+    ):
+        """funding_agency property should work without manual _client assignment."""
+        fixture_data = load_fixture("awards/award_funding_grant.json")
+        first_result = fixture_data["results"][0]
+
+        # Create Funding with client in constructor (no manual assignment)
+        funding = Funding(first_result, client=mock_usa_client)
+
+        # This should not raise AttributeError
+        agency = funding.funding_agency
+        assert agency is not None
+
+    def test_federal_account_without_manual_client_assignment(
+        self, load_fixture, mock_usa_client
+    ):
+        """federal_account property should work without manual _client assignment."""
+        fixture_data = load_fixture("awards/award_funding_grant.json")
+        first_result = fixture_data["results"][0]
+
+        # Create Funding with client in constructor (no manual assignment)
+        funding = Funding(first_result, client=mock_usa_client)
+
+        # This should not raise AttributeError
+        account = funding.federal_account
+        assert account is not None

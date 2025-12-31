@@ -82,7 +82,7 @@ class FundingSearch(QueryBuilder["Funding"]):
 
     def _transform_result(self, result: Dict[str, Any]) -> Funding:
         """Transforms a single API result item into a Funding model."""
-        return Funding(result)
+        return Funding(result, client=self._client)
 
     def count(self) -> int:
         """
