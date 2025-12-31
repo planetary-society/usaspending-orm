@@ -578,7 +578,7 @@ class Award(LazyRecord):
         if all(v is None for v in data.values()):
             return None
 
-        return Location(data, self._client)
+        return Location(data)
 
     @cached_property
     def recipient(self) -> Optional[Recipient]:
@@ -605,9 +605,7 @@ class Award(LazyRecord):
             if "Recipient Location" in self._data and isinstance(
                 self._data["Recipient Location"], dict
             ):
-                recipient.location = Location(
-                    self._data["Recipient Location"], self._client
-                )
+                recipient.location = Location(self._data["Recipient Location"])
             return recipient
 
         # If no recipient data is available locally, trigger a fetch

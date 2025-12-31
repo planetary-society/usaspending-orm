@@ -286,8 +286,3 @@ class TestLocationEdgeCases:
         assert location.state_code is None
         assert location.zip5 == ""  # zip5 returns empty string when None
 
-    def test_client_parameter_ignored(self):
-        """Test that client parameter is properly ignored."""
-        # Should not raise an error
-        location = Location({"city": "Test City"}, client="dummy_client")
-        assert location.city == "Test City"

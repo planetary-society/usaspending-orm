@@ -210,7 +210,7 @@ class IDV(Award):
         if all(v is None for v in data.values()):
             return None
 
-        return Location(data, self._client)
+        return Location(data)
 
     @property
     def child_awards(self) -> "IDVChildAwardsSearch":

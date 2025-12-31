@@ -1,24 +1,18 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional
 from titlecase import titlecase
 from ..utils.formatter import contracts_titlecase
 from .base_model import BaseModel
-
-if TYPE_CHECKING:
-    from ..client import USASpendingClient
 
 
 class Location(BaseModel):
     """Location model for USASpending data."""
 
-    def __init__(
-        self, data: Dict[str, Any], client: Optional[USASpendingClient] = None
-    ):
+    def __init__(self, data: Dict[str, Any]):
         """Initialize Location.
 
         Args:
             data: Dictionary containing location data.
-            client: USASpendingClient instance (ignored, kept for compatibility).
         """
         super().__init__(data)
 

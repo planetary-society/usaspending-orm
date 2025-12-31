@@ -249,7 +249,7 @@ class Recipient(LazyRecord):
             Optional[Location]: The Location object, or None.
         """
         data = self._lazy_get("location")
-        return Location(data, self._client) if data else None
+        return Location(data) if data else None
 
     @property
     def total_transaction_amount(self) -> Optional[Decimal]:
