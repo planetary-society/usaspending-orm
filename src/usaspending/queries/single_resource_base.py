@@ -30,8 +30,18 @@ class SingleResourceBase(ABC):
         """Filter by unique resource identifier."""
         pass
 
-    def _get_resource(self, resource_id: str) -> dict:
-        """Retrieve a single resource by ID."""
+    def _get_resource(
+        self, resource_id: str, params: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
+        """Retrieve a single resource by ID.
+
+        Args:
+            resource_id: The resource identifier string.
+            params: Optional query parameters for the request.
+
+        Returns:
+            The response payload as a dictionary.
+        """
         if (
             not resource_id
             or not isinstance(resource_id, str)
@@ -39,7 +49,7 @@ class SingleResourceBase(ABC):
         ):
             raise ValidationError("A non-empty resource_id string is required")
 
-        # Clean recipient ID
+        # Clean resource ID
         cleaned_resource_id = self._clean_resource_id(resource_id)
 
         if not cleaned_resource_id:
@@ -52,7 +62,7 @@ class SingleResourceBase(ABC):
         endpoint = self._construct_endpoint(cleaned_resource_id)
 
         # Make API request
-        response = self._client._make_request("GET", endpoint)
+        response = self._client._make_request("GET", endpoint, params=params)
 
         # Validate response
         if response is None:

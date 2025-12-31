@@ -19,7 +19,6 @@ class RecipientQuery(SingleResourceBase):
 
     def __init__(self, client: USASpendingClient):
         super().__init__(client)
-        self._year: Optional[str] = None
 
     @property
     def _endpoint(self) -> str:
@@ -62,11 +61,12 @@ class RecipientQuery(SingleResourceBase):
         if not recipient_id:
             raise ValidationError("recipient_id is required")
 
-        # Store year for endpoint construction
-        self._year = self._validate_year(year) if year is not None else None
+        params = None
+        if year is not None:
+            params = {"year": self._validate_year(year)}
 
         # Make API request
-        response = self._get_resource(recipient_id)
+        response = self._get_resource(recipient_id, params=params)
 
         # Create model instance
         from ..models.recipient import Recipient
@@ -88,23 +88,19 @@ class RecipientQuery(SingleResourceBase):
         """
         # Handle special string values first
         if isinstance(year, str):
-            year_lower = year.lower().strip()
+            year_lower = year.strip().lower()
             if year_lower in ("latest", "all"):
                 return year_lower
+            year = year.strip()
 
         # Use shared validation for numeric years (handles both int and numeric strings)
         validated_year = parse_fiscal_year(year)
         return str(validated_year)
 
-    def _construct_endpoint(self, resource_id: str) -> str:
-        """Construct the full endpoint URL for a specific recipient ID.
-
-        Overrides the base class method to support the year query parameter.
-        """
-        endpoint = f"{self._endpoint}{resource_id}/"
-        if self._year:
-            endpoint = f"{endpoint}?year={self._year}"
-        return endpoint
+    def _clean_resource_id(self, resource_id: str) -> str:
+        """Clean recipient ID formats and whitespace."""
+        cleaned_resource_id = super()._clean_resource_id(resource_id)
+        return self._clean_recipient_id(cleaned_resource_id)
 
     def _clean_recipient_id(self, recipient_id: str) -> str:
         """Clean recipient ID format.
