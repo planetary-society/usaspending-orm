@@ -10,6 +10,7 @@ from ..utils.formatter import to_decimal, round_to_millions
 
 if TYPE_CHECKING:
     from .agency import Agency
+    from .federal_account import FederalAccount
 
 
 class Funding(BaseModel):
@@ -51,13 +52,42 @@ class Funding(BaseModel):
         return self.get_value("disaster_emergency_fund_code")
 
     @property
-    def federal_account(self) -> Optional[str]:
+    def federal_account_code(self) -> Optional[str]:
         """Identifier of the federal account.
 
         Returns:
             Optional[str]: The federal account identifier, or None.
         """
         return self.get_value("federal_account")
+
+    @property
+    def federal_account(self) -> Optional["FederalAccount"]:
+        """Retrieve the FederalAccount object for this funding record.
+
+        Returns:
+            Optional[FederalAccount]: The FederalAccount object, or None.
+        """
+        code = self.get_value("federal_account")
+        if not code:
+            return None
+
+        from .federal_account import FederalAccount
+
+        data = {
+            "id": code,
+            "description": self.get_value("account_title"),
+            "ancestors": [str(self.funding_toptier_agency_id)]
+            if self.funding_toptier_agency_id
+            else [],
+        }
+
+        return FederalAccount(
+            data=data,
+            client=self._client,
+            toptier_code=str(self.funding_toptier_agency_id)
+            if self.funding_toptier_agency_id
+            else None,
+        )
 
     @property
     def account_title(self) -> Optional[str]:
@@ -88,14 +118,14 @@ class Funding(BaseModel):
         return int(value) if value is not None else None
 
     @property
-    def funding_toptier_agency_id(self) -> Optional[int]:
+    def funding_toptier_agency_id(self) -> Optional[str]:
         """Top-tier funding agency identifier.
 
         Returns:
-            Optional[int]: The funding toptier agency ID, or None.
+            Optional[str]: The funding toptier agency ID, or None.
         """
         value = self.get_value("funding_toptier_agency_id")
-        return int(value) if value is not None else None
+        return str(value) if value is not None else None
 
     @property
     def funding_agency_slug(self) -> Optional[str]:
@@ -108,18 +138,28 @@ class Funding(BaseModel):
 
     @property
     def funding_agency(self) -> Optional["Agency"]:
-        """Retrieve the full Agency object for the funding agency.
+        """Retrieve the Agency object for the funding agency.
+
+        Constructs an Agency from the existing Funding data without making
+        an API call. The Agency will lazy-load additional details if accessed.
 
         Returns:
             Optional[Agency]: The Agency object for the funding agency, or None.
         """
-        name = self.funding_agency_name
-        if name:
-            return self._client.agencies.find_all_funding_agencies_by_name(
-                name
-            ).toptier()[0]
-        else:
+        toptier_code = self.funding_toptier_agency_id
+        if not toptier_code:
             return None
+
+        from .agency import Agency
+
+        data = {
+            "toptier_code": toptier_code,
+            "name": self.get_value("funding_agency_name"),
+            "agency_id": self.get_value("funding_agency_id"),
+            "slug": self.get_value("funding_agency_slug"),
+        }
+
+        return Agency(data=data, client=self._client)
 
     @property
     def awarding_agency_name(self) -> Optional[str]:
@@ -141,14 +181,14 @@ class Funding(BaseModel):
         return int(value) if value is not None else None
 
     @property
-    def awarding_toptier_agency_id(self) -> Optional[int]:
+    def awarding_toptier_agency_id(self) -> Optional[str]:
         """Top-tier awarding agency identifier.
 
         Returns:
-            Optional[int]: The awarding toptier agency ID, or None.
+            Optional[str]: The awarding toptier agency ID, or None.
         """
         value = self.get_value("awarding_toptier_agency_id")
-        return int(value) if value is not None else None
+        return str(value) if value is not None else None
 
     @property
     def awarding_agency_slug(self) -> Optional[str]:
@@ -161,18 +201,28 @@ class Funding(BaseModel):
 
     @property
     def awarding_agency(self) -> Optional["Agency"]:
-        """Retrieve the full Agency object for the awarding agency.
+        """Retrieve the Agency object for the awarding agency.
+
+        Constructs an Agency from the existing Funding data without making
+        an API call. The Agency will lazy-load additional details if accessed.
 
         Returns:
             Optional[Agency]: The Agency object for the awarding agency, or None.
         """
-        name = self.awarding_agency_name
-        if name:
-            return self._client.agencies.find_all_awarding_agencies_by_name(
-                name
-            ).toptier()[0]
-        else:
+        toptier_code = self.awarding_toptier_agency_id
+        if not toptier_code:
             return None
+
+        from .agency import Agency
+
+        data = {
+            "toptier_code": toptier_code,
+            "name": self.get_value("awarding_agency_name"),
+            "agency_id": self.get_value("awarding_agency_id"),
+            "slug": self.get_value("awarding_agency_slug"),
+        }
+
+        return Agency(data=data, client=self._client)
 
     @property
     def object_class(self) -> Optional[str]:
