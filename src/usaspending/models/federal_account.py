@@ -80,7 +80,7 @@ class FederalAccount(ClientAwareModel):
     @property
     def count(self) -> int:
         """Number of TAS codes under this federal account."""
-        return self.get_value("count", default=0)
+        return self.get_value("count", default=self.tas_codes.count())
 
     @property
     def ancestors(self) -> List[str]:
