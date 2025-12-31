@@ -8,7 +8,6 @@ from typing import (
     Any,
     Optional,
     TypeVar,
-    Generic,
     TYPE_CHECKING,
     Union,
 )
@@ -16,6 +15,8 @@ import datetime
 
 # Import exceptions for use by all query builders
 from ..exceptions import ValidationError
+
+from .base_query import BaseQuery
 
 from .filters import (
     BaseFilter,
@@ -73,7 +74,7 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class QueryBuilder(ABC, Generic[T]):
+class QueryBuilder(BaseQuery[T], ABC):
     """Base query builder with automatic pagination support.
 
     Provides transparent pagination handling for USASpending API queries.
@@ -82,45 +83,10 @@ class QueryBuilder(ABC, Generic[T]):
     - Use max_pages() to limit the number of API requests made
     """
 
-    def __init__(self, client: "USASpendingClient"):
+    def __init__(self, client: "USASpendingClient") -> None:
+        super().__init__()
         self._client = client
         self._filter_objects: list[BaseFilter] = []
-        self._page_size = 100  # Items per page (max 100 per USASpending API)
-        self._total_limit = None  # Total items to return (across all pages)
-        self._max_pages = None  # Limit total pages fetched
-        self._order_by = None
-        self._order_direction = "desc"
-
-    def limit(self, num: int) -> "QueryBuilder[T]":
-        """Set the total number of items to return across all pages."""
-        if num < 0:
-            raise ValidationError("limit must be non-negative")
-        clone = self._clone()
-        clone._total_limit = num
-        return clone
-
-    def page_size(self, num: int) -> "QueryBuilder[T]":
-        """Set page size (max 100 per USASpending API)."""
-        if num <= 0:
-            raise ValidationError("page_size must be a positive integer")
-        clone = self._clone()
-        clone._page_size = min(num, 100)
-        return clone
-
-    def max_pages(self, num: int) -> "QueryBuilder[T]":
-        """Limit total number of pages fetched."""
-        if num < 0:
-            raise ValidationError("max_pages must be non-negative")
-        clone = self._clone()
-        clone._max_pages = num
-        return clone
-
-    def order_by(self, field: str, direction: str = "desc") -> "QueryBuilder[T]":
-        """Set sort order."""
-        clone = self._clone()
-        clone._order_by = field
-        clone._order_direction = direction
-        return clone
 
     def __iter__(self) -> Iterator[T]:
         """Iterate over all results, handling pagination automatically."""
@@ -177,20 +143,14 @@ class QueryBuilder(ABC, Generic[T]):
     def first(self) -> Optional[T]:
         """Get first result only."""
         logger.debug(f"{self.__class__.__name__}.first() called")
-        for result in self.limit(1):
-            return result
-        return None
+        return super().first()
 
     def all(self) -> List[T]:
         """Get all results as a list."""
         logger.debug(f"{self.__class__.__name__}.all() called")
-        results = list(self)
+        results = super().all()
         logger.info(f"{self.__class__.__name__}.all() returned {len(results)} results")
         return results
-
-    def __len__(self) -> int:
-        """Return the total number of items (delegates to count())."""
-        return self.count()
 
     def __getitem__(self, key: Union[int, slice]) -> Union[T, List[T]]:
         """Support list-like indexing and slicing.
@@ -306,12 +266,6 @@ class QueryBuilder(ABC, Generic[T]):
     def _build_payload(self, page: int) -> Dict[str, Any]:
         """Build request payload."""
         pass
-
-    def _get_effective_page_size(self) -> int:
-        """Get the effective page size based on limit and configured page size."""
-        if self._total_limit is not None:
-            return min(self._page_size, self._total_limit)
-        return self._page_size
 
     @abstractmethod
     def _transform_result(self, data: Dict[str, Any]) -> T:

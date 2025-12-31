@@ -4,7 +4,9 @@ This module provides query builders for constructing complex API requests
 with filtering, pagination, and result transformation capabilities.
 
 Base Classes:
+    BaseQuery: Shared base class for query builders
     QueryBuilder: Abstract base class for chainable query operations
+    ClientSideQueryBuilder: In-memory query builder for non-API relationships
     
 Award Queries:
     AwardQuery: Single award retrieval operations
@@ -47,6 +49,8 @@ from ..exceptions import (
     ConfigurationError,
 )
 
+from .base_query import BaseQuery
+from .client_side_query_builder import ClientSideQueryBuilder
 from .query_builder import QueryBuilder
 from .award_query import AwardQuery
 from .awards_search import AwardsSearch
@@ -69,6 +73,8 @@ from .idv_child_awards import IDVChildAwardsSearch
 
 __all__ = [
     # Core query classes
+    "BaseQuery",
+    "ClientSideQueryBuilder",
     "QueryBuilder",
     "AwardQuery",
     "AwardsSearch",

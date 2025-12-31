@@ -172,6 +172,36 @@ class TestTASCodesQueryMethods:
         assert bool(query) is False
 
 
+class TestTASCodesQueryFilters:
+    """Test TASCodesQuery filter methods."""
+
+    def test_availability_type_filter(self, mock_usa_client, load_fixture):
+        """Test filtering by availability type code."""
+        fixture = load_fixture("tas_codes.json")
+        mock_usa_client.set_response(
+            "/references/filter_tree/tas/080/080-0120/", fixture
+        )
+
+        query = TASCodesQuery(mock_usa_client, "080", "080-0120")
+        results = query.availability_type_code("X").all()
+
+        assert len(results) == 1
+        assert results[0].availability_type_code == "X"
+
+    def test_fiscal_year_filter(self, mock_usa_client, load_fixture):
+        """Test filtering by fiscal year coverage."""
+        fixture = load_fixture("tas_codes.json")
+        mock_usa_client.set_response(
+            "/references/filter_tree/tas/080/080-0120/", fixture
+        )
+
+        query = TASCodesQuery(mock_usa_client, "080", "080-0120")
+        results = query.fiscal_year(2012).all()
+
+        assert results
+        assert any(tas.id == "080-2011/2012-0120-000" for tas in results)
+
+
 class TestTASCodesQueryEmptyParams:
     """Test TASCodesQuery with empty parameters."""
 

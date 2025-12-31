@@ -97,7 +97,8 @@ class FederalAccount(ClientAwareModel):
     def tas_codes(self) -> "TASCodesQuery":
         """Get TAS codes under this federal account.
 
-        Returns a query-like object that supports iteration and .count().
+        Returns a query-like object that supports iteration, filtering,
+        ordering, and .count().
 
         Returns:
             TASCodesQuery: Lazy query for TAS codes.
@@ -110,6 +111,10 @@ class FederalAccount(ClientAwareModel):
             >>> # Get count
             >>> print(len(account.tas_codes))
             >>> print(account.tas_codes.count())
+            >>>
+            >>> # Filter by availability or fiscal year
+            >>> no_year = account.tas_codes.availability_type_code("X").all()
+            >>> fy2024 = account.tas_codes.fiscal_year(2024).all()
         """
         from ..queries.tas_codes_query import TASCodesQuery
 

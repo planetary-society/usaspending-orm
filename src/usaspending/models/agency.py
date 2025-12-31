@@ -498,7 +498,8 @@ class Agency(LazyRecord):
     def federal_accounts(self) -> "FederalAccountsQuery":
         """Get federal accounts with TAS codes for this agency.
 
-        Returns a query-like object that supports iteration and .count().
+        Returns a query-like object that supports iteration, filtering,
+        ordering, and .count().
 
         Returns:
             FederalAccountsQuery: Lazy query for federal accounts.
@@ -511,6 +512,14 @@ class Agency(LazyRecord):
             >>> # Get count
             >>> print(len(agency.federal_accounts))
             >>> print(agency.federal_accounts.count())
+            >>>
+            >>> # Filter by account code or description
+            >>> nasa_science = agency.federal_accounts.code("080-0120").first()
+            >>> working_capital = (
+            ...     agency.federal_accounts
+            ...     .description("Working Capital")
+            ...     .first()
+            ... )
             >>>
             >>> # Access TAS codes from a federal account
             >>> account = agency.federal_accounts[0]

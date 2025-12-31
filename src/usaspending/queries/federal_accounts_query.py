@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Iterator, List, Optional, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING
 
 from ..logging_config import USASpendingLogger
+from ..utils.validations import validate_non_empty_string
+from .client_side_query_builder import ClientSideQueryBuilder
+from .filters import KeywordsFilter, SimpleListFilter, SimpleStringFilter
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -13,14 +16,22 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class FederalAccountsQuery:
+class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
     """Lazy query for Federal Accounts with TAS codes.
 
     Provides a query-like interface for fetching federal accounts under
-    an agency. Supports iteration, indexing, and count operations.
+    an agency. Supports iteration, indexing, count operations, and
+    client-side filtering.
 
     The query is lazily evaluated - the API is only called when results
     are actually accessed (iteration, indexing, count, etc.).
+
+    Filters:
+        - code(): Filter by federal account code.
+        - codes(): Filter by multiple federal account codes.
+        - description(): Filter by description text (case-insensitive substring).
+        - account_name(): Alias for description().
+        - fiscal_year(): Filter by fiscal year coverage.
 
     Example:
         >>> accounts = agency.federal_accounts
@@ -50,6 +61,10 @@ class FederalAccountsQuery:
         self._client = client
         self._toptier_code = toptier_code
         self._results: Optional[List["FederalAccount"]] = None
+        super().__init__(
+            items=[],
+            keyword_fields=["description", "name", "title"],
+        )
 
     def _fetch(self) -> List["FederalAccount"]:
         """Fetch federal accounts from the API.
@@ -84,74 +99,61 @@ class FederalAccountsQuery:
 
         return self._results
 
-    def __iter__(self) -> Iterator["FederalAccount"]:
-        """Iterate over federal accounts.
-
-        Yields:
-            FederalAccount instances.
-        """
-        return iter(self._fetch())
-
-    def __len__(self) -> int:
-        """Return the number of federal accounts.
-
-        Returns:
-            Count of federal accounts.
-        """
-        return len(self._fetch())
-
-    def __getitem__(self, index: int) -> "FederalAccount":
-        """Get federal account by index.
-
-        Args:
-            index: Zero-based index.
-
-        Returns:
-            FederalAccount at the given index.
-
-        Raises:
-            IndexError: If index is out of range.
-        """
-        return self._fetch()[index]
-
-    def __bool__(self) -> bool:
-        """Check if there are any federal accounts.
-
-        Returns:
-            True if there are federal accounts, False otherwise.
-        """
-        return len(self) > 0
-
-    def count(self) -> int:
-        """Return the number of federal accounts.
-
-        Equivalent to len(query).
-
-        Returns:
-            Count of federal accounts.
-        """
-        return len(self)
-
-    def all(self) -> List["FederalAccount"]:
-        """Return all federal accounts as a list.
-
-        Returns:
-            List of FederalAccount instances.
-        """
+    def _materialize(self) -> list["FederalAccount"]:
+        """Return fetched federal accounts for client-side filtering."""
         return list(self._fetch())
 
-    def first(self) -> Optional["FederalAccount"]:
-        """Return the first federal account, or None if empty.
+    def code(self, code: str) -> "FederalAccountsQuery":
+        """Filter by federal account code.
+
+        Args:
+            code: Federal account code (e.g., "080-0120").
 
         Returns:
-            First FederalAccount, or None.
+            FederalAccountsQuery: Filtered query.
         """
-        results = self._fetch()
-        return results[0] if results else None
+        validated = validate_non_empty_string(code, "code")
+        return self._add_filter_object(SimpleStringFilter(key="id", value=validated))
+
+    def codes(self, *codes: str) -> "FederalAccountsQuery":
+        """Filter by multiple federal account codes.
+
+        Args:
+            *codes: One or more federal account codes.
+
+        Returns:
+            FederalAccountsQuery: Filtered query.
+        """
+        return self._add_filter_object(
+            SimpleListFilter(key="id", values=list(codes))
+        )
+
+    def description(self, text: str) -> "FederalAccountsQuery":
+        """Filter by description text (case-insensitive substring).
+
+        Args:
+            text: Description text to search for.
+
+        Returns:
+            FederalAccountsQuery: Filtered query.
+        """
+        validated = validate_non_empty_string(text, "description")
+        return self._add_filter_object(KeywordsFilter(values=[validated]))
+
+    def account_name(self, text: str) -> "FederalAccountsQuery":
+        """Alias for description().
+
+        Args:
+            text: Description text to search for.
+
+        Returns:
+            FederalAccountsQuery: Filtered query.
+        """
+        return self.description(text)
 
     def fiscal_year(
         self, year: int, include_noyear_accounts: bool = False
-    ) -> List["FederalAccount"]:
+    ) -> "FederalAccountsQuery":
         """Filter to federal accounts with active TAS codes for a fiscal year.
 
         Returns only federal accounts that have at least one Treasury Account
@@ -165,27 +167,41 @@ class FederalAccountsQuery:
                 also include accounts with no-year TAS codes.
 
         Returns:
-            List of FederalAccount instances with active TAS codes for the year.
+            FederalAccountsQuery: Filtered query for matching accounts.
 
         Example:
             >>> # Only explicit year ranges (excludes no-year accounts)
-            >>> active_accounts = agency.federal_accounts.fiscal_year(2024)
+            >>> active_accounts = agency.federal_accounts.fiscal_year(2024).all()
             >>>
             >>> # Include no-year accounts
-            >>> all_active = agency.federal_accounts.fiscal_year(2024, include_noyear_accounts=True)
+            >>> all_active = (
+            ...     agency.federal_accounts
+            ...     .fiscal_year(2024, include_noyear_accounts=True)
+            ...     .all()
+            ... )
         """
-        accounts = self._fetch()
-
-        def tas_matches(tas) -> bool:
+        def tas_matches(tas: Any) -> bool:
             if not include_noyear_accounts and tas.availability_type_code == "X":
                 return False
             return tas.fiscal_year(year)
 
-        return [
-            account
-            for account in accounts
-            if any(tas_matches(tas) for tas in account.tas_codes)
-        ]
+        def predicate(account: "FederalAccount") -> bool:
+            return any(tas_matches(tas) for tas in account.tas_codes)
+
+        return self._add_filter(predicate)
+
+    def _clone(self) -> "FederalAccountsQuery":
+        """Create a copy for method chaining."""
+        clone = self.__class__(self._client, self._toptier_code)
+        clone._results = self._results
+        clone._filter_objects = self._filter_objects.copy()
+        clone._predicate_filters = self._predicate_filters.copy()
+        clone._page_size = self._page_size
+        clone._total_limit = self._total_limit
+        clone._max_pages = self._max_pages
+        clone._order_by = self._order_by
+        clone._order_direction = self._order_direction
+        return clone
 
     def __repr__(self) -> str:
         """String representation of FederalAccountsQuery."""

@@ -148,6 +148,32 @@ class TestFederalAccountsQueryMethods:
         assert bool(query) is False
 
 
+class TestFederalAccountsQueryFilters:
+    """Test FederalAccountsQuery filter methods."""
+
+    def test_code_filter(self, mock_usa_client, load_fixture):
+        """Test filtering by a single federal account code."""
+        fixture = load_fixture("tas_federal_accounts.json")
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", fixture)
+
+        query = FederalAccountsQuery(mock_usa_client, "080")
+        results = query.code("080-0120").all()
+
+        assert len(results) == 1
+        assert results[0].id == "080-0120"
+
+    def test_description_filter(self, mock_usa_client, load_fixture):
+        """Test filtering by description keyword."""
+        fixture = load_fixture("tas_federal_accounts.json")
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", fixture)
+
+        query = FederalAccountsQuery(mock_usa_client, "080")
+        results = query.description("Working Capital").all()
+
+        assert len(results) == 1
+        assert results[0].id == "080-4546"
+
+
 class TestFederalAccountsQueryEmptyToptierCode:
     """Test FederalAccountsQuery with empty toptier_code."""
 
@@ -208,7 +234,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         query = FederalAccountsQuery(mock_usa_client, "080")
 
         # Filter by 2024 - should include accounts with 2023/2024, 2024/2025, or X TAS
-        active_2024 = query.fiscal_year(2024)
+        active_2024 = query.fiscal_year(2024).all()
 
         assert isinstance(active_2024, list)
         # All 16 accounts have the same TAS codes fixture, which includes 2024 TAS
@@ -245,7 +271,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         query = FederalAccountsQuery(mock_usa_client, "080")
 
         # Filter by 2010 - TAS 2015/2016 doesn't cover 2010
-        active_2010 = query.fiscal_year(2010)
+        active_2010 = query.fiscal_year(2010).all()
 
         assert active_2010 == []
 
@@ -280,7 +306,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         query = FederalAccountsQuery(mock_usa_client, "080")
 
         # Filter by any year - no-year accounts excluded by default
-        active_explicit = query.fiscal_year(2099)
+        active_explicit = query.fiscal_year(2099).all()
 
         # No accounts should be included since all have only no-year TAS
         assert len(active_explicit) == 0
@@ -318,7 +344,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         query = FederalAccountsQuery(mock_usa_client, "080")
 
         # Filter by any year with include_noyear_accounts=True
-        active_any_year = query.fiscal_year(2099, include_noyear_accounts=True)
+        active_any_year = query.fiscal_year(2099, include_noyear_accounts=True).all()
 
         # All 16 accounts have no-year TAS, so all should be included
         assert len(active_any_year) == 16
@@ -331,7 +357,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
 
         query = FederalAccountsQuery(mock_usa_client, "080")
 
-        active_2024 = query.fiscal_year(2024)
+        active_2024 = query.fiscal_year(2024).all()
 
         assert active_2024 == []
 
@@ -396,7 +422,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         query = FederalAccountsQuery(mock_usa_client, "080")
 
         # Filter by 2024 - should only include first account
-        active_2024 = query.fiscal_year(2024)
+        active_2024 = query.fiscal_year(2024).all()
 
         assert len(active_2024) == 1
         assert active_2024[0].id == "080-0120"
@@ -471,10 +497,10 @@ class TestFederalAccountsQueryFiscalYearFilter:
         query = FederalAccountsQuery(mock_usa_client, "080")
 
         # Default: only first account matches (has explicit 2024 TAS)
-        active_explicit = query.fiscal_year(2024)
+        active_explicit = query.fiscal_year(2024).all()
         assert len(active_explicit) == 1
         assert active_explicit[0].id == "080-0120"
 
         # With include_noyear_accounts=True, both accounts match
-        active_all = query.fiscal_year(2024, include_noyear_accounts=True)
+        active_all = query.fiscal_year(2024, include_noyear_accounts=True).all()
         assert len(active_all) == 2
