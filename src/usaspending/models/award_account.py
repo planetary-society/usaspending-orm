@@ -149,13 +149,14 @@ class AwardAccount(FederalAccount):
         return to_int(self.get_value("funding_agency_id"))
 
     @property
-    def funding_toptier_agency_id(self) -> Optional[int]:
+    def funding_toptier_agency_id(self) -> Optional[str]:
         """Toptier agency ID for the funding agency.
 
         Returns:
-            Optional[int]: The funding toptier agency ID, or None.
+            Optional[str]: The funding toptier agency ID, or None.
         """
-        return to_int(self.get_value("funding_toptier_agency_id"))
+        value = self.get_value("funding_toptier_agency_id")
+        return str(value) if value is not None else None
 
     @property
     def funding_agency_slug(self) -> Optional[str]:

@@ -122,8 +122,10 @@ class TestAwardAccountProperties:
         assert first_account.funding_agency_id == first_account_data["funding_agency_id"]
 
     def test_funding_toptier_agency_id(self, first_account, first_account_data):
-        """Test funding_toptier_agency_id property."""
-        assert first_account.funding_toptier_agency_id == first_account_data["funding_toptier_agency_id"]
+        """Test funding_toptier_agency_id property returns string."""
+        assert first_account.funding_toptier_agency_id == str(
+            first_account_data["funding_toptier_agency_id"]
+        )
 
     def test_funding_agency_slug(self, first_account, first_account_data):
         """Test funding_agency_slug property."""
