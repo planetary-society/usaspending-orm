@@ -19,9 +19,9 @@ from usaspending.models.award_types import (
     DIRECT_PAYMENT_CODES,
     OTHER_CODES,
     ALL_AWARD_CODES,
-    get_category_for_code,
     is_valid_award_type,
     get_description,
+    get_award_group,
 )
 
 
@@ -162,64 +162,64 @@ class TestAwardTypeConstants:
             ALL_AWARD_CODES.remove("A")
 
 
-class TestGetCategoryForCode:
-    """Test get_category_for_code function."""
+class TestGetAwardGroup:
+    """Test get_award_group function."""
 
     def test_contract_codes(self):
-        """Test contract codes return 'contracts' category."""
+        """Test contract codes return 'contract' group."""
         for code in CONTRACT_CODES:
-            assert get_category_for_code(code) == "contracts"
+            assert get_award_group(code) == "contract"
 
     def test_idv_codes(self):
-        """Test IDV codes return 'idvs' category."""
+        """Test IDV codes return 'idv' group."""
         for code in IDV_CODES:
-            assert get_category_for_code(code) == "idvs"
+            assert get_award_group(code) == "idv"
 
     def test_loan_codes(self):
-        """Test loan codes return 'loans' category."""
+        """Test loan codes return 'loan' group."""
         for code in LOAN_CODES:
-            assert get_category_for_code(code) == "loans"
+            assert get_award_group(code) == "loan"
 
     def test_grant_codes(self):
-        """Test grant codes return 'grants' category."""
+        """Test grant codes return 'grant' group."""
         for code in GRANT_CODES:
-            assert get_category_for_code(code) == "grants"
+            assert get_award_group(code) == "grant"
 
-    def test_direct_payment_codes(self):
-        """Test direct payment codes return 'direct_payments' category."""
-        for code in DIRECT_PAYMENT_CODES:
-            assert get_category_for_code(code) == "direct_payments"
-
-    def test_other_codes(self):
-        """Test other codes return 'other_assistance' category."""
-        for code in OTHER_CODES:
-            assert get_category_for_code(code) == "other_assistance"
+    def test_direct_payment_and_other_codes(self):
+        """Test direct payment and other codes return empty (no specialized class)."""
+        for code in DIRECT_PAYMENT_CODES | OTHER_CODES:
+            assert get_award_group(code) == ""
 
     @pytest.mark.parametrize(
         "invalid_code", ["INVALID", "99", "XYZ", "", "ABC123", "Z", "00", "13"]
     )
     def test_invalid_codes_return_empty_string(self, invalid_code):
         """Test invalid codes return empty string."""
-        assert get_category_for_code(invalid_code) == ""
+        assert get_award_group(invalid_code) == ""
 
-    def test_case_sensitive(self):
-        """Test function is case sensitive."""
-        assert get_category_for_code("a") == ""  # lowercase 'a' vs 'A'
-        assert get_category_for_code("A") == "contracts"
-        assert get_category_for_code("idv_a") == ""  # lowercase vs 'IDV_A'
+    def test_case_insensitive(self):
+        """Test function is case insensitive."""
+        assert get_award_group("a") == "contract"
+        assert get_award_group("A") == "contract"
+        assert get_award_group("idv_a") == "idv"
+        assert get_award_group("IDV_A") == "idv"
 
-    @pytest.mark.parametrize(
-        "code_with_whitespace", [" A ", "A ", " A", "\tA", "A\n", "\rA\r"]
-    )
-    def test_whitespace_handling(self, code_with_whitespace):
-        """Test function doesn't match codes with whitespace."""
-        assert get_category_for_code(code_with_whitespace) == ""
+    def test_group_name_input(self):
+        """Test function accepts group names (singular or plural)."""
+        assert get_award_group("contracts") == "contract"
+        assert get_award_group("contract") == "contract"
+        assert get_award_group("grants") == "grant"
+        assert get_award_group("grant") == "grant"
+        assert get_award_group("loans") == "loan"
+        assert get_award_group("loan") == "loan"
+        assert get_award_group("idvs") == "idv"
+        assert get_award_group("idv") == "idv"
 
-    def test_special_characters(self):
-        """Test handling of special characters."""
-        assert get_category_for_code("-1") == "other_assistance"  # Valid negative
-        assert get_category_for_code("-2") == ""  # Invalid negative
-        assert get_category_for_code("+1") == ""  # Plus sign
+    def test_description_input(self):
+        """Test function accepts descriptions."""
+        assert get_award_group("Direct Loan") == "loan"
+        assert get_award_group("BPA Call") == "contract"
+        assert get_award_group("Block Grant") == "grant"
 
 
 class TestIsValidAwardType:
@@ -331,10 +331,6 @@ class TestDataConsistency:
     def test_functions_consistent_with_constants(self):
         """Test helper functions are consistent with constant definitions."""
         for code in ALL_AWARD_CODES:
-            # Every valid code should have a category
-            category = get_category_for_code(code)
-            assert category != "", f"Code {code} should have a category"
-
             # Every valid code should have a description
             description = get_description(code)
             assert description != "", f"Code {code} should have a description"
@@ -367,17 +363,26 @@ class TestDataConsistency:
 
         assert ALL_AWARD_CODES == codes_in_groups
 
-    def test_category_function_matches_group_membership(self):
-        """Test get_category_for_code returns correct category for each group."""
+    def test_award_group_function_matches_group_membership(self):
+        """Test get_award_group returns correct singular group for specialized types."""
+        # Map plural category names to expected singular group names
+        expected_groups = {
+            "contracts": "contract",
+            "idvs": "idv",
+            "grants": "grant",
+            "loans": "loan",
+            "direct_payments": "",  # No specialized class
+            "other_assistance": "",  # No specialized class
+        }
         for category, codes_dict in AWARD_TYPE_GROUPS.items():
             for code in codes_dict.keys():
-                assert get_category_for_code(code) == category
+                assert get_award_group(code) == expected_groups[category]
 
 
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    @pytest.mark.parametrize("func", [get_category_for_code, get_description])
+    @pytest.mark.parametrize("func", [get_award_group, get_description])
     def test_empty_string_input(self, func):
         """Test functions handle empty string input gracefully."""
         assert func("") == ""
@@ -389,21 +394,21 @@ class TestEdgeCases:
     @pytest.mark.parametrize("whitespace_input", [" ", "\t", "\n", "\r\n", "  \t  "])
     def test_whitespace_only_input(self, whitespace_input):
         """Test functions handle whitespace-only input."""
-        assert get_category_for_code(whitespace_input) == ""
+        assert get_award_group(whitespace_input) == ""
         assert is_valid_award_type(whitespace_input) is False
         assert get_description(whitespace_input) == ""
 
     @pytest.mark.parametrize("unicode_input", ["café", "🎯", "测试", "ñoño"])
     def test_unicode_input(self, unicode_input):
         """Test functions handle unicode input gracefully."""
-        assert get_category_for_code(unicode_input) == ""
+        assert get_award_group(unicode_input) == ""
         assert is_valid_award_type(unicode_input) is False
         assert get_description(unicode_input) == ""
 
     def test_very_long_string_input(self):
         """Test functions handle very long string input."""
         long_string = "A" * 1000
-        assert get_category_for_code(long_string) == ""
+        assert get_award_group(long_string) == ""
         assert is_valid_award_type(long_string) is False
         assert get_description(long_string) == ""
 
@@ -411,7 +416,7 @@ class TestEdgeCases:
     def test_numeric_input_handling(self, numeric_input):
         """Test functions handle numeric inputs properly."""
         # Functions should handle non-string inputs gracefully
-        assert get_category_for_code(numeric_input) == ""
+        assert get_award_group(numeric_input) == ""
         assert is_valid_award_type(numeric_input) is False
         assert get_description(numeric_input) == ""
 
@@ -431,7 +436,7 @@ class TestPerformance:
         for _ in range(1000):
             for code in ["A", "02", "IDV_A", "INVALID"]:
                 is_valid_award_type(code)
-                get_category_for_code(code)
+                get_award_group(code)
                 get_description(code)
         end_time = time.time()
 

@@ -9,7 +9,7 @@ from ..exceptions import ValidationError
 from ..models.subaward import SubAward
 from .awards_search import AwardsSearch
 from ..logging_config import USASpendingLogger
-from ..models.award_types import get_category_for_code
+from ..models.award_types import get_award_group
 from ..utils.validations import validate_non_empty_string
 
 if TYPE_CHECKING:
@@ -88,10 +88,10 @@ class SubAwardsSearch(AwardsSearch):
 
         # Check each award type code to determine categories
         for award_type in award_types:
-            category = get_category_for_code(award_type)
-            if category == "contracts":
+            group = get_award_group(award_type)
+            if group == "contract":
                 is_contract = True
-            elif category == "grants":
+            elif group == "grant":
                 is_grant = True
 
         # Return appropriate field set

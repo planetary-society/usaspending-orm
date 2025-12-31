@@ -42,9 +42,9 @@ from .award_types import (
     DIRECT_PAYMENT_CODES,
     OTHER_CODES,
     ALL_AWARD_CODES,
-    get_category_for_code,
     is_valid_award_type,
     get_description,
+    get_award_group,
 )
 
 __all__ = [
@@ -86,7 +86,7 @@ __all__ = [
     "DIRECT_PAYMENT_CODES",
     "OTHER_CODES",
     "ALL_AWARD_CODES",
-    "get_category_for_code",
     "is_valid_award_type",
     "get_description",
+    "get_award_group",
 ]

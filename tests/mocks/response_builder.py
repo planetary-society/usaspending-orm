@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from usaspending.models.award_types import get_category_for_code
+from usaspending.models.award_types import get_award_group
 
 
 class ResponseBuilder:
@@ -174,14 +174,9 @@ class ResponseBuilder:
             "total_obligation": total_obligation,
             "total_outlay": total_obligation * 0.8,  # 80% outlays
             "award_type": award_type,
-            "category": {
-                "contracts": "contract",
-                "idvs": "idv",
-                "grants": "grant",
-                "loans": "loan",
-            }.get(get_category_for_code(award_type), "grant"),
+            "category": get_award_group(award_type) or "grant",
             "type_description": "Contract"
-            if get_category_for_code(award_type) == "contracts"
+            if get_award_group(award_type) == "contract"
             else "Grant",
             "awarding_agency": {"toptier_agency": {"name": awarding_agency}},
             "place_of_performance": {

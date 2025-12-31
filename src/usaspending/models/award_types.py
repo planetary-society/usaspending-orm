@@ -68,24 +68,6 @@ ALL_AWARD_CODES = (
     | OTHER_CODES
 )
 
-
-def get_category_for_code(code: str) -> str:
-    """Get the category name for a given award type code.
-
-    Args:
-        code: Award type code (e.g., "A", "02", "IDV_A").
-
-    Returns:
-        str: Category name (e.g., "contracts", "grants", "idvs") or empty string if not found.
-    """
-    if not isinstance(code, str):
-        return ""
-    for category_name, codes in AWARD_TYPE_GROUPS.items():
-        if code in codes:
-            return category_name
-    return ""
-
-
 def is_valid_award_type(code: str) -> bool:
     """Check if a code is a valid award type.
 
@@ -112,3 +94,45 @@ def get_description(code: str) -> str:
     if not isinstance(code, str):
         return ""
     return AWARD_TYPE_DESCRIPTIONS.get(code, "")
+
+
+def get_award_group(value: str) -> str:
+    """Get singular group name from any identifier.
+
+    Accepts a group name, type code, or description. Case-insensitive.
+    Only returns names for the 4 specialized award types that have dedicated classes.
+
+    Args:
+        value: Any of:
+            - Group name (e.g., "contracts", "loans", "contract", "loan")
+            - Type code (e.g., "D", "07", "IDV_A")
+            - Description (e.g., "Direct Loan", "BPA Call")
+
+    Returns:
+        str: Singular group name ("contract", "grant", "idv", "loan")
+            or empty string if not found or not a specialized type.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return ""
+
+    # Only these groups have specialized Award subclasses
+    specialized_groups = {"contracts", "grants", "idvs", "loans"}
+    val = value.strip().lower()
+
+    for group_name, codes in AWARD_TYPE_GROUPS.items():
+        if group_name not in specialized_groups:
+            continue
+
+        singular = group_name.rstrip("s")
+
+        # Match group name (singular or plural)
+        if val == group_name or val == singular:
+            return singular
+        # Match type code
+        if val.upper() in codes:
+            return singular
+        # Match description
+        if val in (d.lower() for d in codes.values()):
+            return singular
+
+    return ""

@@ -3,7 +3,7 @@
 from __future__ import annotations
 from typing import Dict, Any, TYPE_CHECKING, Union
 
-from .award_types import get_category_for_code
+from .award_types import get_award_group
 from ..exceptions import ValidationError
 
 if TYPE_CHECKING:
@@ -39,11 +39,7 @@ def create_award(
 
     if not isinstance(data_or_id, dict):
         raise ValidationError("Award factory expects a dict or an award_id string")
-
-    # Determine award type from data
-    category = data_or_id.get("category", "").lower()
-    award_type = data_or_id.get("type", "")
-
+    
     award_class_map = {
         "contract": Contract,
         "idv": IDV,
@@ -51,24 +47,12 @@ def create_award(
         "loan": Loan,
     }
 
-    # Determine class from category first (most reliable)
-    award_class = award_class_map.get(category)
+    # Try category field first, then type code
+    group = get_award_group(data_or_id.get("category", ""))
+    if not group:
+        group = get_award_group(
+            data_or_id.get("type") or data_or_id.get("award_type") or ""
+        )
 
-    # Fallback to type codes if category doesn't match
-    if not award_class and award_type:
-        code_category = get_category_for_code(award_type)
-        if code_category:
-            # Map config category names to award class names
-            category_map = {
-                "contracts": "contract",
-                "idvs": "idv",
-                "grants": "grant",
-                "loans": "loan",
-            }
-            mapped_category = category_map.get(code_category)
-            if mapped_category:
-                award_class = award_class_map.get(mapped_category)
-
-    # Use the determined class or default to the base Award class
-    cls = award_class or Award
+    cls = award_class_map.get(group, Award)
     return cls(data_or_id, client)
