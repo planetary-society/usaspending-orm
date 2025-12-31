@@ -10,8 +10,7 @@ from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
     from ..models.agency import Agency
-    from ..queries.funding_agencies_search import FundingAgenciesSearch
-    from ..queries.awarding_agencies_search import AwardingAgenciesSearch
+    from ..queries.agencies_search import AgenciesSearch
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -21,6 +20,29 @@ class AgencyResource(BaseResource):
 
     Provides access to agency overview and detail endpoints.
     """
+
+    def search(self) -> "AgenciesSearch":
+        """Create a new agency autocomplete query builder.
+
+        Returns:
+            AgenciesSearch query builder for chaining filters
+
+        Example:
+            >>> agencies = (
+            ...     client.agencies.search()
+            ...     .name("National Aeronautics and Space Administration")
+            ...     .agency_type("funding")
+            ... )
+            >>> offices = (
+            ...     client.agencies.search()
+            ...     .name("National Aeronautics and Space Administration")
+            ...     .agency_type("awarding")
+            ...     .office()
+            ... )
+        """
+        from ..queries.agencies_search import AgenciesSearch
+
+        return AgenciesSearch(self._client)
 
     def find_by_toptier_code(
         self, toptier_code: str, fiscal_year: Optional[int] = None
@@ -54,54 +76,68 @@ class AgencyResource(BaseResource):
 
         return AgencyQuery(self._client).find_by_id(toptier_code, fiscal_year)
 
-    def find_all_funding_agencies_by_name(self, name: str) -> "FundingAgenciesSearch":
+    def find_all_funding_agencies_by_name(self, name: str) -> "AgenciesSearch":
         """Search for funding agencies and offices by name.
+
+        Deprecated: Use search().name(name).agency_type("funding") instead.
 
         Args:
             name: Search text to match against agency/office names
 
         Returns:
-            FundingAgenciesSearch query builder for iteration and filtering
+            AgenciesSearch query builder for iteration and filtering
 
         Example:
             >>> # Get all matches (agencies, subtiers, offices)
-            >>> all_results = list(client.agencies.find_all_funding_agencies_by_name("NASA"))
+            >>> all_results = list(client.agencies.find_all_funding_agencies_by_name("National Aeronautics and Space Administration"))
             >>>
             >>> # Get only toptier agencies
-            >>> agencies = list(client.agencies.find_all_funding_agencies_by_name("NASA").toptier())
+            >>> agencies = list(client.agencies.find_all_funding_agencies_by_name("National Aeronautics and Space Administration").toptier())
             >>>
             >>> # Get only subtier agencies
-            >>> subtiers = list(client.agencies.find_all_funding_agencies_by_name("NASA").subtier())
+            >>> subtiers = list(client.agencies.find_all_funding_agencies_by_name("National Aeronautics and Space Administration").subtier())
             >>>
             >>> # Get only offices
-            >>> offices = list(client.agencies.find_all_funding_agencies_by_name("NASA").office())
+            >>> offices = list(client.agencies.find_all_funding_agencies_by_name("National Aeronautics and Space Administration").office())
         """
-        from ..queries.funding_agencies_search import FundingAgenciesSearch
+        warnings.warn(
+            "find_all_funding_agencies_by_name is deprecated. "
+            "Use search().name(name).agency_type('funding') instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
-        return FundingAgenciesSearch(self._client).search_text(name)
+        return self.search().name(name).agency_type("funding")
 
-    def find_all_awarding_agencies_by_name(self, name: str) -> "AwardingAgenciesSearch":
+    def find_all_awarding_agencies_by_name(self, name: str) -> "AgenciesSearch":
         """Search for funding agencies and offices by name.
+
+        Deprecated: Use search().name(name).agency_type("awarding") instead.
 
         Args:
             name: Search text to match against agency/office names
 
         Returns:
-            AwardingAgenciesSearch query builder for iteration and filtering
+            AgenciesSearch query builder for iteration and filtering
 
         Example:
             >>> # Get all matches (agencies, subtiers, offices)
-            >>> all_results = list(client.agencies.find_all_awarding_agencies_by_name("NASA"))
+            >>> all_results = list(client.agencies.find_all_awarding_agencies_by_name("National Aeronautics and Space Administration"))
             >>>
             >>> # Get only toptier agencies
-            >>> agencies = list(client.agencies.find_all_awarding_agencies_by_name("NASA").toptier())
+            >>> agencies = list(client.agencies.find_all_awarding_agencies_by_name("National Aeronautics and Space Administration").toptier())
             >>>
             >>> # Get only subtier agencies
-            >>> subtiers = list(client.agencies.find_all_awarding_agencies_by_name("NASA").subtier())
+            >>> subtiers = list(client.agencies.find_all_awarding_agencies_by_name("National Aeronautics and Space Administration").subtier())
             >>>
             >>> # Get only offices
-            >>> offices = list(client.agencies.find_all_awarding_agencies_by_name("NASA").office())
+            >>> offices = list(client.agencies.find_all_awarding_agencies_by_name("National Aeronautics and Space Administration").office())
         """
-        from ..queries.awarding_agencies_search import AwardingAgenciesSearch
+        warnings.warn(
+            "find_all_awarding_agencies_by_name is deprecated. "
+            "Use search().name(name).agency_type('awarding') instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
-        return AwardingAgenciesSearch(self._client).search_text(name)
+        return self.search().name(name).agency_type("awarding")

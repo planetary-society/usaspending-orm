@@ -1,12 +1,18 @@
 """Tests for AgenciesSearch query implementations."""
 
+from typing import Type, TypeVar
+
 import pytest
+
+from usaspending.queries.agencies_search import AgenciesSearch
 from usaspending.queries.funding_agencies_search import FundingAgenciesSearch
 from usaspending.queries.awarding_agencies_search import AwardingAgenciesSearch
 from usaspending.exceptions import ValidationError
 from usaspending.models.agency import Agency
 from usaspending.models.subtier_agency import SubTierAgency
 from tests.mocks.mock_client import MockUSASpendingClient
+
+T = TypeVar("T", bound=AgenciesSearch)
 
 
 # Test parameters for both search classes
@@ -26,6 +32,16 @@ SEARCH_CLASS_PARAMS = [
 ]
 
 
+def init_search(
+    search_class: Type[T], mock_usa_client: MockUSASpendingClient
+) -> T:
+    """Instantiate deprecated search classes with warning."""
+    with pytest.warns(
+        DeprecationWarning, match=f"{search_class.__name__} is deprecated"
+    ):
+        return search_class(mock_usa_client)
+
+
 @pytest.mark.parametrize("search_class,endpoint,resource_method", SEARCH_CLASS_PARAMS)
 class TestAgenciesSearchInitialization:
     """Test AgenciesSearch initialization for both subclasses."""
@@ -34,7 +50,7 @@ class TestAgenciesSearchInitialization:
         self, mock_usa_client, search_class, endpoint, resource_method
     ):
         """Test that AgenciesSearch initializes correctly."""
-        search = search_class(mock_usa_client)
+        search = init_search(search_class, mock_usa_client)
         assert search._client is mock_usa_client
         assert search._search_text == ""
         assert search._limit == 100
@@ -47,7 +63,7 @@ class TestAgenciesSearchEndpoint:
 
     def test_endpoint(self, mock_usa_client, search_class, endpoint, resource_method):
         """Test that endpoint is correct."""
-        search = search_class(mock_usa_client)
+        search = init_search(search_class, mock_usa_client)
         assert search._endpoint == endpoint
 
 
@@ -66,7 +82,7 @@ class TestAgenciesSearchExecution:
         """Test searching returns all types when no filter applied."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).search_text("NASA")
+        search = init_search(search_class, mock_usa_client).search_text("NASA")
         results = list(search)
 
         # Count expected total results from fixture
@@ -90,7 +106,7 @@ class TestAgenciesSearchExecution:
         """Test filtering for toptier agencies only."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).search_text("NASA").toptier()
+        search = init_search(search_class, mock_usa_client).search_text("NASA").toptier()
         results = list(search)
 
         # Use fixture data for assertions
@@ -117,7 +133,7 @@ class TestAgenciesSearchExecution:
         """Test filtering for subtier agencies only."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).search_text("NASA").subtier()
+        search = init_search(search_class, mock_usa_client).search_text("NASA").subtier()
         results = list(search)
 
         # Use fixture data for assertions
@@ -136,7 +152,7 @@ class TestAgenciesSearchExecution:
         """Test filtering for offices only."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).search_text("NASA").office()
+        search = init_search(search_class, mock_usa_client).search_text("NASA").office()
         results = list(search)
 
         # Use fixture data for assertions
@@ -148,7 +164,7 @@ class TestAgenciesSearchExecution:
         self, mock_usa_client, search_class, endpoint, resource_method
     ):
         """Test that missing search text raises ValidationError."""
-        search = search_class(mock_usa_client)
+        search = init_search(search_class, mock_usa_client)
 
         with pytest.raises(ValidationError, match="search_text is required"):
             list(search)
@@ -164,7 +180,7 @@ class TestAgenciesSearchExecution:
 
         mock_usa_client.set_response(endpoint, empty_response)
 
-        search = search_class(mock_usa_client).search_text("ZZZZ")
+        search = init_search(search_class, mock_usa_client).search_text("ZZZZ")
         results = list(search)
 
         assert results == []
@@ -180,7 +196,7 @@ class TestAgenciesSearchExecution:
         """Test that pagination is not attempted (only page 1 is fetched)."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).search_text("NASA")
+        search = init_search(search_class, mock_usa_client).search_text("NASA")
         results = list(search)
 
         # Should make at most a few API calls (may call count() and iterate)
@@ -201,7 +217,7 @@ class TestAgenciesSearchExecution:
         """Test that payload is constructed correctly."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = search_class(mock_usa_client).search_text("NASA")
+        search = init_search(search_class, mock_usa_client).search_text("NASA")
         list(search)  # Execute query
 
         # Check the request was made with correct payload
@@ -220,7 +236,7 @@ class TestAgenciesSearchExecution:
         """Test method chaining returns new instances."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search1 = search_class(mock_usa_client)
+        search1 = init_search(search_class, mock_usa_client)
         search2 = search1.search_text("NASA")
         search3 = search2.toptier()
 
@@ -259,7 +275,11 @@ class TestAgenciesSearchResourceIntegration:
 
         # Test through resource - get the method dynamically
         resource_func = getattr(mock_usa_client.agencies, resource_method)
-        results = list(resource_func("NASA"))
+        with pytest.warns(
+            DeprecationWarning, match=f"{resource_method} is deprecated"
+        ):
+            search = resource_func("NASA")
+        results = list(search)
 
         # Should get all results
         fixture_results = agency_autocomplete_fixture["results"]
@@ -284,13 +304,17 @@ class TestAgenciesSearchResourceIntegration:
 
         # Test toptier filter
         resource_func = getattr(mock_usa_client.agencies, resource_method)
-        toptier_results = list(resource_func("NASA").toptier())
+        with pytest.warns(
+            DeprecationWarning, match=f"{resource_method} is deprecated"
+        ):
+            search = resource_func("NASA")
+        toptier_results = list(search.toptier())
 
         expected_toptier = agency_autocomplete_fixture["results"]["toptier_agency"]
         assert len(toptier_results) == len(expected_toptier)
 
         # Test subtier filter
-        subtier_results = list(resource_func("NASA").subtier())
+        subtier_results = list(search.subtier())
 
         expected_subtier = agency_autocomplete_fixture["results"]["subtier_agency"]
         assert len(subtier_results) == len(expected_subtier)
@@ -307,7 +331,10 @@ class TestFundingAgenciesSearchSpecific:
             agency_autocomplete_fixture,
         )
 
-        search1 = FundingAgenciesSearch(mock_usa_client)
+        with pytest.warns(
+            DeprecationWarning, match="FundingAgenciesSearch is deprecated"
+        ):
+            search1 = FundingAgenciesSearch(mock_usa_client)
         search2 = search1.search_text("NASA")
         search3 = search2.toptier()
 
@@ -332,7 +359,10 @@ class TestAwardingAgenciesSearchSpecific:
             agency_autocomplete_fixture,
         )
 
-        search1 = AwardingAgenciesSearch(mock_usa_client)
+        with pytest.warns(
+            DeprecationWarning, match="AwardingAgenciesSearch is deprecated"
+        ):
+            search1 = AwardingAgenciesSearch(mock_usa_client)
         search2 = search1.search_text("NASA")
         search3 = search2.toptier()
 

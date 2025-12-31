@@ -1,6 +1,8 @@
 """Agencies search query implementation for funding agency/office autocomplete."""
 
 from __future__ import annotations
+
+import warnings
 from typing import TYPE_CHECKING
 
 from .agencies_search import AgenciesSearch
@@ -13,9 +15,38 @@ logger = USASpendingLogger.get_logger(__name__)
 
 
 class FundingAgenciesSearch(AgenciesSearch):
-    """Search for funding agencies and offices by name."""
+    """Search for funding agencies and offices by name.
 
-    @property
-    def _endpoint(self) -> str:
-        """API endpoint for agency autocomplete."""
-        return "/autocomplete/funding_agency_office/"
+    Deprecated: Use AgenciesSearch().agency_type("funding") instead.
+    """
+
+    def __init__(self, client: USASpendingClient, warn: bool = True):
+        """Initialize FundingAgenciesSearch with client.
+
+        Args:
+            client: USASpending client instance.
+            warn: Whether to emit a deprecation warning.
+        """
+        if warn:
+            warnings.warn(
+                "FundingAgenciesSearch is deprecated. "
+                "Use AgenciesSearch().agency_type('funding') instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        super().__init__(client, agency_type="funding")
+
+    def _clone(self) -> FundingAgenciesSearch:
+        """Create immutable copy for chaining without extra warnings."""
+        clone = self.__class__(self._client, warn=False)
+        clone._filter_objects = self._filter_objects.copy()
+        clone._page_size = self._page_size
+        clone._total_limit = self._total_limit
+        clone._max_pages = self._max_pages
+        clone._order_by = self._order_by
+        clone._order_direction = self._order_direction
+        clone._agency_type = self._agency_type
+        clone._search_text = self._search_text
+        clone._limit = self._limit
+        clone._result_type = self._result_type
+        return clone

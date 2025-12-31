@@ -5,6 +5,8 @@ import pytest
 from usaspending.resources.agency_resource import AgencyResource
 from usaspending.models.agency import Agency
 from usaspending.exceptions import ValidationError
+from usaspending.queries.agencies_search import AgenciesSearch
+from tests.mocks import MockUSASpendingClient
 
 
 class TestAgencyResourceInitialization:
@@ -250,3 +252,67 @@ class TestAgencyResourceUsagePatterns:
         assert (
             agency.subtier_agency_count == agency_fixture_data["subtier_agency_count"]
         )
+
+
+class TestAgencyResourceSearch:
+    """Test AgencyResource search helpers and deprecation aliases."""
+
+    @pytest.fixture
+    def agency_resource(
+        self, mock_usa_client: MockUSASpendingClient
+    ) -> AgencyResource:
+        """Create an AgencyResource instance with mocked client."""
+        return AgencyResource(mock_usa_client)
+
+    def test_search_defaults_to_funding(
+        self, agency_resource: AgencyResource
+    ) -> None:
+        """Test search() defaults to funding agencies."""
+        search = agency_resource.search().name("NASA")
+
+        assert isinstance(search, AgenciesSearch)
+        assert search._search_text == "NASA"
+        assert search._endpoint == "/autocomplete/funding_agency_office/"
+
+    def test_search_awarding_agencies(
+        self, agency_resource: AgencyResource
+    ) -> None:
+        """Test search() for awarding agencies."""
+        search = agency_resource.search().name("NASA").agency_type("awarding")
+
+        assert isinstance(search, AgenciesSearch)
+        assert search._search_text == "NASA"
+        assert search._endpoint == "/autocomplete/awarding_agency_office/"
+
+    def test_search_invalid_agency_type_raises(
+        self, agency_resource: AgencyResource
+    ) -> None:
+        """Test search() with invalid agency_type raises ValidationError."""
+        with pytest.raises(ValidationError, match="Invalid agency_type"):
+            agency_resource.search().agency_type("invalid")
+
+    def test_find_all_funding_agencies_by_name_warns(
+        self, agency_resource: AgencyResource
+    ) -> None:
+        """Test deprecated find_all_funding_agencies_by_name emits warning."""
+        with pytest.warns(
+            DeprecationWarning, match="find_all_funding_agencies_by_name"
+        ):
+            search = agency_resource.find_all_funding_agencies_by_name("NASA")
+
+        assert isinstance(search, AgenciesSearch)
+        assert search._search_text == "NASA"
+        assert search._endpoint == "/autocomplete/funding_agency_office/"
+
+    def test_find_all_awarding_agencies_by_name_warns(
+        self, agency_resource: AgencyResource
+    ) -> None:
+        """Test deprecated find_all_awarding_agencies_by_name emits warning."""
+        with pytest.warns(
+            DeprecationWarning, match="find_all_awarding_agencies_by_name"
+        ):
+            search = agency_resource.find_all_awarding_agencies_by_name("NASA")
+
+        assert isinstance(search, AgenciesSearch)
+        assert search._search_text == "NASA"
+        assert search._endpoint == "/autocomplete/awarding_agency_office/"

@@ -1,7 +1,7 @@
-"""Agencies search query implementation for funding agency/office autocomplete."""
+"""Agencies search query implementation for agency/office autocomplete."""
 
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, Literal, Optional
 from ..exceptions import ValidationError
 from ..models.agency import Agency
 from ..models.subtier_agency import SubTierAgency
@@ -15,30 +15,47 @@ logger = USASpendingLogger.get_logger(__name__)
 
 
 class AgenciesSearch(QueryBuilder[Agency]):
-    """Search for funding agencies and offices by name using autocomplete.
+    """Search for funding or awarding agencies and offices by name using autocomplete.
 
-    This query builder uses the /v2/autocomplete/funding_agency_office/ endpoint
-    to search for agencies by name. Results can be filtered by type (toptier,
-    subtier, or office).
+    This query builder uses the /v2/autocomplete/funding_agency_office/ or
+    /v2/autocomplete/awarding_agency_office/ endpoint depending on agency type.
+    Results can be filtered by type (toptier, subtier, or office).
     """
 
-    def __init__(self, client: USASpendingClient):
-        """Initialize AgenciesSearch with client."""
+    def __init__(
+        self,
+        client: USASpendingClient,
+        agency_type: Literal["funding", "awarding"] = "funding",
+    ):
+        """Initialize AgenciesSearch with client.
+
+        Args:
+            client: USASpending client instance.
+            agency_type: "funding" or "awarding" (defaults to "funding").
+        """
         super().__init__(client)
+        self._agency_type = self._validate_agency_type(agency_type)
         self._search_text = ""
         self._limit = 100  # Default limit
-        self._result_type = None  # Filter: None, 'toptier', 'subtier', 'office'
+        # Filter: None, "toptier", "subtier", "office"
+        self._result_type: Optional[str] = None
 
     @property
     def _endpoint(self) -> str:
         """API endpoint for agency autocomplete."""
-        raise NotImplementedError("Subclasses must implement _endpoint")
+        if self._agency_type == "funding":
+            return "/autocomplete/funding_agency_office/"
+        if self._agency_type == "awarding":
+            return "/autocomplete/awarding_agency_office/"
+        raise ValidationError(
+            f"Invalid agency_type: {self._agency_type}. Must be 'funding' or 'awarding'."
+        )
 
     def _build_payload(self, page: int) -> Dict[str, Any]:
         """Build request payload."""
         if not self._search_text:
             raise ValidationError(
-                "search_text is required. Use search_text() method."
+                "search_text is required. Use name() or search_text() method."
             )
 
         return {"search_text": self._search_text, "limit": self._limit}
@@ -131,7 +148,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
         if not self._search_text:
             raise ValidationError(
-                "search_text is required. Use search_text() method."
+                "search_text is required. Use name() or search_text() method."
             )
 
         # Execute query to get all results
@@ -158,6 +175,51 @@ class AgenciesSearch(QueryBuilder[Agency]):
         clone = self._clone()
         clone._search_text = search_text
         return clone
+
+    def name(self, name: str) -> AgenciesSearch:
+        """Set the search text for agency or office names.
+
+        Args:
+            name: Text to search for in agency names
+
+        Returns:
+            New AgenciesSearch instance with search text set
+        """
+        return self.search_text(name)
+
+    def agency_type(self, agency_type: Literal["funding", "awarding"]) -> AgenciesSearch:
+        """Set the agency type for the autocomplete endpoint.
+
+        Args:
+            agency_type: "funding" or "awarding"
+
+        Returns:
+            New AgenciesSearch instance with agency type set
+
+        Raises:
+            ValidationError: If agency_type is invalid
+        """
+        clone = self._clone()
+        clone._agency_type = self._validate_agency_type(agency_type)
+        return clone
+
+    def _validate_agency_type(self, agency_type: str) -> str:
+        """Validate agency type values.
+
+        Args:
+            agency_type: "funding" or "awarding" string.
+
+        Returns:
+            The validated agency type string.
+
+        Raises:
+            ValidationError: If agency_type is invalid.
+        """
+        if agency_type not in ("funding", "awarding"):
+            raise ValidationError(
+                f"Invalid agency_type: {agency_type}. Must be 'funding' or 'awarding'."
+            )
+        return agency_type
 
     def toptier(self) -> AgenciesSearch:
         """Filter to only return toptier agency matches.
@@ -192,5 +254,8 @@ class AgenciesSearch(QueryBuilder[Agency]):
     def _clone(self) -> AgenciesSearch:
         """Create immutable copy for chaining."""
         clone = super()._clone()
+        clone._agency_type = self._agency_type
         clone._search_text = self._search_text
+        clone._limit = self._limit
+        clone._result_type = self._result_type
         return clone
