@@ -121,16 +121,16 @@ from __future__ import annotations
 from typing import Any
 
 from ..client import USASpendingClient
-from usaspending.exceptions import ValidationError
-from usaspending.models.award_factory import create_award
-from usaspending.models import Award
-from usaspending.models.contract import Contract
-from usaspending.models.grant import Grant
-from usaspending.models.idv import IDV
-from usaspending.models.loan import Loan
-from usaspending.queries.query_builder import SearchQueryBuilder
-from usaspending.logging_config import USASpendingLogger
-from usaspending.queries.filters import (
+from ..exceptions import ValidationError
+from ..models.award_factory import create_award
+from ..models import Award
+from ..models.contract import Contract
+from ..models.grant import Grant
+from ..models.idv import IDV
+from ..models.loan import Loan
+from .query_builder import SearchQueryBuilder
+from ..logging_config import USASpendingLogger
+from .filters import (
     SimpleListFilter,
 )
 
@@ -636,4 +636,3 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             SimpleListFilter(key="award_type_codes", values=list(award_codes))
         )
         return clone
-

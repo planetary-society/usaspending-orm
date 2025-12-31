@@ -5,14 +5,14 @@ from __future__ import annotations
 from typing import Any, Optional, Literal
 
 from ..client import USASpendingClient
-from usaspending.exceptions import ValidationError
-from usaspending.models.spending import Spending
-from usaspending.models.recipient_spending import RecipientSpending
-from usaspending.models.district_spending import DistrictSpending
-from usaspending.models.state_spending import StateSpending
-from usaspending.queries.query_builder import SearchQueryBuilder
-from usaspending.logging_config import USASpendingLogger
-from usaspending.utils.validations import validate_non_empty_string
+from ..exceptions import ValidationError
+from ..models.spending import Spending
+from ..models.recipient_spending import RecipientSpending
+from ..models.district_spending import DistrictSpending
+from ..models.state_spending import StateSpending
+from .query_builder import SearchQueryBuilder
+from ..logging_config import USASpendingLogger
+from ..utils.validations import validate_non_empty_string
 # Note: We don't use SimpleListFilter for recipient_id as the API expects a string, not an array
 
 # Import award type codes from models

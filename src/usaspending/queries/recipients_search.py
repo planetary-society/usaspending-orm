@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import Any, Optional, Literal, TYPE_CHECKING
 
 from ..client import USASpendingClient
-from usaspending.queries.query_builder import QueryBuilder
-from usaspending.logging_config import USASpendingLogger
+from .query_builder import QueryBuilder
+from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
-    from usaspending.models.recipient import Recipient
+    from ..models.recipient import Recipient
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -81,7 +81,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
 
     def _transform_result(self, result: dict[str, Any]) -> "Recipient":
         """Transforms a single API result item into a Recipient model."""
-        from usaspending.models.recipient import Recipient
+        from ..models.recipient import Recipient
 
         if not result.get("recipient_id") and result.get("id"):
             result["recipient_id"] = result["id"]
