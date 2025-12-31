@@ -1,6 +1,5 @@
 """Tests for Agency model TAS integration."""
 
-import pytest
 
 from usaspending.models.agency import Agency
 from usaspending.queries.federal_accounts_query import FederalAccountsQuery

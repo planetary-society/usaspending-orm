@@ -1,5 +1,7 @@
 """Sub-agency query implementation for retrieving agency sub-agencies with pagination."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Dict, Any, List
 from .single_resource_base import SingleResourceBase
 from ..exceptions import ValidationError

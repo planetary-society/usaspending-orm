@@ -1,5 +1,7 @@
 """Agency award summary query implementation for retrieving award aggregations."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Dict, Any, List
 from .single_resource_base import SingleResourceBase
 from ..exceptions import ValidationError

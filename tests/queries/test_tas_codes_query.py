@@ -1,6 +1,5 @@
 """Tests for TASCodesQuery."""
 
-import pytest
 
 from usaspending.queries.tas_codes_query import TASCodesQuery
 from usaspending.models.treasury_account_symbol import TreasuryAccountSymbol

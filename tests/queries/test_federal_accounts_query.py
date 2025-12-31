@@ -1,6 +1,5 @@
 """Tests for FederalAccountsQuery."""
 
-import pytest
 
 from usaspending.queries.federal_accounts_query import FederalAccountsQuery
 from usaspending.models.federal_account import FederalAccount

@@ -35,6 +35,8 @@ Example:
     ...     print(f"{award.recipient_name}: ${award.amount:,.2f}")
 """
 
+from __future__ import annotations
+
 # Import custom exceptions to make them available package-wide
 from ..exceptions import (
     USASpendingError,

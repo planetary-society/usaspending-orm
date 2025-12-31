@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .award_resource import AwardResource
 from .agency_resource import AgencyResource
 from .recipients_resource import RecipientsResource

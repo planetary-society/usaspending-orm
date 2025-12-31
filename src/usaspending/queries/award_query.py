@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
 from .single_resource_base import SingleResourceBase
-from ..exceptions import ValidationError
 from ..client import USASpendingClient
+from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:

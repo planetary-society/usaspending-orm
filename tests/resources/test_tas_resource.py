@@ -1,6 +1,5 @@
 """Tests for TASResource."""
 
-import pytest
 
 from usaspending.resources.tas_resource import TASResource
 from usaspending.models.agency import Agency

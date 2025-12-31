@@ -1,6 +1,5 @@
 """Tests for TreasuryAccountSymbol model."""
 
-import pytest
 
 from usaspending.models.treasury_account_symbol import TreasuryAccountSymbol
 

@@ -1,7 +1,10 @@
-from ..exceptions import ValidationError
-from ..client import USASpendingClient
-from typing import Any
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from typing import Any, Optional
+
+from ..client import USASpendingClient
+from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)

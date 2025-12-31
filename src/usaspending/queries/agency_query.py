@@ -1,5 +1,7 @@
 """Agency query implementation for retrieving single agency details."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Dict, Any
 from .single_resource_base import SingleResourceBase
 from ..exceptions import ValidationError

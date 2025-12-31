@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Union
+
 from .single_resource_base import SingleResourceBase
 from .filters import parse_fiscal_year
 from ..exceptions import ValidationError
