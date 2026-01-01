@@ -144,33 +144,43 @@ class TestMockClientExamples:
         assert mock_usa_client.awards.search().loans().count() == 10
 
     def test_sequential_responses(self, mock_usa_client):
-        """Test different responses for sequential calls."""
-        # Add response sequence
-        mock_usa_client.add_response_sequence(
+        """Test different responses for sequential searches.
+
+        Note: With page-based response indexing, each search iteration starts
+        from page 1 and gets responses based on page number. To test different
+        responses for independent searches, we reset and set up new responses
+        for each logical search operation.
+        """
+        # First search: 2 results
+        mock_usa_client.set_response(
             MockUSASpendingClient.Endpoints.AWARD_SEARCH,
-            [
-                # First call returns 2 results
-                {
-                    "results": [{"Award ID": "1"}, {"Award ID": "2"}],
-                    "page_metadata": {"hasNext": False},
-                },
-                # Second call returns 1 result
-                {"results": [{"Award ID": "3"}], "page_metadata": {"hasNext": False}},
-                # Third call returns empty
-                {"results": [], "page_metadata": {"hasNext": False}},
-            ],
+            {
+                "results": [{"Award ID": "1"}, {"Award ID": "2"}],
+                "page_metadata": {"hasNext": False},
+            },
         )
-
-        # Make three searches
-        search = mock_usa_client.awards.search().award_type_codes("A")
-
-        results1 = list(search)
+        results1 = list(mock_usa_client.awards.search().award_type_codes("A"))
         assert len(results1) == 2
 
-        results2 = list(search)
+        # Second search: 1 result
+        mock_usa_client.reset()
+        mock_usa_client.set_response(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
+            {
+                "results": [{"Award ID": "3"}],
+                "page_metadata": {"hasNext": False},
+            },
+        )
+        results2 = list(mock_usa_client.awards.search().award_type_codes("A"))
         assert len(results2) == 1
 
-        results3 = list(search)
+        # Third search: empty
+        mock_usa_client.reset()
+        mock_usa_client.set_response(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
+            {"results": [], "page_metadata": {"hasNext": False}},
+        )
+        results3 = list(mock_usa_client.awards.search().award_type_codes("A"))
         assert len(results3) == 0
 
     def test_complex_scenario(self, mock_usa_client):

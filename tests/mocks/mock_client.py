@@ -154,19 +154,47 @@ class MockUSASpendingClient(USASpendingClient):
         # Check for specific responses (with pagination support)
         if endpoint in self._responses and self._responses[endpoint]:
             responses = self._responses[endpoint]
-            index = self._response_indices[endpoint]
+            
+            # Determine which page to return
+            # 1. Check if page is explicitly requested in json or params
+            requested_page = 1
+            if json and "page" in json:
+                requested_page = json["page"]
+            elif params and "page" in params:
+                requested_page = params["page"]
+            
+            # If a specific page was requested, use it as the index (1-based to 0-based)
+            if (json and "page" in json) or (params and "page" in params):
+                index = requested_page - 1
+            else:
+                # 2. Otherwise fall back to the sequential response index
+                index = self._response_indices[endpoint]
+                self._response_indices[endpoint] = index + 1
 
-            # Get response at current index (or last response if exhausted)
+            # Get response at determined index (or last response if exhausted)
             if index < len(responses):
                 response = copy.deepcopy(responses[index])  # Don't mutate original
-                self._response_indices[endpoint] = index + 1
             else:
                 # Return last response if index exceeds available responses
-                response = copy.deepcopy(responses[-1])
+                # or an empty page if it's way out of bounds
+                if index >= len(responses) and len(responses) > 0:
+                    # If it's a paginated endpoint, it might be better to return an empty results list
+                    # instead of repeating the last page
+                    last_resp = responses[-1]
+                    if "results" in last_resp and "page_metadata" in last_resp:
+                         response = ResponseBuilder.paginated_response(
+                             [], 
+                             page=requested_page, 
+                             has_next=False
+                         )
+                    else:
+                        response = copy.deepcopy(last_resp)
+                else:
+                    response = copy.deepcopy(responses[-1])
 
             # If it's a paginated response, update page metadata
-            if "page_metadata" in response and json and "page" in json:
-                response["page_metadata"]["page"] = json["page"]
+            if "page_metadata" in response:
+                response["page_metadata"]["page"] = requested_page
 
             return response
 
