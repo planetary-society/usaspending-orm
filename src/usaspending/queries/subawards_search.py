@@ -136,9 +136,6 @@ class SubAwardsSearch(AwardsSearch):
         # Fall back to parent implementation for general subaward counting
         # This is inefficient, but it's the only way to get the count
         # without a dedicated endpoint for subaward searches.
-        # The parent's count() method will iterate through all pages.
-        # return super().count()
-        # For now, let's just iterate and count
         count = 0
         for _ in self:
             count += 1

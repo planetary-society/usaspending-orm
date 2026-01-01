@@ -129,8 +129,10 @@ class QueryBuilder(BaseQuery[T], ABC):
                     logger.debug(f"Stopping mid-page at item {items_yielded}")
                     return
 
-                yield self._transform_result(item)
-                items_yielded += 1
+                transformed = self._transform_result(item)
+                if transformed is not None:
+                    yield transformed
+                    items_yielded += 1
 
             # API indicates no more pages
             if not has_next:
@@ -268,8 +270,15 @@ class QueryBuilder(BaseQuery[T], ABC):
         pass
 
     @abstractmethod
-    def _transform_result(self, data: Dict[str, Any]) -> T:
-        """Transform raw result to model instance."""
+    def _transform_result(self, data: Dict[str, Any]) -> Optional[T]:
+        """Transform raw result to model instance.
+
+        Args:
+            data: Raw API result dictionary.
+
+        Returns:
+            Model instance, or None to skip invalid/filtered items.
+        """
         pass
 
     def _aggregate_filters(self) -> dict[str, Any]:

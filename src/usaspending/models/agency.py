@@ -467,28 +467,15 @@ class Agency(LazyRecord):
 
         try:
             from ..queries.sub_agency_query import SubAgencyQuery
-            from .subtier_agency import SubTierAgency
 
-            query = SubAgencyQuery(self._client)
+            query = SubAgencyQuery(self._client, toptier_code)
 
             # Use fiscal year from this agency if available
-            fiscal_year = self.fiscal_year
+            if self.fiscal_year:
+                query = query.fiscal_year(self.fiscal_year)
 
-            response = query.get_subagencies(
-                toptier_code=toptier_code,
-                fiscal_year=fiscal_year,
-                limit=100,  # Default to maximum
-            )
-
-            # Transform results into SubTierAgency objects
-            subagencies = []
-            results = response.get("results", [])
-            for result in results:
-                if isinstance(result, dict):
-                    subagency = SubTierAgency(result, self._client)
-                    subagencies.append(subagency)
-
-            return subagencies
+            # Execute and return results
+            return query.all()
 
         except Exception as e:
             logger.debug(f"Could not fetch sub-agencies for {toptier_code}: {e}")

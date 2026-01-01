@@ -316,3 +316,54 @@ class TestAgencyResourceSearch:
         assert isinstance(search, AgenciesSearch)
         assert search._search_text == "NASA"
         assert search._endpoint == "/autocomplete/awarding_agency_office/"
+
+
+class TestAgencyResourceSubAgencies:
+    """Test AgencyResource.subagencies() method."""
+
+    @pytest.fixture
+    def agency_resource(self, mock_usa_client):
+        """Create an AgencyResource instance with mocked client."""
+        return AgencyResource(mock_usa_client)
+
+    def test_subagencies_returns_query_builder(self, agency_resource, mock_usa_client):
+        """Test that subagencies() returns a SubAgencyQuery builder."""
+        from usaspending.queries.sub_agency_query import SubAgencyQuery
+
+        query = agency_resource.subagencies("080")
+
+        assert isinstance(query, SubAgencyQuery)
+        assert query._toptier_code == "080"
+        assert query._client is mock_usa_client
+
+    def test_subagencies_integration(
+        self, mock_usa_client, agency_subagencies_fixture_data
+    ):
+        """Test integration of client.agencies.subagencies()."""
+        endpoint = "/agency/080/sub_agency/"
+        mock_usa_client.set_response(endpoint, agency_subagencies_fixture_data)
+
+        # Use the builder
+        results = (
+            mock_usa_client.agencies.subagencies("080")
+            .fiscal_year(2024)
+            .order_by("name", "asc")
+            .all()
+        )
+
+        assert len(results) > 0
+        assert results[0].__class__.__name__ == "SubTierAgency"
+
+        # Verify correct API call
+        mock_usa_client.assert_called_with(
+            endpoint,
+            "GET",
+            params={
+                "agency_type": "awarding",
+                "page": 1,
+                "limit": 100,
+                "sort": "name",
+                "order": "asc",
+                "fiscal_year": 2024,
+            },
+        )

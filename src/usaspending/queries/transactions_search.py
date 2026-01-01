@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, TYPE_CHECKING, Iterator
+from typing import Any, Dict, TYPE_CHECKING, Iterator, List, Union
 from datetime import datetime
 
 from ..exceptions import ValidationError
@@ -122,6 +122,44 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             f"{self.__class__.__name__}.count() = {total} transactions for award {self._award_id}"
         )
         return total
+
+    def __getitem__(self, key: Union[int, slice]) -> Union[Transaction, List[Transaction]]:
+        """
+        Retrieve specific transaction(s) by index or slice.
+
+        Overrides QueryBuilder.__getitem__ to handle client-side filtering.
+        When client filters are active, we must iterate to find the correct items.
+        """
+        if not self._client_filters:
+            return super().__getitem__(key)
+
+        # With client filters, we can't jump to a page. We must iterate.
+        # This is inefficient but necessary for correctness.
+
+        if isinstance(key, int):
+            # Handle negative index by counting first
+            if key < 0:
+                total = self.count()
+                key += total
+
+            if key < 0:
+                raise IndexError("Transaction index out of range")
+
+            # Iterate until we find the item
+            for i, item in enumerate(self):
+                if i == key:
+                    return item
+
+            raise IndexError("Transaction index out of range")
+
+        elif isinstance(key, slice):
+            # Handle slicing - this fetches all matches then slices
+            return list(self)[key]
+
+        else:
+            raise TypeError(
+                f"indices must be integers or slices, not {type(key).__name__}"
+            )
 
     # ==========================================================================
     # Filter Methods

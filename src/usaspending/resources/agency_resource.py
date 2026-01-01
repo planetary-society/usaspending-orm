@@ -11,6 +11,7 @@ from ..logging_config import USASpendingLogger
 if TYPE_CHECKING:
     from ..models.agency import Agency
     from ..queries.agencies_search import AgenciesSearch
+    from ..queries.sub_agency_query import SubAgencyQuery
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -75,6 +76,31 @@ class AgencyResource(BaseResource):
         from ..queries.agency_query import AgencyQuery
 
         return AgencyQuery(self._client).find_by_id(toptier_code, fiscal_year)
+
+    def subagencies(self, toptier_code: str) -> "SubAgencyQuery":
+        """Create a SubAgencyQuery builder for the given toptier agency.
+
+        Args:
+            toptier_code: The toptier code of the agency (3-4 digit string).
+
+        Returns:
+            SubAgencyQuery builder for chaining filters and iteration.
+
+        Example:
+            >>> # Get all subagencies for NASA
+            >>> subagencies = client.agencies.subagencies("080").all()
+            >>>
+            >>> # Get subagencies with filters
+            >>> results = (
+            ...     client.agencies.subagencies("080")
+            ...     .fiscal_year(2024)
+            ...     .order_by("name", "asc")
+            ...     .all()
+            ... )
+        """
+        from ..queries.sub_agency_query import SubAgencyQuery
+
+        return SubAgencyQuery(self._client, toptier_code)
 
     def find_all_funding_agencies_by_name(self, name: str) -> "AgenciesSearch":
         """Search for funding agencies and offices by name.

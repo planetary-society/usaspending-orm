@@ -4,6 +4,7 @@ import pytest
 from usaspending.queries.sub_agency_query import SubAgencyQuery
 from usaspending.exceptions import ValidationError
 from usaspending.models.award_types import CONTRACT_CODES, GRANT_CODES
+from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestSubAgencyQueryInitialization:
@@ -11,23 +12,18 @@ class TestSubAgencyQueryInitialization:
 
     def test_initialization(self, mock_usa_client):
         """Test that SubAgencyQuery initializes correctly with client."""
-        query = SubAgencyQuery(mock_usa_client)
+        query = SubAgencyQuery(mock_usa_client, "080")
         assert query._client is mock_usa_client
+        assert query._toptier_code == "080"
 
 
 class TestSubAgencyQueryEndpoint:
     """Test SubAgencyQuery endpoint construction."""
 
-    def test_base_endpoint(self, mock_usa_client):
-        """Test base endpoint property."""
-        query = SubAgencyQuery(mock_usa_client)
-        assert query._endpoint == mock_usa_client.Endpoints.AGENCY_SUBAGENCIES
-
-    def test_construct_endpoint(self, mock_usa_client):
+    def test_endpoint(self, mock_usa_client):
         """Test endpoint construction with toptier_code."""
-        query = SubAgencyQuery(mock_usa_client)
-        endpoint = query._construct_endpoint("080")
-        assert endpoint == "/agency/080/sub_agency/"
+        query = SubAgencyQuery(mock_usa_client, "080")
+        assert query._endpoint == "/agency/080/sub_agency/"
 
 
 class TestSubAgencyQueryValidation:
@@ -35,447 +31,275 @@ class TestSubAgencyQueryValidation:
 
     def test_empty_toptier_code_raises_error(self, mock_usa_client):
         """Test that empty toptier_code raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
-
         with pytest.raises(ValidationError, match="toptier_code is required"):
-            query.get_subagencies("")
-
-    def test_none_toptier_code_raises_error(self, mock_usa_client):
-        """Test that None toptier_code raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
-
-        with pytest.raises(ValidationError, match="toptier_code is required"):
-            query.get_subagencies(None)
+            SubAgencyQuery(mock_usa_client, "")
 
     def test_invalid_toptier_code_non_numeric_raises_error(self, mock_usa_client):
         """Test that non-numeric toptier_code raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
-
         with pytest.raises(ValidationError, match="Invalid toptier_code: ABC"):
-            query.get_subagencies("ABC")
+            SubAgencyQuery(mock_usa_client, "ABC")
 
     def test_invalid_toptier_code_wrong_length_raises_error(self, mock_usa_client):
         """Test that toptier_code with wrong length raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
-
         # Too short
         with pytest.raises(ValidationError, match="Invalid toptier_code: 12"):
-            query.get_subagencies("12")
+            SubAgencyQuery(mock_usa_client, "12")
 
         # Too long
         with pytest.raises(ValidationError, match="Invalid toptier_code: 12345"):
-            query.get_subagencies("12345")
+            SubAgencyQuery(mock_usa_client, "12345")
 
-    def test_valid_toptier_codes_accepted(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test that valid toptier_codes are accepted."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
 
-        # 3-digit code
-        result = query.get_subagencies("080")
-        assert result["toptier_code"] == "080"
+class TestSubAgencyQueryFilters:
+    """Test SubAgencyQuery filter methods."""
 
-        # 4-digit code
-        mock_usa_client.set_response(
-            "/agency/1601/sub_agency/", agency_subagencies_fixture_data
-        )
-        result = query.get_subagencies("1601")
-        assert result["toptier_code"] == "080"  # Fixture data
+    def test_fiscal_year(self, mock_usa_client):
+        """Test fiscal_year filter."""
+        query = SubAgencyQuery(mock_usa_client, "080").fiscal_year(2024)
+        assert query._fiscal_year == 2024
 
-    def test_invalid_agency_type_raises_error(self, mock_usa_client):
-        """Test that invalid agency_type raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
+    def test_invalid_fiscal_year(self, mock_usa_client):
+        """Test invalid fiscal year raises error."""
+        with pytest.raises(ValidationError):
+            SubAgencyQuery(mock_usa_client, "080").fiscal_year(1900)
 
-        with pytest.raises(ValidationError, match="Invalid agency_type: invalid"):
-            query.get_subagencies("080", agency_type="invalid")
+    def test_agency_type(self, mock_usa_client):
+        """Test agency_type filter."""
+        query = SubAgencyQuery(mock_usa_client, "080").agency_type("funding")
+        assert query._agency_type == "funding"
 
-    def test_valid_agency_types_accepted(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test that valid agency_types are accepted."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+    def test_invalid_agency_type(self, mock_usa_client):
+        """Test invalid agency_type raises error."""
+        with pytest.raises(ValidationError, match="agency_type must be"):
+            SubAgencyQuery(mock_usa_client, "080").agency_type("invalid")
 
-        # Test awarding
-        result = query.get_subagencies("080", agency_type="awarding")
-        assert result is not None
+    def test_award_type_codes(self, mock_usa_client):
+        """Test award_type_codes filter."""
+        query = SubAgencyQuery(mock_usa_client, "080").award_type_codes("A", "B")
+        assert query._award_type_codes == ["A", "B"]
 
-        # Test funding
-        result = query.get_subagencies("080", agency_type="funding")
-        assert result is not None
+    def test_order_by(self, mock_usa_client):
+        """Test order_by method."""
+        query = SubAgencyQuery(mock_usa_client, "080").order_by("name", "asc")
+        assert query._order_by == "name"
+        assert query._order_direction == "asc"
 
-    def test_invalid_order_raises_error(self, mock_usa_client):
-        """Test that invalid order raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
+    def test_invalid_order_by_field(self, mock_usa_client):
+        """Test invalid sort field raises error."""
+        with pytest.raises(ValidationError, match="Invalid sort field"):
+            SubAgencyQuery(mock_usa_client, "080").order_by("invalid_field")
 
-        with pytest.raises(ValidationError, match="Invalid order: invalid"):
-            query.get_subagencies("080", order="invalid")
-
-    def test_valid_order_accepted(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test that valid order values are accepted."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
-
-        # Test asc
-        result = query.get_subagencies("080", order="asc")
-        assert result is not None
-
-        # Test desc
-        result = query.get_subagencies("080", order="desc")
-        assert result is not None
-
-    def test_invalid_sort_raises_error(self, mock_usa_client):
-        """Test that invalid sort raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
-
-        with pytest.raises(ValidationError, match="Invalid sort: invalid"):
-            query.get_subagencies("080", sort="invalid")
-
-    def test_valid_sort_accepted(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test that valid sort values are accepted."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
-
-        valid_sorts = [
-            "name",
-            "total_obligations",
-            "transaction_count",
-            "new_award_count",
-        ]
-        for sort_field in valid_sorts:
-            result = query.get_subagencies("080", sort=sort_field)
-            assert result is not None
-
-    def test_invalid_page_raises_error(self, mock_usa_client):
-        """Test that invalid page raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
-
-        with pytest.raises(ValidationError, match="page must be >= 1"):
-            query.get_subagencies("080", page=0)
-
-    def test_invalid_limit_raises_error(self, mock_usa_client):
-        """Test that invalid limit raises ValidationError."""
-        query = SubAgencyQuery(mock_usa_client)
-
-        # Too small
-        with pytest.raises(ValidationError, match="limit must be between 1 and 100"):
-            query.get_subagencies("080", limit=0)
-
-        # Too large
-        with pytest.raises(ValidationError, match="limit must be between 1 and 100"):
-            query.get_subagencies("080", limit=101)
+    def test_invalid_order_direction(self, mock_usa_client):
+        """Test invalid sort direction raises error."""
+        with pytest.raises(ValidationError, match="direction must be"):
+            SubAgencyQuery(mock_usa_client, "080").order_by("name", "invalid")
 
 
 class TestSubAgencyQueryExecution:
     """Test SubAgencyQuery query execution."""
 
-    def test_get_subagencies_basic(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test basic sub-agencies retrieval."""
-        query = SubAgencyQuery(mock_usa_client)
+    @pytest.fixture
+    def setup_response(self, mock_usa_client, agency_subagencies_fixture_data):
         mock_usa_client.set_response(
             "/agency/080/sub_agency/", agency_subagencies_fixture_data
         )
 
-        result = query.get_subagencies("080")
+    def test_build_payload(self, mock_usa_client):
+        """Test payload construction."""
+        query = (
+            SubAgencyQuery(mock_usa_client, "080")
+            .fiscal_year(2024)
+            .agency_type("funding")
+            .award_type_codes("A", "B")
+            .order_by("name", "asc")
+            .page_size(50)
+        )
 
-        # Verify API call was made correctly
+        payload = query._build_payload(page=2)
+
+        assert payload == {
+            "agency_type": "funding",
+            "page": 2,
+            "limit": 50,
+            "sort": "name",
+            "order": "asc",
+            "fiscal_year": 2024,
+            "award_type_codes": ["A", "B"],
+        }
+
+    def test_execute_uses_get(
+        self, mock_usa_client, agency_subagencies_fixture_data, setup_response
+    ):
+        """Test that execution uses GET method."""
+        query = SubAgencyQuery(mock_usa_client, "080")
+        
+        # Execute query (triggering API call)
+        query.all()
+
+        # Verify API call
         mock_usa_client.assert_called_with(
             "/agency/080/sub_agency/",
             "GET",
             params={
                 "agency_type": "awarding",
-                "order": "desc",
-                "sort": "total_obligations",
                 "page": 1,
-                "limit": 100,
+                "limit": 100,  # Default
+                "sort": "total_obligations",  # Default
+                "order": "desc",  # Default
             },
         )
 
-        # Verify result structure
-        assert result["toptier_code"] == "080"
-        assert result["fiscal_year"] == 2025
-        assert "page_metadata" in result
-        assert "results" in result
-        assert len(result["results"]) == 1
-        assert result["messages"] == []
-
-    def test_get_subagencies_with_fiscal_year(
-        self, mock_usa_client, agency_subagencies_fixture_data
+    def test_count(
+        self, mock_usa_client, agency_subagencies_fixture_data, setup_response
     ):
-        """Test sub-agencies with fiscal year parameter."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+        """Test count method."""
+        query = SubAgencyQuery(mock_usa_client, "080")
+        count = query.count()
+        
+        # Fixture data usually has page_metadata.total
+        expected_count = agency_subagencies_fixture_data["page_metadata"]["total"]
+        assert count == expected_count
 
-        result = query.get_subagencies("080", fiscal_year=2024)
+        def test_iteration_transforms_results(
 
-        # Verify API call was made with fiscal_year
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "awarding",
-                "order": "desc",
-                "sort": "total_obligations",
-                "page": 1,
-                "limit": 100,
-                "fiscal_year": 2024,
-            },
-        )
+            self, mock_usa_client, agency_subagencies_fixture_data, setup_response
 
-        assert result is not None
+        ):
 
-    def test_get_subagencies_with_agency_type(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test sub-agencies with agency_type parameter."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+            """Test that iteration yields model objects."""
 
-        result = query.get_subagencies("080", agency_type="funding")
+            query = SubAgencyQuery(mock_usa_client, "080")
 
-        # Verify API call was made with funding agency_type
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "funding",
-                "order": "desc",
-                "sort": "total_obligations",
-                "page": 1,
-                "limit": 100,
-            },
-        )
+            results = list(query)
 
-        assert result is not None
+            
 
-    def test_get_subagencies_with_award_type_codes_list(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test sub-agencies with award_type_codes as list."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+            assert len(results) > 0
 
-        award_codes = list(CONTRACT_CODES)
-        result = query.get_subagencies("080", award_type_codes=award_codes)
+            assert results[0].__class__.__name__ == "SubTierAgency"
 
-        # Verify API call was made with award_type_codes
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "awarding",
-                "order": "desc",
-                "sort": "total_obligations",
-                "page": 1,
-                "limit": 100,
-                "award_type_codes": award_codes,
-            },
-        )
+            assert results[0].name is not None
 
-        assert result is not None
+    
 
-    def test_get_subagencies_with_award_type_codes_set(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test sub-agencies with award_type_codes as set."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+        def test_first_returns_single_item(
 
-        award_codes = GRANT_CODES  # This is a frozenset
-        result = query.get_subagencies("080", award_type_codes=award_codes)
+            self, mock_usa_client, agency_subagencies_fixture_data, setup_response
 
-        # Verify API call was made with converted list
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "awarding",
-                "order": "desc",
-                "sort": "total_obligations",
-                "page": 1,
-                "limit": 100,
-                "award_type_codes": list(award_codes),
-            },
-        )
+        ):
 
-        assert result is not None
+            """Test that .first() returns a single model instance."""
 
-    def test_get_subagencies_with_pagination(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test sub-agencies with pagination parameters."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+            query = SubAgencyQuery(mock_usa_client, "080")
 
-        result = query.get_subagencies("080", page=2, limit=50)
+            result = query.first()
 
-        # Verify API call was made with pagination
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "awarding",
-                "order": "desc",
-                "sort": "total_obligations",
-                "page": 2,
-                "limit": 50,
-            },
-        )
+            
 
-        assert result is not None
+            assert result.__class__.__name__ == "SubTierAgency"
 
-    def test_get_subagencies_with_sorting(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test sub-agencies with sorting parameters."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+            # Verify limit(1) was passed to API
 
-        result = query.get_subagencies("080", sort="name", order="asc")
+            mock_usa_client.assert_called_with(
 
-        # Verify API call was made with sorting
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "awarding",
-                "order": "asc",
-                "sort": "name",
-                "page": 1,
-                "limit": 100,
-            },
-        )
+                "/agency/080/sub_agency/",
 
-        assert result is not None
+                "GET",
 
-    def test_get_subagencies_with_all_parameters(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test sub-agencies with all parameters."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+                params={
 
-        award_codes = ["A", "B", "C"]
-        result = query.get_subagencies(
-            "080",
-            fiscal_year=2023,
-            agency_type="funding",
-            award_type_codes=award_codes,
-            order="asc",
-            sort="name",
-            page=2,
-            limit=25,
-        )
+                    "agency_type": "awarding",
 
-        # Verify API call was made with all parameters
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "funding",
-                "order": "asc",
-                "sort": "name",
-                "page": 2,
-                "limit": 25,
-                "fiscal_year": 2023,
-                "award_type_codes": award_codes,
-            },
-        )
+                    "page": 1,
 
-        assert result is not None
+                    "limit": 1,
 
-    def test_get_subagencies_filters_empty_award_codes(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test that empty/None award codes are filtered out."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+                    "sort": "total_obligations",
 
-        award_codes = ["A", "", None, "B", ""]
-        result = query.get_subagencies("080", award_type_codes=award_codes)
+                    "order": "desc",
 
-        # Should only include non-empty codes
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "awarding",
-                "order": "desc",
-                "sort": "total_obligations",
-                "page": 1,
-                "limit": 100,
-                "award_type_codes": ["A", "B"],
-            },
-        )
+                },
 
-        assert result is not None
+            )
 
-    def test_get_subagencies_skips_empty_award_codes_list(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
-        """Test that empty award codes list is not included in params."""
-        query = SubAgencyQuery(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+    
 
-        award_codes = ["", None, ""]  # All empty
-        result = query.get_subagencies("080", award_type_codes=award_codes)
+        def test_limit_restricts_results(
 
-        # Should not include award_type_codes param
-        mock_usa_client.assert_called_with(
-            "/agency/080/sub_agency/",
-            "GET",
-            params={
-                "agency_type": "awarding",
-                "order": "desc",
-                "sort": "total_obligations",
-                "page": 1,
-                "limit": 100,
-            },
-        )
+            self, mock_usa_client, agency_subagencies_fixture_data, setup_response
 
-        assert result is not None
+        ):
 
+            """Test that .limit() restricts the number of yielded items."""
 
-class TestSubAgencyQueryNotImplemented:
-    """Test methods that should not be used."""
+            # Mock 20 results across 2 pages
 
-    def test_find_by_id_raises_not_implemented_error(self, mock_usa_client):
-        """Test that find_by_id raises NotImplementedError."""
-        query = SubAgencyQuery(mock_usa_client)
+            data = [{"name": f"Sub {i}"} for i in range(20)]
 
-        with pytest.raises(NotImplementedError, match="Use get_subagencies"):
-            query.find_by_id("080")
+            mock_usa_client.set_paginated_response("/agency/080/sub_agency/", data, page_size=10)
+
+            
+
+            query = SubAgencyQuery(mock_usa_client, "080").limit(5)
+
+            results = list(query)
+
+            
+
+            assert len(results) == 5
+
+    
+
+        def test_indexing_fetches_specific_page(
+
+            self, mock_usa_client, agency_subagencies_fixture_data, setup_response
+
+        ):
+
+            """Test that [index] access works correctly."""
+
+            # Setup 15 results, page size 5
+
+            data = [{"name": f"Sub {i}", "code": str(i)} for i in range(15)]
+
+            mock_usa_client.set_paginated_response("/agency/080/sub_agency/", data, page_size=5)
+
+            
+
+            query = SubAgencyQuery(mock_usa_client, "080").page_size(5)
+
+            
+
+            # Access index 12 (should be in page 3)
+
+            item = query[12]
+
+            
+
+            assert item.code == "12"
+
+            # Verify page 3 was requested
+
+            mock_usa_client.assert_called_with(
+
+                "/agency/080/sub_agency/",
+
+                "GET",
+
+                params={
+
+                    "agency_type": "awarding",
+
+                    "page": 3,
+
+                    "limit": 5,
+
+                    "sort": "total_obligations",
+
+                    "order": "desc",
+
+                },
+
+            )
+
+    
