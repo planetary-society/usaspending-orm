@@ -6,7 +6,7 @@ USASpending ORM is a Python ORM library for the USAspending.gov API, providing a
 
 ## USASpending API Reference Documentation
 - See `api-docs-links.md` for official endpoint documentation links
-- Use **contex7 MCP** to access the API documentation for the USASpending project.
+- Use `contex7 MCP` to access the API documentation for the USASpending project and for any external libraries referenced in this codebase
 
 ## Architecture Principles
 
