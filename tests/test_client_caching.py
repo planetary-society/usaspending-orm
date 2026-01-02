@@ -23,9 +23,9 @@ def test_cache_handles_unhashable_params(client_config) -> None:
     USASpendingClient._make_cached_request.clear_cache()
 
 
-def test_cache_isolated_per_client(client_config) -> None:
-    """Test that caches are isolated across client instances."""
-    client_config(cache_enabled=True, cache_backend="memory")
+def test_cache_shared_across_clients(client_config) -> None:
+    """Test that caches are shared across client instances."""
+    client_config(cache_enabled=True, cache_backend="memory", cache_namespace="test-namespace")
     USASpendingClient._make_cached_request.clear_cache()
 
     client_one = USASpendingClient()
@@ -35,10 +35,9 @@ def test_cache_isolated_per_client(client_config) -> None:
     client_two._make_uncached_request = Mock(return_value={"client": "two"})
 
     client_one._make_request("GET", "/test")
-    client_one._make_request("GET", "/test")
     client_two._make_request("GET", "/test")
 
     assert client_one._make_uncached_request.call_count == 1
-    assert client_two._make_uncached_request.call_count == 1
+    assert client_two._make_uncached_request.call_count == 0
 
     USASpendingClient._make_cached_request.clear_cache()

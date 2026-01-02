@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-import uuid
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
@@ -88,7 +87,6 @@ class USASpendingClient:
         self._session = self._create_session()
         self._closed = False
         self._request_count = 0
-        self._cache_namespace = uuid.uuid4().hex
 
         # Lazy-loaded components
         self._rate_limiter: RateLimiter | None = None
@@ -276,7 +274,7 @@ class USASpendingClient:
             # Try cached version first if caching is enabled
             if config.cache_enabled:
                 cached_result = self._make_cached_request(
-                    self._cache_namespace,
+                    config.cache_namespace,
                     method,
                     endpoint,
                     params=params,

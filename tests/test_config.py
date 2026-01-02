@@ -96,6 +96,12 @@ class TestConfigurationValidation:
         with pytest.raises(ConfigurationError, match="cache_timeout must be positive"):
             test_config.configure(cache_timeout=-1)
 
+    def test_invalid_cache_namespace_raises_error(self):
+        """Test that invalid cache_namespace raises ConfigurationError."""
+        test_config = _Config()
+        with pytest.raises(ConfigurationError, match="cache_namespace must be a non-empty string"):
+            test_config.configure(cache_namespace=" ")
+
 
 class TestConfigurationSettings:
     """Test configuration settings and defaults."""
@@ -114,6 +120,11 @@ class TestConfigurationSettings:
         """Test that default cache TTL is 1 week."""
         test_config = _Config()
         assert test_config.cache_ttl == timedelta(weeks=1)
+
+    def test_default_cache_namespace(self):
+        """Test that default cache namespace is set."""
+        test_config = _Config()
+        assert test_config.cache_namespace == "usaspending-orm"
 
     def test_cache_ttl_from_seconds(self):
         """Test that cache_ttl can be set from seconds."""

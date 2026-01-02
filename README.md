@@ -259,6 +259,10 @@ usaspending_config.configure(
 - Uses pickle for serialization
 - Best for production and development workflows
 
+Cache entries are namespaced using `cache_namespace` to avoid collisions with other
+applications. The default namespace is `usaspending-orm`. Override this if you need
+separate cache pools for different environments or applications.
+
 **Memory-based caching**:
 - Faster access, no disk I/O
 - Cleared when Python process ends
@@ -281,8 +285,10 @@ from usaspending import config as usaspending_config
 usaspending_config.configure(
     # Cache settings (caching is disabled by default)
     cache_enabled=True,           # Enable caching
-    # Set file-cache directory (default: ~/.usaspending_cache)
+    # Set file-cache directory (default: ~/.cache/usaspending)
     cache_dir="/tmp/usaspending_cache",
+    # Cache key namespace (default: "usaspending-orm")
+    cache_namespace="usaspending-orm",
     # Set cache expiration time (default 1 week)
     cache_ttl=86400,
     # Set cache backend to be in-memory "memory" or "file" for file-based caching via pickle (default: "file")

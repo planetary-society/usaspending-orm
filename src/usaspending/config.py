@@ -45,6 +45,7 @@ class _Config:
         # Caching via cachier
         self.cache_enabled: bool = False
         self.cache_backend: str = "file"  # Default file-based backend for cachier
+        self.cache_namespace: str = "usaspending-orm"
         self.cache_dir: str = os.path.join(
             os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
             "usaspending",
@@ -117,6 +118,8 @@ class _Config:
             raise ConfigurationError(f"cache_backend must be one of: {valid_backends}")
         if self.cache_timeout <= 0:
             raise ConfigurationError("cache_timeout must be positive")
+        if not isinstance(self.cache_namespace, str) or not self.cache_namespace.strip():
+            raise ConfigurationError("cache_namespace must be a non-empty string")
 
         # Query limit validation
         if self.default_result_limit is not None and self.default_result_limit <= 0:
