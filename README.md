@@ -177,6 +177,55 @@ with USASpendingClient() as new_client:
     print(f"Recipient: {award.recipient.name}")  # Recipient also reattached
 ```
 
+### Performance Considerations
+
+#### Lazy Loading and N+1 Queries
+
+The library uses lazy loading for related data (e.g., `award.transactions`, `award.recipient`). When iterating over awards and accessing lazy-loaded properties, each access triggers a separate API call. This is known as the N+1 query problem:
+
+```python
+# This triggers N+1 API calls (1 for search + N for details)
+for award in client.awards.search().contracts().limit(100):
+    print(award.recipient.name)  # Each access = 1 API call
+```
+
+This is a fundamental limitation of the USASpending API, which does not provide batch endpoints for fetching multiple award details in a single request.
+
+**Recommended patterns to minimize API calls:**
+
+1. **Access only search result properties** - Properties returned by the search endpoint don't trigger additional API calls:
+   ```python
+   for award in client.awards.search().contracts().limit(100):
+       # These properties are included in search results - no extra API calls
+       print(award.award_identifier, award.total_obligation, award.description)
+   ```
+
+2. **Enable caching** - Cache responses to avoid repeated fetches for the same data:
+   ```python
+   from usaspending import config as usaspending_config
+   usaspending_config.configure(cache_enabled=True)
+   ```
+
+3. **Use explicit limits** - Set a reasonable `limit()` to control the number of results:
+   ```python
+   # Fetch only what you need
+   top_awards = client.awards.search().contracts().limit(10).all()
+   ```
+
+#### Default Result Limits
+
+By default, queries without an explicit `limit()` will fetch up to 10,000 results to prevent unbounded API calls. You can customize this behavior:
+
+```python
+from usaspending import config as usaspending_config
+
+# Change the default limit
+usaspending_config.configure(default_result_limit=5000)
+
+# Disable the default limit (not recommended for production)
+usaspending_config.configure(default_result_limit=None)
+```
+
 ### Performance & Caching
 
 By default, caching is **disabled**. However, enabling caching can dramatically improve performance and reduce API load for repeated queries, especially during development or when working with large datasets.
@@ -271,8 +320,17 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-
 ```
+
+**Security Note:** When DEBUG logging is enabled, the library logs full API request payloads including query parameters and filter criteria. In a business context, this could expose search patterns or analysis focus areas. Use DEBUG logging only in development environments and ensure log files have appropriate access controls.
+
+### Cache Security
+
+When using file-based caching (the default), be aware of these security considerations:
+
+- **Pickle Serialization:** File-based caching uses Python's `pickle` module for serialization. If an attacker gains write access to your cache directory, they could potentially inject malicious serialized objects.
+- **Cache Directory Permissions:** The cache directory (`~/.cache/usaspending/` by default) should have appropriate permissions (e.g., 0700 on Unix systems).
+- **Shared Systems:** For shared or multi-tenant systems, consider using memory-based caching (`cache_backend="memory"`) or disabling caching entirely.
 
 ## Project Status
 
