@@ -80,26 +80,38 @@ class TestRateLimiterBasicFunctionality:
         assert elapsed >= 0.004  # Should wait almost the full period
         assert elapsed < 0.008  # But not too long
 
-    def test_sliding_window(self):
+    @patch("usaspending.utils.rate_limit.time.sleep")
+    @patch("usaspending.utils.rate_limit.time.time")
+    def test_sliding_window(self, mock_time, mock_sleep):
         """Test that the sliding window works correctly."""
+        # Simulate time progression: start at 1000.0
+        time_values = [
+            1000.0,  # Initial time for first call
+            1000.0,  # Record first call
+            1000.0015,  # After simulated wait, for second call
+            1000.0015,  # Record second call
+            1000.0015,  # Third call - need to wait
+            1000.0015,  # Calculate wait time
+            1000.003,  # After sleep, re-check
+            1000.003,  # Record third call
+        ]
+        mock_time.side_effect = time_values
+
         limiter = RateLimiter(max_calls=2, period=0.003)
 
-        # Make first call
+        # Make first call at t=1000.0
         limiter.wait_if_needed()
 
-        # Wait half the period
-        time.sleep(0.0015)
-
-        # Make second call
+        # Make second call at t=1000.0015 (simulated half-period later)
         limiter.wait_if_needed()
 
-        # Third call should only wait for first call to expire
-        start_time = time.time()
+        # Third call should wait for first call to expire
         limiter.wait_if_needed()
-        elapsed = time.time() - start_time
 
-        # Should wait about 0.0015s (0.003s period - 0.0015s already elapsed)
-        assert 0.001 <= elapsed <= 0.002
+        # Verify sleep was called with correct wait time (0.0015s remaining)
+        mock_sleep.assert_called()
+        sleep_time = mock_sleep.call_args[0][0]
+        assert 0.001 <= sleep_time <= 0.002
 
     def test_reset(self):
         """Test that reset() clears the call history."""
@@ -123,8 +135,17 @@ class TestRateLimiterBasicFunctionality:
 class TestRateLimiterProperties:
     """Test RateLimiter properties."""
 
-    def test_available_calls_property(self):
+    @patch("usaspending.utils.rate_limit.time.time")
+    def test_available_calls_property(self, mock_time):
         """Test the available_calls property."""
+        # Use a callable to provide controlled time values
+        current_time = [1000.0]
+
+        def time_func():
+            return current_time[0]
+
+        mock_time.side_effect = time_func
+
         limiter = RateLimiter(max_calls=3, period=0.005)
 
         assert limiter.available_calls == 3
@@ -132,34 +153,45 @@ class TestRateLimiterProperties:
         limiter.wait_if_needed()
         assert limiter.available_calls == 2
 
+        current_time[0] = 1000.001
         limiter.wait_if_needed()
         assert limiter.available_calls == 1
 
+        current_time[0] = 1000.002
         limiter.wait_if_needed()
         assert limiter.available_calls == 0
 
-        # Wait for calls to expire
-        time.sleep(0.006)
+        # After period expires, all calls should be available again
+        current_time[0] = 1000.010  # Well past the 0.005s period
         assert limiter.available_calls == 3
 
-    def test_next_available_time_property(self):
+    @patch("usaspending.utils.rate_limit.time.time")
+    def test_next_available_time_property(self, mock_time):
         """Test the next_available_time property."""
+        # Use a callable to provide controlled time values
+        current_time = [1000.0]
+
+        def time_func():
+            return current_time[0]
+
+        mock_time.side_effect = time_func
+
         limiter = RateLimiter(max_calls=1, period=0.01)
 
         # Should be None when calls are available
         assert limiter.next_available_time is None
 
-        # Make a call
-        call_time = time.time()
+        # Make a call at t=1000.0
         limiter.wait_if_needed()
 
-        # Should return when the call expires
+        # Should return when the call expires (1000.0 + 0.01 = 1000.01)
+        current_time[0] = 1000.001
         next_time = limiter.next_available_time
         assert next_time is not None
-        assert abs(next_time - (call_time + 0.01)) < 0.001
+        assert abs(next_time - 1000.01) < 0.001
 
-        # Wait for it to expire
-        time.sleep(0.011)
+        # After period expires, next_available_time should be None
+        current_time[0] = 1000.015
         assert limiter.next_available_time is None
 
 
@@ -232,15 +264,33 @@ class TestRateLimiterThreadSafety:
 class TestRateLimiterEdgeCases:
     """Test edge cases and special scenarios."""
 
-    def test_fractional_period(self):
+    @patch("usaspending.utils.rate_limit.time.sleep")
+    @patch("usaspending.utils.rate_limit.time.time")
+    def test_fractional_period(self, mock_time, mock_sleep):
         """Test rate limiter with fractional second periods."""
+        # Simulate time progression with period expiring between iterations
+        time_values = []
+        base_time = 1000.0
+        for i in range(5):
+            # Two calls per iteration, then time advances past period
+            iteration_time = base_time + (i * 0.0015)
+            time_values.extend(
+                [
+                    iteration_time,  # First call check
+                    iteration_time,  # First call record
+                    iteration_time,  # Second call check
+                    iteration_time,  # Second call record
+                ]
+            )
+        mock_time.side_effect = time_values
+
         limiter = RateLimiter(max_calls=2, period=0.001)
 
-        # Should be able to make rapid calls after period expires
+        # Should be able to make rapid calls when period expires between iterations
         for _ in range(5):
             limiter.wait_if_needed()
             limiter.wait_if_needed()
-            time.sleep(0.0011)  # Just over the period
+            # Time advances automatically via mock
 
     def test_high_frequency_calls(self):
         """Test with high frequency rate limit."""
@@ -285,19 +335,28 @@ class TestRateLimiterEdgeCases:
         # Should have slept for exactly 1 second
         mock_sleep.assert_called_once_with(1.0)
 
-    def test_cleanup_old_calls(self):
+    @patch("usaspending.utils.rate_limit.time.time")
+    def test_cleanup_old_calls(self, mock_time):
         """Test that old calls are properly cleaned up."""
+        # Use a callable to provide controlled time values
+        current_time = [1000.0]
+        call_count = [0]
+
+        def time_func():
+            # Increment time slightly with each call to simulate passage of time
+            call_count[0] += 1
+            if call_count[0] <= 200:  # During the 100 wait_if_needed calls
+                current_time[0] += 0.000005  # Small increment
+            return current_time[0]
+
+        mock_time.side_effect = time_func
+
         limiter = RateLimiter(max_calls=1000, period=0.001)
 
-        # Make many calls over time
-        for i in range(100):
+        # Make many calls over simulated time
+        for _ in range(100):
             limiter.wait_if_needed()
-            if i % 10 == 0:
-                time.sleep(0.0002)  # Small delay every 10 calls
 
-        # Internal deque should not grow unbounded
-        # After period expires, old calls should be cleaned up
-        time.sleep(0.0015)
-
-        # All calls should be available again
+        # After period expires, all calls should be available again
+        current_time[0] = 1000.010  # Well past the period
         assert limiter.available_calls == 1000
