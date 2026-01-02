@@ -848,27 +848,21 @@ class Award(LazyRecord):
 
     # Downloading detailed award data
     @property
-    def _download_type(self) -> Optional[AwardType]:
+    def download_type(self) -> AwardType:
         """Type required by the download API.
 
         Returns:
-            Optional[AwardType]: Download type ('contract', 'assistance', or 'idv').
+            AwardType: Download type ('contract', 'assistance', or 'idv').
 
         Raises:
-            NotImplementedError: If not implemented in the subclass.
+            NotImplementedError: If download is not supported for this award type.
         """
-        from .contract import Contract
-        from .grant import Grant
-        from .idv import IDV
-
-        if isinstance(self, Contract):
-            return "contract"
-        elif isinstance(self, Grant):
-            return "assistance"
-        elif isinstance(self, IDV):
-            return "idv"
-        else:
-            raise (NotImplementedError)
+        if self._download_type is None:
+            raise NotImplementedError(
+                f"Download not supported for {self.__class__.__name__}. "
+                "Only Contract, Grant, and IDV awards support bulk downloads."
+            )
+        return self._download_type
 
     def download(
         self, file_format: FileFormat = "csv", destination_dir: Optional[str] = None
@@ -905,13 +899,8 @@ class Award(LazyRecord):
                 "Cannot download award data without a 'generated_unique_award_id'. Ensure the award object is fully loaded."
             )
 
-        download_type = self._download_type
-
-        if not download_type:
-            # Safety check in case a subclass doesn't implement _download_type or the implementation returns None
-            raise ValidationError(
-                f"Download is not supported or implemented for award type: {self.__class__.__name__}."
-            )
+        # Get download type (raises NotImplementedError if not supported)
+        download_type = self.download_type
 
         # Access the DownloadManager via the client's download resource.
         # We route the call through the appropriate method on the resource.
