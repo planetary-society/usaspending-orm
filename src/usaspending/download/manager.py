@@ -114,14 +114,46 @@ class DownloadManager:
 
     def unzip_file(self, zip_path: str, extract_dir: str) -> List[str]:
         """
-        Unzips the downloaded file.
+        Unzips the downloaded file with path traversal protection.
+
+        This method validates that all files in the ZIP archive extract to
+        paths within the specified extract_dir, preventing ZipSlip attacks
+        where malicious archives contain entries like "../../../etc/passwd".
+
+        Args:
+            zip_path: Path to the ZIP file to extract.
+            extract_dir: Directory where contents will be extracted.
+
+        Returns:
+            List of absolute paths to extracted files.
+
+        Raises:
+            DownloadError: If the ZIP contains path traversal attempts,
+                          is not a valid archive, or extraction fails.
         """
         logger.info(f"Unzipping {zip_path} to {extract_dir}")
+
+        # Resolve to absolute path for security comparison
+        extract_dir = os.path.realpath(extract_dir)
+
         if not os.path.exists(extract_dir):
             os.makedirs(extract_dir)
 
         try:
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                # Validate all paths before extraction (ZipSlip protection)
+                for member in zip_ref.namelist():
+                    member_path = os.path.realpath(
+                        os.path.join(extract_dir, member)
+                    )
+                    # Ensure extracted path is within extract_dir
+                    if not member_path.startswith(extract_dir + os.sep) and \
+                       member_path != extract_dir:
+                        raise DownloadError(
+                            f"Attempted path traversal in ZIP archive: {member}",
+                            file_name=os.path.basename(zip_path),
+                        )
+
                 extracted_files = zip_ref.namelist()
                 zip_ref.extractall(extract_dir)
 
@@ -133,6 +165,9 @@ class DownloadManager:
                 f"Downloaded file is not a valid zip archive: {zip_path}",
                 file_name=os.path.basename(zip_path),
             )
+        except DownloadError:
+            # Re-raise DownloadError (including path traversal errors)
+            raise
         except Exception as e:
             raise DownloadError(
                 f"An error occurred during unzipping: {e}",

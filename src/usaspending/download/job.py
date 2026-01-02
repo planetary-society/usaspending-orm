@@ -175,10 +175,20 @@ class DownloadJob:
         """Downloads the finished file, unzips it, and optionally cleans up the zip."""
         os.makedirs(self.destination_dir, exist_ok=True)
 
-        zip_path = os.path.join(self.destination_dir, self.file_name)
+        # Sanitize file_name to prevent path traversal attacks
+        # The file_name comes from the API response and could theoretically
+        # contain malicious path components like "../" or absolute paths
+        safe_file_name = os.path.basename(self.file_name)
+        if not safe_file_name:
+            raise DownloadError(
+                "Invalid file name received from API",
+                file_name=self.file_name,
+            )
+
+        zip_path = os.path.join(self.destination_dir, safe_file_name)
 
         # Create a subdirectory for extraction based on the filename (without .zip)
-        extract_subdir_name = os.path.splitext(self.file_name)[0]
+        extract_subdir_name = os.path.splitext(safe_file_name)[0]
         extract_path = os.path.join(self.destination_dir, extract_subdir_name)
 
         try:
