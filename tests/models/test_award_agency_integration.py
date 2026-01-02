@@ -41,9 +41,7 @@ class TestAwardAgencyIntegration:
             == "National Aeronautics and Space Administration"
         )
 
-    def test_award_funding_agency_structure(
-        self, mock_usa_client, contract_fixture_data
-    ):
+    def test_award_funding_agency_structure(self, mock_usa_client, contract_fixture_data):
         """Test funding_agency property with Agency structure."""
         award = Award(contract_fixture_data, mock_usa_client)
 
@@ -68,9 +66,7 @@ class TestAwardAgencyIntegration:
         assert funding_subtier.name == "National Aeronautics and Space Administration"
         assert funding_subtier.abbreviation == "NASA"
 
-    def test_award_awarding_agency_structure(
-        self, mock_usa_client, contract_fixture_data
-    ):
+    def test_award_awarding_agency_structure(self, mock_usa_client, contract_fixture_data):
         """Test awarding_agency property with Agency structure."""
         award = Award(contract_fixture_data, mock_usa_client)
 
@@ -90,9 +86,7 @@ class TestAwardAgencyIntegration:
         assert isinstance(awarding_subtier, SubTierAgency)
         assert awarding_subtier.code == "8000"
 
-    def test_award_subtier_agency_properties(
-        self, mock_usa_client, contract_fixture_data
-    ):
+    def test_award_subtier_agency_properties(self, mock_usa_client, contract_fixture_data):
         """Test subtier agency properties on Award."""
         award = Award(contract_fixture_data, mock_usa_client)
 
@@ -110,9 +104,7 @@ class TestAwardAgencyIntegration:
         assert awarding_subtier.name == "National Aeronautics and Space Administration"
         assert awarding_subtier.abbreviation == "NASA"
 
-    def test_award_agencies_are_separate_instances(
-        self, mock_usa_client, contract_fixture_data
-    ):
+    def test_award_agencies_are_separate_instances(self, mock_usa_client, contract_fixture_data):
         """Test that funding and awarding agencies are separate instances."""
         award = Award(contract_fixture_data, mock_usa_client)
 
@@ -189,26 +181,18 @@ class TestAwardAgencyIntegration:
         assert isinstance(awarding_agency, Agency)
         assert awarding_agency.name == search_results_data["Awarding Agency"]
         assert awarding_agency.code == search_results_data["Awarding Agency Code"]
-        assert (
-            awarding_agency.abbreviation == search_results_data["Awarding Agency Code"]
-        )
+        assert awarding_agency.abbreviation == search_results_data["Awarding Agency Code"]
 
         # Test subtier agencies
         funding_subtier = award.funding_subtier_agency
         assert isinstance(funding_subtier, SubTierAgency)
         assert funding_subtier.name == search_results_data["Funding Sub Agency"]
-        assert (
-            funding_subtier.abbreviation
-            == search_results_data["Funding Sub Agency Code"]
-        )
+        assert funding_subtier.abbreviation == search_results_data["Funding Sub Agency Code"]
 
         awarding_subtier = award.awarding_subtier_agency
         assert isinstance(awarding_subtier, SubTierAgency)
         assert awarding_subtier.name == search_results_data["Awarding Sub Agency"]
-        assert (
-            awarding_subtier.abbreviation
-            == search_results_data["Awarding Sub Agency Code"]
-        )
+        assert awarding_subtier.abbreviation == search_results_data["Awarding Sub Agency Code"]
 
         # Verify no lazy-loading API calls were made since we have complete flat agency data
         assert mock_usa_client.get_request_count() == 0
@@ -250,9 +234,7 @@ class TestAwardAgencyIntegration:
         # Verify no lazy-loading API calls were made since we have comprehensive flat agency data
         assert mock_usa_client.get_request_count() == 0
 
-    def test_agency_loading_priority_nested_over_flat(
-        self, mock_usa_client, contract_fixture_data
-    ):
+    def test_agency_loading_priority_nested_over_flat(self, mock_usa_client, contract_fixture_data):
         """Test that nested agency data takes priority over flat fields."""
         # Use contract fixture data as base and add conflicting flat fields
         mixed_data = contract_fixture_data.copy()
@@ -272,18 +254,11 @@ class TestAwardAgencyIntegration:
         expected_toptier = expected_funding_agency["toptier_agency"]
 
         assert funding_agency.name == expected_toptier["name"]
-        assert (
-            funding_agency.code == expected_toptier["code"]
-        )  # Should be from fixture, not 999
+        assert funding_agency.code == expected_toptier["code"]  # Should be from fixture, not 999
         assert funding_agency.abbreviation == expected_toptier["abbreviation"]
         assert funding_agency.agency_id == expected_funding_agency["id"]
-        assert (
-            funding_agency.has_agency_page == expected_funding_agency["has_agency_page"]
-        )
-        assert (
-            funding_agency.office_agency_name
-            == expected_funding_agency["office_agency_name"]
-        )
+        assert funding_agency.has_agency_page == expected_funding_agency["has_agency_page"]
+        assert funding_agency.office_agency_name == expected_funding_agency["office_agency_name"]
 
         # Verify no lazy-loading API calls were made since we have complete nested agency data
         assert mock_usa_client.get_request_count() == 0

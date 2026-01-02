@@ -221,11 +221,7 @@ class SubAwardsSearch(AwardsSearch):
             ValidationError: If new_awards_only is True or date_type is invalid.
 
         Example:
-            >>> subawards = (
-            ...     client.subawards
-            ...     .contracts()
-            ...     .time_period("2024-01-01", "2024-12-31")
-            ... )
+            >>> subawards = client.subawards.contracts().time_period("2024-01-01", "2024-12-31")
         """
         # Validate subaward-specific restrictions
         if new_awards_only:

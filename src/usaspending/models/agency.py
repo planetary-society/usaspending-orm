@@ -504,11 +504,7 @@ class Agency(LazyRecord):
             >>>
             >>> # Filter by account code or description
             >>> nasa_science = agency.federal_accounts.code("080-0120").first()
-            >>> working_capital = (
-            ...     agency.federal_accounts
-            ...     .description("Working Capital")
-            ...     .first()
-            ... )
+            >>> working_capital = agency.federal_accounts.description("Working Capital").first()
             >>>
             >>> # Access TAS codes from a federal account
             >>> account = agency.federal_accounts[0]

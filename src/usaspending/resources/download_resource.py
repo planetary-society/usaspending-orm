@@ -42,9 +42,7 @@ class DownloadResource(BaseResource):
         Returns:
             A DownloadJob object. Use job.wait_for_completion() to block until finished.
         """
-        return self._manager.queue_download(
-            "contract", award_id, file_format, destination_dir
-        )
+        return self._manager.queue_download("contract", award_id, file_format, destination_dir)
 
     def assistance(
         self,
@@ -63,9 +61,7 @@ class DownloadResource(BaseResource):
         Returns:
             A DownloadJob object. Use job.wait_for_completion() to block until finished.
         """
-        return self._manager.queue_download(
-            "assistance", award_id, file_format, destination_dir
-        )
+        return self._manager.queue_download("assistance", award_id, file_format, destination_dir)
 
     def idv(
         self,
@@ -84,9 +80,7 @@ class DownloadResource(BaseResource):
         Returns:
             A DownloadJob object. Use job.wait_for_completion() to block until finished.
         """
-        return self._manager.queue_download(
-            "idv", award_id, file_format, destination_dir
-        )
+        return self._manager.queue_download("idv", award_id, file_format, destination_dir)
 
     def status(self, file_name: str) -> DownloadStatus:
         """

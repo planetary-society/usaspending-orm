@@ -53,9 +53,7 @@ class TestAwardAccountInitialization:
         expected = first_account_data["federal_account"]
         assert first_account.federal_account == expected
 
-    def test_field_mapping_account_title_to_description(
-        self, first_account, first_account_data
-    ):
+    def test_field_mapping_account_title_to_description(self, first_account, first_account_data):
         """Test that account_title is mapped to description property."""
         expected = first_account_data["account_title"]
         assert first_account.description == expected
@@ -72,9 +70,7 @@ class TestAwardAccountInitialization:
         expected_toptier = first_account_data["federal_account"].split("-")[0]
         assert first_account.toptier_code == expected_toptier
 
-    def test_toptier_code_extraction_second_account(
-        self, second_account, second_account_data
-    ):
+    def test_toptier_code_extraction_second_account(self, second_account, second_account_data):
         """Test toptier_code extraction from second fixture account."""
         expected_id = second_account_data["federal_account"]
         expected_toptier = expected_id.split("-")[0]
@@ -116,7 +112,10 @@ class TestAwardAccountProperties:
 
     def test_funding_agency_abbreviation(self, first_account, first_account_data):
         """Test funding_agency_abbreviation property."""
-        assert first_account.funding_agency_abbreviation == first_account_data["funding_agency_abbreviation"]
+        assert (
+            first_account.funding_agency_abbreviation
+            == first_account_data["funding_agency_abbreviation"]
+        )
 
     def test_funding_agency_id(self, first_account, first_account_data):
         """Test funding_agency_id property."""

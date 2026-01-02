@@ -187,6 +187,7 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
         Returns:
             TASCodesQuery: Filtered query.
         """
+
         def predicate(tas: TreasuryAccountSymbol) -> bool:
             return tas.fiscal_year(year)
 

@@ -140,9 +140,7 @@ def test_custom_download_response(mock_usa_client):
         "download_request": {"award_id": "CUSTOM_123", "file_format": "pstxt"},
     }
 
-    mock_usa_client.mock_download_queue(
-        "assistance", "CUSTOM_123", response_data=custom_response
-    )
+    mock_usa_client.mock_download_queue("assistance", "CUSTOM_123", response_data=custom_response)
 
     job = mock_usa_client.downloads.assistance("CUSTOM_123", file_format="pstxt")
 

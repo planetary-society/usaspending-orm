@@ -22,14 +22,10 @@ class PeriodOfPerformance(BaseModel):
         """
         super().__init__(data)
         self._start_date = to_date(
-            self.get_value(
-                ["start_date", "Start Date", "Period of Performance Start Date"]
-            )
+            self.get_value(["start_date", "Start Date", "Period of Performance Start Date"])
         )
         self._end_date = to_date(
-            self.get_value(
-                ["end_date", "End Date", "Period of Performance Current End Date"]
-            )
+            self.get_value(["end_date", "End Date", "Period of Performance Current End Date"])
         )
 
     @property
@@ -67,9 +63,7 @@ class PeriodOfPerformance(BaseModel):
             Optional[date]: The potential end date, or None.
         """
         return to_date(
-            self.get_value(
-                ["potential_end_date", "Period of Performance Potential End Date"]
-            )
+            self.get_value(["potential_end_date", "Period of Performance Potential End Date"])
         )
 
     def __repr__(self) -> str:

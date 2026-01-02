@@ -250,17 +250,13 @@ class TestLocationWithPlaceOfPerformanceData:
         assert place_of_performance_location.zip5 == "35805"
         assert place_of_performance_location.zip4 == "1912"
 
-    def test_place_of_performance_null_address_lines(
-        self, place_of_performance_location
-    ):
+    def test_place_of_performance_null_address_lines(self, place_of_performance_location):
         """Test that null address lines are handled correctly."""
         assert place_of_performance_location.address_line1 is None
         assert place_of_performance_location.address_line2 is None
         assert place_of_performance_location.address_line3 is None
 
-    def test_place_of_performance_formatted_address(
-        self, place_of_performance_location
-    ):
+    def test_place_of_performance_formatted_address(self, place_of_performance_location):
         """Test formatted address for place of performance location."""
         # Since address lines are null, formatted address should only have city/state/zip
         expected = "Huntsville, AL, 35805\nUnited States"
@@ -286,4 +282,3 @@ class TestLocationEdgeCases:
         assert location.address_line1 is None
         assert location.state_code is None
         assert location.zip5 == ""  # zip5 returns empty string when None
-

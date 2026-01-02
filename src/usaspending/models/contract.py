@@ -33,7 +33,16 @@ class Contract(Award):
         "latest_transaction_contract_data",
     ]
 
-    SEARCH_FIELDS: ClassVar[list[str]] = [*Award.SEARCH_FIELDS, "Start Date", "End Date", "Award Amount", "Total Outlays", "Contract Award Type", "NAICS", "PSC"]
+    SEARCH_FIELDS: ClassVar[list[str]] = [
+        *Award.SEARCH_FIELDS,
+        "Start Date",
+        "End Date",
+        "Award Amount",
+        "Total Outlays",
+        "Contract Award Type",
+        "NAICS",
+        "PSC",
+    ]
 
     @property
     def piid(self) -> str | None:
@@ -87,9 +96,7 @@ class Contract(Award):
         naics_data = self._lazy_get("naics", "NAICS")
         if isinstance(naics_data, dict):
             return naics_data.get("code")
-        if self.naics_hierarchy and isinstance(
-            self.naics_hierarchy.get("base_code"), dict
-        ):
+        if self.naics_hierarchy and isinstance(self.naics_hierarchy.get("base_code"), dict):
             return self.naics_hierarchy["base_code"].get("code")
         if self.latest_transaction_contract_data:
             return self.latest_transaction_contract_data.get("naics")
@@ -105,9 +112,7 @@ class Contract(Award):
         naics_data = self._lazy_get("naics", "NAICS")
         if isinstance(naics_data, dict):
             return naics_data.get("description")
-        if self.naics_hierarchy and isinstance(
-            self.naics_hierarchy.get("base_code"), dict
-        ):
+        if self.naics_hierarchy and isinstance(self.naics_hierarchy.get("base_code"), dict):
             return self.naics_hierarchy["base_code"].get("description")
         if self.latest_transaction_contract_data:
             return self.latest_transaction_contract_data.get("naics_description")
@@ -184,6 +189,6 @@ class Contract(Award):
         """
         from .award_types import CONTRACT_CODES
 
-        return self._client.subawards.award_id(
-            self.generated_unique_award_id
-        ).award_type_codes(*CONTRACT_CODES)
+        return self._client.subawards.award_id(self.generated_unique_award_id).award_type_codes(
+            *CONTRACT_CODES
+        )

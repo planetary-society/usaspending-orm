@@ -127,8 +127,6 @@ class RecipientQuery(SingleResourceBase):
                 clean_tokens.append(clean_token)
 
         # Prefer 'R' if present, otherwise first token
-        suffix = (
-            "R" if "R" in clean_tokens else (clean_tokens[0] if clean_tokens else "")
-        )
+        suffix = "R" if "R" in clean_tokens else (clean_tokens[0] if clean_tokens else "")
 
         return f"{base}-{suffix}" if suffix else base

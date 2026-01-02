@@ -49,9 +49,7 @@ class TestRecipientQueryValidation:
     """Test RecipientQuery input validation."""
 
     @pytest.fixture
-    def recipient_query(
-        self, mock_usa_client: MockUSASpendingClient
-    ) -> RecipientQuery:
+    def recipient_query(self, mock_usa_client: MockUSASpendingClient) -> RecipientQuery:
         """Create a RecipientQuery instance."""
         return RecipientQuery(mock_usa_client)
 
@@ -74,9 +72,7 @@ class TestRecipientQueryExecution:
     """Test RecipientQuery execution and API calls."""
 
     @pytest.fixture
-    def recipient_query(
-        self, mock_usa_client: MockUSASpendingClient
-    ) -> RecipientQuery:
+    def recipient_query(self, mock_usa_client: MockUSASpendingClient) -> RecipientQuery:
         """Create a RecipientQuery instance."""
         return RecipientQuery(mock_usa_client)
 

@@ -50,9 +50,7 @@ class DownloadManager:
         )
 
         try:
-            response_data = self._client._make_uncached_request(
-                "POST", endpoint, json=payload
-            )
+            response_data = self._client._make_uncached_request("POST", endpoint, json=payload)
         except APIError as e:
             logger.error(f"Failed to queue download for award {award_id}: {e}")
             raise DownloadError(f"Failed to queue download: {e}") from e
@@ -82,14 +80,10 @@ class DownloadManager:
         params = {"file_name": file_name}
 
         # Never cache this endpoint
-        response_data = self._client._make_uncached_request(
-            "GET", endpoint, params=params
-        )
+        response_data = self._client._make_uncached_request("GET", endpoint, params=params)
         return DownloadStatus(response_data)
 
-    def download_file(
-        self, file_url: str, destination_path: str, file_name: str
-    ) -> None:
+    def download_file(self, file_url: str, destination_path: str, file_name: str) -> None:
         """
         Downloads the zipped file from the provided URL using the client's binary download method.
 
@@ -144,12 +138,12 @@ class DownloadManager:
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 # Validate all paths before extraction (ZipSlip protection)
                 for member in zip_ref.namelist():
-                    member_path = os.path.realpath(
-                        os.path.join(extract_dir, member)
-                    )
+                    member_path = os.path.realpath(os.path.join(extract_dir, member))
                     # Ensure extracted path is within extract_dir
-                    if not member_path.startswith(extract_dir + os.sep) and \
-                       member_path != extract_dir:
+                    if (
+                        not member_path.startswith(extract_dir + os.sep)
+                        and member_path != extract_dir
+                    ):
                         raise DownloadError(
                             f"Attempted path traversal in ZIP archive: {member}",
                             file_name=os.path.basename(zip_path),

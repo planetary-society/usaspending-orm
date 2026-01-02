@@ -82,10 +82,7 @@ class TestContractsTitlecase:
     def test_directional_with_punctuation(self):
         """Test directional abbreviations with punctuation."""
 
-        assert (
-            contracts_titlecase("123 main st. ne, suite 100")
-            == "123 Main St. NE, Suite 100"
-        )
+        assert contracts_titlecase("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
 
     def test_special_casing(self):
         """Test special casing rules."""
@@ -100,10 +97,7 @@ class TestContractsTitlecase:
             == "NASA SBIR Program for Small Business LLC"
         )
 
-        assert (
-            contracts_titlecase("123 main st. ne, suite 100")
-            == "123 Main St. NE, Suite 100"
-        )
+        assert contracts_titlecase("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
 
         assert (
             contracts_titlecase("the university of maryland and nasa")
@@ -123,6 +117,7 @@ class TestToDate:
     def test_basic_date_format(self):
         """Test the original YYYY-MM-DD format."""
         from datetime import date
+
         result = to_date("2025-08-29")
         assert result is not None
         assert isinstance(result, date)
@@ -133,6 +128,7 @@ class TestToDate:
     def test_iso_datetime_format(self):
         """Test ISO datetime format without timezone - returns date only."""
         from datetime import date
+
         result = to_date("2025-08-29T00:00:00")
         assert result is not None
         assert isinstance(result, date)
@@ -143,6 +139,7 @@ class TestToDate:
     def test_iso_datetime_with_time(self):
         """Test ISO datetime format with specific time - returns date only."""
         from datetime import date
+
         result = to_date("2025-08-29T14:30:45")
         assert result is not None
         assert isinstance(result, date)
@@ -153,6 +150,7 @@ class TestToDate:
     def test_iso_datetime_with_microseconds(self):
         """Test ISO datetime format with microseconds - returns date only."""
         from datetime import date
+
         result = to_date("2025-08-29T14:30:45.123456")
         assert result is not None
         assert isinstance(result, date)
@@ -163,6 +161,7 @@ class TestToDate:
     def test_iso_datetime_with_utc_indicator(self):
         """Test ISO datetime format with Z (UTC) indicator - returns date only."""
         from datetime import date
+
         result = to_date("2025-08-29T14:30:45Z")
         assert result is not None
         assert isinstance(result, date)
@@ -173,6 +172,7 @@ class TestToDate:
     def test_iso_datetime_with_timezone_offset(self):
         """Test ISO datetime format with timezone offset - returns date only."""
         from datetime import date
+
         result = to_date("2025-08-29T14:30:45+00:00")
         assert result is not None
         assert isinstance(result, date)
@@ -212,6 +212,7 @@ class TestToDate:
     def test_real_usaspending_formats(self):
         """Test formats actually returned by USAspending API."""
         from datetime import date
+
         # Common format from API responses
         result = to_date("2025-08-25T00:00:00")
         assert result is not None
@@ -242,6 +243,7 @@ class TestToDate:
 
         # Test that we get the same results as before for standard dates
         from datetime import date
+
         date1 = to_date("2025-06-15")
         date2 = date(2025, 6, 15)
         assert date1 == date2

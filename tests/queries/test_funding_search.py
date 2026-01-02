@@ -231,10 +231,7 @@ class TestFundingSearch:
         first_result = results[0]
         assert isinstance(first_result, Funding)
         assert first_result.transaction_obligated_amount == 20000.0
-        assert (
-            first_result.funding_agency_name
-            == "National Aeronautics and Space Administration"
-        )
+        assert first_result.funding_agency_name == "National Aeronautics and Space Administration"
 
     def test_first_returns_single_result(self, mock_usa_client, load_fixture):
         """Test that first() returns only the first result."""

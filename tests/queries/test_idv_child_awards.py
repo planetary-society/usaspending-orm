@@ -72,9 +72,7 @@ class TestBuildPayload:
 
     def test_build_payload_with_sort(self, mock_usa_client):
         """Test payload with custom sort settings."""
-        search = IDVChildAwardsSearch(mock_usa_client, "CONT_IDV_123").order_by(
-            "piid", "asc"
-        )
+        search = IDVChildAwardsSearch(mock_usa_client, "CONT_IDV_123").order_by("piid", "asc")
 
         payload = search._build_payload(1)
 
@@ -83,9 +81,7 @@ class TestBuildPayload:
 
     def test_build_payload_with_type_filter(self, mock_usa_client):
         """Test payload with type filter."""
-        search = IDVChildAwardsSearch(mock_usa_client, "CONT_IDV_123").award_type(
-            "child_idvs"
-        )
+        search = IDVChildAwardsSearch(mock_usa_client, "CONT_IDV_123").award_type("child_idvs")
 
         payload = search._build_payload(1)
 
@@ -245,10 +241,7 @@ class TestTransformResult:
         assert isinstance(result, Award)
 
         # Verify data from fixture is accessible
-        assert (
-            result.generated_unique_award_id
-            == first_result["generated_unique_award_id"]
-        )
+        assert result.generated_unique_award_id == first_result["generated_unique_award_id"]
 
 
 class TestIteration:
@@ -260,9 +253,7 @@ class TestIteration:
         expected_results = fixture_data["results"]
 
         # Use paginated response to properly handle iteration
-        mock_usa_client.set_paginated_response(
-            "/idvs/awards/", expected_results, page_size=100
-        )
+        mock_usa_client.set_paginated_response("/idvs/awards/", expected_results, page_size=100)
 
         search = IDVChildAwardsSearch(mock_usa_client, "CONT_IDV_123")
 
@@ -277,10 +268,7 @@ class TestIteration:
 
         # Verify each result matches corresponding fixture data
         for result, expected in zip(results, expected_results):
-            assert (
-                result.generated_unique_award_id
-                == expected["generated_unique_award_id"]
-            )
+            assert result.generated_unique_award_id == expected["generated_unique_award_id"]
             assert result._data.get("piid") == expected["piid"]
             assert result._data.get("obligated_amount") == expected["obligated_amount"]
 
@@ -299,10 +287,7 @@ class TestIteration:
 
         assert isinstance(first, Award)
         # Verify matches fixture first item
-        assert (
-            first.generated_unique_award_id
-            == expected_first["generated_unique_award_id"]
-        )
+        assert first.generated_unique_award_id == expected_first["generated_unique_award_id"]
         assert first._data.get("piid") == expected_first["piid"]
         assert first._data.get("description") == expected_first["description"]
         assert first._data.get("awarding_agency") == expected_first["awarding_agency"]
@@ -314,9 +299,7 @@ class TestIteration:
         expected_results = fixture_data["results"][:limit]
 
         # Set up paginated response
-        mock_usa_client.set_paginated_response(
-            "/idvs/awards/", expected_results, page_size=100
-        )
+        mock_usa_client.set_paginated_response("/idvs/awards/", expected_results, page_size=100)
 
         search = IDVChildAwardsSearch(mock_usa_client, "CONT_IDV_123").limit(limit)
         results = search.all()
@@ -327,10 +310,7 @@ class TestIteration:
 
         # Verify each result matches corresponding fixture data
         for result, expected in zip(results, expected_results):
-            assert (
-                result.generated_unique_award_id
-                == expected["generated_unique_award_id"]
-            )
+            assert result.generated_unique_award_id == expected["generated_unique_award_id"]
 
 
 class TestCount:

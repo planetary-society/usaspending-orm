@@ -54,7 +54,9 @@ contracts = (
 )
 
 for contract in contracts:
-    print(f"{contract.recipient.name}: ${contract.award_amount:,.2f} ${contract.period_of_performance.last_modified_date}")
+    print(
+        f"{contract.recipient.name}: ${contract.award_amount:,.2f} ${contract.period_of_performance.last_modified_date}"
+    )
 ```
 
 ### Example 2: Search Grants by Agency
@@ -86,12 +88,8 @@ results = (
     .contracts()
     .agency("National Aeronautics and Space Administration")
     .time_period("2020-03-01", date.today().isoformat())
-    .place_of_performance_locations(
-        {"state_code": "CA", "country_code": "USA"}
-    )
-    .award_amounts(
-        {"lower_bound": 100000, "upper_bound": 10000000}
-    )
+    .place_of_performance_locations({"state_code": "CA", "country_code": "USA"})
+    .award_amounts({"lower_bound": 100000, "upper_bound": 10000000})
     .order_by("Last Modified Date", "desc")
 )
 
@@ -467,9 +465,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
                     )
                 elif category_name == "idvs":
                     # Use IDV.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend(
-                        [f for f in IDV.SEARCH_FIELDS if f not in base_fields]
-                    )
+                    additional_fields.extend([f for f in IDV.SEARCH_FIELDS if f not in base_fields])
                 elif category_name == "loans":
                     # Use Loan.SEARCH_FIELDS but exclude base fields
                     additional_fields.extend(
@@ -483,9 +479,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
 
         # Combine base fields with additional fields, removing duplicates
         all_fields = base_fields + additional_fields
-        return list(
-            dict.fromkeys(all_fields)
-        )  # Remove duplicates while preserving order
+        return list(dict.fromkeys(all_fields))  # Remove duplicates while preserving order
 
     def order_by(self, field: str, direction: str = "desc") -> AwardsSearch:
         """
@@ -528,18 +522,10 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
 
         Example:
             >>> # Sort contracts by award amount, highest first
-            >>> results = (
-            ...     client.awards.search()
-            ...     .contracts()
-            ...     .order_by("Award Amount", "desc")
-            ... )
+            >>> results = client.awards.search().contracts().order_by("Award Amount", "desc")
 
             >>> # Sort by last modified date
-            >>> recent = (
-            ...     client.awards.search()
-            ...     .grants()
-            ...     .order_by("Last Modified Date", "desc")
-            ... )
+            >>> recent = client.awards.search().grants().order_by("Last Modified Date", "desc")
 
         Note:
             Valid fields depend on the award type filter. Contract-specific
@@ -559,9 +545,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
                     if award_types & frozenset(codes.keys()):
                         category_names.append(category_name)
                 category_str = (
-                    ", ".join(category_names)
-                    if category_names
-                    else "selected award types"
+                    ", ".join(category_names) if category_names else "selected award types"
                 )
             else:
                 category_str = "all award types (no type filter applied)"
@@ -605,16 +589,10 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
 
         Example:
             >>> # Search for specific contract types
-            >>> contracts = (
-            ...     client.awards.search()
-            ...     .award_type_codes("A", "B", "C", "D")
-            ... )
+            >>> contracts = client.awards.search().award_type_codes("A", "B", "C", "D")
 
             >>> # Search for grants only
-            >>> grants = (
-            ...     client.awards.search()
-            ...     .award_type_codes("02", "03", "04", "05")
-            ... )
+            >>> grants = client.awards.search().award_type_codes("02", "03", "04", "05")
 
             >>> # This will raise ValidationError (mixing categories):
             >>> # client.awards.search().award_type_codes("A", "02")  # Contract + Grant

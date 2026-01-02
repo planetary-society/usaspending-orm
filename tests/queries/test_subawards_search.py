@@ -20,10 +20,7 @@ class TestSubAwardsSearch:
     def subawards_response(self):
         """Load subawards fixture data."""
         fixture_path = (
-            Path(__file__).parent.parent
-            / "fixtures"
-            / "awards"
-            / "search_results_subawards.json"
+            Path(__file__).parent.parent / "fixtures" / "awards" / "search_results_subawards.json"
         )
         with open(fixture_path) as f:
             return json.load(f)
@@ -59,9 +56,7 @@ class TestSubAwardsSearch:
         assert payload["subawards"] is True
         assert payload["spending_level"] == "subawards"
 
-    def test_transform_result_returns_subaward(
-        self, mock_usa_client, subawards_response
-    ):
+    def test_transform_result_returns_subaward(self, mock_usa_client, subawards_response):
         """Test that transform_result returns SubAward instances."""
         from usaspending.utils.formatter import contracts_titlecase
 
@@ -88,9 +83,7 @@ class TestSubAwardsSearch:
 
     def test_get_fields_for_grant_subawards(self, mock_usa_client):
         """Test field selection for grant subawards."""
-        search = SubAwardsSearch(mock_usa_client).award_type_codes(
-            "02", "03", "04", "05"
-        )
+        search = SubAwardsSearch(mock_usa_client).award_type_codes("02", "03", "04", "05")
 
         fields = search._get_fields()
 
@@ -109,9 +102,7 @@ class TestSubAwardsSearch:
         # Manually set both contract and grant codes
         from usaspending.queries.filters import SimpleListFilter
 
-        search._filter_objects.append(
-            SimpleListFilter(key="award_type_codes", values=["A", "02"])
-        )
+        search._filter_objects.append(SimpleListFilter(key="award_type_codes", values=["A", "02"]))
 
         fields = search._get_fields()
 
@@ -140,9 +131,7 @@ class TestSubAwardsSearch:
     def test_count_with_award_id(self, mock_usa_client):
         """Test count method uses efficient endpoint when award_id is set."""
         # Set up the specific endpoint response
-        endpoint = MockUSASpendingClient.Endpoints.SUBWARD_COUNT.format(
-            award_id="CONT_AWD_123"
-        )
+        endpoint = MockUSASpendingClient.Endpoints.SUBWARD_COUNT.format(award_id="CONT_AWD_123")
         mock_usa_client.set_response(endpoint, {"subawards": 7})
 
         search = SubAwardsSearch(mock_usa_client).award_id("CONT_AWD_123")

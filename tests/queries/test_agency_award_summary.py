@@ -67,23 +67,17 @@ class TestAgencyAwardSummaryValidation:
         with pytest.raises(ValidationError, match="Invalid toptier_code: 12345"):
             query.get_awards_summary("12345")
 
-    def test_valid_toptier_codes_accepted(
-        self, mock_usa_client, agency_award_summary_fixture_data
-    ):
+    def test_valid_toptier_codes_accepted(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test that valid toptier_codes are accepted."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         # 3-digit code
         result = query.get_awards_summary("080")
         assert result["toptier_code"] == "080"
 
         # 4-digit code
-        mock_usa_client.set_response(
-            "/agency/1601/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/1601/awards/", agency_award_summary_fixture_data)
         result = query.get_awards_summary("1601")
         assert result["toptier_code"] == "080"  # Fixture data
 
@@ -94,14 +88,10 @@ class TestAgencyAwardSummaryValidation:
         with pytest.raises(ValidationError, match="Invalid agency_type: invalid"):
             query.get_awards_summary("080", agency_type="invalid")
 
-    def test_valid_agency_types_accepted(
-        self, mock_usa_client, agency_award_summary_fixture_data
-    ):
+    def test_valid_agency_types_accepted(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test that valid agency_types are accepted."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         # Test awarding
         result = query.get_awards_summary("080", agency_type="awarding")
@@ -115,14 +105,10 @@ class TestAgencyAwardSummaryValidation:
 class TestAgencyAwardSummaryExecution:
     """Test AgencyAwardSummary query execution."""
 
-    def test_get_awards_summary_basic(
-        self, mock_usa_client, agency_award_summary_fixture_data
-    ):
+    def test_get_awards_summary_basic(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test basic awards summary retrieval."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         result = query.get_awards_summary("080")
 
@@ -144,9 +130,7 @@ class TestAgencyAwardSummaryExecution:
     ):
         """Test awards summary with fiscal year parameter."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         result = query.get_awards_summary("080", fiscal_year=2024)
 
@@ -164,9 +148,7 @@ class TestAgencyAwardSummaryExecution:
     ):
         """Test awards summary with agency_type parameter."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         result = query.get_awards_summary("080", agency_type="funding")
 
@@ -182,9 +164,7 @@ class TestAgencyAwardSummaryExecution:
     ):
         """Test awards summary with award_type_codes as list."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         award_codes = list(CONTRACT_CODES)
         result = query.get_awards_summary("080", award_type_codes=award_codes)
@@ -203,9 +183,7 @@ class TestAgencyAwardSummaryExecution:
     ):
         """Test awards summary with award_type_codes as set."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         award_codes = GRANT_CODES  # This is a frozenset
         result = query.get_awards_summary("080", award_type_codes=award_codes)
@@ -224,9 +202,7 @@ class TestAgencyAwardSummaryExecution:
     ):
         """Test awards summary with all parameters."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         award_codes = ["A", "B", "C"]
         result = query.get_awards_summary(
@@ -251,9 +227,7 @@ class TestAgencyAwardSummaryExecution:
     ):
         """Test that empty/None award codes are filtered out."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         award_codes = ["A", "", None, "B", ""]
         result = query.get_awards_summary("080", award_type_codes=award_codes)
@@ -272,9 +246,7 @@ class TestAgencyAwardSummaryExecution:
     ):
         """Test that empty award codes list is not included in params."""
         query = AgencyAwardSummary(mock_usa_client)
-        mock_usa_client.set_response(
-            "/agency/080/awards/", agency_award_summary_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/awards/", agency_award_summary_fixture_data)
 
         award_codes = ["", None, ""]  # All empty
         result = query.get_awards_summary("080", award_type_codes=award_codes)

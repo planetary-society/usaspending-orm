@@ -190,9 +190,7 @@ class TestTextFormatterSentenceCase:
     def test_acronym_expansion_direct_match(self):
         """Test direct acronym expansion matching."""
         # N-A-S-A should match directly
-        result = TextFormatter.to_sentence_case(
-            "NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)"
-        )
+        result = TextFormatter.to_sentence_case("NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)")
         assert result == "National Aeronautics Space Administration (NASA)"
 
     def test_acronym_expansion_skip_small_words(self):
@@ -201,10 +199,7 @@ class TestTextFormatterSentenceCase:
         result = TextFormatter.to_sentence_case(
             "NATIONAL ACADEMIES OF SCIENCES, ENGINEERING, AND MEDICINE (NASEM)"
         )
-        assert (
-            result
-            == "National Academies of Sciences, Engineering, and Medicine (NASEM)"
-        )
+        assert result == "National Academies of Sciences, Engineering, and Medicine (NASEM)"
 
     def test_acronym_expansion_no_match(self):
         """Test when no acronym expansion match is found."""
@@ -253,14 +248,10 @@ class TestTextFormatterSentenceCase:
             """Proxy loader that triggers a reentrant call on second invocation."""
             call_count["count"] += 1
             if call_count["count"] == 2:
-                TextFormatter.to_sentence_case(
-                    "NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)"
-                )
+                TextFormatter.to_sentence_case("NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)")
             return original_loader()
 
-        monkeypatch.setattr(
-            TextFormatter, "_load_special_cases", classmethod(wrapped_loader)
-        )
+        monkeypatch.setattr(TextFormatter, "_load_special_cases", classmethod(wrapped_loader))
 
         result = TextFormatter.to_sentence_case(
             "NASA NATIONAL AERONAUTICS SPACE ADMINISTRATION (NASA)"

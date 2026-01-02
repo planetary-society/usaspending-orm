@@ -78,11 +78,7 @@ class TestRecipientsSearchPayloadBuilding:
 
     def test_build_payload_with_all_filters(self, recipients_search):
         """Test payload with all filters applied."""
-        search = (
-            recipients_search.keyword("test corp")
-            .award_type("grants")
-            .order_by("duns", "asc")
-        )
+        search = recipients_search.keyword("test corp").award_type("grants").order_by("duns", "asc")
         payload = search._build_payload(page=1)
 
         expected = {
@@ -163,9 +159,7 @@ class TestRecipientsSearchFluentInterface:
     def test_method_chaining(self, recipients_search):
         """Test that methods can be chained together."""
         search = (
-            recipients_search.keyword("california")
-            .award_type("grants")
-            .order_by("name", "asc")
+            recipients_search.keyword("california").award_type("grants").order_by("name", "asc")
         )
 
         assert search._keyword == "california"
@@ -191,9 +185,7 @@ class TestRecipientsSearchCount:
         assert count == 1500
         # Verify the correct endpoint was called
         last_request = mock_usa_client.get_last_request()
-        assert (
-            last_request["endpoint"] == MockUSASpendingClient.Endpoints.RECIPIENT_COUNT
-        )
+        assert last_request["endpoint"] == MockUSASpendingClient.Endpoints.RECIPIENT_COUNT
         assert last_request["method"] == "POST"
 
     def test_count_payload_without_filters(self, recipients_search, mock_usa_client):
@@ -249,9 +241,7 @@ class TestRecipientsSearchCount:
         }
         assert last_request["json"] == expected_payload
 
-    def test_count_returns_zero_for_empty_response(
-        self, recipients_search, mock_usa_client
-    ):
+    def test_count_returns_zero_for_empty_response(self, recipients_search, mock_usa_client):
         """Test count returns 0 when API returns no count."""
         mock_usa_client.set_response("/recipient/count/", {})
 
@@ -287,9 +277,7 @@ class TestRecipientsSearchIteration:
         )
         assert last_request is not None
 
-    def test_iteration_creates_recipient_models(
-        self, recipients_search, mock_usa_client
-    ):
+    def test_iteration_creates_recipient_models(self, recipients_search, mock_usa_client):
         """Test that iteration creates proper Recipient model instances."""
         test_data = [
             {
@@ -336,9 +324,7 @@ class TestRecipientsSearchIteration:
         assert length == 150
         # Verify count endpoint was called
         last_request = mock_usa_client.get_last_request()
-        assert (
-            last_request["endpoint"] == MockUSASpendingClient.Endpoints.RECIPIENT_COUNT
-        )
+        assert last_request["endpoint"] == MockUSASpendingClient.Endpoints.RECIPIENT_COUNT
 
 
 class TestRecipientsSearchIntegration:

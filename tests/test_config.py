@@ -60,9 +60,7 @@ class TestCacheBackendConfiguration:
 
         # Test memory backend
         with patch("usaspending.config.cachier") as mock_cachier:
-            client_config(
-                cache_enabled=True, cache_backend="memory", cache_ttl=test_ttl
-            )
+            client_config(cache_enabled=True, cache_backend="memory", cache_ttl=test_ttl)
 
             call_kwargs = mock_cachier.set_global_params.call_args[1]
             assert call_kwargs["stale_after"] == test_ttl

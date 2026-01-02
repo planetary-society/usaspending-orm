@@ -1,6 +1,5 @@
 """Tests for FederalAccountsQuery."""
 
-
 from usaspending.models.federal_account import FederalAccount
 from usaspending.queries.federal_accounts_query import FederalAccountsQuery
 
@@ -209,6 +208,7 @@ class TestFederalAccountsQueryIntegration:
 
         # tas_codes property should return TASCodesQuery
         from usaspending.queries.tas_codes_query import TASCodesQuery
+
         assert isinstance(first.tas_codes, TASCodesQuery)
 
 
@@ -220,9 +220,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         federal_accounts_fixture = load_fixture("tas_federal_accounts.json")
         tas_codes_fixture = load_fixture("tas_codes.json")
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
 
         # Set up TAS codes response for each federal account
         for account in federal_accounts_fixture["results"]:
@@ -244,9 +242,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         """Test fiscal_year excludes accounts without matching TAS codes."""
         federal_accounts_fixture = load_fixture("tas_federal_accounts.json")
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
 
         # Set up TAS codes with only old years (no 2010 coverage except X)
         old_tas_fixture = {
@@ -279,9 +275,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         """Test fiscal_year excludes no-year (X) TAS codes by default."""
         federal_accounts_fixture = load_fixture("tas_federal_accounts.json")
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
 
         # Set up TAS codes with only no-year (X) TAS
         no_year_tas_fixture = {
@@ -311,15 +305,11 @@ class TestFederalAccountsQueryFiscalYearFilter:
         # No accounts should be included since all have only no-year TAS
         assert len(active_explicit) == 0
 
-    def test_fiscal_year_includes_no_year_when_flag_true(
-        self, mock_usa_client, load_fixture
-    ):
+    def test_fiscal_year_includes_no_year_when_flag_true(self, mock_usa_client, load_fixture):
         """Test fiscal_year includes no-year (X) TAS codes when include_noyear_accounts=True."""
         federal_accounts_fixture = load_fixture("tas_federal_accounts.json")
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
 
         # Set up TAS codes with only no-year (X) TAS
         no_year_tas_fixture = {
@@ -351,9 +341,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
 
     def test_fiscal_year_returns_empty_for_no_accounts(self, mock_usa_client):
         """Test fiscal_year returns empty list when no accounts exist."""
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", {"results": []}
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", {"results": []})
 
         query = FederalAccountsQuery(mock_usa_client, "080")
 
@@ -383,9 +371,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
             ]
         }
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
 
         # First account has 2024 TAS
         mock_usa_client.set_response(
@@ -427,9 +413,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
         assert len(active_2024) == 1
         assert active_2024[0].id == "080-0120"
 
-    def test_fiscal_year_include_noyear_with_mixed_tas(
-        self, mock_usa_client
-    ):
+    def test_fiscal_year_include_noyear_with_mixed_tas(self, mock_usa_client):
         """Test include_noyear_accounts with accounts having both no-year and explicit TAS."""
         # Create a fixture with 2 accounts
         federal_accounts_fixture = {
@@ -451,9 +435,7 @@ class TestFederalAccountsQueryFiscalYearFilter:
             ]
         }
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
 
         # First account has both no-year AND explicit 2024 TAS
         mock_usa_client.set_response(

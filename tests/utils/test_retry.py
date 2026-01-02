@@ -71,9 +71,7 @@ class TestRetryHandlerRetryableErrors:
         result = handler.execute(mock_func)
 
         assert result == "success"
-        assert (
-            mock_func.call_count == 4
-        )  # 1 initial + 3 retries (using default max_retries=3)
+        assert mock_func.call_count == 4  # 1 initial + 3 retries (using default max_retries=3)
 
 
 class TestRetryHandlerNonRetryableErrors:

@@ -63,13 +63,9 @@ class AwardTestingMixin:
     def test_lazy_loading_fetches_details(self, mock_usa_client, fixture_data):
         """Test that lazy loading fetches details when a property is accessed."""
         award_id = fixture_data["generated_unique_award_id"]
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
-            award_id=award_id
-        )
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         mock_usa_client.set_fixture_response(endpoint, self.FIXTURE_PATH)
-        award = self.AWARD_MODEL(
-            {"generated_unique_award_id": award_id}, mock_usa_client
-        )
+        award = self.AWARD_MODEL({"generated_unique_award_id": award_id}, mock_usa_client)
 
         assert award.description.lower() == fixture_data["description"].lower()
         assert mock_usa_client.get_request_count(endpoint) == 1
@@ -80,9 +76,7 @@ class AwardTestingMixin:
         """Test various properties using fixture data."""
         award = self.AWARD_MODEL(fixture_data, mock_usa_client)
         assert award.id == fixture_data["id"]
-        assert (
-            award.generated_unique_award_id == fixture_data["generated_unique_award_id"]
-        )
+        assert award.generated_unique_award_id == fixture_data["generated_unique_award_id"]
         assert award.description.lower() == fixture_data["description"].lower()
         assert_decimal_equal(award.total_obligation, fixture_data["total_obligation"])
 
@@ -101,10 +95,7 @@ class AwardTestingMixin:
         award = self.AWARD_MODEL(fixture_data, mock_usa_client)
         recipient = award.recipient
         assert isinstance(recipient, Recipient)
-        assert (
-            recipient.name.lower()
-            == fixture_data["recipient"]["recipient_name"].lower()
-        )
+        assert recipient.name.lower() == fixture_data["recipient"]["recipient_name"].lower()
         assert award.recipient is recipient
 
     def test_agency_properties(self, mock_usa_client, fixture_data):
@@ -113,20 +104,14 @@ class AwardTestingMixin:
         funding_agency = award.funding_agency
         if fixture_data.get("funding_agency"):
             assert isinstance(funding_agency, Agency)
-            assert (
-                funding_agency.name
-                == fixture_data["funding_agency"]["toptier_agency"]["name"]
-            )
+            assert funding_agency.name == fixture_data["funding_agency"]["toptier_agency"]["name"]
         else:
             assert funding_agency is None
 
         awarding_agency = award.awarding_agency
         if fixture_data.get("awarding_agency"):
             assert isinstance(awarding_agency, Agency)
-            assert (
-                awarding_agency.name
-                == fixture_data["awarding_agency"]["toptier_agency"]["name"]
-            )
+            assert awarding_agency.name == fixture_data["awarding_agency"]["toptier_agency"]["name"]
         else:
             assert awarding_agency is None
 
@@ -147,13 +132,9 @@ class AwardTestingMixin:
     def test_fetch_details_raises_exception(self, mock_usa_client, fixture_data):
         """Test _fetch_details raises API exceptions if error."""
         award_id = fixture_data["generated_unique_award_id"]
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
-            award_id=award_id
-        )
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         mock_usa_client.set_error_response(endpoint, 500)
-        award = self.AWARD_MODEL(
-            {"generated_unique_award_id": award_id}, mock_usa_client
-        )
+        award = self.AWARD_MODEL({"generated_unique_award_id": award_id}, mock_usa_client)
         with pytest.raises(HTTPError):
             _ = award.description
 
@@ -244,9 +225,7 @@ class TestAwardGenericBehaviors:
         for generated_id, expected in test_cases:
             award = Award({"generated_unique_award_id": generated_id}, mock_usa_client)
             result = award._derived_award_identifier()
-            assert result == expected, (
-                f"Expected {expected} from {generated_id}, got {result}"
-            )
+            assert result == expected, f"Expected {expected} from {generated_id}, got {result}"
 
         # Test -NONE- placeholders return None
         none_cases = [
@@ -258,9 +237,7 @@ class TestAwardGenericBehaviors:
 
         for generated_id in none_cases:
             award = Award({"generated_unique_award_id": generated_id}, mock_usa_client)
-            assert award._derived_award_identifier() is None, (
-                f"Expected None from {generated_id}"
-            )
+            assert award._derived_award_identifier() is None, f"Expected None from {generated_id}"
 
         # Test malformed IDs return None
         malformed_cases = [

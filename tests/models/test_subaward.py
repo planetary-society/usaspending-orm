@@ -21,10 +21,7 @@ class TestSubAwardModel:
     def subaward_data(self):
         """Load subaward fixture data."""
         fixture_path = (
-            Path(__file__).parent.parent
-            / "fixtures"
-            / "awards"
-            / "search_results_subawards.json"
+            Path(__file__).parent.parent / "fixtures" / "awards" / "search_results_subawards.json"
         )
         with open(fixture_path) as f:
             data = json.load(f)
@@ -46,13 +43,8 @@ class TestSubAwardModel:
             subaward.prime_award_generated_internal_id
             == subaward_data["prime_award_generated_internal_id"]
         )
-        assert (
-            subaward.prime_award_internal_id == subaward_data["prime_award_internal_id"]
-        )
-        assert (
-            subaward.prime_award_recipient_id
-            == subaward_data["prime_award_recipient_id"]
-        )
+        assert subaward.prime_award_internal_id == subaward_data["prime_award_internal_id"]
+        assert subaward.prime_award_recipient_id == subaward_data["prime_award_recipient_id"]
 
     def test_subaward_type_and_description(self, subaward_data, mock_usa_client):
         """Test SubAward type and description properties."""
@@ -62,9 +54,7 @@ class TestSubAwardModel:
 
         assert subaward.sub_award_type == subaward_data["Sub-Award Type"]
         # Test that smart_sentence_case is applied to the fixture data
-        expected_description = smart_sentence_case(
-            subaward_data["Sub-Award Description"]
-        )
+        expected_description = smart_sentence_case(subaward_data["Sub-Award Description"])
         assert subaward.sub_award_description == expected_description
 
     def test_subaward_amount_and_date(self, subaward_data, mock_usa_client):
@@ -86,17 +76,12 @@ class TestSubAwardModel:
 
         # Test that contracts_titlecase is applied to fixture data
         expected_sub_awardee = contracts_titlecase(subaward_data["Sub-Awardee Name"])
-        expected_prime_recipient = contracts_titlecase(
-            subaward_data["Prime Recipient Name"]
-        )
+        expected_prime_recipient = contracts_titlecase(subaward_data["Prime Recipient Name"])
 
         assert subaward.sub_awardee_name == expected_sub_awardee
         assert subaward.prime_recipient_name == expected_prime_recipient
         assert subaward.sub_recipient_uei == subaward_data["Sub-Recipient UEI"]
-        assert (
-            subaward.prime_award_recipient_uei
-            == subaward_data["Prime Award Recipient UEI"]
-        )
+        assert subaward.prime_award_recipient_uei == subaward_data["Prime Award Recipient UEI"]
 
     def test_subaward_agency_properties(self, subaward_data, mock_usa_client):
         """Test SubAward agency properties."""
@@ -186,10 +171,7 @@ class TestSubAwardModel:
 
         # Verify the Recipient object has the correct mapped data
         assert recipient.raw["recipient_name"] == subaward_data["Sub-Awardee Name"]
-        assert (
-            recipient.raw["recipient_unique_id"]
-            == subaward_data["sub_award_recipient_id"]
-        )
+        assert recipient.raw["recipient_unique_id"] == subaward_data["sub_award_recipient_id"]
         assert recipient.raw["recipient_uei"] == subaward_data["Sub-Recipient UEI"]
 
         # Check that location is attached if available

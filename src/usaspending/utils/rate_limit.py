@@ -63,9 +63,7 @@ class RateLimiter:
                 wait_time = (oldest_call + self.period) - now
 
                 if wait_time > 0:
-                    logger.info(
-                        f"Rate limit reached. Waiting {wait_time:.2f}s before next request"
-                    )
+                    logger.info(f"Rate limit reached. Waiting {wait_time:.2f}s before next request")
                     # Release lock while sleeping to allow other threads
                     self._lock.release()
                     try:
@@ -83,8 +81,7 @@ class RateLimiter:
             self._call_times.append(now)
 
             logger.debug(
-                f"Recorded API call at {now:.3f}. "
-                f"Current window has {len(self._call_times)} calls"
+                f"Recorded API call at {now:.3f}. Current window has {len(self._call_times)} calls"
             )
 
     def reset(self) -> None:

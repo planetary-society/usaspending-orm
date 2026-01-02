@@ -49,9 +49,7 @@ class TestTimePeriodFilter:
         start = datetime.date(2024, 1, 1)
         end = datetime.date(2024, 12, 31)
 
-        result = search_builder.time_period(
-            start_date=start, end_date=end, date_type="action_date"
-        )
+        result = search_builder.time_period(start_date=start, end_date=end, date_type="action_date")
 
         assert result is not search_builder
         assert len(result._filter_objects) == 1
@@ -245,15 +243,11 @@ class TestRecipientFilters:
 
     def test_recipient_type_names(self, search_builder):
         """Test recipient_type_names filter."""
-        result = search_builder.recipient_type_names(
-            "small_business", "woman_owned_business"
-        )
+        result = search_builder.recipient_type_names("small_business", "woman_owned_business")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
-        assert filter_dict == {
-            "recipient_type_names": ["small_business", "woman_owned_business"]
-        }
+        assert filter_dict == {"recipient_type_names": ["small_business", "woman_owned_business"]}
 
 
 class TestAgencyFilters:
@@ -261,9 +255,7 @@ class TestAgencyFilters:
 
     def test_agencies_single(self, search_builder):
         """Test agencies filter with single agency."""
-        result = search_builder.agencies(
-            {"name": "NASA", "type": "awarding", "tier": "toptier"}
-        )
+        result = search_builder.agencies({"name": "NASA", "type": "awarding", "tier": "toptier"})
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -284,9 +276,7 @@ class TestAgencyFilters:
 
     def test_agency_convenience_method(self, search_builder):
         """Test agency convenience method for single agency."""
-        result = search_builder.agency(
-            "NASA", agency_type="awarding", tier="toptier"
-        )
+        result = search_builder.agency("NASA", agency_type="awarding", tier="toptier")
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
@@ -494,15 +484,11 @@ class TestClassificationCodeFilters:
 
     def test_treasury_account_components(self, search_builder):
         """Test treasury_account_components filter."""
-        result = search_builder.treasury_account_components(
-            {"aid": "012", "main": "0100"}
-        )
+        result = search_builder.treasury_account_components({"aid": "012", "main": "0100"})
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
-        assert filter_dict == {
-            "treasury_account_components": [{"aid": "012", "main": "0100"}]
-        }
+        assert filter_dict == {"treasury_account_components": [{"aid": "012", "main": "0100"}]}
 
     def test_def_codes(self, search_builder):
         """Test def_codes filter (Disaster Emergency Fund codes)."""
@@ -519,8 +505,7 @@ class TestMethodChaining:
     def test_multiple_filters_chain(self, search_builder):
         """Test chaining multiple SearchQueryBuilder filter methods."""
         result = (
-            search_builder
-            .keywords("space")
+            search_builder.keywords("space")
             .fiscal_year(2024)
             .place_of_performance_scope("domestic")
             .recipient_type_names("small_business")
@@ -562,6 +547,7 @@ class TestSubAwardTimePeriodRestrictions:
     def subaward_builder(self, mock_usa_client):
         """Create a SubAwardsSearch instance."""
         from usaspending.queries.subawards_search import SubAwardsSearch
+
         return SubAwardsSearch(mock_usa_client)
 
     def test_subaward_accepts_action_date(self, subaward_builder):

@@ -19,9 +19,7 @@ class SubTierAgency(BaseModel):
     including nested office information.
     """
 
-    def __init__(
-        self, data: dict[str, Any], client: USASpendingClient | None = None
-    ):
+    def __init__(self, data: dict[str, Any], client: USASpendingClient | None = None):
         """Initialize SubTierAgency model.
 
         Args:

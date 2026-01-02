@@ -122,11 +122,7 @@ class TestFilterMethods:
 
     def test_recipient_id_in_payload(self, mock_usa_client):
         """Test that recipient_id appears as string (not array) in payload."""
-        search = (
-            SpendingSearch(mock_usa_client)
-            .by_recipient()
-            .recipient_id("test-recipient-id")
-        )
+        search = SpendingSearch(mock_usa_client).by_recipient().recipient_id("test-recipient-id")
 
         payload = search._build_payload(1)
 
@@ -227,10 +223,7 @@ class TestCloning:
     def test_clone_preserves_state(self, mock_usa_client):
         """Test that _clone preserves all state."""
         original = (
-            SpendingSearch(mock_usa_client)
-            .by_recipient()
-            .spending_level("awards")
-            .subawards_only()
+            SpendingSearch(mock_usa_client).by_recipient().spending_level("awards").subawards_only()
         )
 
         clone = original._clone()

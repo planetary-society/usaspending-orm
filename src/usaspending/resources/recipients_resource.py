@@ -65,9 +65,7 @@ class RecipientsResource(BaseResource):
             ...     .order_by("amount", "desc")
             ...     .limit(10)
         """
-        logger.debug(
-            "Creating new RecipientsSearch query builder for recipient searches"
-        )
+        logger.debug("Creating new RecipientsSearch query builder for recipient searches")
         from ..queries.recipients_search import RecipientsSearch
 
         return RecipientsSearch(self._client)

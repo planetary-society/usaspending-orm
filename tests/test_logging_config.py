@@ -60,7 +60,8 @@ class TestUSASpendingLogger:
 
         # Should have same handlers as before (no NullHandler added)
         new_null_handlers = [
-            h for h in logger.handlers
+            h
+            for h in logger.handlers
             if isinstance(h, logging.NullHandler) and h not in original_handlers
         ]
         assert len(new_null_handlers) == 0

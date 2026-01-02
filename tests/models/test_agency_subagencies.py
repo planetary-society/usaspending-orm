@@ -9,14 +9,10 @@ from usaspending.utils.formatter import contracts_titlecase
 class TestAgencySubagencies:
     """Test Agency model subagencies property integration."""
 
-    def test_subagencies_property_basic(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
+    def test_subagencies_property_basic(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test that agency.subagencies returns SubTierAgency objects."""
         # Set up mock response
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
 
         # Create agency with minimal required data
         agency_data = {
@@ -54,9 +50,7 @@ class TestAgencySubagencies:
         # Names are transformed by contracts_titlecase in the model
         assert subagency.name == contracts_titlecase(expected_subagency["name"])
         assert subagency.abbreviation == expected_subagency["abbreviation"]
-        assert_decimal_equal(
-            subagency.total_obligations, expected_subagency["total_obligations"]
-        )
+        assert_decimal_equal(subagency.total_obligations, expected_subagency["total_obligations"])
         assert subagency.transaction_count == expected_subagency["transaction_count"]
         assert subagency.new_award_count == expected_subagency["new_award_count"]
 
@@ -65,9 +59,7 @@ class TestAgencySubagencies:
     ):
         """Test that subagencies have offices populated."""
         # Set up mock response
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
 
         # Create agency with minimal required data
         agency_data = {"code": "080", "toptier_code": "080", "name": "NASA"}
@@ -94,9 +86,7 @@ class TestAgencySubagencies:
         assert_decimal_equal(
             first_office.total_obligations, expected_first_office["total_obligations"]
         )
-        assert (
-            first_office.transaction_count == expected_first_office["transaction_count"]
-        )
+        assert first_office.transaction_count == expected_first_office["transaction_count"]
         assert first_office.new_award_count == expected_first_office["new_award_count"]
 
     def test_subagencies_property_no_code(self, mock_usa_client):
@@ -130,9 +120,7 @@ class TestAgencySubagencies:
     ):
         """Test that subagencies uses agency's fiscal year if available."""
         # Set up mock response
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
 
         agency_data = {
             "code": "080",
@@ -167,9 +155,7 @@ class TestAgencySubagencies:
     ):
         """Test that subagencies works without fiscal year."""
         # Set up mock response
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
 
         agency_data = {
             "code": "080",

@@ -129,9 +129,7 @@ class USASpendingClient:
         if self._rate_limiter is None:
             from .utils.rate_limit import RateLimiter
 
-            self._rate_limiter = RateLimiter(
-                config.rate_limit_calls, config.rate_limit_period
-            )
+            self._rate_limiter = RateLimiter(config.rate_limit_calls, config.rate_limit_period)
         return self._rate_limiter
 
     @property
@@ -140,9 +138,7 @@ class USASpendingClient:
         if self._retry_handler is None:
             from .utils.retry import RetryHandler
 
-            self._retry_handler = RetryHandler(
-                session_reset_callback=self.reset_session
-            )
+            self._retry_handler = RetryHandler(session_reset_callback=self.reset_session)
         return self._retry_handler
 
     @property
@@ -297,9 +293,7 @@ class USASpendingClient:
                     )
 
             # Fallback to uncached request if cache disabled or returned invalid data
-            return self._make_uncached_request(
-                method, endpoint, params=params, json=json, **kwargs
-            )
+            return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
         except (APIError, HTTPError, ValidationError, RateLimitError):
             # These are normal API errors - let them propagate without fallback
             # Cachier will re-execute on next call (doesn't cache exceptions)
@@ -309,13 +303,9 @@ class USASpendingClient:
             logger.warning(
                 f"Cache operation failed for {method} {endpoint}: {cache_error}. Using uncached request."
             )
-            return self._make_uncached_request(
-                method, endpoint, params=params, json=json, **kwargs
-            )
+            return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
 
-    @cachier.cachier(
-        wait_for_calc_timeout=config.cache_timeout, hash_func=_cache_key
-    )
+    @cachier.cachier(wait_for_calc_timeout=config.cache_timeout, hash_func=_cache_key)
     def _make_cached_request(
         self,
         cache_namespace: str,
@@ -335,9 +325,7 @@ class USASpendingClient:
             json: JSON body for POST requests
             **kwargs: Additional arguments for requests
         """
-        return self._make_uncached_request(
-            method, endpoint, params=params, json=json, **kwargs
-        )
+        return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
 
     def _make_uncached_request(
         self,
@@ -370,9 +358,7 @@ class USASpendingClient:
         # Increment request counter and check for proactive session reset
         self._request_count += 1
         if self._request_count >= config.session_request_limit:
-            logger.info(
-                f"Proactively resetting session after {self._request_count} requests"
-            )
+            logger.info(f"Proactively resetting session after {self._request_count} requests")
             self.reset_session()
 
         # Build full URL
@@ -396,9 +382,7 @@ class USASpendingClient:
 
         try:
             # Make request with retry
-            response = self.retry_handler.execute(
-                self._session.request, **request_kwargs
-            )
+            response = self.retry_handler.execute(self._session.request, **request_kwargs)
 
             # Calculate duration
             duration = time.time() - start_time
@@ -472,9 +456,7 @@ class USASpendingClient:
             # Note: Don't treat "message" alone as an error indicator since some endpoints
             # (like download/status) include message as a normal response field
             if "error" in data:
-                error_msg = (
-                    data.get("error") or data.get("message") or "Unknown API error"
-                )
+                error_msg = data.get("error") or data.get("message") or "Unknown API error"
                 error_msg_with_context = self._format_error_with_context(error_msg)
                 log_api_response(
                     logger,
@@ -483,9 +465,7 @@ class USASpendingClient:
                     duration,
                     error_msg_with_context,
                 )
-                raise APIError(
-                    error_msg, status_code=response.status_code, response_body=data
-                )
+                raise APIError(error_msg, status_code=response.status_code, response_body=data)
 
             # Log messages from successful responses (200 status code)
             if response.status_code == 200 and "messages" in data:
@@ -603,9 +583,7 @@ class USASpendingClient:
         if not self._closed and self._session:
             self._session.close()
             self._closed = True
-            logger.info(
-                f"USASpending client closed after {self._request_count} requests"
-            )
+            logger.info(f"USASpending client closed after {self._request_count} requests")
 
     def reset_session(self) -> None:
         """Reset the HTTP session to handle server-side session limits.

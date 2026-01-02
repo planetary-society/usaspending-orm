@@ -99,9 +99,7 @@ class TestSubAgencyQueryExecution:
 
     @pytest.fixture
     def setup_response(self, mock_usa_client, agency_subagencies_fixture_data):
-        mock_usa_client.set_response(
-            "/agency/080/sub_agency/", agency_subagencies_fixture_data
-        )
+        mock_usa_client.set_response("/agency/080/sub_agency/", agency_subagencies_fixture_data)
 
     def test_build_payload(self, mock_usa_client):
         """Test payload construction."""
@@ -131,7 +129,7 @@ class TestSubAgencyQueryExecution:
     ):
         """Test that execution uses GET method."""
         query = SubAgencyQuery(mock_usa_client, "080")
-        
+
         # Execute query (triggering API call)
         query.all()
 
@@ -148,30 +146,23 @@ class TestSubAgencyQueryExecution:
             },
         )
 
-    def test_count(
-        self, mock_usa_client, agency_subagencies_fixture_data, setup_response
-    ):
+    def test_count(self, mock_usa_client, agency_subagencies_fixture_data, setup_response):
         """Test count method."""
         query = SubAgencyQuery(mock_usa_client, "080")
         count = query.count()
-        
+
         # Fixture data usually has page_metadata.total
         expected_count = agency_subagencies_fixture_data["page_metadata"]["total"]
         assert count == expected_count
 
         def test_iteration_transforms_results(
-
             self, mock_usa_client, agency_subagencies_fixture_data, setup_response
-
         ):
-
             """Test that iteration yields model objects."""
 
             query = SubAgencyQuery(mock_usa_client, "080")
 
             results = list(query)
-
-            
 
             assert len(results) > 0
 
@@ -179,56 +170,34 @@ class TestSubAgencyQueryExecution:
 
             assert results[0].name is not None
 
-    
-
         def test_first_returns_single_item(
-
             self, mock_usa_client, agency_subagencies_fixture_data, setup_response
-
         ):
-
             """Test that .first() returns a single model instance."""
 
             query = SubAgencyQuery(mock_usa_client, "080")
 
             result = query.first()
 
-            
-
             assert result.__class__.__name__ == "SubTierAgency"
 
             # Verify limit(1) was passed to API
 
             mock_usa_client.assert_called_with(
-
                 "/agency/080/sub_agency/",
-
                 "GET",
-
                 params={
-
                     "agency_type": "awarding",
-
                     "page": 1,
-
                     "limit": 1,
-
                     "sort": "total_obligations",
-
                     "order": "desc",
-
                 },
-
             )
 
-    
-
         def test_limit_restricts_results(
-
             self, mock_usa_client, agency_subagencies_fixture_data, setup_response
-
         ):
-
             """Test that .limit() restricts the number of yielded items."""
 
             # Mock 20 results across 2 pages
@@ -237,24 +206,15 @@ class TestSubAgencyQueryExecution:
 
             mock_usa_client.set_paginated_response("/agency/080/sub_agency/", data, page_size=10)
 
-            
-
             query = SubAgencyQuery(mock_usa_client, "080").limit(5)
 
             results = list(query)
 
-            
-
             assert len(results) == 5
 
-    
-
         def test_indexing_fetches_specific_page(
-
             self, mock_usa_client, agency_subagencies_fixture_data, setup_response
-
         ):
-
             """Test that [index] access works correctly."""
 
             # Setup 15 results, page size 5
@@ -263,42 +223,24 @@ class TestSubAgencyQueryExecution:
 
             mock_usa_client.set_paginated_response("/agency/080/sub_agency/", data, page_size=5)
 
-            
-
             query = SubAgencyQuery(mock_usa_client, "080").page_size(5)
-
-            
 
             # Access index 12 (should be in page 3)
 
             item = query[12]
-
-            
 
             assert item.code == "12"
 
             # Verify page 3 was requested
 
             mock_usa_client.assert_called_with(
-
                 "/agency/080/sub_agency/",
-
                 "GET",
-
                 params={
-
                     "agency_type": "awarding",
-
                     "page": 3,
-
                     "limit": 5,
-
                     "sort": "total_obligations",
-
                     "order": "desc",
-
                 },
-
             )
-
-    

@@ -134,9 +134,7 @@ class TestDistrictSpendingWithFixture:
         assert district.district_number == expected_district_num
         assert not district.is_multiple_districts
 
-    def test_district_spending_repr_from_fixture(
-        self, district_fixture_data, mock_usa_client
-    ):
+    def test_district_spending_repr_from_fixture(self, district_fixture_data, mock_usa_client):
         """Test string representation with fixture data."""
         district = DistrictSpending(district_fixture_data, mock_usa_client)
 

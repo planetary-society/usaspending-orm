@@ -108,9 +108,7 @@ class Recipient(LazyRecord):
         body = m.group("body")
 
         # turn  "'C','R'"  or  "'R'"  etc.  into a list of clean tokens
-        tokens = [
-            tok.strip().strip("'\"").upper() for tok in body.split(",") if tok.strip()
-        ]
+        tokens = [tok.strip().strip("'\"").upper() for tok in body.split(",") if tok.strip()]
 
         letter = tokens[0]
         return f"{base}-{letter}" if letter else base
@@ -144,9 +142,7 @@ class Recipient(LazyRecord):
         """
         names = self._lazy_get("alternate_names", default=[])
         if isinstance(names, list):
-            return [
-                contracts_titlecase(name) for name in names if isinstance(name, str)
-            ]
+            return [contracts_titlecase(name) for name in names if isinstance(name, str)]
         else:
             return []
 
@@ -157,9 +153,7 @@ class Recipient(LazyRecord):
         Returns:
             Optional[str]: The DUNS number, or None.
         """
-        return self._lazy_get(
-            "duns", "recipient_unique_id", "Recipient DUNS Number", default=None
-        )
+        return self._lazy_get("duns", "recipient_unique_id", "Recipient DUNS Number", default=None)
 
     @property
     def uei(self) -> str | None:

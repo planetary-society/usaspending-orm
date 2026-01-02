@@ -44,5 +44,7 @@ def assert_decimal_equal(
         message: Optional custom error message
     """
     if not decimal_equal(actual, expected):
-        default_message = f"Expected {actual} (type: {type(actual)}) to equal {expected} (type: {type(expected)})"
+        default_message = (
+            f"Expected {actual} (type: {type(actual)}) to equal {expected} (type: {type(expected)})"
+        )
         raise AssertionError(message or default_message)

@@ -12,9 +12,7 @@ if TYPE_CHECKING:
     from .award import Award
 
 
-def create_award(
-    data_or_id: dict[str, Any] | str, client: USASpendingClient
-) -> Award:
+def create_award(data_or_id: dict[str, Any] | str, client: USASpendingClient) -> Award:
     """Create the appropriate Award subclass based on the award data.
 
     Args:
@@ -40,7 +38,7 @@ def create_award(
 
     if not isinstance(data_or_id, dict):
         raise ValidationError("Award factory expects a dict or an award_id string")
-    
+
     award_class_map = {
         "contract": Contract,
         "idv": IDV,
@@ -51,9 +49,7 @@ def create_award(
     # Try category field first, then type code
     group = get_award_group(data_or_id.get("category", ""))
     if not group:
-        group = get_award_group(
-            data_or_id.get("type") or data_or_id.get("award_type") or ""
-        )
+        group = get_award_group(data_or_id.get("type") or data_or_id.get("award_type") or "")
 
     cls = award_class_map.get(group, Award)
     return cls(data_or_id, client)

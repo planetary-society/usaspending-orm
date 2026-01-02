@@ -110,6 +110,4 @@ class DownloadStatus(BaseModel):
         Returns:
             str: String containing status and file name.
         """
-        return (
-            f"<DownloadStatus status='{self.api_status.value}' file='{self.file_name}'>"
-        )
+        return f"<DownloadStatus status='{self.api_status.value}' file='{self.file_name}'>"

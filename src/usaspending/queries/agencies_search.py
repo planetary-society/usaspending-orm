@@ -56,9 +56,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Build request payload."""
         if not self._search_text:
-            raise ValidationError(
-                "search_text is required. Use name() or search_text() method."
-            )
+            raise ValidationError("search_text is required. Use name() or search_text() method.")
 
         return {"search_text": self._search_text, "limit": self._limit}
 
@@ -149,9 +147,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
         logger.debug(f"{self.__class__.__name__}.count() called")
 
         if not self._search_text:
-            raise ValidationError(
-                "search_text is required. Use name() or search_text() method."
-            )
+            raise ValidationError("search_text is required. Use name() or search_text() method.")
 
         # Execute query to get all results
         response = self._execute_query(1)

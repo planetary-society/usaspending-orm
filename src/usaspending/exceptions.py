@@ -271,10 +271,7 @@ class DownloadError(USASpendingError):
         Handling download errors::
 
             try:
-                files = client.awards.download_award(
-                    "ABC123",
-                    destination_dir="/tmp/downloads"
-                )
+                files = client.awards.download_award("ABC123", destination_dir="/tmp/downloads")
             except DownloadError as e:
                 print(f"Download failed: {e}")
                 if e.file_name:

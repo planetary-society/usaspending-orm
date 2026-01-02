@@ -1,6 +1,5 @@
 """Tests for FederalAccount model."""
 
-
 from usaspending.models.federal_account import FederalAccount
 from usaspending.queries.tas_codes_query import TASCodesQuery
 
@@ -152,8 +151,7 @@ class TestFederalAccountFromFixture:
         fixture = load_fixture("tas_federal_accounts.json")
 
         accounts = [
-            FederalAccount(data, mock_usa_client, toptier_code="080")
-            for data in fixture["results"]
+            FederalAccount(data, mock_usa_client, toptier_code="080") for data in fixture["results"]
         ]
 
         assert len(accounts) == 16

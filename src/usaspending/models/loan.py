@@ -24,7 +24,16 @@ class Loan(Grant):
         "sai_number",
     ]
 
-    SEARCH_FIELDS: ClassVar[list[str]] = [*Award.SEARCH_FIELDS, "Issued Date", "Loan Value", "Subsidy Cost", "SAI Number", "CFDA Number", "Assistance Listings", "primary_assistance_listing"]
+    SEARCH_FIELDS: ClassVar[list[str]] = [
+        *Award.SEARCH_FIELDS,
+        "Issued Date",
+        "Loan Value",
+        "Subsidy Cost",
+        "SAI Number",
+        "CFDA Number",
+        "Assistance Listings",
+        "primary_assistance_listing",
+    ]
 
     @property
     def fain(self) -> str | None:
@@ -58,9 +67,7 @@ class Loan(Grant):
         Returns:
             Optional[Decimal]: The total subsidy cost, or None.
         """
-        return to_decimal(
-            self._lazy_get("Subsidy Cost", "total_subsidy_cost", default=None)
-        )
+        return to_decimal(self._lazy_get("Subsidy Cost", "total_subsidy_cost", default=None))
 
     @property
     def total_loan_value(self) -> Decimal | None:
@@ -69,9 +76,7 @@ class Loan(Grant):
         Returns:
             Optional[Decimal]: The total loan value, or None.
         """
-        return to_decimal(
-            self._lazy_get("Loan Value", "total_loan_value", default=None)
-        )
+        return to_decimal(self._lazy_get("Loan Value", "total_loan_value", default=None))
 
     @property
     def cfda_info(self) -> list[dict[str, Any]]:

@@ -29,9 +29,7 @@ class TestAwardAccountsProperty:
     @pytest.fixture
     def award_with_accounts(self, mock_accounts_response):
         """Create Award with mocked accounts response."""
-        return Award(
-            {"generated_unique_award_id": "CONT_AWD_123"}, mock_accounts_response
-        )
+        return Award({"generated_unique_award_id": "CONT_AWD_123"}, mock_accounts_response)
 
     def test_award_accounts_property_returns_query(self, mock_usa_client):
         """Test award.accounts returns an AwardAccountsQuery."""
@@ -85,9 +83,7 @@ class TestAwardAccountsDataAccess:
     @pytest.fixture
     def award_with_accounts(self, mock_accounts_response):
         """Create Award with mocked accounts response."""
-        return Award(
-            {"generated_unique_award_id": "CONT_AWD_123"}, mock_accounts_response
-        )
+        return Award({"generated_unique_award_id": "CONT_AWD_123"}, mock_accounts_response)
 
     @pytest.fixture
     def first_account(self, award_with_accounts):
@@ -98,16 +94,11 @@ class TestAwardAccountsDataAccess:
         """Test that account properties are accessible through award.accounts."""
         from decimal import Decimal
 
-        expected_amount = Decimal(
-            str(first_account_data["total_transaction_obligated_amount"])
-        )
+        expected_amount = Decimal(str(first_account_data["total_transaction_obligated_amount"]))
 
         assert first_account.id == first_account_data["federal_account"]
         assert first_account.total_transaction_obligated_amount == expected_amount
-        assert (
-            first_account.funding_agency_name
-            == first_account_data["funding_agency_name"]
-        )
+        assert first_account.funding_agency_name == first_account_data["funding_agency_name"]
 
     def test_account_funding_agency(self, first_account, first_account_data):
         """Test accessing funding_agency through award.accounts."""
@@ -149,9 +140,7 @@ class TestClientAwardAccountsAccess:
         assert resource is not None
         assert hasattr(resource, "award_id")
 
-    def test_client_award_accounts_award_id(
-        self, mock_accounts_response, accounts_fixture
-    ):
+    def test_client_award_accounts_award_id(self, mock_accounts_response, accounts_fixture):
         """Test client.award_accounts.award_id()."""
         accounts = list(mock_accounts_response.award_accounts.award_id("CONT_AWD_123"))
 

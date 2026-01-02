@@ -22,9 +22,7 @@ def main():
         epilog="This CLI tool queues a download job, waits for completion, downloads the zip file, and extracts the contents.",
     )
 
-    parser.add_argument(
-        "award_id", help="The unique award identifier (e.g., PIIN/FAIN/etc.)"
-    )
+    parser.add_argument("award_id", help="The unique award identifier (e.g., PIIN/FAIN/etc.)")
     parser.add_argument(
         "-o",
         "--output-dir",

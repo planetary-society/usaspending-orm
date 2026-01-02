@@ -50,9 +50,7 @@ class TestRetrySessionReset:
             handler.execute(failing_request)
 
         assert not session_reset_called
-        assert (
-            handler._consecutive_5xx_errors == config.max_retries + 1
-        )  # All attempts failed
+        assert handler._consecutive_5xx_errors == config.max_retries + 1  # All attempts failed
 
     def test_session_reset_on_threshold(self, reset_config):
         """Test that session reset is called when consecutive 5XX threshold is reached."""
@@ -67,10 +65,7 @@ class TestRetrySessionReset:
             nonlocal call_count
             call_count += 1
             # Fail for threshold number of calls (2), then succeed after reset
-            if (
-                call_count <= config.session_reset_on_5xx_threshold
-                and not session_reset_called
-            ):
+            if call_count <= config.session_reset_on_5xx_threshold and not session_reset_called:
                 raise HTTPError("Server Error", status_code=500)
             # After session reset, succeed
             return unittest.mock.Mock(status_code=200)
@@ -116,9 +111,7 @@ class TestRetrySessionReset:
         result = handler.execute(mixed_errors)
 
         assert result.status_code == 200
-        assert (
-            not session_reset_called
-        )  # 429 reset the counter before threshold was reached
+        assert not session_reset_called  # 429 reset the counter before threshold was reached
         assert handler._consecutive_5xx_errors == 0
 
     def test_session_reset_without_callback(self):
@@ -172,14 +165,10 @@ class TestRetrySessionReset:
             call_count += 1
 
             # First 2 calls fail with 500, triggering reset after 2nd
-            if (
-                call_count <= config.session_reset_on_5xx_threshold
-                and session_reset_count == 0
-            ):
+            if call_count <= config.session_reset_on_5xx_threshold and session_reset_count == 0:
                 raise HTTPError("Server Error", status_code=500)
             elif (
-                call_count == config.session_reset_on_5xx_threshold + 1
-                and session_reset_count == 1
+                call_count == config.session_reset_on_5xx_threshold + 1 and session_reset_count == 1
             ):
                 # After reset, still fails once more but with different error
                 raise HTTPError("Too Many Requests", status_code=429)
@@ -214,10 +203,7 @@ class TestRetrySessionReset:
         def mock_request():
             nonlocal call_count
             call_count += 1
-            if (
-                call_count <= config.session_reset_on_5xx_threshold
-                and not session_reset_called
-            ):
+            if call_count <= config.session_reset_on_5xx_threshold and not session_reset_called:
                 raise HTTPError("Server Error", status_code=500)
             return unittest.mock.Mock(status_code=200)
 
@@ -229,23 +215,17 @@ class TestRetrySessionReset:
 
             # Check for enhanced logging messages
             debug_messages = [
-                record.message
-                for record in caplog.records
-                if record.levelname == "DEBUG"
+                record.message for record in caplog.records if record.levelname == "DEBUG"
             ]
             warning_messages = [
-                record.message
-                for record in caplog.records
-                if record.levelname == "WARNING"
+                record.message for record in caplog.records if record.levelname == "WARNING"
             ]
 
             # Should log consecutive 5XX errors count
             assert any("Consecutive 5XX errors:" in msg for msg in debug_messages)
 
             # Should log enhanced session reset message
-            assert any(
-                "server-side session exhaustion" in msg for msg in warning_messages
-            )
+            assert any("server-side session exhaustion" in msg for msg in warning_messages)
 
     def test_5xx_error_counter_reset_logging(self, reset_config, caplog):
         """Test logging when 5XX error counter is reset by non-5XX errors."""
@@ -259,9 +239,7 @@ class TestRetrySessionReset:
             if call_count == 1:
                 raise HTTPError("Server Error", status_code=500)
             elif call_count == 2:
-                raise HTTPError(
-                    "Too Many Requests", status_code=429
-                )  # Should reset counter
+                raise HTTPError("Too Many Requests", status_code=429)  # Should reset counter
             else:
                 return unittest.mock.Mock(status_code=200)
 
@@ -271,14 +249,10 @@ class TestRetrySessionReset:
             assert result.status_code == 200
 
             debug_messages = [
-                record.message
-                for record in caplog.records
-                if record.levelname == "DEBUG"
+                record.message for record in caplog.records if record.levelname == "DEBUG"
             ]
             # Should log that counter was reset by HTTPError
-            assert any(
-                "5XX error counter reset by HTTPError" in msg for msg in debug_messages
-            )
+            assert any("5XX error counter reset by HTTPError" in msg for msg in debug_messages)
 
     def test_different_5xx_errors_count_together(self, reset_config):
         """Test that different 5XX error codes (500, 502, 503, 504) all contribute to the same counter."""
@@ -366,13 +340,9 @@ class TestRetrySessionReset:
             if call_count == 1:
                 raise HTTPError("Internal Server Error", status_code=500)
             elif call_count == 2:
-                raise HTTPError(
-                    "Too Many Requests", status_code=429
-                )  # Should reset 5XX counter
+                raise HTTPError("Too Many Requests", status_code=429)  # Should reset 5XX counter
             elif call_count == 3:
-                raise HTTPError(
-                    "Service Unavailable", status_code=503
-                )  # Start new 5XX count
+                raise HTTPError("Service Unavailable", status_code=503)  # Start new 5XX count
             else:
                 return unittest.mock.Mock(status_code=200)
 

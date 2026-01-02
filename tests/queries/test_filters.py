@@ -42,9 +42,7 @@ def test_time_period_filter_serialization():
     start_date = datetime.date(2024, 10, 1)
     end_date = datetime.date(2025, 9, 30)
     time_period_filter = TimePeriodFilter(start_date=start_date, end_date=end_date)
-    expected_dict = {
-        "time_period": [{"start_date": "2024-10-01", "end_date": "2025-09-30"}]
-    }
+    expected_dict = {"time_period": [{"start_date": "2024-10-01", "end_date": "2025-09-30"}]}
 
     # Act
     result_dict = time_period_filter.to_dict()
@@ -85,9 +83,7 @@ def test_simple_list_filter_for_award_types():
     Tests that SimpleListFilter works correctly for award_type_codes.
     """
     # Arrange
-    award_type_filter = SimpleListFilter(
-        key="award_type_codes", values=["A", "B", "C", "D"]
-    )
+    award_type_filter = SimpleListFilter(key="award_type_codes", values=["A", "B", "C", "D"])
     expected_dict = {"award_type_codes": ["A", "B", "C", "D"]}
 
     # Act
@@ -117,19 +113,11 @@ def test_agency_filter_serialization():
     """
     Tests that AgencyFilter serializes agencies correctly.
     """
-    
-    agency_spec = AgencySpec(
-        name="Department of Pizza",
-        type="funding",
-        tier="toptier"
-    )
-    
-    agency_spec_2 = AgencySpec(
-        name="Department of Burgers",
-        type="awarding",
-        tier="toptier"
-    )
-    
+
+    agency_spec = AgencySpec(name="Department of Pizza", type="funding", tier="toptier")
+
+    agency_spec_2 = AgencySpec(name="Department of Burgers", type="awarding", tier="toptier")
+
     # Start with a single agency
     agency_filter = AgencyFilter(agencies=[agency_spec])
     expected_dict = {
@@ -141,10 +129,10 @@ def test_agency_filter_serialization():
             }
         ]
     }
-    
+
     result_dict = agency_filter.to_dict()
     assert result_dict == expected_dict
-    
+
     # Now test with two agencies
     dual_agency_filter = AgencyFilter(agencies=[agency_spec, agency_spec_2])
     dual_expected_dict = {
@@ -158,10 +146,10 @@ def test_agency_filter_serialization():
                 "name": "Department of Burgers",
                 "type": "awarding",
                 "tier": "toptier",
-            }
+            },
         ]
     }
-    
+
     result_dict = dual_agency_filter.to_dict()
     assert result_dict == dual_expected_dict
 
@@ -172,12 +160,8 @@ def test_location_filter_for_state():
     """
     # Arrange
     location = LocationSpec(country_code="USA", state_code="VA")
-    location_filter = LocationFilter(
-        key="place_of_performance_locations", locations=[location]
-    )
-    expected_dict = {
-        "place_of_performance_locations": [{"country": "USA", "state": "VA"}]
-    }
+    location_filter = LocationFilter(key="place_of_performance_locations", locations=[location])
+    expected_dict = {"place_of_performance_locations": [{"country": "USA", "state": "VA"}]}
 
     # Act
     result_dict = location_filter.to_dict()
@@ -435,20 +419,12 @@ class TestLocationValidation:
 
     def test_valid_county_with_state_and_country(self):
         """Test that county with state and country is valid."""
-        location = parse_location_spec({
-            "country": "USA",
-            "state": "VA",
-            "county": "059"
-        })
+        location = parse_location_spec({"country": "USA", "state": "VA", "county": "059"})
         assert location.county_code == "059"
 
     def test_valid_district_with_state_and_usa(self):
         """Test that district with state and USA country is valid."""
-        location = parse_location_spec({
-            "country": "USA",
-            "state": "VA",
-            "district_original": "11"
-        })
+        location = parse_location_spec({"country": "USA", "state": "VA", "district_original": "11"})
         assert location.district_original == "11"
 
     def test_missing_country_raises_error(self):
@@ -464,39 +440,31 @@ class TestLocationValidation:
     def test_county_with_district_raises_error(self):
         """Test that county and district together raises ValidationError."""
         with pytest.raises(ValidationError, match="mutually exclusive"):
-            parse_location_spec({
-                "country": "USA",
-                "state": "VA",
-                "county": "059",
-                "district_original": "11"
-            })
+            parse_location_spec(
+                {"country": "USA", "state": "VA", "county": "059", "district_original": "11"}
+            )
 
     def test_district_original_and_current_raises_error(self):
         """Test that both district types together raises ValidationError."""
         with pytest.raises(ValidationError, match="mutually exclusive"):
-            parse_location_spec({
-                "country": "USA",
-                "state": "VA",
-                "district_original": "11",
-                "district_current": "12"
-            })
+            parse_location_spec(
+                {
+                    "country": "USA",
+                    "state": "VA",
+                    "district_original": "11",
+                    "district_current": "12",
+                }
+            )
 
     def test_district_without_state_raises_error(self):
         """Test that district without state raises ValidationError."""
         with pytest.raises(ValidationError, match="district requires state"):
-            parse_location_spec({
-                "country": "USA",
-                "district_original": "11"
-            })
+            parse_location_spec({"country": "USA", "district_original": "11"})
 
     def test_district_with_non_usa_country_raises_error(self):
         """Test that district with non-USA country raises ValidationError."""
         with pytest.raises(ValidationError, match="only valid for USA"):
-            parse_location_spec({
-                "country": "DEU",
-                "state": "BY",
-                "district_original": "11"
-            })
+            parse_location_spec({"country": "DEU", "state": "BY", "district_original": "11"})
 
     def test_key_mapping_country(self):
         """Test that 'country' maps to 'country_code'."""

@@ -61,14 +61,10 @@ class TestRecipientInitialization:
 
     def test_init_with_invalid_type_raises_error(self, mock_usa_client):
         """Test that Recipient initialization with invalid type raises ValidationError."""
-        with pytest.raises(
-            ValidationError, match="Recipient expects dict or string, got int"
-        ):
+        with pytest.raises(ValidationError, match="Recipient expects dict or string, got int"):
             Recipient(123, mock_usa_client)
 
-        with pytest.raises(
-            ValidationError, match="Recipient expects dict or string, got list"
-        ):
+        with pytest.raises(ValidationError, match="Recipient expects dict or string, got list"):
             Recipient([], mock_usa_client)
 
     def test_init_copies_data_dict(self, mock_usa_client):
@@ -91,9 +87,7 @@ class TestRecipientInitialization:
     def test_init_cleans_recipient_id(self, mock_usa_client):
         """Test that recipient IDs are cleaned during initialization."""
         fixture_data = load_json_fixture("recipient_university.json")
-        base_id = fixture_data["recipient_id"].split("-")[
-            0
-        ]  # Get base part before dash
+        base_id = fixture_data["recipient_id"].split("-")[0]  # Get base part before dash
 
         # Test with list-annotated ID
         data = {"recipient_id": f"{base_id}-['C','R']"}
@@ -105,12 +99,8 @@ class TestRecipientInitialization:
         assert recipient2._data["recipient_id"] == "abc123-P"
 
         # Test with problematic case
-        recipient3 = Recipient(
-            "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C", mock_usa_client
-        )
-        assert (
-            recipient3._data["recipient_id"] == "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C"
-        )
+        recipient3 = Recipient("bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C", mock_usa_client)
+        assert recipient3._data["recipient_id"] == "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C"
 
 
 class TestRecipientIdCleaning:
@@ -194,8 +184,7 @@ class TestRecipientProperties:
         """Test alternate_names property returns list with titlecase."""
         recipient = Recipient(recipient_data, mock_usa_client)
         expected_names = [
-            contracts_titlecase(name)
-            for name in recipient_data.get("alternate_names", [])
+            contracts_titlecase(name) for name in recipient_data.get("alternate_names", [])
         ]
         assert recipient.alternate_names == expected_names
 
@@ -228,9 +217,7 @@ class TestRecipientProperties:
         recipient = Recipient({"recipient_id": "test-123"}, mock_usa_client)
 
         # Mock endpoint to return no name
-        mock_usa_client.set_response(
-            "/recipient/test-123/", {"recipient_id": "test-123"}
-        )
+        mock_usa_client.set_response("/recipient/test-123/", {"recipient_id": "test-123"})
 
         repr_str = repr(recipient)
         assert "?" in repr_str
@@ -292,10 +279,7 @@ class TestRecipientParentRelationships:
 
         assert len(parents) == len(recipient_data["parents"])
         assert all(isinstance(p, Recipient) for p in parents)
-        assert (
-            parents[0]._data["recipient_id"]
-            == recipient_data["parents"][0]["parent_id"]
-        )
+        assert parents[0]._data["recipient_id"] == recipient_data["parents"][0]["parent_id"]
         assert parents[0]._data["name"] == recipient_data["parents"][0]["parent_name"]
 
     def test_parents_property_ignores_same_parentage(self, mock_usa_client):
@@ -338,9 +322,7 @@ class TestRecipientLocation:
         assert isinstance(location, Location)
         assert location._data["city_name"] == recipient_data["location"]["city_name"]
         assert location._data["state_code"] == recipient_data["location"]["state_code"]
-        assert (
-            location._data["country_code"] == recipient_data["location"]["country_code"]
-        )
+        assert location._data["country_code"] == recipient_data["location"]["country_code"]
         assert location._data["zip"] == recipient_data["location"]["zip"]
 
     def test_location_property_with_no_location(self, mock_usa_client):
@@ -379,8 +361,7 @@ class TestRecipientTotals:
         """Test total face value loan amount."""
         recipient = Recipient(recipient_data, mock_usa_client)
         assert (
-            recipient.total_face_value_loan_amount
-            == recipient_data["total_face_value_loan_amount"]
+            recipient.total_face_value_loan_amount == recipient_data["total_face_value_loan_amount"]
         )
 
     def test_total_face_value_loan_transactions(self, mock_usa_client, recipient_data):
@@ -405,9 +386,7 @@ class TestRecipientLazyLoading:
         recipient_id = recipient_data["recipient_id"]
 
         # Set up the mock response for recipient GET
-        mock_usa_client.set_fixture_response(
-            f"/recipient/{recipient_id}/", "recipient_university"
-        )
+        mock_usa_client.set_fixture_response(f"/recipient/{recipient_id}/", "recipient_university")
 
         # Create recipient with minimal data (no name field)
         recipient = Recipient({"recipient_id": recipient_id}, mock_usa_client)
@@ -429,9 +408,7 @@ class TestRecipientLazyLoading:
         recipient_id = recipient_data["recipient_id"]
 
         # Set up the mock response
-        mock_usa_client.set_fixture_response(
-            f"/recipient/{recipient_id}/", "recipient_university"
-        )
+        mock_usa_client.set_fixture_response(f"/recipient/{recipient_id}/", "recipient_university")
 
         # Create recipient with minimal data
         recipient = Recipient({"recipient_id": recipient_id}, mock_usa_client)
@@ -457,9 +434,7 @@ class TestRecipientLazyLoading:
         recipient_id = recipient_data["recipient_id"]
 
         # Set up the mock response
-        mock_usa_client.set_fixture_response(
-            f"/recipient/{recipient_id}/", "recipient_university"
-        )
+        mock_usa_client.set_fixture_response(f"/recipient/{recipient_id}/", "recipient_university")
 
         # Create recipient with some initial data
         initial_data = {
@@ -566,9 +541,7 @@ class TestLazyLoadingFixes:
     def test_parents_lazy_loading_with_empty_list(self):
         """Test that parents property still works with empty list in initial data."""
         # Create recipient with empty parents list
-        recipient = Recipient(
-            {"recipient_id": "test-123", "parents": []}, client=self.mock_client
-        )
+        recipient = Recipient({"recipient_id": "test-123", "parents": []}, client=self.mock_client)
 
         # Access parents property - should NOT trigger lazy load since key exists
         parents = recipient.parents
@@ -629,14 +602,11 @@ class TestRecipientSpendingIntegration:
         recipient_spending = RecipientSpending(spending_data, client=mock_client)
 
         # Assert: recipient_id was cleaned
-        assert (
-            recipient_spending.recipient_id == "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C"
-        )
+        assert recipient_spending.recipient_id == "bc396b9b-bdab-f7b7-b1a8-1409da07fdc0-C"
 
         # Assert: name from initial data
         assert (
-            recipient_spending.name
-            == "Association of Universities for Research in Astronomy, Inc."
+            recipient_spending.name == "Association of Universities for Research in Astronomy, Inc."
         )
 
         # Assert: amount property works (returns Decimal)
@@ -673,17 +643,13 @@ class TestCircularReferenceProtection:
                 return {
                     "name": "Recipient A",
                     "recipient_id": "recipient-A",
-                    "parents": [
-                        {"parent_id": "recipient-B", "parent_name": "Recipient B"}
-                    ],
+                    "parents": [{"parent_id": "recipient-B", "parent_name": "Recipient B"}],
                 }
             elif "recipient-B" in endpoint:
                 return {
                     "name": "Recipient B",
                     "recipient_id": "recipient-B",
-                    "parents": [
-                        {"parent_id": "recipient-A", "parent_name": "Recipient A"}
-                    ],
+                    "parents": [{"parent_id": "recipient-A", "parent_name": "Recipient A"}],
                 }
             else:
                 return {"name": "Unknown", "recipient_id": "unknown", "parents": []}

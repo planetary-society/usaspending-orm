@@ -1,6 +1,5 @@
 """Tests for Agency model TAS integration."""
 
-
 from usaspending.models.agency import Agency
 from usaspending.queries.federal_accounts_query import FederalAccountsQuery
 
@@ -65,6 +64,7 @@ class TestAgencyFederalAccountsProperty:
 
         assert len(accounts) == 16
         from usaspending.models.federal_account import FederalAccount
+
         assert all(isinstance(a, FederalAccount) for a in accounts)
 
     def test_federal_accounts_count(self, mock_usa_client, load_fixture):
@@ -92,12 +92,8 @@ class TestAgencyFederalAccountChain:
         federal_accounts_fixture = load_fixture("tas_federal_accounts.json")
         tas_codes_fixture = load_fixture("tas_codes.json")
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", tas_codes_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", tas_codes_fixture)
 
         data = {
             "toptier_agency": {
@@ -122,12 +118,8 @@ class TestAgencyFederalAccountChain:
         federal_accounts_fixture = load_fixture("tas_federal_accounts.json")
         tas_codes_fixture = load_fixture("tas_codes.json")
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", tas_codes_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", tas_codes_fixture)
 
         data = {
             "toptier_agency": {
@@ -153,9 +145,7 @@ class TestAgencyFederalAccountChain:
         federal_accounts_fixture = load_fixture("tas_federal_accounts.json")
         tas_codes_fixture = load_fixture("tas_codes.json")
 
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
         # Set up response for each federal account (using same fixture for simplicity)
         for result in federal_accounts_fixture["results"]:
             account_id = result["id"]

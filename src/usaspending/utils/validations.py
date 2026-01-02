@@ -118,9 +118,7 @@ def parse_enum_value(
             return member
 
     valid_options = ", ".join(f"'{m.value}'" for m in enum_class)
-    raise ValidationError(
-        f"Invalid {field_name}: '{value}'. Valid options: {valid_options}"
-    )
+    raise ValidationError(f"Invalid {field_name}: '{value}'. Valid options: {valid_options}")
 
 
 def validate_sort_field(
@@ -146,6 +144,5 @@ def validate_sort_field(
     if field not in valid_fields:
         sorted_fields = sorted(valid_fields)
         raise ValidationError(
-            f"Invalid sort field '{field}' for {context}. "
-            f"Valid fields: {', '.join(sorted_fields)}"
+            f"Invalid sort field '{field}' for {context}. Valid fields: {', '.join(sorted_fields)}"
         )

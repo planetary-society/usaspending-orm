@@ -45,9 +45,7 @@ class AgencyResource(BaseResource):
 
         return AgenciesSearch(self._client)
 
-    def find_by_toptier_code(
-        self, toptier_code: str, fiscal_year: int | None = None
-    ) -> Agency:
+    def find_by_toptier_code(self, toptier_code: str, fiscal_year: int | None = None) -> Agency:
         """Retrieve agency overview for a specific toptier code and fiscal year.
 
         Args:
@@ -62,10 +60,14 @@ class AgencyResource(BaseResource):
             APIError: If agency not found
 
         Example:
-            >>> agency = client.agencies.find_by_toptier_code("080")  # Get NASA for current fiscal year
+            >>> agency = client.agencies.find_by_toptier_code(
+            ...     "080"
+            ... )  # Get NASA for current fiscal year
             >>> print(agency.name, agency.mission)
             >>>
-            >>> agency_2023 = client.agencies.find_by_toptier_code("080", fiscal_year=2023)  # Get NASA for FY 2023
+            >>> agency_2023 = client.agencies.find_by_toptier_code(
+            ...     "080", fiscal_year=2023
+            ... )  # Get NASA for FY 2023
             >>> print(agency_2023.fiscal_year, agency_2023.def_codes)
         """
         logger.debug(
@@ -115,16 +117,32 @@ class AgencyResource(BaseResource):
 
         Example:
             >>> # Get all matches (agencies, subtiers, offices)
-            >>> all_results = list(client.agencies.find_all_funding_agencies_by_name("National Aeronautics and Space Administration"))
+            >>> all_results = list(
+            ...     client.agencies.find_all_funding_agencies_by_name(
+            ...         "National Aeronautics and Space Administration"
+            ...     )
+            ... )
             >>>
             >>> # Get only toptier agencies
-            >>> agencies = list(client.agencies.find_all_funding_agencies_by_name("National Aeronautics and Space Administration").toptier())
+            >>> agencies = list(
+            ...     client.agencies.find_all_funding_agencies_by_name(
+            ...         "National Aeronautics and Space Administration"
+            ...     ).toptier()
+            ... )
             >>>
             >>> # Get only subtier agencies
-            >>> subtiers = list(client.agencies.find_all_funding_agencies_by_name("National Aeronautics and Space Administration").subtier())
+            >>> subtiers = list(
+            ...     client.agencies.find_all_funding_agencies_by_name(
+            ...         "National Aeronautics and Space Administration"
+            ...     ).subtier()
+            ... )
             >>>
             >>> # Get only offices
-            >>> offices = list(client.agencies.find_all_funding_agencies_by_name("National Aeronautics and Space Administration").office())
+            >>> offices = list(
+            ...     client.agencies.find_all_funding_agencies_by_name(
+            ...         "National Aeronautics and Space Administration"
+            ...     ).office()
+            ... )
         """
         warnings.warn(
             "find_all_funding_agencies_by_name is deprecated. "
@@ -148,16 +166,32 @@ class AgencyResource(BaseResource):
 
         Example:
             >>> # Get all matches (agencies, subtiers, offices)
-            >>> all_results = list(client.agencies.find_all_awarding_agencies_by_name("National Aeronautics and Space Administration"))
+            >>> all_results = list(
+            ...     client.agencies.find_all_awarding_agencies_by_name(
+            ...         "National Aeronautics and Space Administration"
+            ...     )
+            ... )
             >>>
             >>> # Get only toptier agencies
-            >>> agencies = list(client.agencies.find_all_awarding_agencies_by_name("National Aeronautics and Space Administration").toptier())
+            >>> agencies = list(
+            ...     client.agencies.find_all_awarding_agencies_by_name(
+            ...         "National Aeronautics and Space Administration"
+            ...     ).toptier()
+            ... )
             >>>
             >>> # Get only subtier agencies
-            >>> subtiers = list(client.agencies.find_all_awarding_agencies_by_name("National Aeronautics and Space Administration").subtier())
+            >>> subtiers = list(
+            ...     client.agencies.find_all_awarding_agencies_by_name(
+            ...         "National Aeronautics and Space Administration"
+            ...     ).subtier()
+            ... )
             >>>
             >>> # Get only offices
-            >>> offices = list(client.agencies.find_all_awarding_agencies_by_name("National Aeronautics and Space Administration").office())
+            >>> offices = list(
+            ...     client.agencies.find_all_awarding_agencies_by_name(
+            ...         "National Aeronautics and Space Administration"
+            ...     ).office()
+            ... )
         """
         warnings.warn(
             "find_all_awarding_agencies_by_name is deprecated. "

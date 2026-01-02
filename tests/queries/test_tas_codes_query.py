@@ -1,6 +1,5 @@
 """Tests for TASCodesQuery."""
 
-
 from usaspending.models.treasury_account_symbol import TreasuryAccountSymbol
 from usaspending.queries.tas_codes_query import TASCodesQuery
 
@@ -32,9 +31,7 @@ class TestTASCodesQueryFetch:
     def test_iteration_fetches_results(self, mock_usa_client, load_fixture):
         """Test iteration triggers API fetch."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
         results = list(query)
@@ -45,9 +42,7 @@ class TestTASCodesQueryFetch:
     def test_len_fetches_results(self, mock_usa_client, load_fixture):
         """Test len() triggers API fetch."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 
@@ -56,9 +51,7 @@ class TestTASCodesQueryFetch:
     def test_count_returns_len(self, mock_usa_client, load_fixture):
         """Test count() returns same as len()."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 
@@ -68,9 +61,7 @@ class TestTASCodesQueryFetch:
     def test_getitem_fetches_results(self, mock_usa_client, load_fixture):
         """Test indexing fetches results."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
         first = query[0]
@@ -81,9 +72,7 @@ class TestTASCodesQueryFetch:
     def test_results_cached(self, mock_usa_client, load_fixture):
         """Test results are cached after first fetch."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 
@@ -101,9 +90,7 @@ class TestTASCodesQueryFetch:
     def test_repr_after_fetch(self, mock_usa_client, load_fixture):
         """Test repr after results are fetched shows count."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
         _ = list(query)
@@ -117,9 +104,7 @@ class TestTASCodesQueryMethods:
     def test_all_returns_list(self, mock_usa_client, load_fixture):
         """Test all() returns list."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
         results = query.all()
@@ -130,9 +115,7 @@ class TestTASCodesQueryMethods:
     def test_first_returns_first_item(self, mock_usa_client, load_fixture):
         """Test first() returns first item."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
         first = query.first()
@@ -142,9 +125,7 @@ class TestTASCodesQueryMethods:
 
     def test_first_returns_none_when_empty(self, mock_usa_client):
         """Test first() returns None for empty results."""
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", {"results": []}
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", {"results": []})
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 
@@ -153,9 +134,7 @@ class TestTASCodesQueryMethods:
     def test_bool_true_when_results(self, mock_usa_client, load_fixture):
         """Test bool() returns True when there are results."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 
@@ -163,9 +142,7 @@ class TestTASCodesQueryMethods:
 
     def test_bool_false_when_empty(self, mock_usa_client):
         """Test bool() returns False when empty."""
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", {"results": []}
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", {"results": []})
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 
@@ -178,9 +155,7 @@ class TestTASCodesQueryFilters:
     def test_availability_type_filter(self, mock_usa_client, load_fixture):
         """Test filtering by availability type code."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
         results = query.availability_type_code("X").all()
@@ -191,9 +166,7 @@ class TestTASCodesQueryFilters:
     def test_fiscal_year_filter(self, mock_usa_client, load_fixture):
         """Test filtering by fiscal year coverage."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
         results = query.fiscal_year(2012).all()
@@ -228,9 +201,7 @@ class TestTASCodesQueryIntegration:
     def test_tas_have_parent_codes(self, mock_usa_client, load_fixture):
         """Test fetched TAS have parent codes set."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 
@@ -241,9 +212,7 @@ class TestTASCodesQueryIntegration:
     def test_tas_can_check_fiscal_year(self, mock_usa_client, load_fixture):
         """Test fetched TAS can check fiscal year."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
         first = query.first()
@@ -256,9 +225,7 @@ class TestTASCodesQueryIntegration:
     def test_no_year_tas_in_results(self, mock_usa_client, load_fixture):
         """Test no-year TAS can be found in results."""
         fixture = load_fixture("tas_codes.json")
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", fixture)
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 

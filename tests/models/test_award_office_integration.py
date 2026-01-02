@@ -7,9 +7,7 @@ from usaspending.models.subtier_agency import SubTierAgency
 class TestAwardOfficeIntegration:
     """Test Award model creates offices from office_agency_name."""
 
-    def test_awarding_subtier_agency_creates_office_from_office_agency_name(
-        self, mock_usa_client
-    ):
+    def test_awarding_subtier_agency_creates_office_from_office_agency_name(self, mock_usa_client):
         """Test that awarding_subtier_agency creates office from office_agency_name."""
         award_data = {
             "id": 111952974,
@@ -48,9 +46,7 @@ class TestAwardOfficeIntegration:
         assert isinstance(office, SubTierAgency)
         assert office.name == "NASA Goddard Space Flight Center"  # Should be titlecased
 
-    def test_funding_subtier_agency_creates_office_from_office_agency_name(
-        self, mock_usa_client
-    ):
+    def test_funding_subtier_agency_creates_office_from_office_agency_name(self, mock_usa_client):
         """Test that funding_subtier_agency creates office from office_agency_name."""
         award_data = {
             "id": 111952974,
@@ -85,9 +81,7 @@ class TestAwardOfficeIntegration:
 
         office = offices[0]
         assert isinstance(office, SubTierAgency)
-        assert (
-            office.name == "NASA Marshall Space Flight Center"
-        )  # Should be titlecased
+        assert office.name == "NASA Marshall Space Flight Center"  # Should be titlecased
 
     def test_subtier_agency_no_office_when_no_office_agency_name(self, mock_usa_client):
         """Test that no office is created when office_agency_name is not present."""

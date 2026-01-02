@@ -69,9 +69,7 @@ class TestSubTierAgency:
 
         # Test second office
         assert offices[1].code == "80MSFC"
-        assert offices[1].name == contracts_titlecase(
-            "NASA MARSHALL SPACE FLIGHT CENTER"
-        )
+        assert offices[1].name == contracts_titlecase("NASA MARSHALL SPACE FLIGHT CENTER")
         assert_decimal_equal(offices[1].total_obligations, 3140833781.78)
         assert offices[1].transaction_count == 1566
         assert offices[1].new_award_count == 158

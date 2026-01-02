@@ -42,11 +42,7 @@ class SingleResourceBase(ABC):
         Returns:
             The response payload as a dictionary.
         """
-        if (
-            not resource_id
-            or not isinstance(resource_id, str)
-            or not resource_id.strip()
-        ):
+        if not resource_id or not isinstance(resource_id, str) or not resource_id.strip():
             raise ValidationError("A non-empty resource_id string is required")
 
         # Clean resource ID

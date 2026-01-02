@@ -45,9 +45,7 @@ AWARD_TYPE_GROUPS = {
 
 # Create a flattened map for easy description lookups
 AWARD_TYPE_DESCRIPTIONS = {
-    code: description
-    for group in AWARD_TYPE_GROUPS.values()
-    for code, description in group.items()
+    code: description for group in AWARD_TYPE_GROUPS.values() for code, description in group.items()
 }
 
 # Regenerate frozensets from this single source of truth
@@ -60,13 +58,9 @@ OTHER_CODES = frozenset(AWARD_TYPE_GROUPS["other_assistance"].keys())
 
 # All valid award type codes
 ALL_AWARD_CODES = (
-    CONTRACT_CODES
-    | IDV_CODES
-    | LOAN_CODES
-    | GRANT_CODES
-    | DIRECT_PAYMENT_CODES
-    | OTHER_CODES
+    CONTRACT_CODES | IDV_CODES | LOAN_CODES | GRANT_CODES | DIRECT_PAYMENT_CODES | OTHER_CODES
 )
+
 
 def is_valid_award_type(code: str) -> bool:
     """Check if a code is a valid award type.

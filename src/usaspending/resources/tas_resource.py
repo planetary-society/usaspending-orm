@@ -45,7 +45,9 @@ class TASResource(BaseResource):
         Example:
             >>> agencies = client.tas.agencies
             >>> for agency in agencies:
-            ...     print(f"{agency.code}: {agency.name} ({agency.federal_accounts.count()} accounts)")
+            ...     print(
+            ...         f"{agency.code}: {agency.name} ({agency.federal_accounts.count()} accounts)"
+            ...     )
         """
         logger.debug("Fetching TAS agencies")
 

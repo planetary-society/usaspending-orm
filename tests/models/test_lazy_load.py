@@ -30,9 +30,7 @@ class TestLazyRecord:
             {"existing_field": "original_value", "empty_string_field": ""}, mock_client
         )
 
-    def test_lazy_get_returns_existing_value_without_calling_ensure_details(
-        self, test_lazy_record
-    ):
+    def test_lazy_get_returns_existing_value_without_calling_ensure_details(self, test_lazy_record):
         """Test _lazy_get returns value already present in data without calling _ensure_details."""
         # Spy on _ensure_details to verify it's not called
         test_lazy_record._ensure_details = Mock()
@@ -84,13 +82,9 @@ class TestLazyRecord:
 
         test_lazy_record._ensure_details.assert_called_once()
 
-    def test_lazy_get_returns_default_when_key_not_found_after_fetch(
-        self, test_lazy_record
-    ):
+    def test_lazy_get_returns_default_when_key_not_found_after_fetch(self, test_lazy_record):
         """Test _lazy_get returns default when key is not found even after fetching details."""
-        result = test_lazy_record._lazy_get(
-            "nonexistent_field", default="default_value"
-        )
+        result = test_lazy_record._lazy_get("nonexistent_field", default="default_value")
 
         # Should return the default value
         assert result == "default_value"
@@ -110,16 +104,12 @@ class TestLazyRecord:
         result = test_lazy_record._lazy_get("any_field", default="any_default")
 
         # Should use get_value with the provided default
-        test_lazy_record.get_value.assert_called_once_with(
-            ["any_field"], default="any_default"
-        )
+        test_lazy_record.get_value.assert_called_once_with(["any_field"], default="any_default")
         assert result == "mocked_value"
 
     def test_lazy_get_with_multiple_keys(self, test_lazy_record):
         """Test _lazy_get works with multiple keys."""
-        result = test_lazy_record._lazy_get(
-            "nonexistent", "existing_field", default="fallback"
-        )
+        result = test_lazy_record._lazy_get("nonexistent", "existing_field", default="fallback")
 
         # Should return the existing field value without fetching details
         assert result == "original_value"

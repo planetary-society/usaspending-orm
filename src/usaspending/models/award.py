@@ -73,9 +73,7 @@ class Award(LazyRecord):
         "Primary Place of Performance",
     ]
 
-    def __init__(
-        self, data_or_id: dict[str, Any] | str, client: USASpendingClient
-    ):
+    def __init__(self, data_or_id: dict[str, Any] | str, client: USASpendingClient):
         """Initialize Award instance.
 
         Args:
@@ -182,7 +180,12 @@ class Award(LazyRecord):
             prefix = "_".join(parts[:2])  # e.g., "CONT_AWD" or "ASST_NON"
 
             # Validate expected number of parts for each format
-            if (prefix == "CONT_AWD" and len(parts) != 6) or (prefix == "CONT_IDV" and len(parts) != 4) or (prefix in ("ASST_NON", "ASST_AGG") and len(parts) != 4) or prefix not in ("CONT_AWD", "CONT_IDV", "ASST_NON", "ASST_AGG"):
+            if (
+                (prefix == "CONT_AWD" and len(parts) != 6)
+                or (prefix == "CONT_IDV" and len(parts) != 4)
+                or (prefix in ("ASST_NON", "ASST_AGG") and len(parts) != 4)
+                or prefix not in ("CONT_AWD", "CONT_IDV", "ASST_NON", "ASST_AGG")
+            ):
                 return None
 
             identifier = parts[2]  # The actual ID is always the 3rd segment
@@ -245,9 +248,7 @@ class Award(LazyRecord):
         Returns:
             Optional[str]: The description of the award type, or empty string if not available.
         """
-        return self._lazy_get(
-            "type_description", "Contract Award Type", "Award Type", default=""
-        )
+        return self._lazy_get("type_description", "Contract Award Type", "Award Type", default="")
 
     @property
     def description(self) -> str:
@@ -271,9 +272,7 @@ class Award(LazyRecord):
         Returns:
             Decimal: The total obligated amount for the award or 0.00.
         """
-        return to_decimal(
-            self._lazy_get("total_obligation", "Award Amount")
-        ) or Decimal("0.00")
+        return to_decimal(self._lazy_get("total_obligation", "Award Amount")) or Decimal("0.00")
 
     @property
     def subaward_count(self) -> int:
@@ -300,9 +299,7 @@ class Award(LazyRecord):
         Returns:
             Optional[date]: The date the award was signed, or None if not available.
         """
-        return to_date(
-            self._lazy_get("date_signed", "Base Obligation Date", default=None)
-        )
+        return to_date(self._lazy_get("date_signed", "Base Obligation Date", default=None))
 
     @property
     def base_obligation_date(self) -> date | None:
@@ -424,9 +421,7 @@ class Award(LazyRecord):
             Decimal: The infrastructure obligations amount, or 0.00 if not available.
         """
         return to_decimal(
-            self._lazy_get(
-                "infrastructure_obligations", "Infrastructure Obligations", default=0
-            )
+            self._lazy_get("infrastructure_obligations", "Infrastructure Obligations", default=0)
         ) or Decimal("0.00")
 
     @property
@@ -437,9 +432,7 @@ class Award(LazyRecord):
             Decimal: The infrastructure outlays amount, or 0.00 if not available.
         """
         return to_decimal(
-            self._lazy_get(
-                "infrastructure_outlays", "Infrastructure Outlays", default=0
-            )
+            self._lazy_get("infrastructure_outlays", "Infrastructure Outlays", default=0)
         ) or Decimal("0.00")
 
     # Helper properties properties. These often map to field names returned by
@@ -454,9 +447,7 @@ class Award(LazyRecord):
             Decimal: The total award amount, or 0.00 if not available.
         """
         return to_decimal(
-            self._lazy_get(
-                "Award Amount", "Loan Amount", "total_obligation", "total_funding"
-            )
+            self._lazy_get("Award Amount", "Loan Amount", "total_obligation", "total_funding")
         ) or Decimal("0.00")
 
     @property
@@ -469,11 +460,7 @@ class Award(LazyRecord):
         start_date = self.get_value(
             ["Start Date", "Base Obligation Date", "Period of Performance Start Date"]
         )
-        if (
-            not start_date
-            and self.period_of_performance
-            and self.period_of_performance.start_date
-        ):
+        if not start_date and self.period_of_performance and self.period_of_performance.start_date:
             start_date = self.period_of_performance.start_date
         return to_date(start_date)
 
@@ -485,11 +472,7 @@ class Award(LazyRecord):
             Optional[date]: The award end date, or None if not available.
         """
         end_date = self.get_value(["End Date", "Period of Performance End Date"])
-        if (
-            not end_date
-            and self.period_of_performance
-            and self.period_of_performance.end_date
-        ):
+        if not end_date and self.period_of_performance and self.period_of_performance.end_date:
             end_date = self.period_of_performance.end_date
         return to_date(end_date)
 
@@ -571,9 +554,7 @@ class Award(LazyRecord):
         Returns:
             Optional[Location]: Location object for where work is performed, or None.
         """
-        data = self._lazy_get(
-            "place_of_performance", "Primary Place of Performance", default=None
-        )
+        data = self._lazy_get("place_of_performance", "Primary Place of Performance", default=None)
         if not isinstance(data, dict) or not data:
             return None
 
@@ -809,7 +790,9 @@ class Award(LazyRecord):
 
         Examples:
             >>> award.funding.count()  # Get count without loading all data
-            >>> award.funding.order_by("fiscal_date", "asc").all()  # Get all funding records sorted by date
+            >>> award.funding.order_by(
+            ...     "fiscal_date", "asc"
+            ... ).all()  # Get all funding records sorted by date
             >>> list(award.funding.limit(10))  # Iterate through first 10 funding records
 
         Returns:
@@ -905,13 +888,9 @@ class Award(LazyRecord):
         # Access the DownloadManager via the client's download resource.
         # We route the call through the appropriate method on the resource.
         if download_type == "contract":
-            return self._client.downloads.contract(
-                award_id, file_format, destination_dir
-            )
+            return self._client.downloads.contract(award_id, file_format, destination_dir)
         elif download_type == "assistance":
-            return self._client.downloads.assistance(
-                award_id, file_format, destination_dir
-            )
+            return self._client.downloads.assistance(award_id, file_format, destination_dir)
         elif download_type == "idv":
             return self._client.downloads.idv(award_id, file_format, destination_dir)
         else:

@@ -132,9 +132,7 @@ class TestAgencyObligationMethodsNewStructure:
         assert obligations2 == obligations
         assert mock_usa_client.get_request_count(endpoint) == 1
 
-    def test_get_obligations_method(
-        self, mock_usa_client, agency_award_summary_fixture_data
-    ):
+    def test_get_obligations_method(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test get_obligations() method returns data from fixture."""
         data = {"id": 862, "code": "080"}
         agency = Agency(data, mock_usa_client)
@@ -143,9 +141,7 @@ class TestAgencyObligationMethodsNewStructure:
         mock_usa_client.set_response(endpoint, agency_award_summary_fixture_data)
 
         obligations = agency.get_obligations()
-        assert_decimal_equal(
-            obligations, agency_award_summary_fixture_data["obligations"]
-        )
+        assert_decimal_equal(obligations, agency_award_summary_fixture_data["obligations"])
 
     def test_get_toptier_code_new_structure(self, mock_usa_client):
         """Test code property with new structure."""
@@ -237,9 +233,7 @@ class TestAgencyCachedProperties:
         )
         assert mock_usa_client.get_request_count(endpoint) == 1
 
-    def test_latest_action_date_parsing(
-        self, mock_usa_client, agency_award_summary_fixture_data
-    ):
+    def test_latest_action_date_parsing(self, mock_usa_client, agency_award_summary_fixture_data):
         """Test latest_action_date property parses date from fixture."""
         data = {"id": 862, "code": "080"}
         agency = Agency(data, mock_usa_client)
@@ -255,9 +249,7 @@ class TestAgencyCachedProperties:
 
         # Compare the date part
         expected_date_str = agency_award_summary_fixture_data["latest_action_date"]
-        expected_year, expected_month, expected_day = expected_date_str.split("T")[
-            0
-        ].split("-")
+        expected_year, expected_month, expected_day = expected_date_str.split("T")[0].split("-")
         assert action_date.year == int(expected_year)
         assert action_date.month == int(expected_month)
         assert action_date.day == int(expected_day)
@@ -272,10 +264,7 @@ class TestAgencyCachedProperties:
         endpoint = "/agency/080/awards/"
         mock_usa_client.set_response(endpoint, agency_award_summary_fixture_data)
 
-        assert (
-            agency.transaction_count
-            == agency_award_summary_fixture_data["transaction_count"]
-        )
+        assert agency.transaction_count == agency_award_summary_fixture_data["transaction_count"]
 
 
 class TestAgencyNewProperties:

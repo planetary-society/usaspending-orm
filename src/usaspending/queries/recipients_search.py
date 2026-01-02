@@ -148,9 +148,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
         clone._award_type = award_type
         return clone
 
-    def order_by(
-        self, field: SortField, direction: SortDirection = "desc"
-    ) -> RecipientsSearch:
+    def order_by(self, field: SortField, direction: SortDirection = "desc") -> RecipientsSearch:
         """
         Set the sort field and direction.
 

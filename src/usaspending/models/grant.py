@@ -33,7 +33,18 @@ class Grant(Award):
         "transaction_obligated_amount",
     ]
 
-    SEARCH_FIELDS: ClassVar[list[str]] = [*Award.SEARCH_FIELDS, "Start Date", "End Date", "Award Amount", "Total Outlays", "Award Type", "SAI Number", "CFDA Number", "Assistance Listings", "primary_assistance_listing"]
+    SEARCH_FIELDS: ClassVar[list[str]] = [
+        *Award.SEARCH_FIELDS,
+        "Start Date",
+        "End Date",
+        "Award Amount",
+        "Total Outlays",
+        "Award Type",
+        "SAI Number",
+        "CFDA Number",
+        "Assistance Listings",
+        "primary_assistance_listing",
+    ]
 
     @property
     def fain(self) -> str | None:
@@ -194,6 +205,6 @@ class Grant(Award):
 
         # Grant subawards use grant award types only
         # Note: Due to validation in AwardsSearch, we cannot mix grant/direct_payment/other categories
-        return self._client.subawards.award_id(
-            self.generated_unique_award_id
-        ).award_type_codes(*GRANT_CODES)
+        return self._client.subawards.award_id(self.generated_unique_award_id).award_type_codes(
+            *GRANT_CODES
+        )

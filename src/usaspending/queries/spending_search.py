@@ -132,9 +132,7 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
 
         # Early return for zero or negative limits
         if self._total_limit is not None and self._total_limit <= 0:
-            logger.info(
-                f"{self.__class__.__name__}.count() = 0 (limit: {self._total_limit})"
-            )
+            logger.info(f"{self.__class__.__name__}.count() = 0 (limit: {self._total_limit})")
             return 0
 
         total_count = 0
@@ -228,9 +226,7 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
             >>> ca_districts = (
             ...     client.spending.search()
             ...     .by_district()
-            ...     .place_of_performance_locations(
-            ...         {"state_code": "CA", "country_code": "USA"}
-            ...     )
+            ...     .place_of_performance_locations({"state_code": "CA", "country_code": "USA"})
             ...     .contracts()
             ...     .fiscal_year(2024)
             ... )
@@ -256,12 +252,7 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
 
         Example:
             >>> # Find total grant spending by state
-            >>> state_spending = (
-            ...     client.spending.search()
-            ...     .by_state()
-            ...     .grants()
-            ...     .fiscal_year(2024)
-            ... )
+            >>> state_spending = client.spending.search().by_state().grants().fiscal_year(2024)
         """
         clone = self._clone()
         clone._category = "state"
@@ -309,10 +300,7 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
 
             >>> # Analyze subaward spending by state
             >>> subaward_spending = (
-            ...     client.spending.search()
-            ...     .by_state()
-            ...     .spending_level("subawards")
-            ...     .grants()
+            ...     client.spending.search().by_state().spending_level("subawards").grants()
             ... )
 
         Note:

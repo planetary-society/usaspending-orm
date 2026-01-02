@@ -51,15 +51,11 @@ class AwardResource(BaseResource):
         from ..queries.awards_search import AwardsSearch
 
         # Get counts by award type
-        search_result = (
-            AwardsSearch(self._client).award_ids(award_id).count_awards_by_type()
-        )
+        search_result = AwardsSearch(self._client).award_ids(award_id).count_awards_by_type()
 
         # Find which type has exactly one result
         matching_types = [
-            (award_type, count)
-            for award_type, count in search_result.items()
-            if count == 1
+            (award_type, count) for award_type, count in search_result.items() if count == 1
         ]
 
         if len(matching_types) != 1:

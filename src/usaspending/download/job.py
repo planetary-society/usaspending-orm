@@ -112,17 +112,13 @@ class DownloadJob:
             self._state = self._status_details.api_status
 
             if self._state == DownloadState.FAILED:
-                self._error_message = (
-                    self._status_details.message or "API reported failure."
-                )
+                self._error_message = self._status_details.message or "API reported failure."
 
             return self._state
 
         except APIError as e:
             # Handle transient API errors during polling without failing the job immediately
-            logger.warning(
-                f"API Error checking status for {self.file_name}: {e}. Will retry."
-            )
+            logger.warning(f"API Error checking status for {self.file_name}: {e}. Will retry.")
             return self._state  # Return previous state
         except Exception as e:
             logger.error(f"Unexpected error checking status for {self.file_name}: {e}")
@@ -162,12 +158,8 @@ class DownloadJob:
 
             if time.time() - start_time > timeout:
                 self._state = DownloadState.FAILED
-                self._error_message = (
-                    f"Timeout waiting for download job after {timeout} seconds."
-                )
-                raise DownloadError(
-                    self._error_message, file_name=self.file_name, status="timeout"
-                )
+                self._error_message = f"Timeout waiting for download job after {timeout} seconds."
+                raise DownloadError(self._error_message, file_name=self.file_name, status="timeout")
 
             logger.info(f"Job status: {current_state.value}. Waiting...")
             time.sleep(poll_interval)
@@ -195,9 +187,7 @@ class DownloadJob:
         try:
             # Use the latest file_url from the status details if available, fallback to initial URL
             final_url = (
-                self._status_details.file_url
-                if self._status_details
-                else self._initial_file_url
+                self._status_details.file_url if self._status_details else self._initial_file_url
             )
 
             if not final_url:

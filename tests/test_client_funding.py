@@ -29,9 +29,7 @@ class TestClientFunding:
         fixture_data = load_fixture("awards/award_funding_grant.json")
 
         # Set up mock to return fixture data
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_FUNDING, fixture_data
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_FUNDING, fixture_data)
 
         # Execute query
         results = (
@@ -70,9 +68,7 @@ class TestClientFunding:
         fixture_data = load_fixture("awards/award_funding_grant.json")
 
         # Set up mock to return fixture data
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_FUNDING, fixture_data
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_FUNDING, fixture_data)
 
         # Create award and iterate funding
         award = Award({"generated_unique_award_id": "CONT_AWD_123"}, mock_usa_client)
@@ -108,9 +104,7 @@ class TestClientFunding:
         fixture_data = load_fixture("awards/award_funding_grant.json")
 
         # Set up mock
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_FUNDING, fixture_data
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_FUNDING, fixture_data)
 
         # Test sorting by obligated amount
         query = mock_usa_client.funding.award_id("CONT_AWD_123").order_by(
@@ -171,15 +165,11 @@ class TestClientFunding:
         fixture_data = load_fixture("awards/award_funding_grant.json")
 
         # Set up mock
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_FUNDING, fixture_data
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_FUNDING, fixture_data)
 
         # Get first result
         first = (
-            mock_usa_client.funding.award_id("CONT_AWD_123")
-            .order_by("fiscal_date", "asc")
-            .first()
+            mock_usa_client.funding.award_id("CONT_AWD_123").order_by("fiscal_date", "asc").first()
         )
 
         assert isinstance(first, Funding)
@@ -195,9 +185,7 @@ class TestClientFunding:
             "page_metadata": {"page": 1, "hasNext": False, "hasPrevious": False},
         }
 
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_FUNDING, empty_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_FUNDING, empty_response)
 
         # Query should return empty list
         results = mock_usa_client.funding.award_id("CONT_AWD_123").all()
@@ -209,8 +197,6 @@ class TestClientFunding:
         assert first is None
 
         # Count should return 0
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_FUNDING, empty_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_FUNDING, empty_response)
         count = mock_usa_client.funding.award_id("CONT_AWD_123").count()
         assert count == 0

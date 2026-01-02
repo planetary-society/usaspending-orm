@@ -71,9 +71,7 @@ class BaseModel:
         # Invalid type
         type_name = type(data_or_id).__name__
         if allow_string_id:
-            raise ValidationError(
-                f"{model_name} expects dict or string, got {type_name}"
-            )
+            raise ValidationError(f"{model_name} expects dict or string, got {type_name}")
         else:
             raise ValidationError(f"{model_name} expects dict, got {type_name}")
 
@@ -195,12 +193,10 @@ class ClientAwareModel(BaseModel):
             >>> with USASpendingClient() as client:
             ...     award = client.awards.find_by_award_id("123")
             ...     # Session closes here
-            ...
             >>> # Later, reattach to a new session
             >>> with USASpendingClient() as new_client:
             ...     award.reattach(new_client)
             ...     print(award.subaward_count)  # Now works!
-            ...
             >>> # Recursive reattach for nested objects
             >>> with USASpendingClient() as new_client:
             ...     award.reattach(new_client, recursive=True)

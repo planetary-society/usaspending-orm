@@ -36,9 +36,7 @@ class AgencyQuery(SingleResourceBase):
         """Base endpoint for single agency retrieval."""
         return "/agency/"
 
-    def find_by_id(
-        self, toptier_code: str, fiscal_year: int | None = None
-    ) -> Agency:
+    def find_by_id(self, toptier_code: str, fiscal_year: int | None = None) -> Agency:
         """Retrieve agency by toptier code and optional fiscal year.
 
         Args:
@@ -59,8 +57,7 @@ class AgencyQuery(SingleResourceBase):
         toptier_code = str(toptier_code).strip()
         if not toptier_code.isdigit() or len(toptier_code) not in [3, 4]:
             raise ValidationError(
-                f"Invalid toptier_code: {toptier_code}. "
-                "Must be a 3-4 digit numeric string"
+                f"Invalid toptier_code: {toptier_code}. Must be a 3-4 digit numeric string"
             )
 
         logger.debug(
@@ -98,8 +95,6 @@ class AgencyQuery(SingleResourceBase):
             params["fiscal_year"] = fiscal_year
 
         # Make API request with params
-        response = self._client._make_request(
-            "GET", endpoint, params=params if params else None
-        )
+        response = self._client._make_request("GET", endpoint, params=params if params else None)
 
         return response

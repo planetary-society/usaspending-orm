@@ -11,9 +11,7 @@ from tests.mocks.response_builder import ResponseBuilder
 class TestTransaction:
     @pytest.fixture
     def transaction_data(self):
-        fixture_path = (
-            Path(__file__).parent.parent / "fixtures" / "awards" / "transactions.json"
-        )
+        fixture_path = Path(__file__).parent.parent / "fixtures" / "awards" / "transactions.json"
         with open(fixture_path) as f:
             data = json.load(f)
         return data["results"][0]
@@ -24,9 +22,7 @@ class TestTransaction:
 
     @pytest.fixture
     def all_transaction_data(self):
-        fixture_path = (
-            Path(__file__).parent.parent / "fixtures" / "awards" / "transactions.json"
-        )
+        fixture_path = Path(__file__).parent.parent / "fixtures" / "awards" / "transactions.json"
         with open(fixture_path) as f:
             data = json.load(f)
         return data["results"]
@@ -202,9 +198,7 @@ class TestTransaction:
             "/transactions/", "awards/transactions", transform=transform
         )
 
-        results = list(
-            mock_usa_client.transactions.award_id("CONT_AWD_123").since("2025-06-10")
-        )
+        results = list(mock_usa_client.transactions.award_id("CONT_AWD_123").since("2025-06-10"))
 
         assert [tx.action_date for tx in results] == [
             date(2025, 6, 23),
@@ -220,8 +214,6 @@ class TestTransaction:
             "/transactions/", "awards/transactions", transform=transform
         )
 
-        results = list(
-            mock_usa_client.transactions.award_id("CONT_AWD_123").until("2025-06-10")
-        )
+        results = list(mock_usa_client.transactions.award_id("CONT_AWD_123").until("2025-06-10"))
 
         assert [tx.action_date for tx in results] == [date(2025, 6, 5)]

@@ -1,6 +1,5 @@
 """Tests for TASResource."""
 
-
 from usaspending.models.agency import Agency
 from usaspending.resources.tas_resource import TASResource
 
@@ -92,6 +91,7 @@ class TestTASResourceIntegration:
 
         # federal_accounts should return FederalAccountsQuery
         from usaspending.queries.federal_accounts_query import FederalAccountsQuery
+
         assert isinstance(nasa.federal_accounts, FederalAccountsQuery)
 
     def test_full_chain_agencies_to_tas_codes(self, mock_usa_client, load_fixture):
@@ -101,12 +101,8 @@ class TestTASResourceIntegration:
         tas_codes_fixture = load_fixture("tas_codes.json")
 
         mock_usa_client.set_response("/references/filter_tree/tas/", agencies_fixture)
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/", federal_accounts_fixture
-        )
-        mock_usa_client.set_response(
-            "/references/filter_tree/tas/080/080-0120/", tas_codes_fixture
-        )
+        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
+        mock_usa_client.set_response("/references/filter_tree/tas/080/080-0120/", tas_codes_fixture)
 
         resource = TASResource(mock_usa_client)
         agencies = resource.agencies

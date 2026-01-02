@@ -359,10 +359,7 @@ class TextFormatter:
                 return special_word + trailing_punct
 
             # Also try if special_word has punctuation that matches
-            if (
-                special_word.endswith(".")
-                and clean_word.lower() == special_word[:-1].lower()
-            ):
+            if special_word.endswith(".") and clean_word.lower() == special_word[:-1].lower():
                 # Word like "inc" matching "Inc."
                 return special_word + trailing_punct
 
@@ -415,10 +412,7 @@ class TextFormatter:
                     words_before = re.findall(r"\b\w+\b", text_before)
                     acronym_letters = [c.lower() for c in paren_content if c.isalpha()]
 
-                    if (
-                        len(acronym_letters) > 0
-                        and len(words_before) >= len(acronym_letters)
-                    ):
+                    if len(acronym_letters) > 0 and len(words_before) >= len(acronym_letters):
                         # Try direct match first
                         last_n_words = words_before[-len(acronym_letters) :]
                         if [w[0].lower() for w in last_n_words] == acronym_letters:
@@ -433,12 +427,8 @@ class TextFormatter:
                                     content_words.append(word)
 
                             if len(content_words) >= len(acronym_letters):
-                                last_n_content = content_words[
-                                    -len(acronym_letters) :
-                                ]
-                                if [
-                                    w[0].lower() for w in last_n_content
-                                ] == acronym_letters:
+                                last_n_content = content_words[-len(acronym_letters) :]
+                                if [w[0].lower() for w in last_n_content] == acronym_letters:
                                     # Mark these words for capitalization
                                     acronym_expansion_words.update(last_n_content)
 
@@ -466,10 +456,7 @@ class TextFormatter:
                 # Check if word is a special case from YAML
                 if word.upper() in special_cases_set:
                     for special_case in cls._load_special_cases():
-                        if (
-                            isinstance(special_case, str)
-                            and word.upper() == special_case.upper()
-                        ):
+                        if isinstance(special_case, str) and word.upper() == special_case.upper():
                             return special_case
 
                 # Check if this is the start of a sentence (beginning or after . ! ? + space)
@@ -490,9 +477,7 @@ class TextFormatter:
             return processed_text
 
         except Exception as e:
-            logger.error(
-                f"Error processing text: '{text[:50]}...' - {e}", exc_info=True
-            )
+            logger.error(f"Error processing text: '{text[:50]}...' - {e}", exc_info=True)
             return text  # Fallback to original text on error
 
     @classmethod

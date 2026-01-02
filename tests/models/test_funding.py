@@ -24,10 +24,7 @@ class TestFundingModel:
         assert_decimal_equal(funding.transaction_obligated_amount, 20000.0)
         assert funding.gross_outlay_amount == 15000.0
         assert funding.federal_account_code == "080-0120"
-        assert (
-            funding.funding_agency_name
-            == "National Aeronautics and Space Administration"
-        )
+        assert funding.funding_agency_name == "National Aeronautics and Space Administration"
 
     def test_funding_numeric_conversions(self, mock_usa_client):
         """Test that numeric fields are properly converted."""
@@ -113,30 +110,15 @@ class TestFundingModel:
         assert_decimal_equal(funding.gross_outlay_amount, 31734.8)
         assert funding.disaster_emergency_fund_code == "Q"
         assert funding.federal_account_code == "080-0120"
-        assert (
-            funding.account_title
-            == "Science, National Aeronautics and Space Administration"
-        )
-        assert (
-            funding.funding_agency_name
-            == "National Aeronautics and Space Administration"
-        )
+        assert funding.account_title == "Science, National Aeronautics and Space Administration"
+        assert funding.funding_agency_name == "National Aeronautics and Space Administration"
         assert funding.funding_agency_id == 862
         assert funding.funding_toptier_agency_id == "72"
-        assert (
-            funding.funding_agency_slug
-            == "national-aeronautics-and-space-administration"
-        )
-        assert (
-            funding.awarding_agency_name
-            == "National Aeronautics and Space Administration"
-        )
+        assert funding.funding_agency_slug == "national-aeronautics-and-space-administration"
+        assert funding.awarding_agency_name == "National Aeronautics and Space Administration"
         assert funding.awarding_agency_id == 862
         assert funding.awarding_toptier_agency_id == "72"
-        assert (
-            funding.awarding_agency_slug
-            == "national-aeronautics-and-space-administration"
-        )
+        assert funding.awarding_agency_slug == "national-aeronautics-and-space-administration"
         assert funding.object_class == "41.0"
         assert funding.object_class_name == "Grants, subsidies, and contributions"
         assert funding.program_activity_code == "0001"
@@ -205,13 +187,9 @@ class TestFundingModel:
         first_result = fixture_data["results"][0]
         funding = Funding(first_result, client=mock_usa_client)
 
-        expected_transaction_obligated = first_result.get(
-            "transaction_obligated_amount"
-        )
+        expected_transaction_obligated = first_result.get("transaction_obligated_amount")
         assert funding.transaction_obligated_amount == (
-            expected_transaction_obligated
-            if expected_transaction_obligated is not None
-            else 0.0
+            expected_transaction_obligated if expected_transaction_obligated is not None else 0.0
         )
         expected_gross_outlay = first_result.get("gross_outlay_amount")
         assert funding.gross_outlay_amount == (
@@ -234,24 +212,12 @@ class TestFundingModel:
         )
         assert funding.object_class == first_result.get("object_class")
         assert funding.object_class_name == first_result.get("object_class_name")
-        assert funding.program_activity_code == first_result.get(
-            "program_activity_code"
-        )
-        assert funding.program_activity_name == first_result.get(
-            "program_activity_name"
-        )
-        assert funding.reporting_fiscal_year == first_result.get(
-            "reporting_fiscal_year"
-        )
-        assert funding.reporting_fiscal_quarter == first_result.get(
-            "reporting_fiscal_quarter"
-        )
-        assert funding.reporting_fiscal_month == first_result.get(
-            "reporting_fiscal_month"
-        )
-        assert funding.is_quarterly_submission is first_result.get(
-            "is_quarterly_submission"
-        )
+        assert funding.program_activity_code == first_result.get("program_activity_code")
+        assert funding.program_activity_name == first_result.get("program_activity_name")
+        assert funding.reporting_fiscal_year == first_result.get("reporting_fiscal_year")
+        assert funding.reporting_fiscal_quarter == first_result.get("reporting_fiscal_quarter")
+        assert funding.reporting_fiscal_month == first_result.get("reporting_fiscal_month")
+        assert funding.is_quarterly_submission is first_result.get("is_quarterly_submission")
         assert funding.awarding_agency_slug == first_result.get("awarding_agency_slug")
         assert funding.funding_agency_slug == first_result.get("funding_agency_slug")
 
@@ -259,9 +225,7 @@ class TestFundingModel:
 class TestFundingFederalAccountProperty:
     """Test Funding.federal_account property returning FederalAccount instance."""
 
-    def test_federal_account_returns_federal_account_instance(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_federal_account_returns_federal_account_instance(self, load_fixture, mock_usa_client):
         """Test federal_account property returns a FederalAccount object."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
@@ -274,9 +238,7 @@ class TestFundingFederalAccountProperty:
 
         assert isinstance(federal_account, FederalAccount)
 
-    def test_federal_account_properties_match_fixture(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_federal_account_properties_match_fixture(self, load_fixture, mock_usa_client):
         """Test FederalAccount properties match fixture data."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
@@ -287,9 +249,7 @@ class TestFundingFederalAccountProperty:
 
         assert federal_account.id == first_result.get("federal_account")
         assert federal_account.description == first_result.get("account_title")
-        assert federal_account.toptier_code == str(
-            first_result.get("funding_toptier_agency_id")
-        )
+        assert federal_account.toptier_code == str(first_result.get("funding_toptier_agency_id"))
 
     def test_federal_account_code_returns_string(self, load_fixture, mock_usa_client):
         """Test federal_account_code property returns raw string."""
@@ -314,9 +274,7 @@ class TestFundingFederalAccountProperty:
 
         assert funding.federal_account is None
 
-    def test_federal_account_with_missing_toptier_agency_id(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_federal_account_with_missing_toptier_agency_id(self, load_fixture, mock_usa_client):
         """Test federal_account handles missing funding_toptier_agency_id."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0].copy()
@@ -334,9 +292,7 @@ class TestFundingFederalAccountProperty:
 class TestFundingAgencyProperties:
     """Test Funding agency properties returning Agency instances."""
 
-    def test_funding_agency_returns_agency_instance(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_funding_agency_returns_agency_instance(self, load_fixture, mock_usa_client):
         """Test funding_agency property returns an Agency object."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
@@ -349,9 +305,7 @@ class TestFundingAgencyProperties:
 
         assert isinstance(agency, Agency)
 
-    def test_funding_agency_properties_match_fixture(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_funding_agency_properties_match_fixture(self, load_fixture, mock_usa_client):
         """Test Agency properties match fixture data."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
@@ -365,9 +319,7 @@ class TestFundingAgencyProperties:
         assert agency.agency_id == first_result.get("funding_agency_id")
         assert agency.slug == first_result.get("funding_agency_slug")
 
-    def test_awarding_agency_returns_agency_instance(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_awarding_agency_returns_agency_instance(self, load_fixture, mock_usa_client):
         """Test awarding_agency property returns an Agency object."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
@@ -380,9 +332,7 @@ class TestFundingAgencyProperties:
 
         assert isinstance(agency, Agency)
 
-    def test_awarding_agency_properties_match_fixture(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_awarding_agency_properties_match_fixture(self, load_fixture, mock_usa_client):
         """Test Agency properties match fixture data."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
@@ -391,9 +341,7 @@ class TestFundingAgencyProperties:
 
         agency = funding.awarding_agency
 
-        assert agency.toptier_code == str(
-            first_result.get("awarding_toptier_agency_id")
-        )
+        assert agency.toptier_code == str(first_result.get("awarding_toptier_agency_id"))
         assert agency.name == first_result.get("awarding_agency_name")
         assert agency.agency_id == first_result.get("awarding_agency_id")
         assert agency.slug == first_result.get("awarding_agency_slug")
@@ -437,9 +385,7 @@ class TestFundingClientAwareness:
         funding = Funding(data, client=mock_usa_client)
         assert hasattr(funding, "_client")
 
-    def test_awarding_agency_without_manual_client_assignment(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_awarding_agency_without_manual_client_assignment(self, load_fixture, mock_usa_client):
         """awarding_agency property should work without manual _client assignment."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
@@ -451,9 +397,7 @@ class TestFundingClientAwareness:
         agency = funding.awarding_agency
         assert agency is not None
 
-    def test_funding_agency_without_manual_client_assignment(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_funding_agency_without_manual_client_assignment(self, load_fixture, mock_usa_client):
         """funding_agency property should work without manual _client assignment."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]
@@ -465,9 +409,7 @@ class TestFundingClientAwareness:
         agency = funding.funding_agency
         assert agency is not None
 
-    def test_federal_account_without_manual_client_assignment(
-        self, load_fixture, mock_usa_client
-    ):
+    def test_federal_account_without_manual_client_assignment(self, load_fixture, mock_usa_client):
         """federal_account property should work without manual _client assignment."""
         fixture_data = load_fixture("awards/award_funding_grant.json")
         first_result = fixture_data["results"][0]

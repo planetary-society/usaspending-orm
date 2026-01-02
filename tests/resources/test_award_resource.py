@@ -16,14 +16,10 @@ class TestAwardResource:
         """Create an AwardResource instance with mocked client."""
         return AwardResource(mock_usa_client)
 
-    def test_get_award_success(
-        self, award_resource, mock_usa_client, award_fixture_data
-    ):
+    def test_get_award_success(self, award_resource, mock_usa_client, award_fixture_data):
         """Test successful award retrieval."""
         award_id = "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
-            award_id=award_id
-        )
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         # Setup mock response using fixture
         mock_usa_client.set_fixture_response(endpoint, "awards/contract")
 
@@ -33,27 +29,19 @@ class TestAwardResource:
         # Verify return value
         assert isinstance(award, Award)
         assert award._client is mock_usa_client
-        assert (
-            award.generated_unique_award_id
-            == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        )
+        assert award.generated_unique_award_id == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
 
     def test_get_award_strips_whitespace(self, award_resource, mock_usa_client):
         """Test that award_id is stripped of whitespace."""
         award_id = "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
-            award_id=award_id
-        )
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         # Setup mock response using fixture
         mock_usa_client.set_fixture_response(endpoint, "awards/contract")
 
         award = award_resource.find_by_generated_id(f"  {award_id}  ")
 
         # Verify the award was retrieved successfully
-        assert (
-            award.generated_unique_award_id
-            == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        )
+        assert award.generated_unique_award_id == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
 
     def test_get_award_empty_id_raises_validation_error(self, award_resource):
         """Test that empty award_id raises ValidationError."""
@@ -69,34 +57,23 @@ class TestAwardResource:
     def test_get_award_api_error_propagates(self, award_resource, mock_usa_client):
         """Test that API errors are propagated."""
         award_id = "INVALID_AWARD_ID"
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
-            award_id=award_id
-        )
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         # Set up error response
-        mock_usa_client.set_error_response(
-            endpoint, 404, error_message="Award not found"
-        )
+        mock_usa_client.set_error_response(endpoint, 404, error_message="Award not found")
 
         from usaspending.exceptions import HTTPError
 
         with pytest.raises(HTTPError, match="Award not found"):
             award_resource.find_by_generated_id(award_id)
 
-    def test_award_model_initialization_with_client(
-        self, award_fixture_data, mock_usa_client
-    ):
+    def test_award_model_initialization_with_client(self, award_fixture_data, mock_usa_client):
         """Test Award model initialization with client parameter."""
         award = Award(award_fixture_data, client=mock_usa_client)
 
         assert award._client is mock_usa_client
-        assert (
-            award.generated_unique_award_id
-            == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        )
+        assert award.generated_unique_award_id == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
 
-    def test_award_model_initialization_raises_error_without_client(
-        self, award_fixture_data
-    ):
+    def test_award_model_initialization_raises_error_without_client(self, award_fixture_data):
         """Test Award model initialization without client parameter."""
 
         with pytest.raises(TypeError):
@@ -139,9 +116,7 @@ class TestFindByAwardId:
                 "other": 0,
             }
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response)
 
         # Mock search response
         search_response = {
@@ -154,9 +129,7 @@ class TestFindByAwardId:
             ],
             "page_metadata": {"hasNext": False},
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_SEARCH, search_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_SEARCH, search_response)
 
         # Call the method
         result = award_resource.find_by_award_id("12345")
@@ -188,9 +161,7 @@ class TestFindByAwardId:
                 "other": 0,
             }
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response)
 
         # Mock search response
         search_response = {
@@ -203,9 +174,7 @@ class TestFindByAwardId:
             ],
             "page_metadata": {"hasNext": False},
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_SEARCH, search_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_SEARCH, search_response)
 
         # Call the method
         result = award_resource.find_by_award_id("12345")
@@ -227,9 +196,7 @@ class TestFindByAwardId:
                 "other": 0,
             }
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response)
 
         # Call the method
         result = award_resource.find_by_award_id("NONEXISTENT")
@@ -253,9 +220,7 @@ class TestFindByAwardId:
                 "other": 0,
             }
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response)
 
         # Call the method
         result = award_resource.find_by_award_id("DUPLICATE")
@@ -279,9 +244,7 @@ class TestFindByAwardId:
                 "other": 0,
             }
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response)
 
         # Call the method
         result = award_resource.find_by_award_id("AMBIGUOUS")
@@ -358,9 +321,7 @@ class TestFindByAwardId:
                 "unknown_type": 1,  # This shouldn't happen but tests error handling
             }
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response)
 
         # Call the method
         result = award_resource.find_by_award_id("UNKNOWN")
@@ -381,20 +342,14 @@ class TestFindByAwardId:
                 "other": 0,
             }
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_COUNT, count_response)
 
         # Mock search response
         search_response = {
-            "results": [
-                {"generated_unique_award_id": "CONT_AWD_12345", "piid": "12345"}
-            ],
+            "results": [{"generated_unique_award_id": "CONT_AWD_12345", "piid": "12345"}],
             "page_metadata": {"hasNext": False},
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_SEARCH, search_response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AWARD_SEARCH, search_response)
 
         # Call the method
         award_resource.find_by_award_id("12345")

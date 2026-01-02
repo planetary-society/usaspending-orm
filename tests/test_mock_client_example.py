@@ -42,10 +42,7 @@ class TestMockClientExamples:
     def test_paginated_response(self, mock_usa_client):
         """Test automatic pagination handling."""
         # Create 250 mock awards
-        awards = [
-            {"Award ID": f"AWD-{i}", "Recipient Name": f"Company {i}"}
-            for i in range(250)
-        ]
+        awards = [{"Award ID": f"AWD-{i}", "Recipient Name": f"Company {i}"} for i in range(250)]
 
         # Set paginated response with 100 items per page
         mock_usa_client.set_paginated_response(
@@ -60,12 +57,7 @@ class TestMockClientExamples:
 
         # Should have fetched all 250 items across 3 pages
         assert len(results) == 250
-        assert (
-            mock_usa_client.get_request_count(
-                MockUSASpendingClient.Endpoints.AWARD_SEARCH
-            )
-            == 3
-        )
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 3
 
     def test_error_simulation(self, mock_usa_client):
         """Test API error simulation."""
@@ -88,9 +80,7 @@ class TestMockClientExamples:
     def test_fixture_loading(self, mock_usa_client):
         """Test loading responses from fixture files."""
         award_id = "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(
-            award_id=award_id
-        )
+        endpoint = MockUSASpendingClient.Endpoints.AWARD_DETAIL.format(award_id=award_id)
         # Load award detail from fixture
         mock_usa_client.set_fixture_response(endpoint, "awards/contract")
 
@@ -98,10 +88,7 @@ class TestMockClientExamples:
         award = mock_usa_client.awards.find_by_generated_id(award_id)
 
         # Verify fixture data was loaded
-        assert (
-            award.generated_unique_award_id
-            == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
-        )
+        assert award.generated_unique_award_id == "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-"
         assert award.recipient.name == "The University of Iowa"
 
     def test_request_tracking(self, mock_usa_client):

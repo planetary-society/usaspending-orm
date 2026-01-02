@@ -56,7 +56,6 @@ class TestAwardsSearchInitialization:
         assert cloned._page_size == awards_search._page_size
 
 
-
 class TestPayloadBuilding:
     """Test payload construction and validation."""
 
@@ -77,11 +76,7 @@ class TestPayloadBuilding:
 
     def test_build_payload_multiple_filters(self, awards_search):
         """Test payload building with multiple filters."""
-        search = (
-            awards_search.award_type_codes("A")
-            .keywords("test")
-            .fiscal_year(2024)
-        )
+        search = awards_search.award_type_codes("A").keywords("test").fiscal_year(2024)
 
         payload = search._build_payload(page=2)
 
@@ -102,9 +97,7 @@ class TestPayloadBuilding:
     def test_build_payload_aggregates_agency_filters(self, awards_search):
         """Test that multiple agency filters are aggregated into a single list."""
         search = (
-            awards_search.award_type_codes("A")
-            .agency("NASA", "awarding")
-            .agency("DOD", "funding")
+            awards_search.award_type_codes("A").agency("NASA", "awarding").agency("DOD", "funding")
         )
 
         payload = search._build_payload(page=1)
@@ -187,9 +180,7 @@ class TestPayloadBuilding:
     def test_mixed_award_types_fields_now_forbidden(self, awards_search):
         """Test that mixing award types from different categories is now forbidden."""
         # This should raise a ValidationError due to our new validation
-        with pytest.raises(
-            ValidationError, match="Cannot mix different award type categories"
-        ):
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
             awards_search.award_type_codes("A", "07")  # Contract + Loan
 
     def test_no_award_types_base_fields_only(self, awards_search):
@@ -213,9 +204,7 @@ class TestOrderByFunctionality:
 
     def test_order_by_included_in_payload(self, awards_search):
         """Test that sort and order parameters are included in payload when order_by is used."""
-        search = awards_search.award_type_codes("A", "B").order_by(
-            "Award Amount", "desc"
-        )
+        search = awards_search.award_type_codes("A", "B").order_by("Award Amount", "desc")
 
         payload = search._build_payload(page=1)
 
@@ -474,16 +463,12 @@ class TestAwardTypeValidation:
 
     def test_mixing_contracts_and_loans_forbidden(self, awards_search):
         """Test that mixing contracts and loans raises ValidationError."""
-        with pytest.raises(
-            ValidationError, match="Cannot mix different award type categories"
-        ):
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
             awards_search.award_type_codes("A", "07")
 
     def test_mixing_idvs_and_grants_forbidden(self, awards_search):
         """Test that mixing IDVs and grants raises ValidationError."""
-        with pytest.raises(
-            ValidationError, match="Cannot mix different award type categories"
-        ):
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
             awards_search.award_type_codes("IDV_A", "02")
 
     def test_chaining_different_categories_forbidden(self, awards_search):
@@ -492,9 +477,7 @@ class TestAwardTypeValidation:
         search = awards_search.contracts()
 
         # Then try to add loans - should fail
-        with pytest.raises(
-            ValidationError, match="Cannot mix different award type categories"
-        ):
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
             search.award_type_codes("07")
 
     def test_helper_methods_cannot_be_mixed(self, awards_search):
@@ -503,9 +486,7 @@ class TestAwardTypeValidation:
         search = awards_search.contracts()
 
         # Then try to add loans via helper - should fail
-        with pytest.raises(
-            ValidationError, match="Cannot mix different award type categories"
-        ):
+        with pytest.raises(ValidationError, match="Cannot mix different award type categories"):
             search.loans()
 
     def test_adding_same_category_allowed(self, awards_search):
@@ -730,9 +711,7 @@ class TestPaginationAndIteration:
         assert mock_usa_client.awards.search().other_assistance().count() == 89
 
         # Verify 6 calls were made (one for each convenience method)
-        assert (
-            mock_usa_client.get_request_count("/search/spending_by_award_count/") == 6
-        )
+        assert mock_usa_client.get_request_count("/search/spending_by_award_count/") == 6
 
     def test_count_method_missing_category(self, mock_usa_client):
         """Test count() method when category is missing from response."""
@@ -844,7 +823,5 @@ class TestIntegrationScenarios:
         last_request = mock_usa_client.get_last_request("/search/spending_by_award/")
         payload = last_request["json"]
         assert payload["filters"]["recipient_type_names"] == ["small_business"]
-        assert payload["filters"]["recipient_locations"] == [
-            {"country": "USA", "state": "CA"}
-        ]
+        assert payload["filters"]["recipient_locations"] == [{"country": "USA", "state": "CA"}]
         assert len(payload["filters"]["award_amounts"]) == 1

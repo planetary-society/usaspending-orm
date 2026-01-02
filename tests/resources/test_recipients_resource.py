@@ -9,9 +9,7 @@ class TestRecipientsResource:
             "results": [{"name": "Test Recipient"}],
             "page_metadata": {"hasNext": False},
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.RECIPIENT_SEARCH, response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.RECIPIENT_SEARCH, response)
 
         result = mock_usa_client.recipients.find_by_duns("123456789")
 
@@ -23,9 +21,7 @@ class TestRecipientsResource:
             "results": [{"name": "Test Recipient"}],
             "page_metadata": {"hasNext": False},
         }
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.RECIPIENT_SEARCH, response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.RECIPIENT_SEARCH, response)
 
         result = mock_usa_client.recipients.find_by_uei("UEI123456")
 

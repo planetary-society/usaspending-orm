@@ -54,9 +54,7 @@ class AgencyAwardSummary(SingleResourceBase):
         Raises:
             NotImplementedError: This method should not be used directly
         """
-        raise NotImplementedError(
-            "Use get_awards_summary() method instead for award summary data"
-        )
+        raise NotImplementedError("Use get_awards_summary() method instead for award summary data")
 
     def get_awards_summary(
         self,
@@ -93,8 +91,7 @@ class AgencyAwardSummary(SingleResourceBase):
         toptier_code = str(toptier_code).strip()
         if not toptier_code.isdigit() or len(toptier_code) not in [3, 4]:
             raise ValidationError(
-                f"Invalid toptier_code: {toptier_code}. "
-                "Must be a 3-4 digit numeric string"
+                f"Invalid toptier_code: {toptier_code}. Must be a 3-4 digit numeric string"
             )
 
         # Validate agency_type

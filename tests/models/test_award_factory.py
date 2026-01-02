@@ -189,9 +189,7 @@ class TestFactoryPriority:
 class TestFactoryWithRealFixtureData:
     """Test factory with real fixture data."""
 
-    def test_factory_with_contract_fixture(
-        self, mock_usa_client, contract_fixture_data
-    ):
+    def test_factory_with_contract_fixture(self, mock_usa_client, contract_fixture_data):
         """Test factory creates Contract from contract fixture."""
         award = create_award(contract_fixture_data, mock_usa_client)
         assert isinstance(award, Contract)

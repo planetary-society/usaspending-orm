@@ -1,6 +1,5 @@
 """Tests for TreasuryAccountSymbol model."""
 
-
 from usaspending.models.treasury_account_symbol import TreasuryAccountSymbol
 
 
@@ -206,9 +205,7 @@ class TestTreasuryAccountSymbolFromFixture:
         """Test no-year TAS from fixture data."""
         fixture = load_fixture("tas_codes.json")
         # Find the X (no-year) entry
-        no_year_result = next(
-            r for r in fixture["results"] if "-X-" in r["id"]
-        )
+        no_year_result = next(r for r in fixture["results"] if "-X-" in r["id"])
 
         tas = TreasuryAccountSymbol(no_year_result, mock_usa_client)
 

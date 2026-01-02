@@ -42,9 +42,7 @@ class TestMockUSASpendingClient:
         client = MockUSASpendingClient()
 
         # Test 400 error
-        client.set_error_response(
-            "/test/400", error_code=400, detail="Bad request detail"
-        )
+        client.set_error_response("/test/400", error_code=400, detail="Bad request detail")
 
         with pytest.raises(APIError) as exc_info:
             client._make_request("GET", "/test/400")
@@ -249,15 +247,11 @@ class TestResponseBuilder:
     def test_error_response(self):
         """Test building error responses."""
         # With detail
-        response1 = ResponseBuilder.error_response(
-            status_code=400, detail="Detailed error message"
-        )
+        response1 = ResponseBuilder.error_response(status_code=400, detail="Detailed error message")
         assert response1 == {"detail": "Detailed error message"}
 
         # With error
-        response2 = ResponseBuilder.error_response(
-            status_code=500, error="General error"
-        )
+        response2 = ResponseBuilder.error_response(status_code=500, error="General error")
         assert response2 == {"error": "General error"}
 
         # Default

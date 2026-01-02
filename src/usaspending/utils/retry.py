@@ -24,18 +24,20 @@ class RetryHandler:
     """
 
     # HTTP status codes that should be retried
-    RETRYABLE_STATUS_CODES: ClassVar[frozenset[int]] = frozenset({
-        429,  # Too Many Requests (rate limit)
-        500,  # Internal Server Error
-        502,  # Bad Gateway
-        503,  # Service Unavailable
-        504,  # Gateway Timeout
-        520,  # Unknown Error (Cloudflare)
-        521,  # Web Server Is Down
-        522,  # Connection Timed Out
-        523,  # Origin Is Unreachable
-        524,  # A Timeout Occurred
-    })
+    RETRYABLE_STATUS_CODES: ClassVar[frozenset[int]] = frozenset(
+        {
+            429,  # Too Many Requests (rate limit)
+            500,  # Internal Server Error
+            502,  # Bad Gateway
+            503,  # Service Unavailable
+            504,  # Gateway Timeout
+            520,  # Unknown Error (Cloudflare)
+            521,  # Web Server Is Down
+            522,  # Connection Timed Out
+            523,  # Origin Is Unreachable
+            524,  # A Timeout Occurred
+        }
+    )
 
     # Exception types that should be retried
     RETRYABLE_EXCEPTIONS = (
@@ -101,15 +103,12 @@ class RetryHandler:
                 # Track consecutive 5XX errors for session reset logic
                 if isinstance(e, HTTPError) and e.status_code >= 500:
                     self._consecutive_5xx_errors += 1
-                    logger.debug(
-                        f"Consecutive 5XX errors: {self._consecutive_5xx_errors}"
-                    )
+                    logger.debug(f"Consecutive 5XX errors: {self._consecutive_5xx_errors}")
 
                     # Check if we should reset session due to persistent 5XX errors
                     if (
                         self.session_reset_callback
-                        and self._consecutive_5xx_errors
-                        >= config.session_reset_on_5xx_threshold
+                        and self._consecutive_5xx_errors >= config.session_reset_on_5xx_threshold
                         and attempt < self.max_retries
                     ):  # Don't reset on final attempt
                         logger.warning(
@@ -133,9 +132,7 @@ class RetryHandler:
 
                 # Don't retry on the last attempt
                 if attempt == self.max_retries:
-                    logger.warning(
-                        f"Max retries ({self.max_retries}) exhausted. Final error: {e}"
-                    )
+                    logger.warning(f"Max retries ({self.max_retries}) exhausted. Final error: {e}")
                     break
 
                 # Check if this exception should be retried
@@ -155,9 +152,7 @@ class RetryHandler:
         # If we get here, all retries were exhausted
         raise last_exception
 
-    def _check_response_for_retry(
-        self, response: requests.Response, attempt: int
-    ) -> None:
+    def _check_response_for_retry(self, response: requests.Response, attempt: int) -> None:
         """
         Check if a response should trigger a retry.
 
@@ -172,9 +167,7 @@ class RetryHandler:
             if response.status_code == 429:
                 # Rate limit exceeded
                 retry_after = self._get_retry_after_header(response)
-                logger.warning(
-                    f"Rate limit hit (HTTP 429). Retry-After: {retry_after}s"
-                )
+                logger.warning(f"Rate limit hit (HTTP 429). Retry-After: {retry_after}s")
                 raise RateLimitError("Rate limit exceeded", retry_after=retry_after)
             elif response.status_code >= 500:
                 # Server error

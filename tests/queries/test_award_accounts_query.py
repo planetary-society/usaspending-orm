@@ -105,8 +105,7 @@ class TestAwardAccountsQueryOrderBy:
         assert query.order_by("code")._sort_field == "federal_account"
         assert query.order_by("account")._sort_field == "federal_account"
         assert (
-            query.order_by("obligated_amount")._sort_field
-            == "total_transaction_obligated_amount"
+            query.order_by("obligated_amount")._sort_field == "total_transaction_obligated_amount"
         )
 
     def test_order_by_returns_clone(self, mock_usa_client):
@@ -157,9 +156,7 @@ class TestAwardAccountsQueryPayload:
     def test_build_payload_respects_sort_settings(self, mock_usa_client):
         """Test payload includes sort settings."""
         query = (
-            AwardAccountsQuery(mock_usa_client)
-            .award_id("CONT_AWD_123")
-            .order_by("amount", "asc")
+            AwardAccountsQuery(mock_usa_client).award_id("CONT_AWD_123").order_by("amount", "asc")
         )
         payload = query._build_payload(1)
 
@@ -191,9 +188,7 @@ class TestAwardAccountsQueryClone:
 class TestAwardAccountsQueryTransformResult:
     """Tests for result transformation."""
 
-    def test_transform_result_creates_award_account(
-        self, mock_usa_client, load_fixture
-    ):
+    def test_transform_result_creates_award_account(self, mock_usa_client, load_fixture):
         """Test _transform_result creates AwardAccount objects."""
         fixture = load_fixture("awards/accounts.json")
         account_data = fixture["results"][0]

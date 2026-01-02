@@ -118,8 +118,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
             count += 1
 
         logger.info(
-            f"{self.__class__.__name__}.count() = {count} child awards "
-            f"for IDV {self._award_id}"
+            f"{self.__class__.__name__}.count() = {count} child awards for IDV {self._award_id}"
         )
         return count
 
@@ -145,9 +144,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
             ValidationError: If the sort direction or field is invalid.
         """
         if direction not in ["asc", "desc"]:
-            raise ValidationError(
-                f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'."
-            )
+            raise ValidationError(f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'.")
 
         # Map user-friendly field names to API field names
         api_field = self.SORT_FIELD_MAP.get(field.lower(), field)
@@ -184,8 +181,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         valid_types = ["child_idvs", "child_awards", "grandchild_awards"]
         if type_filter.lower() not in valid_types:
             raise ValidationError(
-                f"Invalid type filter: {type_filter}. "
-                f"Valid types are: {', '.join(valid_types)}"
+                f"Invalid type filter: {type_filter}. Valid types are: {', '.join(valid_types)}"
             )
 
         clone = self._clone()

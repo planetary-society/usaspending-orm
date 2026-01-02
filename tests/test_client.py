@@ -30,9 +30,7 @@ class TestClient:
     def test_400_error_without_detail_property(self, mock_usa_client):
         """Test that 400 errors without detail property still raise APIError."""
         # Set up mock response with 400 status but no detail property
-        mock_usa_client.set_error_response(
-            "/test", error_code=400, error_message="Bad request"
-        )
+        mock_usa_client.set_error_response("/test", error_code=400, error_message="Bad request")
 
         # Expect APIError with error message (400s always raise APIError)
         with pytest.raises(APIError) as exc_info:
@@ -72,9 +70,7 @@ class TestClient:
     def test_successful_response_with_detail_property(self, mock_usa_client):
         """Test that successful responses with detail property are not treated as errors."""
         # Set up mock response with 200 status but has detail property
-        mock_usa_client.set_response(
-            "/test", {"detail": "This is just data", "results": []}
-        )
+        mock_usa_client.set_response("/test", {"detail": "This is just data", "results": []})
 
         # Should not raise an error and return the data
         result = mock_usa_client._make_request("GET", "/test")
@@ -124,9 +120,7 @@ class TestClient:
         }
 
         # Verify messages are logged at INFO level
-        info_messages = [
-            record.message for record in caplog.records if record.levelname == "INFO"
-        ]
+        info_messages = [record.message for record in caplog.records if record.levelname == "INFO"]
         assert "API Message: Warning: Data may be incomplete" in info_messages
         assert "API Message: Info: Processing complete" in info_messages
 
@@ -145,9 +139,7 @@ class TestClient:
         assert result == {"results": [], "messages": "Data successfully retrieved"}
 
         # Verify message is logged at INFO level
-        info_messages = [
-            record.message for record in caplog.records if record.levelname == "INFO"
-        ]
+        info_messages = [record.message for record in caplog.records if record.levelname == "INFO"]
         assert "API Message: Data successfully retrieved" in info_messages
 
     def test_200_response_without_messages(self, mock_usa_client, caplog):
@@ -163,9 +155,7 @@ class TestClient:
         assert result == {"results": [{"id": 1}]}
 
         # Verify no API Message logs (only standard request/response logs)
-        info_messages = [
-            record.message for record in caplog.records if record.levelname == "INFO"
-        ]
+        info_messages = [record.message for record in caplog.records if record.levelname == "INFO"]
         api_messages = [msg for msg in info_messages if msg.startswith("API Message:")]
         assert len(api_messages) == 0
 
@@ -233,9 +223,7 @@ class TestClientSessionManagement:
             client = USASpendingClient()
 
             # Mock session.close to verify it's called
-            with unittest.mock.patch.object(
-                client._session, "close"
-            ) as mock_session_close:
+            with unittest.mock.patch.object(client._session, "close") as mock_session_close:
                 # Trigger destructor by deleting reference
                 del client
                 mock_session_close.assert_called_once()
@@ -258,9 +246,7 @@ class TestClientSessionManagement:
             record.message for record in caplog.records if record.levelname == "WARNING"
         ]
         session_warnings = [
-            msg
-            for msg in warning_messages
-            if "session was not explicitly closed" in msg
+            msg for msg in warning_messages if "session was not explicitly closed" in msg
         ]
         assert len(session_warnings) == 0
 
@@ -291,13 +277,8 @@ class TestClientSessionManagement:
         with caplog.at_level(logging.INFO):
             client.close()
 
-        info_messages = [
-            record.message for record in caplog.records if record.levelname == "INFO"
-        ]
-        assert any(
-            "USASpending client closed after 42 requests" in msg
-            for msg in info_messages
-        )
+        info_messages = [record.message for record in caplog.records if record.levelname == "INFO"]
+        assert any("USASpending client closed after 42 requests" in msg for msg in info_messages)
 
     def test_enhanced_destructor_logging(self, caplog):
         """Test that destructor logs request count with warning."""
@@ -324,9 +305,11 @@ class TestClientSessionManagement:
         mock_response.content = b'{"detail": "Test error"}'
         mock_response.json.return_value = {"detail": "Test error"}
 
-        with caplog.at_level(logging.ERROR), unittest.mock.patch.object(
-            client._session, "request", return_value=mock_response
-        ), pytest.raises(APIError):
+        with (
+            caplog.at_level(logging.ERROR),
+            unittest.mock.patch.object(client._session, "request", return_value=mock_response),
+            pytest.raises(APIError),
+        ):
             client._make_uncached_request("GET", "/test")
 
         error_messages = [
@@ -348,13 +331,13 @@ class TestClientSessionManagement:
         mock_response = unittest.mock.Mock()
         mock_response.status_code = 500
         mock_response.content = b"Server Error"
-        mock_response.raise_for_status.side_effect = requests.HTTPError(
-            "500 Server Error"
-        )
+        mock_response.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
 
-        with caplog.at_level(logging.ERROR), unittest.mock.patch.object(
-            client._session, "request", return_value=mock_response
-        ), pytest.raises(HTTPError):
+        with (
+            caplog.at_level(logging.ERROR),
+            unittest.mock.patch.object(client._session, "request", return_value=mock_response),
+            pytest.raises(HTTPError),
+        ):
             client._make_uncached_request("GET", "/test")
 
         error_messages = [

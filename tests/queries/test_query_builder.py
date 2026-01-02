@@ -14,9 +14,7 @@ from tests.mocks.mock_client import MockUSASpendingClient
 class TestDefaultResultLimit:
     """Tests for config.default_result_limit enforcement in __iter__()."""
 
-    def test_default_limit_applied_when_no_explicit_limit(
-        self, mock_usa_client, client_config
-    ):
+    def test_default_limit_applied_when_no_explicit_limit(self, mock_usa_client, client_config):
         """Default limit from config should be applied when no explicit limit set."""
         client_config(default_result_limit=5)
 

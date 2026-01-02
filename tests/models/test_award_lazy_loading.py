@@ -133,9 +133,7 @@ class TestFetchAllDetails:
         award._fetch_details = Mock(return_value={"extra": "data"})
         return award
 
-    def test_fetch_all_details_calls_ensure_details(
-        self, award_with_mock_fetch
-    ):
+    def test_fetch_all_details_calls_ensure_details(self, award_with_mock_fetch):
         """Test that fetch_all_details() triggers lazy loading."""
         assert not award_with_mock_fetch._details_fetched
 
@@ -153,9 +151,7 @@ class TestFetchAllDetails:
         # Should only fetch once
         award_with_mock_fetch._fetch_details.assert_called_once()
 
-    def test_fetch_all_details_updates_data(
-        self, mock_usa_client, search_results_contracts_data
-    ):
+    def test_fetch_all_details_updates_data(self, mock_usa_client, search_results_contracts_data):
         """Test that fetch_all_details() updates model data."""
         award = Award(search_results_contracts_data[0], mock_usa_client)
         award._fetch_details = Mock(return_value={"new_field": "new_value"})

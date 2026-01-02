@@ -32,13 +32,9 @@ SEARCH_CLASS_PARAMS = [
 ]
 
 
-def init_search(
-    search_class: type[T], mock_usa_client: MockUSASpendingClient
-) -> T:
+def init_search(search_class: type[T], mock_usa_client: MockUSASpendingClient) -> T:
     """Instantiate deprecated search classes with warning."""
-    with pytest.warns(
-        DeprecationWarning, match=f"{search_class.__name__} is deprecated"
-    ):
+    with pytest.warns(DeprecationWarning, match=f"{search_class.__name__} is deprecated"):
         return search_class(mock_usa_client)
 
 
@@ -46,9 +42,7 @@ def init_search(
 class TestAgenciesSearchInitialization:
     """Test AgenciesSearch initialization for both subclasses."""
 
-    def test_initialization(
-        self, mock_usa_client, search_class, endpoint, resource_method
-    ):
+    def test_initialization(self, mock_usa_client, search_class, endpoint, resource_method):
         """Test that AgenciesSearch initializes correctly."""
         search = init_search(search_class, mock_usa_client)
         assert search._client is mock_usa_client
@@ -169,9 +163,7 @@ class TestAgenciesSearchExecution:
         with pytest.raises(ValidationError, match="search_text is required"):
             list(search)
 
-    def test_empty_results(
-        self, mock_usa_client, search_class, endpoint, resource_method
-    ):
+    def test_empty_results(self, mock_usa_client, search_class, endpoint, resource_method):
         """Test handling of empty results."""
         empty_response = {
             "results": {"toptier_agency": [], "subtier_agency": [], "office": []},
@@ -275,9 +267,7 @@ class TestAgenciesSearchResourceIntegration:
 
         # Test through resource - get the method dynamically
         resource_func = getattr(mock_usa_client.agencies, resource_method)
-        with pytest.warns(
-            DeprecationWarning, match=f"{resource_method} is deprecated"
-        ):
+        with pytest.warns(DeprecationWarning, match=f"{resource_method} is deprecated"):
             search = resource_func("NASA")
         results = list(search)
 
@@ -304,9 +294,7 @@ class TestAgenciesSearchResourceIntegration:
 
         # Test toptier filter
         resource_func = getattr(mock_usa_client.agencies, resource_method)
-        with pytest.warns(
-            DeprecationWarning, match=f"{resource_method} is deprecated"
-        ):
+        with pytest.warns(DeprecationWarning, match=f"{resource_method} is deprecated"):
             search = resource_func("NASA")
         toptier_results = list(search.toptier())
 
@@ -331,9 +319,7 @@ class TestFundingAgenciesSearchSpecific:
             agency_autocomplete_fixture,
         )
 
-        with pytest.warns(
-            DeprecationWarning, match="FundingAgenciesSearch is deprecated"
-        ):
+        with pytest.warns(DeprecationWarning, match="FundingAgenciesSearch is deprecated"):
             search1 = FundingAgenciesSearch(mock_usa_client)
         search2 = search1.search_text("NASA")
         search3 = search2.toptier()
@@ -359,9 +345,7 @@ class TestAwardingAgenciesSearchSpecific:
             agency_autocomplete_fixture,
         )
 
-        with pytest.warns(
-            DeprecationWarning, match="AwardingAgenciesSearch is deprecated"
-        ):
+        with pytest.warns(DeprecationWarning, match="AwardingAgenciesSearch is deprecated"):
             search1 = AwardingAgenciesSearch(mock_usa_client)
         search2 = search1.search_text("NASA")
         search3 = search2.toptier()

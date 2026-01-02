@@ -80,7 +80,9 @@ class MockUSASpendingClient(USASpendingClient):
 
         # Response storage
         self._responses: dict[str, list[dict[str, Any]]] = defaultdict(list)
-        self._response_indices: dict[str, int] = defaultdict(int)  # Track current index per endpoint
+        self._response_indices: dict[str, int] = defaultdict(
+            int
+        )  # Track current index per endpoint
         self._default_responses: dict[str, dict[str, Any]] = {}
         self._error_responses: dict[str, dict[str, Any]] = {}
 
@@ -154,7 +156,7 @@ class MockUSASpendingClient(USASpendingClient):
         # Check for specific responses (with pagination support)
         if self._responses.get(endpoint):
             responses = self._responses[endpoint]
-            
+
             # Determine which page to return
             # 1. Check if page is explicitly requested in json or params
             requested_page = 1
@@ -162,7 +164,7 @@ class MockUSASpendingClient(USASpendingClient):
                 requested_page = json["page"]
             elif params and "page" in params:
                 requested_page = params["page"]
-            
+
             # If a specific page was requested, use it as the index (1-based to 0-based)
             if (json and "page" in json) or (params and "page" in params):
                 index = requested_page - 1
@@ -182,11 +184,9 @@ class MockUSASpendingClient(USASpendingClient):
                     # instead of repeating the last page
                     last_resp = responses[-1]
                     if "results" in last_resp and "page_metadata" in last_resp:
-                         response = ResponseBuilder.paginated_response(
-                             [], 
-                             page=requested_page, 
-                             has_next=False
-                         )
+                        response = ResponseBuilder.paginated_response(
+                            [], page=requested_page, has_next=False
+                        )
                     else:
                         response = copy.deepcopy(last_resp)
                 else:
@@ -272,9 +272,7 @@ class MockUSASpendingClient(USASpendingClient):
 
         # If no items, add single empty response
         if not items:
-            self._responses[endpoint].append(
-                ResponseBuilder.paginated_response([], has_next=False)
-            )
+            self._responses[endpoint].append(ResponseBuilder.paginated_response([], has_next=False))
 
         # Automatically set up count endpoint (skips if already configured)
         self._auto_setup_count_endpoint(endpoint, len(items))
@@ -333,9 +331,7 @@ class MockUSASpendingClient(USASpendingClient):
             if count_endpoint:
                 self.set_response(count_endpoint, error_data, status_code=error_code)
 
-    def add_response_sequence(
-        self, endpoint: str, responses: list[dict[str, Any]]
-    ) -> None:
+    def add_response_sequence(self, endpoint: str, responses: list[dict[str, Any]]) -> None:
         """Add multiple responses for sequential calls.
 
         Automatically sets hasNext=False on the last response if page_metadata
@@ -359,9 +355,7 @@ class MockUSASpendingClient(USASpendingClient):
         # Automatically set up count endpoint based on first response (skips if already configured)
         if responses:
             first_response = responses[0]
-            if "results" in first_response and isinstance(
-                first_response["results"], list
-            ):
+            if "results" in first_response and isinstance(first_response["results"], list):
                 total_count = len(first_response["results"])
                 self._auto_setup_count_endpoint(endpoint, total_count)
 
@@ -379,9 +373,7 @@ class MockUSASpendingClient(USASpendingClient):
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
 
-    def _auto_setup_count_endpoint(
-        self, search_endpoint: str, total_count: int
-    ) -> None:
+    def _auto_setup_count_endpoint(self, search_endpoint: str, total_count: int) -> None:
         """Automatically set up count endpoint for a search endpoint.
 
         Only sets up the count endpoint if not already configured, allowing
@@ -433,9 +425,7 @@ class MockUSASpendingClient(USASpendingClient):
             return self._request_counts[endpoint]
         return len(self._request_history)
 
-    def get_last_request(
-        self, endpoint: str | None = None
-    ) -> dict[str, Any] | None:
+    def get_last_request(self, endpoint: str | None = None) -> dict[str, Any] | None:
         """Get the last request made.
 
         Args:
@@ -580,12 +570,8 @@ class MockUSASpendingClient(USASpendingClient):
             # Update download_request fields
             response_data["download_request"]["award_id"] = award_id
             response_data["download_request"]["request_type"] = download_type
-            response_data["download_request"]["is_for_contract"] = (
-                download_type == "contract"
-            )
-            response_data["download_request"]["is_for_assistance"] = (
-                download_type == "assistance"
-            )
+            response_data["download_request"]["is_for_contract"] = download_type == "contract"
+            response_data["download_request"]["is_for_assistance"] = download_type == "assistance"
             response_data["download_request"]["is_for_idv"] = download_type == "idv"
 
         endpoint = f"/download/{download_type}/"
@@ -644,9 +630,7 @@ class MockUSASpendingClient(USASpendingClient):
 
     # Convenience methods for common scenarios
 
-    def mock_award_search(
-        self, awards: list[dict[str, Any]], page_size: int = 100
-    ) -> None:
+    def mock_award_search(self, awards: list[dict[str, Any]], page_size: int = 100) -> None:
         """Set up mock responses for award search.
 
         Args:
@@ -682,9 +666,7 @@ class MockUSASpendingClient(USASpendingClient):
             award_id: Award identifier
             **award_data: Additional award fields
         """
-        response = ResponseBuilder.award_detail_response(
-            award_id=award_id, **award_data
-        )
+        response = ResponseBuilder.award_detail_response(award_id=award_id, **award_data)
         self.set_response(f"/awards/{award_id}/", response)
 
     def mock_transactions_for_award(
@@ -732,9 +714,7 @@ class MockUSASpendingClient(USASpendingClient):
             }
             self.set_response("/transactions/", response)
 
-    def mock_recipient_search(
-        self, recipients: list[dict[str, Any]], page_size: int = 50
-    ) -> None:
+    def mock_recipient_search(self, recipients: list[dict[str, Any]], page_size: int = 50) -> None:
         """Set up mock responses for recipient search.
 
         Args:
@@ -750,9 +730,7 @@ class MockUSASpendingClient(USASpendingClient):
             if "amount" not in recipient:
                 recipient["amount"] = 1000000.0
 
-        self.set_paginated_response(
-            self.Endpoints.RECIPIENT_SEARCH, recipients, page_size
-        )
+        self.set_paginated_response(self.Endpoints.RECIPIENT_SEARCH, recipients, page_size)
 
         # Count endpoint is now automatically set up by _auto_setup_count_endpoint()
 

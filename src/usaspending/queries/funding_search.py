@@ -66,9 +66,7 @@ class FundingSearch(QueryBuilder["Funding"]):
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload."""
         if not self._award_id:
-            raise ValidationError(
-                "An award_id is required. Use the .award_id() method."
-            )
+            raise ValidationError("An award_id is required. Use the .award_id() method.")
 
         payload = {
             "award_id": self._award_id,
@@ -94,9 +92,7 @@ class FundingSearch(QueryBuilder["Funding"]):
         logger.debug(f"{self.__class__.__name__}.count() called")
 
         if not self._award_id:
-            raise ValidationError(
-                "An award_id is required. Use the .award_id() method."
-            )
+            raise ValidationError("An award_id is required. Use the .award_id() method.")
 
         # Iterate through all results to count
         count = 0
@@ -147,9 +143,7 @@ class FundingSearch(QueryBuilder["Funding"]):
         """
         # Validate direction
         if direction not in ["asc", "desc"]:
-            raise ValidationError(
-                f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'."
-            )
+            raise ValidationError(f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'.")
 
         # Map user-friendly field names to API field names
         api_field = self.SORT_FIELD_MAP.get(field.lower(), field)

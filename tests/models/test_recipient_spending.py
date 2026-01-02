@@ -24,8 +24,7 @@ class TestRecipientSpendingInitialization:
 
         # Test using dynamic fixture values
         assert (
-            recipient_spending._data["recipient_id"][:15]
-            == first_result["recipient_id"][:15]
+            recipient_spending._data["recipient_id"][:15] == first_result["recipient_id"][:15]
         )  # Clean recipient_id
         assert recipient_spending._data["uei"] == first_result["uei"]
         assert recipient_spending._data["name"] == first_result["name"]
@@ -48,9 +47,7 @@ class TestRecipientSpendingProperties:
 
         # Test properties using fixture values
         assert recipient_spending.uei == first_result["uei"]
-        assert (
-            recipient_spending.duns == first_result["code"]
-        )  # Should return code field
+        assert recipient_spending.duns == first_result["code"]  # Should return code field
         assert recipient_spending.name == contracts_titlecase(first_result["name"])
         assert recipient_spending.amount == first_result["amount"]
 
@@ -180,9 +177,7 @@ class TestRecipientSpendingCount:
             fixture_result = fixture_data["results"][i]
 
             assert isinstance(recipient_spending, RecipientSpending)
-            assert recipient_spending.name == contracts_titlecase(
-                fixture_result["name"]
-            )
+            assert recipient_spending.name == contracts_titlecase(fixture_result["name"])
             assert_decimal_equal(recipient_spending.amount, fixture_result["amount"])
             assert recipient_spending.uei == fixture_result["uei"]
             assert recipient_spending.duns == fixture_result["code"]

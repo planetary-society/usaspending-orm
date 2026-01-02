@@ -72,12 +72,8 @@ class TestBusinessCategoryConstants:
             assert isinstance(group_name, str)
             assert isinstance(categories, dict)
             for code, description in categories.items():
-                assert isinstance(code, str), (
-                    f"Code {code} in {group_name} should be string"
-                )
-                assert isinstance(description, str), (
-                    f"Description for {code} should be string"
-                )
+                assert isinstance(code, str), f"Code {code} in {group_name} should be string"
+                assert isinstance(description, str), f"Description for {code} should be string"
 
     def test_category_business_codes(self):
         """Test CATEGORY_BUSINESS_CODES contains expected values."""
@@ -225,9 +221,7 @@ class TestBusinessCategoryConstants:
         """Test BUSINESS_CATEGORY_DESCRIPTIONS has string descriptions."""
         for code, description in BUSINESS_CATEGORY_DESCRIPTIONS.items():
             assert isinstance(code, str), f"Code {code} should be string"
-            assert isinstance(description, str), (
-                f"Description for {code} should be string"
-            )
+            assert isinstance(description, str), f"Description for {code} should be string"
             assert len(description) > 0, f"Description for {code} should not be empty"
 
     def test_frozenset_immutability(self):
@@ -459,13 +453,9 @@ class TestGetDescription:
         for code in ALL_BUSINESS_CATEGORIES:
             description = get_description(code)
             assert isinstance(description, str)
-            assert len(description) > 0, (
-                f"Code {code} should have non-empty description"
-            )
+            assert len(description) > 0, f"Code {code} should have non-empty description"
 
-    @pytest.mark.parametrize(
-        "invalid_code", ["INVALID", "99", "XYZ", "", "ABC123", "Z"]
-    )
+    @pytest.mark.parametrize("invalid_code", ["INVALID", "99", "XYZ", "", "ABC123", "Z"])
     def test_invalid_codes_return_empty_string(self, invalid_code):
         """Test invalid codes return empty string."""
         assert get_description(invalid_code) == ""
@@ -507,10 +497,7 @@ class TestConvenienceMethods:
 
         # Women-owned small businesses
         assert is_small_business("women_owned_small_business") is True
-        assert (
-            is_small_business("economically_disadvantaged_women_owned_small_business")
-            is True
-        )
+        assert is_small_business("economically_disadvantaged_women_owned_small_business") is True
 
         # Special designation small businesses
         assert is_small_business("emerging_small_business") is True
@@ -572,9 +559,7 @@ class TestConvenienceMethods:
         assert is_educational_institution("higher_education") is True
         assert is_educational_institution("veterinary_college") is True
         assert is_educational_institution("school_of_forestry") is True
-        assert (
-            is_educational_institution("public_institution_of_higher_education") is True
-        )
+        assert is_educational_institution("public_institution_of_higher_education") is True
 
         assert is_educational_institution("government") is False
         assert is_educational_institution("small_business") is False
@@ -613,30 +598,18 @@ class TestDataConsistency:
         assert CATEGORY_BUSINESS_CODES == frozenset(
             BUSINESS_CATEGORY_GROUPS["category_business"].keys()
         )
-        assert MINORITY_OWNED_CODES == frozenset(
-            BUSINESS_CATEGORY_GROUPS["minority_owned"].keys()
-        )
-        assert WOMEN_OWNED_CODES == frozenset(
-            BUSINESS_CATEGORY_GROUPS["women_owned"].keys()
-        )
-        assert VETERAN_OWNED_CODES == frozenset(
-            BUSINESS_CATEGORY_GROUPS["veteran_owned"].keys()
-        )
+        assert MINORITY_OWNED_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["minority_owned"].keys())
+        assert WOMEN_OWNED_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["women_owned"].keys())
+        assert VETERAN_OWNED_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["veteran_owned"].keys())
         assert SPECIAL_DESIGNATIONS_CODES == frozenset(
             BUSINESS_CATEGORY_GROUPS["special_designations"].keys()
         )
-        assert NONPROFIT_CODES == frozenset(
-            BUSINESS_CATEGORY_GROUPS["nonprofit"].keys()
-        )
+        assert NONPROFIT_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["nonprofit"].keys())
         assert HIGHER_EDUCATION_CODES == frozenset(
             BUSINESS_CATEGORY_GROUPS["higher_education"].keys()
         )
-        assert GOVERNMENT_CODES == frozenset(
-            BUSINESS_CATEGORY_GROUPS["government"].keys()
-        )
-        assert INDIVIDUALS_CODES == frozenset(
-            BUSINESS_CATEGORY_GROUPS["individuals"].keys()
-        )
+        assert GOVERNMENT_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["government"].keys())
+        assert INDIVIDUALS_CODES == frozenset(BUSINESS_CATEGORY_GROUPS["individuals"].keys())
 
     def test_descriptions_match_groups(self):
         """Test BUSINESS_CATEGORY_DESCRIPTIONS matches BUSINESS_CATEGORY_GROUPS values."""
@@ -656,9 +629,7 @@ class TestDataConsistency:
         """Test all overlapping categories actually exist in their specified groups."""
         for code, groups in OVERLAPPING_CATEGORIES.items():
             # Code should be valid
-            assert is_valid_business_category(code), (
-                f"Overlapping code {code} should be valid"
-            )
+            assert is_valid_business_category(code), f"Overlapping code {code} should be valid"
 
             # Code should exist in at least one of its specified groups
             found_in_groups = []
@@ -668,9 +639,7 @@ class TestDataConsistency:
 
             # For overlapping categories, we expect them to be in special_designations
             # but they might be listed in category_business through overlap logic
-            assert len(found_in_groups) > 0, (
-                f"Code {code} not found in any of its groups: {groups}"
-            )
+            assert len(found_in_groups) > 0, f"Code {code} not found in any of its groups: {groups}"
 
 
 class TestEdgeCases:
@@ -788,10 +757,7 @@ class TestSpecialCases:
 
     def test_hubzone_description(self):
         """Test HUBZone has correct description."""
-        assert (
-            get_description("historically_underutilized_business_firm")
-            == "HUBZone Firm"
-        )
+        assert get_description("historically_underutilized_business_firm") == "HUBZone Firm"
 
     def test_us_owned_vs_foreign_owned(self):
         """Test US-owned and foreign-owned are in special designations."""

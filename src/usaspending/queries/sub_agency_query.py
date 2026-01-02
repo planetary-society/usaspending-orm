@@ -39,7 +39,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         self._fiscal_year: int | None = None
         self._agency_type: str = "awarding"
         self._award_type_codes: list[str] = []
-        
+
         # Default sort (API defaults)
         self._order_by = "total_obligations"
         self._order_direction = "desc"
@@ -48,11 +48,10 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         """Validate the toptier code format."""
         if not self._toptier_code:
             raise ValidationError("toptier_code is required")
-        
+
         if not self._toptier_code.isdigit() or len(self._toptier_code) not in [3, 4]:
             raise ValidationError(
-                f"Invalid toptier_code: {self._toptier_code}. "
-                "Must be a 3-4 digit numeric string"
+                f"Invalid toptier_code: {self._toptier_code}. Must be a 3-4 digit numeric string"
             )
 
     @property
@@ -93,13 +92,14 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
 
     def _execute_query(self, page: int) -> dict[str, Any]:
         """Execute the query using GET instead of POST.
-        
+
         The QueryBuilder base class assumes POST by default, but this endpoint
         uses GET with query parameters.
         """
         params = self._build_payload(page)
-        
+
         from ..logging_config import log_query_execution
+
         log_query_execution(logger, "SubAgencyQuery", [], self._endpoint, page)
         logger.debug(f"Query params: {params}")
 
@@ -129,7 +129,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
 
     def count(self) -> int:
         """Get total count of sub-agencies.
-        
+
         This endpoint provides total count in page_metadata.
         """
         # Fetch first page to get metadata
@@ -165,7 +165,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         """
         if type_val not in ("awarding", "funding"):
             raise ValidationError("agency_type must be 'awarding' or 'funding'")
-            
+
         clone = self._clone()
         clone._agency_type = type_val
         return clone
@@ -187,26 +187,20 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         """Set sort order.
 
         Args:
-            field: Field to sort by ("name", "total_obligations", 
+            field: Field to sort by ("name", "total_obligations",
                   "transaction_count", "new_award_count").
             direction: "asc" or "desc".
 
         Returns:
             A new SubAgencyQuery instance with ordering applied.
         """
-        valid_sorts = {
-            "name",
-            "total_obligations", 
-            "transaction_count", 
-            "new_award_count"
-        }
-        
+        valid_sorts = {"name", "total_obligations", "transaction_count", "new_award_count"}
+
         if field not in valid_sorts:
-             raise ValidationError(
-                f"Invalid sort field: {field}. "
-                f"Valid fields are: {', '.join(sorted(valid_sorts))}"
+            raise ValidationError(
+                f"Invalid sort field: {field}. Valid fields are: {', '.join(sorted(valid_sorts))}"
             )
-            
+
         if direction not in ("asc", "desc"):
             raise ValidationError("direction must be 'asc' or 'desc'")
 

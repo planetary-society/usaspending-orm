@@ -119,9 +119,7 @@ class TestAPIError:
     def test_all_attributes(self):
         """APIError correctly stores all provided attributes."""
         body = {"message": "Internal error"}
-        error = APIError(
-            "Server error", status_code=500, response_body=body
-        )
+        error = APIError("Server error", status_code=500, response_body=body)
         assert str(error) == "Server error"
         assert error.status_code == 500
         assert error.response_body == body

@@ -77,9 +77,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload."""
         if not self._award_id:
-            raise ValidationError(
-                "An award_id is required. Use the .award_id() method."
-            )
+            raise ValidationError("An award_id is required. Use the .award_id() method.")
 
         payload = {
             "award_id": self._award_id,
@@ -112,9 +110,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         logger.debug(f"{self.__class__.__name__}.count() called")
 
         if not self._award_id:
-            raise ValidationError(
-                "An award_id is required. Use the .award_id() method."
-            )
+            raise ValidationError("An award_id is required. Use the .award_id() method.")
 
         # Return cached count if available
         if self._cached_count is not None:
@@ -131,8 +127,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         self._cached_count = count
 
         logger.info(
-            f"{self.__class__.__name__}.count() = {count} accounts "
-            f"for award {self._award_id}"
+            f"{self.__class__.__name__}.count() = {count} accounts for award {self._award_id}"
         )
         return count
 
@@ -176,9 +171,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         """
         # Validate direction
         if direction not in ["asc", "desc"]:
-            raise ValidationError(
-                f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'."
-            )
+            raise ValidationError(f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'.")
 
         # Map user-friendly field names to API field names
         api_field = self.SORT_FIELD_MAP.get(field.lower(), field)

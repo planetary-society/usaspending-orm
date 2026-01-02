@@ -124,9 +124,7 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
         Returns:
             FederalAccountsQuery: Filtered query.
         """
-        return self._add_filter_object(
-            SimpleListFilter(key="id", values=list(codes))
-        )
+        return self._add_filter_object(SimpleListFilter(key="id", values=list(codes)))
 
     def description(self, text: str) -> FederalAccountsQuery:
         """Filter by description text (case-insensitive substring).
@@ -151,9 +149,7 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
         """
         return self.description(text)
 
-    def fiscal_year(
-        self, year: int, include_noyear_accounts: bool = False
-    ) -> FederalAccountsQuery:
+    def fiscal_year(self, year: int, include_noyear_accounts: bool = False) -> FederalAccountsQuery:
         """Filter to federal accounts with active TAS codes for a fiscal year.
 
         Returns only federal accounts that have at least one Treasury Account
@@ -174,12 +170,11 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
             >>> active_accounts = agency.federal_accounts.fiscal_year(2024).all()
             >>>
             >>> # Include no-year accounts
-            >>> all_active = (
-            ...     agency.federal_accounts
-            ...     .fiscal_year(2024, include_noyear_accounts=True)
-            ...     .all()
-            ... )
+            >>> all_active = agency.federal_accounts.fiscal_year(
+            ...     2024, include_noyear_accounts=True
+            ... ).all()
         """
+
         def tas_matches(tas: Any) -> bool:
             if not include_noyear_accounts and tas.availability_type_code == "X":
                 return False

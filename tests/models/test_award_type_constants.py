@@ -54,12 +54,8 @@ class TestAwardTypeConstants:
             assert isinstance(category, str)
             assert isinstance(codes, dict)
             for code, description in codes.items():
-                assert isinstance(code, str), (
-                    f"Code {code} in {category} should be string"
-                )
-                assert isinstance(description, str), (
-                    f"Description for {code} should be string"
-                )
+                assert isinstance(code, str), f"Code {code} in {category} should be string"
+                assert isinstance(description, str), f"Description for {code} should be string"
 
     def test_contract_codes(self):
         """Test CONTRACT_CODES contains expected values."""
@@ -147,9 +143,7 @@ class TestAwardTypeConstants:
         """Test AWARD_TYPE_DESCRIPTIONS has string descriptions."""
         for code, description in AWARD_TYPE_DESCRIPTIONS.items():
             assert isinstance(code, str), f"Code {code} should be string"
-            assert isinstance(description, str), (
-                f"Description for {code} should be string"
-            )
+            assert isinstance(description, str), f"Description for {code} should be string"
             assert len(description) > 0, f"Description for {code} should not be empty"
 
     def test_frozenset_immutability(self):
@@ -280,13 +274,9 @@ class TestGetDescription:
         for code in ALL_AWARD_CODES:
             description = get_description(code)
             assert isinstance(description, str)
-            assert len(description) > 0, (
-                f"Code {code} should have non-empty description"
-            )
+            assert len(description) > 0, f"Code {code} should have non-empty description"
 
-    @pytest.mark.parametrize(
-        "invalid_code", ["INVALID", "99", "XYZ", "", "ABC123", "Z", "13"]
-    )
+    @pytest.mark.parametrize("invalid_code", ["INVALID", "99", "XYZ", "", "ABC123", "Z", "13"])
     def test_invalid_codes_return_empty_string(self, invalid_code):
         """Test invalid codes return empty string."""
         assert get_description(invalid_code) == ""
@@ -344,9 +334,7 @@ class TestDataConsistency:
         assert IDV_CODES == frozenset(AWARD_TYPE_GROUPS["idvs"].keys())
         assert LOAN_CODES == frozenset(AWARD_TYPE_GROUPS["loans"].keys())
         assert GRANT_CODES == frozenset(AWARD_TYPE_GROUPS["grants"].keys())
-        assert DIRECT_PAYMENT_CODES == frozenset(
-            AWARD_TYPE_GROUPS["direct_payments"].keys()
-        )
+        assert DIRECT_PAYMENT_CODES == frozenset(AWARD_TYPE_GROUPS["direct_payments"].keys())
         assert OTHER_CODES == frozenset(AWARD_TYPE_GROUPS["other_assistance"].keys())
 
     def test_descriptions_match_groups(self):

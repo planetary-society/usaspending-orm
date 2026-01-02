@@ -73,9 +73,7 @@ class TestBaseModelGetValue:
         model = BaseModel(data)
 
         # Should skip all falsy values and return the truthy one
-        result = model.get_value(
-            ["key1", "key2", "key3", "key4", "key5", "key6", "key7"]
-        )
+        result = model.get_value(["key1", "key2", "key3", "key4", "key5", "key6", "key7"])
         assert result == ""
 
         # False value should be returned
@@ -214,9 +212,7 @@ class TestBaseModelValidation:
     def test_validate_init_data_with_empty_string_raises_error(self):
         """Test that validate_init_data raises ValidationError with empty string when string ID allowed."""
         with pytest.raises(ValidationError, match="Test ID cannot be empty"):
-            BaseModel.validate_init_data(
-                "", "Test", id_field="test_id", allow_string_id=True
-            )
+            BaseModel.validate_init_data("", "Test", id_field="test_id", allow_string_id=True)
 
     def test_validate_init_data_with_whitespace_string_raises_error(self):
         """Test that validate_init_data raises ValidationError with whitespace-only string."""
@@ -292,12 +288,8 @@ class TestBaseModelValidation:
             BaseModel.validate_init_data(None, "Recipient")
 
         # Test empty string error message
-        with pytest.raises(
-            ValidationError, match="Award ID cannot be empty or whitespace"
-        ):
-            BaseModel.validate_init_data(
-                "", "Award", id_field="award_id", allow_string_id=True
-            )
+        with pytest.raises(ValidationError, match="Award ID cannot be empty or whitespace"):
+            BaseModel.validate_init_data("", "Award", id_field="award_id", allow_string_id=True)
 
         # Test type mismatch error message
         with pytest.raises(ValidationError, match="Agency expects dict, got list"):
@@ -361,9 +353,7 @@ class TestClientAwareModel:
 
     def test_init_requires_client(self) -> None:
         """Test that ClientAwareModel requires a client instance."""
-        with pytest.raises(
-            ValidationError, match="requires a USASpendingClient instance"
-        ):
+        with pytest.raises(ValidationError, match="requires a USASpendingClient instance"):
             ClientAwareModel({"test": "data"}, None)
 
     def test_client_property_with_active_client(self):

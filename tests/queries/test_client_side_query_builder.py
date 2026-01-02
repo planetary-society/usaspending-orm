@@ -59,9 +59,7 @@ class DefCodesQuery(ClientSideQueryBuilder[dict[str, Any]]):
         Returns:
             DefCodesQuery: Filtered query.
         """
-        return self._add_filter_object(
-            SimpleListFilter(key="code", values=list(codes))
-        )
+        return self._add_filter_object(SimpleListFilter(key="code", values=list(codes)))
 
     def public_law_contains(self, text: str) -> DefCodesQuery:
         """Filter def_codes by a substring in public_law.
@@ -128,9 +126,7 @@ def test_filter_predicate(
 ) -> None:
     """Ensure keyword filters are applied."""
     def_codes = agency_fixture_data["def_codes"]
-    expected = sum(
-        1 for item in def_codes if "emergency" in item.get("public_law", "").lower()
-    )
+    expected = sum(1 for item in def_codes if "emergency" in item.get("public_law", "").lower())
 
     filtered = def_codes_query.public_law_contains("Emergency")
     assert filtered.count() == expected

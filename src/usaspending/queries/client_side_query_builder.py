@@ -191,24 +191,18 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         Returns:
             ClientSideQueryBuilder: A new query with the conditions applied.
         """
-        normalized = {
-            key.replace("__", "."): value for key, value in conditions.items()
-        }
+        normalized = {key.replace("__", "."): value for key, value in conditions.items()}
         clone = self._clone()
 
         for field, expected in normalized.items():
             if isinstance(expected, str):
-                clone._filter_objects.append(
-                    SimpleStringFilter(key=field, value=expected)
-                )
+                clone._filter_objects.append(SimpleStringFilter(key=field, value=expected))
                 continue
 
             if isinstance(expected, (list, set, tuple)) and all(
                 isinstance(entry, str) for entry in expected
             ):
-                clone._filter_objects.append(
-                    SimpleListFilter(key=field, values=list(expected))
-                )
+                clone._filter_objects.append(SimpleListFilter(key=field, values=list(expected)))
                 continue
 
             def predicate(item: T, field=field, expected=expected) -> bool:
@@ -245,9 +239,7 @@ class ClientSideQueryBuilder(BaseQuery[T]):
             return items[key]
         if isinstance(key, slice):
             return items[key]
-        raise TypeError(
-            f"indices must be integers or slices, not {type(key).__name__}"
-        )
+        raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
 
     def count(self) -> int:
         """Return the total number of matching results."""
@@ -276,8 +268,7 @@ class ClientSideQueryBuilder(BaseQuery[T]):
     def _apply_filters(self, items: list[T]) -> list[T]:
         """Apply all predicate filters to the item list."""
         predicates = [
-            self._filter_adapter.to_predicate(filter_obj)
-            for filter_obj in self._filter_objects
+            self._filter_adapter.to_predicate(filter_obj) for filter_obj in self._filter_objects
         ]
         predicates.extend(self._predicate_filters)
 

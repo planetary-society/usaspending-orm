@@ -229,9 +229,7 @@ class TestSpendingSearchCountWithLimits:
             ],
         }
 
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.SPENDING_BY_DISTRICT, response
-        )
+        mock_usa_client.set_response(MockUSASpendingClient.Endpoints.SPENDING_BY_DISTRICT, response)
 
         search = SpendingSearch(mock_usa_client).by_district().limit(10)
         count = search.count()
@@ -249,8 +247,7 @@ class TestSpendingSearchCountWithLimits:
             "limit": 3,
             "page_metadata": {"page": 1, "hasNext": True, "hasPrevious": False},
             "results": [
-                {"id": i, "name": f"Page1-Recipient{i}", "amount": 1000.0}
-                for i in range(1, 4)
+                {"id": i, "name": f"Page1-Recipient{i}", "amount": 1000.0} for i in range(1, 4)
             ],
         }
 
@@ -260,8 +257,7 @@ class TestSpendingSearchCountWithLimits:
             "limit": 3,
             "page_metadata": {"page": 2, "hasNext": True, "hasPrevious": True},
             "results": [
-                {"id": i, "name": f"Page2-Recipient{i}", "amount": 1000.0}
-                for i in range(4, 7)
+                {"id": i, "name": f"Page2-Recipient{i}", "amount": 1000.0} for i in range(4, 7)
             ],
         }
 

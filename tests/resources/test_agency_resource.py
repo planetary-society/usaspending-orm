@@ -65,9 +65,7 @@ class TestAgencyResourceFindByToptierCode:
         mock_usa_client.set_fixture_response(endpoint, "agency")
 
         # Call the method
-        agency = agency_resource.find_by_toptier_code(
-            toptier_code, fiscal_year=fiscal_year
-        )
+        agency = agency_resource.find_by_toptier_code(toptier_code, fiscal_year=fiscal_year)
 
         # Verify return value
         assert isinstance(agency, Agency)
@@ -104,9 +102,7 @@ class TestAgencyResourceFindByToptierCode:
             == agency_fixture_data["congressional_justification_url"]
         )
         assert agency.about_agency_data == agency_fixture_data["about_agency_data"]
-        assert (
-            agency.subtier_agency_count == agency_fixture_data["subtier_agency_count"]
-        )
+        assert agency.subtier_agency_count == agency_fixture_data["subtier_agency_count"]
         assert agency.messages == agency_fixture_data["messages"]
 
         # Test def_codes
@@ -114,16 +110,12 @@ class TestAgencyResourceFindByToptierCode:
         expected_def_codes = agency_fixture_data["def_codes"]
         assert len(def_codes) == len(expected_def_codes)
 
-    def test_get_agency_empty_toptier_code_raises_validation_error(
-        self, agency_resource
-    ):
+    def test_get_agency_empty_toptier_code_raises_validation_error(self, agency_resource):
         """Test that empty toptier_code raises ValidationError."""
         with pytest.raises(ValidationError, match="toptier_code is required"):
             agency_resource.find_by_toptier_code("")
 
-    def test_get_agency_invalid_toptier_code_raises_validation_error(
-        self, agency_resource
-    ):
+    def test_get_agency_invalid_toptier_code_raises_validation_error(self, agency_resource):
         """Test that invalid toptier_code raises ValidationError."""
         with pytest.raises(ValidationError, match="Invalid toptier_code"):
             agency_resource.find_by_toptier_code("ABC")  # Non-numeric
@@ -134,9 +126,7 @@ class TestAgencyResourceFindByToptierCode:
         endpoint = f"/agency/{toptier_code}/"
 
         # Set up error response
-        mock_usa_client.set_error_response(
-            endpoint, 404, error_message="Agency not found"
-        )
+        mock_usa_client.set_error_response(endpoint, 404, error_message="Agency not found")
 
         from usaspending.exceptions import HTTPError
 
@@ -164,9 +154,7 @@ class TestAgencyResourceClientIntegration:
 
         assert agencies1 is agencies2
 
-    def test_client_agencies_get_integration(
-        self, mock_usa_client, agency_fixture_data
-    ):
+    def test_client_agencies_get_integration(self, mock_usa_client, agency_fixture_data):
         """Test integration: client.agencies.find_by_toptier_code() works end-to-end."""
         toptier_code = agency_fixture_data["toptier_code"]
         endpoint = f"/agency/{toptier_code}/"
@@ -220,25 +208,19 @@ class TestAgencyResourceUsagePatterns:
             assert agency.abbreviation == agency_fixture_data["abbreviation"]
             assert isinstance(agency.def_codes, list)
 
-    def test_get_agency_specific_fiscal_year(
-        self, mock_usa_client, agency_fixture_data
-    ):
+    def test_get_agency_specific_fiscal_year(self, mock_usa_client, agency_fixture_data):
         """Test getting agency for specific fiscal year (common usage pattern)."""
         toptier_code = agency_fixture_data["toptier_code"]
         endpoint = f"/agency/{toptier_code}/"
         mock_usa_client.set_fixture_response(endpoint, "agency")
 
         # Common usage: get specific fiscal year data
-        agency = mock_usa_client.agencies.find_by_toptier_code(
-            toptier_code, fiscal_year=2023
-        )
+        agency = mock_usa_client.agencies.find_by_toptier_code(toptier_code, fiscal_year=2023)
 
         assert agency.toptier_code == toptier_code
         assert isinstance(agency.messages, list)
 
-    def test_access_agency_mission_and_website(
-        self, mock_usa_client, agency_fixture_data
-    ):
+    def test_access_agency_mission_and_website(self, mock_usa_client, agency_fixture_data):
         """Test accessing agency mission and website (common usage pattern)."""
         toptier_code = agency_fixture_data["toptier_code"]
         endpoint = f"/agency/{toptier_code}/"
@@ -249,24 +231,18 @@ class TestAgencyResourceUsagePatterns:
         # Common usage: access agency details
         assert agency.mission == agency_fixture_data["mission"]
         assert agency.website == agency_fixture_data["website"]
-        assert (
-            agency.subtier_agency_count == agency_fixture_data["subtier_agency_count"]
-        )
+        assert agency.subtier_agency_count == agency_fixture_data["subtier_agency_count"]
 
 
 class TestAgencyResourceSearch:
     """Test AgencyResource search helpers and deprecation aliases."""
 
     @pytest.fixture
-    def agency_resource(
-        self, mock_usa_client: MockUSASpendingClient
-    ) -> AgencyResource:
+    def agency_resource(self, mock_usa_client: MockUSASpendingClient) -> AgencyResource:
         """Create an AgencyResource instance with mocked client."""
         return AgencyResource(mock_usa_client)
 
-    def test_search_defaults_to_funding(
-        self, agency_resource: AgencyResource
-    ) -> None:
+    def test_search_defaults_to_funding(self, agency_resource: AgencyResource) -> None:
         """Test search() defaults to funding agencies."""
         search = agency_resource.search().name("NASA")
 
@@ -274,9 +250,7 @@ class TestAgencyResourceSearch:
         assert search._search_text == "NASA"
         assert search._endpoint == "/autocomplete/funding_agency_office/"
 
-    def test_search_awarding_agencies(
-        self, agency_resource: AgencyResource
-    ) -> None:
+    def test_search_awarding_agencies(self, agency_resource: AgencyResource) -> None:
         """Test search() for awarding agencies."""
         search = agency_resource.search().name("NASA").agency_type("awarding")
 
@@ -284,20 +258,14 @@ class TestAgencyResourceSearch:
         assert search._search_text == "NASA"
         assert search._endpoint == "/autocomplete/awarding_agency_office/"
 
-    def test_search_invalid_agency_type_raises(
-        self, agency_resource: AgencyResource
-    ) -> None:
+    def test_search_invalid_agency_type_raises(self, agency_resource: AgencyResource) -> None:
         """Test search() with invalid agency_type raises ValidationError."""
         with pytest.raises(ValidationError, match="Invalid agency_type"):
             agency_resource.search().agency_type("invalid")
 
-    def test_find_all_funding_agencies_by_name_warns(
-        self, agency_resource: AgencyResource
-    ) -> None:
+    def test_find_all_funding_agencies_by_name_warns(self, agency_resource: AgencyResource) -> None:
         """Test deprecated find_all_funding_agencies_by_name emits warning."""
-        with pytest.warns(
-            DeprecationWarning, match="find_all_funding_agencies_by_name"
-        ):
+        with pytest.warns(DeprecationWarning, match="find_all_funding_agencies_by_name"):
             search = agency_resource.find_all_funding_agencies_by_name("NASA")
 
         assert isinstance(search, AgenciesSearch)
@@ -308,9 +276,7 @@ class TestAgencyResourceSearch:
         self, agency_resource: AgencyResource
     ) -> None:
         """Test deprecated find_all_awarding_agencies_by_name emits warning."""
-        with pytest.warns(
-            DeprecationWarning, match="find_all_awarding_agencies_by_name"
-        ):
+        with pytest.warns(DeprecationWarning, match="find_all_awarding_agencies_by_name"):
             search = agency_resource.find_all_awarding_agencies_by_name("NASA")
 
         assert isinstance(search, AgenciesSearch)
@@ -336,9 +302,7 @@ class TestAgencyResourceSubAgencies:
         assert query._toptier_code == "080"
         assert query._client is mock_usa_client
 
-    def test_subagencies_integration(
-        self, mock_usa_client, agency_subagencies_fixture_data
-    ):
+    def test_subagencies_integration(self, mock_usa_client, agency_subagencies_fixture_data):
         """Test integration of client.agencies.subagencies()."""
         endpoint = "/agency/080/sub_agency/"
         mock_usa_client.set_response(endpoint, agency_subagencies_fixture_data)

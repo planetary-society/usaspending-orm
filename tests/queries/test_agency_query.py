@@ -130,9 +130,7 @@ class TestAgencyQueryExecution:
         assert last_request["method"] == "GET"
         assert last_request["params"] == {"fiscal_year": fiscal_year}
 
-    def test_find_by_id_strips_whitespace(
-        self, agency_query, mock_usa_client, agency_fixture_data
-    ):
+    def test_find_by_id_strips_whitespace(self, agency_query, mock_usa_client, agency_fixture_data):
         """Test that toptier_code whitespace is stripped."""
         toptier_code = agency_fixture_data["toptier_code"]
         endpoint = f"/agency/{toptier_code}/"
@@ -156,9 +154,7 @@ class TestAgencyQueryExecution:
         endpoint = f"/agency/{toptier_code}/"
 
         # Setup error response
-        mock_usa_client.set_error_response(
-            endpoint, 404, error_message="Agency not found"
-        )
+        mock_usa_client.set_error_response(endpoint, 404, error_message="Agency not found")
 
         from usaspending.exceptions import HTTPError
 
@@ -171,9 +167,7 @@ class TestAgencyQueryExecution:
         endpoint = f"/agency/{toptier_code}/"
 
         # Setup 400 error response
-        mock_usa_client.set_error_response(
-            endpoint, 400, detail="Invalid toptier_code format"
-        )
+        mock_usa_client.set_error_response(endpoint, 400, detail="Invalid toptier_code format")
 
         from usaspending.exceptions import APIError
 
@@ -221,9 +215,7 @@ class TestAgencyQueryModelCreation:
         assert agency.agency_id == agency_fixture_data["agency_id"]
         assert agency.mission == agency_fixture_data["mission"]
         assert agency.website == agency_fixture_data["website"]
-        assert (
-            agency.subtier_agency_count == agency_fixture_data["subtier_agency_count"]
-        )
+        assert agency.subtier_agency_count == agency_fixture_data["subtier_agency_count"]
 
         # Test def_codes property
         def_codes = agency.def_codes

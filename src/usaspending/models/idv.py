@@ -56,7 +56,16 @@ class IDV(Award):
         "latest_transaction_contract_data",
     ]
 
-    SEARCH_FIELDS: ClassVar[list[str]] = [*Award.SEARCH_FIELDS, "Start Date", "Award Amount", "Total Outlays", "Contract Award Type", "Last Date to Order", "NAICS", "PSC"]
+    SEARCH_FIELDS: ClassVar[list[str]] = [
+        *Award.SEARCH_FIELDS,
+        "Start Date",
+        "Award Amount",
+        "Total Outlays",
+        "Contract Award Type",
+        "Last Date to Order",
+        "NAICS",
+        "PSC",
+    ]
 
     @property
     def piid(self) -> str | None:
@@ -102,9 +111,7 @@ class IDV(Award):
         Returns:
             Optional[str]: The contract award type, or None.
         """
-        return self._lazy_get(
-            "contract_award_type", "Contract Award Type", "type_description"
-        )
+        return self._lazy_get("contract_award_type", "Contract Award Type", "type_description")
 
     @property
     def naics_code(self) -> str | None:
@@ -116,9 +123,7 @@ class IDV(Award):
         naics_data = self._lazy_get("naics", "NAICS")
         if isinstance(naics_data, dict):
             return naics_data.get("code")
-        if self.naics_hierarchy and isinstance(
-            self.naics_hierarchy.get("base_code"), dict
-        ):
+        if self.naics_hierarchy and isinstance(self.naics_hierarchy.get("base_code"), dict):
             return self.naics_hierarchy["base_code"].get("code")
         return None
 
@@ -196,9 +201,7 @@ class IDV(Award):
         Returns:
             Optional[Location]: The location object, or None if data is missing/empty.
         """
-        data = self._lazy_get(
-            "place_of_performance", "Primary Place of Performance", default=None
-        )
+        data = self._lazy_get("place_of_performance", "Primary Place of Performance", default=None)
         if not isinstance(data, dict) or not data:
             return None
 

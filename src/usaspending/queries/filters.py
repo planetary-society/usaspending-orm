@@ -63,12 +63,8 @@ class LocationSpec:
     state_code: str | None = None
     county_code: str | None = None
     city_name: str | None = None
-    district_original: str | None = (
-        None  # Current congressional district (e.g. "IA-03")
-    )
-    district_current: str | None = (
-        None  # Congressional district when awarded (e.g. "WA-01")
-    )
+    district_original: str | None = None  # Current congressional district (e.g. "IA-03")
+    district_current: str | None = None  # Congressional district when awarded (e.g. "WA-01")
     zip_code: str | None = None
 
     def to_dict(self) -> dict[str, str]:
@@ -415,9 +411,7 @@ def parse_award_amount(
         lower, upper = amount
         return AwardAmount(lower_bound=lower, upper_bound=upper)
     else:
-        raise ValidationError(
-            "Award amounts must be specified as a dictionary or tuple"
-        )
+        raise ValidationError("Award amounts must be specified as a dictionary or tuple")
 
 
 def parse_location_spec(location: dict[str, str]) -> LocationSpec:
@@ -466,28 +460,20 @@ def parse_location_spec(location: dict[str, str]) -> LocationSpec:
 
     # Validation: county requires state
     if has_county and not has_state:
-        raise ValidationError(
-            "county requires state to be specified in location filter"
-        )
+        raise ValidationError("county requires state to be specified in location filter")
 
     # Validation: county and district are mutually exclusive
     if has_county and (has_district_original or has_district_current):
-        raise ValidationError(
-            "county and district are mutually exclusive in location filter"
-        )
+        raise ValidationError("county and district are mutually exclusive in location filter")
 
     # Validation: district_original and district_current are mutually exclusive
     if has_district_original and has_district_current:
-        raise ValidationError(
-            "district_original and district_current are mutually exclusive"
-        )
+        raise ValidationError("district_original and district_current are mutually exclusive")
 
     # Validation: district requires state and USA country
     if has_district_original or has_district_current:
         if not has_state:
-            raise ValidationError(
-                "district requires state to be specified in location filter"
-            )
+            raise ValidationError("district requires state to be specified in location filter")
         if country.upper() != "USA":
             raise ValidationError(
                 "district is only valid for USA locations (country must be 'USA')"
@@ -525,13 +511,9 @@ def parse_agency_spec(agency: dict[str, str]) -> AgencySpec:
     valid_tiers = {"toptier", "subtier"}
 
     if agency["type"] not in valid_types:
-        raise ValidationError(
-            f"Agency type must be 'awarding' or 'funding', got: {agency['type']}"
-        )
+        raise ValidationError(f"Agency type must be 'awarding' or 'funding', got: {agency['type']}")
     if agency["tier"] not in valid_tiers:
-        raise ValidationError(
-            f"Agency tier must be 'toptier' or 'subtier', got: {agency['tier']}"
-        )
+        raise ValidationError(f"Agency tier must be 'toptier' or 'subtier', got: {agency['tier']}")
 
     return AgencySpec(**agency)
 

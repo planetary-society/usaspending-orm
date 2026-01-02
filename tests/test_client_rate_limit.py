@@ -48,9 +48,7 @@ class TestClientRateLimitIntegration:
         # Act
         mock_usa_client._make_request("GET", "/test1")
         mock_usa_client._make_request("GET", "/test2")
-        mock_usa_client._make_request(
-            "GET", "/test3"
-        )  # This should trigger rate limit delay
+        mock_usa_client._make_request("GET", "/test3")  # This should trigger rate limit delay
 
         # Record end time
         end_time = time.time()

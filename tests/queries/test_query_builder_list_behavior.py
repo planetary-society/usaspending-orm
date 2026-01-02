@@ -34,12 +34,7 @@ class TestLenMethod:
         assert awards_search.count() == 42
 
         # Should have called the count endpoint twice
-        assert (
-            mock_usa_client.get_request_count(
-                MockUSASpendingClient.Endpoints.AWARD_COUNT
-            )
-            == 2
-        )
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT) == 2
 
     def test_len_with_filters(self, awards_search, mock_usa_client):
         """Test that len() works with filtered queries."""
@@ -76,12 +71,7 @@ class TestGetItemMethod:
         assert result._data["Award ID"] == "AWARD-42"
 
         # Should have fetched only one page
-        assert (
-            mock_usa_client.get_request_count(
-                MockUSASpendingClient.Endpoints.AWARD_SEARCH
-            )
-            == 1
-        )
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 1
 
     def test_negative_index(self, awards_search, mock_usa_client):
         """Test accessing items by negative index."""
@@ -94,9 +84,7 @@ class TestGetItemMethod:
         mock_usa_client.set_response(
             MockUSASpendingClient.Endpoints.AWARD_SEARCH,
             {
-                "results": [
-                    {"Award ID": f"AWARD-{200 + i}"} for i in range(50)
-                ],  # Items 200-249
+                "results": [{"Award ID": f"AWARD-{200 + i}"} for i in range(50)],  # Items 200-249
                 "page_metadata": {"hasNext": False},
             },
         )
@@ -169,12 +157,7 @@ class TestGetItemMethod:
         assert results[-1]._data["Award ID"] == "AWARD-104"
 
         # Should have fetched two pages
-        assert (
-            mock_usa_client.get_request_count(
-                MockUSASpendingClient.Endpoints.AWARD_SEARCH
-            )
-            == 2
-        )
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 2
 
     def test_slice_with_step(self, awards_search, mock_usa_client):
         """Test slice with step parameter."""
@@ -237,12 +220,7 @@ class TestGetItemMethod:
         assert results == []
 
         # No API calls should be made for empty slices
-        assert (
-            mock_usa_client.get_request_count(
-                MockUSASpendingClient.Endpoints.AWARD_SEARCH
-            )
-            == 0
-        )
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 0
 
     def test_invalid_key_type(self, awards_search, mock_usa_client):
         """Test that invalid key types raise TypeError."""

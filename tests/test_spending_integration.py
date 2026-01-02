@@ -28,9 +28,7 @@ class TestSpendingIntegration:
         assert len(recipient_search._filter_objects) == 1
 
         # Test district search chaining
-        district_search = (
-            client.spending.search().by_district().spending_level("awards")
-        )
+        district_search = client.spending.search().by_district().spending_level("awards")
         assert isinstance(district_search, SpendingSearch)
         assert district_search._category == "district"
         assert district_search._spending_level == "awards"
@@ -53,6 +51,4 @@ class TestSpendingIntegration:
         assert search._category == "recipient"
         assert search._spending_level == "transactions"
         assert search._total_limit == 50
-        assert (
-            len(search._filter_objects) == 3
-        )  # agency, time period, recipient search text
+        assert len(search._filter_objects) == 3  # agency, time period, recipient search text

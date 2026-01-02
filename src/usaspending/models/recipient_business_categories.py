@@ -139,15 +139,11 @@ def _build_complete_descriptions():
 BUSINESS_CATEGORY_DESCRIPTIONS = _build_complete_descriptions()
 
 # Create frozensets for each group
-CATEGORY_BUSINESS_CODES = frozenset(
-    BUSINESS_CATEGORY_GROUPS["category_business"].keys()
-)
+CATEGORY_BUSINESS_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["category_business"].keys())
 MINORITY_OWNED_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["minority_owned"].keys())
 WOMEN_OWNED_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["women_owned"].keys())
 VETERAN_OWNED_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["veteran_owned"].keys())
-SPECIAL_DESIGNATIONS_CODES = frozenset(
-    BUSINESS_CATEGORY_GROUPS["special_designations"].keys()
-)
+SPECIAL_DESIGNATIONS_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["special_designations"].keys())
 NONPROFIT_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["nonprofit"].keys())
 HIGHER_EDUCATION_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["higher_education"].keys())
 GOVERNMENT_CODES = frozenset(BUSINESS_CATEGORY_GROUPS["government"].keys())
@@ -269,7 +265,12 @@ def is_small_business(code: str) -> bool:
         return True
 
     # Special designation small businesses
-    return code in {"emerging_small_business", "self_certified_small_disadvanted_business", "small_agricultural_cooperative", "small_disadvantaged_business"}
+    return code in {
+        "emerging_small_business",
+        "self_certified_small_disadvanted_business",
+        "small_agricultural_cooperative",
+        "small_disadvantaged_business",
+    }
 
 
 def is_minority_owned(code: str) -> bool:

@@ -179,9 +179,7 @@ class TestParseEnumValue:
 
     def test_all_enum_members_matchable(self):
         """Test that all enum members can be matched."""
-        assert (
-            parse_enum_value("domestic", SampleScope, "scope") == SampleScope.DOMESTIC
-        )
+        assert parse_enum_value("domestic", SampleScope, "scope") == SampleScope.DOMESTIC
         assert parse_enum_value("foreign", SampleScope, "scope") == SampleScope.FOREIGN
 
 
@@ -207,9 +205,7 @@ class TestValidatorsIntegration:
         """Test parse_enum_value with AgencyType enum."""
         from usaspending.queries.filters import AgencyType
 
-        result = parse_enum_value(
-            "awarding", AgencyType, "agency_type", normalize=False
-        )
+        result = parse_enum_value("awarding", AgencyType, "agency_type", normalize=False)
         assert result == AgencyType.AWARDING
 
         result = parse_enum_value("FUNDING", AgencyType, "agency_type", normalize=False)
@@ -220,17 +216,11 @@ class TestValidatorsIntegration:
         from usaspending.queries.filters import AwardDateType
 
         # Test with normalize=True (removes underscores)
-        result = parse_enum_value(
-            "action_date", AwardDateType, "date_type", normalize=True
-        )
+        result = parse_enum_value("action_date", AwardDateType, "date_type", normalize=True)
         assert result == AwardDateType.ACTION_DATE
 
-        result = parse_enum_value(
-            "actiondate", AwardDateType, "date_type", normalize=True
-        )
+        result = parse_enum_value("actiondate", AwardDateType, "date_type", normalize=True)
         assert result == AwardDateType.ACTION_DATE
 
-        result = parse_enum_value(
-            "NEW_AWARDS_ONLY", AwardDateType, "date_type", normalize=True
-        )
+        result = parse_enum_value("NEW_AWARDS_ONLY", AwardDateType, "date_type", normalize=True)
         assert result == AwardDateType.NEW_AWARDS_ONLY

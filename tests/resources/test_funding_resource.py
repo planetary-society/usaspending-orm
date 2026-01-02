@@ -62,10 +62,7 @@ class TestFundingResource:
         resource = FundingResource(mock_usa_client)
 
         query = (
-            resource.award_id("CONT_AWD_123")
-            .order_by("fiscal_date", "asc")
-            .limit(10)
-            .page_size(25)
+            resource.award_id("CONT_AWD_123").order_by("fiscal_date", "asc").limit(10).page_size(25)
         )
 
         assert query._award_id == "CONT_AWD_123"

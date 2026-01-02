@@ -11,12 +11,12 @@ import logging
 from usaspending import USASpendingClient
 
 # Configure only the usaspending logger
-usaspending_logger = logging.getLogger('usaspending')
+usaspending_logger = logging.getLogger("usaspending")
 usaspending_logger.setLevel(logging.DEBUG)
 
 # Add a handler for usaspending logs
 handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
+handler.setFormatter(logging.Formatter("%(name)s - %(levelname)s - %(message)s"))
 usaspending_logger.addHandler(handler)
 
 client = USASpendingClient()
@@ -31,7 +31,7 @@ import logging
 from usaspending import USASpendingClient
 
 # Silence usaspending logs
-logging.getLogger('usaspending').setLevel(logging.WARNING)
+logging.getLogger("usaspending").setLevel(logging.WARNING)
 
 client = USASpendingClient()
 ```
@@ -45,13 +45,11 @@ import logging
 from usaspending import USASpendingClient
 
 # Configure file logging for usaspending
-usaspending_logger = logging.getLogger('usaspending')
+usaspending_logger = logging.getLogger("usaspending")
 usaspending_logger.setLevel(logging.INFO)
 
-file_handler = logging.FileHandler('usaspending.log')
-file_handler.setFormatter(
-    logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-)
+file_handler = logging.FileHandler("usaspending.log")
+file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 usaspending_logger.addHandler(file_handler)
 
 client = USASpendingClient()
@@ -273,18 +271,14 @@ def log_query_execution(
 
         if filter_counts:
             filter_breakdown = ", ".join(
-                [
-                    f"{count} {filter_type}"
-                    for filter_type, count in filter_counts.items()
-                ]
+                [f"{count} {filter_type}" for filter_type, count in filter_counts.items()]
             )
             filter_summary = f"{filters_count} filters ({filter_breakdown})"
         else:
             filter_summary = "0 filters"
 
         logger.debug(
-            f"Executing {query_type} query - {filter_summary}, "
-            f"endpoint: {endpoint}, page: {page}"
+            f"Executing {query_type} query - {filter_summary}, endpoint: {endpoint}, page: {page}"
         )
 
         # Log individual filter details in debug mode

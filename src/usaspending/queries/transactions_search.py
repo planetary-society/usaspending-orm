@@ -66,9 +66,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         """Constructs the final API request payload from the filter objects."""
 
         if not self._award_id:
-            raise ValidationError(
-                "An award_id is required. Use the .award_id() method."
-            )
+            raise ValidationError("An award_id is required. Use the .award_id() method.")
 
         payload = {
             "award_id": self._award_id,
@@ -98,9 +96,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
 
         # If we have client-side filters, we need to fetch all results and count
         if self._client_filters:
-            logger.debug(
-                "Client-side filters present, counting by iterating all results"
-            )
+            logger.debug("Client-side filters present, counting by iterating all results")
             count = 0
             for _ in self:
                 count += 1
@@ -158,9 +154,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             return list(self)[key]
 
         else:
-            raise TypeError(
-                f"indices must be integers or slices, not {type(key).__name__}"
-            )
+            raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
 
     # ==========================================================================
     # Filter Methods
@@ -206,12 +200,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             >>> recent = award.transactions.since("2024-01-01").all()
 
             >>> # Combine with until() for a date range
-            >>> q1_2024 = (
-            ...     award.transactions
-            ...     .since("2024-01-01")
-            ...     .until("2024-03-31")
-            ...     .all()
-            ... )
+            >>> q1_2024 = award.transactions.since("2024-01-01").until("2024-03-31").all()
         """
         # Validate date format (parse_date_string validates and returns a date object)
         parse_date_string(date, "since_date")
@@ -243,12 +232,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             >>> historical = award.transactions.until("2023-12-31").all()
 
             >>> # Combine with since() for a date range
-            >>> fy2024 = (
-            ...     award.transactions
-            ...     .since("2023-10-01")
-            ...     .until("2024-09-30")
-            ...     .all()
-            ... )
+            >>> fy2024 = award.transactions.since("2023-10-01").until("2024-09-30").all()
         """
         # Validate date format (parse_date_string validates and returns a date object)
         parse_date_string(date, "until_date")
@@ -283,16 +267,12 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
 
         Example:
             >>> # Sort by obligation amount, largest first
-            >>> transactions = (
-            ...     client.transactions.award_id("ABC123")
-            ...     .order_by("federal_action_obligation", "desc")
+            >>> transactions = client.transactions.award_id("ABC123").order_by(
+            ...     "federal_action_obligation", "desc"
             ... )
 
             >>> # Sort by date, oldest first
-            >>> historical = (
-            ...     award.transactions
-            ...     .order_by("action_date", "asc")
-            ... )
+            >>> historical = award.transactions.order_by("action_date", "asc")
 
         Note:
             Loan-specific fields (face_value_loan_guarantee, original_loan_subsidy_cost)
@@ -305,9 +285,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             )
 
         if direction not in ("asc", "desc"):
-            raise ValidationError(
-                f"Invalid sort direction '{direction}'. Must be 'asc' or 'desc'."
-            )
+            raise ValidationError(f"Invalid sort direction '{direction}'. Must be 'asc' or 'desc'.")
 
         clone = self._clone()
         clone._order_by = field
@@ -326,16 +304,12 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         """
         # Apply date filters
         if "since_date" in self._client_filters:
-            since_date = datetime.strptime(
-                self._client_filters["since_date"], "%Y-%m-%d"
-            ).date()
+            since_date = datetime.strptime(self._client_filters["since_date"], "%Y-%m-%d").date()
             if transaction.action_date and transaction.action_date < since_date:
                 return False
 
         if "until_date" in self._client_filters:
-            until_date = datetime.strptime(
-                self._client_filters["until_date"], "%Y-%m-%d"
-            ).date()
+            until_date = datetime.strptime(self._client_filters["until_date"], "%Y-%m-%d").date()
             if transaction.action_date and transaction.action_date > until_date:
                 return False
 

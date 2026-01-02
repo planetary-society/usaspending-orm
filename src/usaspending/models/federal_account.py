@@ -43,9 +43,7 @@ class FederalAccount(ClientAwareModel):
         """
         raw = self.validate_init_data(data, "FederalAccount", allow_string_id=False)
         super().__init__(raw, client)
-        self._toptier_code = toptier_code or (
-            self.ancestors[0] if self.ancestors else None
-        )
+        self._toptier_code = toptier_code or (self.ancestors[0] if self.ancestors else None)
 
     @property
     def id(self) -> str | None:

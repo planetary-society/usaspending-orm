@@ -87,9 +87,7 @@ class Location(BaseModel):
         Returns:
             Optional[str]: Country name (USA is normalized to 'USA'), or None.
         """
-        country = self._format_location_string_property(
-            self.get_value(["country_name"])
-        )
+        country = self._format_location_string_property(self.get_value(["country_name"]))
         if country and country.lower() == "usa":
             country = "USA"
         return country
@@ -168,9 +166,7 @@ class Location(BaseModel):
         Returns:
             Optional[str]: The country code (e.g., 'USA', 'GBR'), or None.
         """
-        return self.get_value(
-            ["location_country_code", "Place of Performance Country Code"]
-        )
+        return self.get_value(["location_country_code", "Place of Performance Country Code"])
 
     @property
     def zip5(self) -> str | None:
@@ -201,9 +197,7 @@ class Location(BaseModel):
             Optional[str]: Formatted address string, or None if no address components exist.
         """
         lines: list[str] = [
-            line
-            for line in (self.address_line1, self.address_line2, self.address_line3)
-            if line
+            line for line in (self.address_line1, self.address_line2, self.address_line3) if line
         ]
         trailing = [p for p in (self.city, self.state_code, self.zip5) if p]
         if trailing:
