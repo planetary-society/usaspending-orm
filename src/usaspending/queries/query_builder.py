@@ -49,25 +49,14 @@ from ..utils.validations import parse_date_string, validate_non_empty_string
 T = TypeVar("T")
 
 # Import award type code constants for convenience methods
-if TYPE_CHECKING:
-    from ..models.award_types import (
-        CONTRACT_CODES,
-        IDV_CODES,
-        LOAN_CODES,
-        GRANT_CODES,
-        DIRECT_PAYMENT_CODES,
-        OTHER_CODES,
-    )
-else:
-    # Import at runtime to avoid circular dependencies
-    from ..models.award_types import (
-        CONTRACT_CODES,
-        IDV_CODES,
-        LOAN_CODES,
-        GRANT_CODES,
-        DIRECT_PAYMENT_CODES,
-        OTHER_CODES,
-    )
+from ..models.award_types import (
+    CONTRACT_CODES,
+    IDV_CODES,
+    LOAN_CODES,
+    GRANT_CODES,
+    DIRECT_PAYMENT_CODES,
+    OTHER_CODES,
+)
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -88,6 +77,7 @@ class QueryBuilder(BaseQuery[T], ABC):
         super().__init__()
         self._client = client
         self._filter_objects: list[BaseFilter] = []
+        self._cached_count: Optional[int] = None
 
     def __iter__(self) -> Iterator[T]:
         """Iterate over all results, handling pagination automatically.
@@ -170,6 +160,15 @@ class QueryBuilder(BaseQuery[T], ABC):
         logger.info(f"{self.__class__.__name__}.all() returned {len(results)} results")
         return results
 
+    def _get_cached_count(self) -> int:
+        """Get the count, using cached value if available.
+
+        This avoids redundant count API calls during indexing/slicing operations.
+        """
+        if self._cached_count is None:
+            self._cached_count = self.count()
+        return self._cached_count
+
     def __getitem__(self, key: Union[int, slice]) -> Union[T, List[T]]:
         """Support list-like indexing and slicing.
 
@@ -185,7 +184,7 @@ class QueryBuilder(BaseQuery[T], ABC):
         """
         if isinstance(key, int):
             # Handle single index
-            total_count = self.count()
+            total_count = self._get_cached_count()
 
             # Convert negative index to positive
             if key < 0:
@@ -213,7 +212,7 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         elif isinstance(key, slice):
             # Handle slice
-            total_count = self.count()
+            total_count = self._get_cached_count()
 
             # Convert slice indices
             start, stop, step = key.indices(total_count)
