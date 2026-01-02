@@ -117,11 +117,11 @@ tests/
 
 ### Caching
 - Implemented using `cachier` python library via `cachier` decorator
-- Supports file (default, via pickle) and memory backendds
+- Supports file (default, via pickle) and memory backends
 - Cache configurable via the global `config` object set in `src/usaspending/config.py`:
-  - `cache_enabled`: Enable/disable caching (default: True)
+  - `cache_enabled`: Enable/disable caching (default: False)
   - `cache_ttl`: Time-to-live in seconds (default: 604800 = 1 week)
-  - `cache_dir`: Directory for file-based cache (default: ".usaspending_cache")
+  - `cache_dir`: Directory for file-based cache (default: "~/.cache/usaspending")
   - `cache_backend`: Backend type ('file' or 'memory', default: 'file')
 
 ### Logging
