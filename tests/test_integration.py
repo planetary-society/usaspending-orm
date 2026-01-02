@@ -27,17 +27,13 @@ class TestAwardResourceIntegration:
 
     def test_search_contracts(self, client):
         """Test award search for contracts."""
-        results = list(
-            client.awards.search().contracts().fiscal_year(2024).limit(3)
-        )
+        results = list(client.awards.search().contracts().fiscal_year(2024).limit(3))
         assert len(results) > 0
         assert results[0].generated_unique_award_id is not None
 
     def test_search_grants(self, client):
         """Test award search for grants."""
-        results = list(
-            client.awards.search().grants().fiscal_year(2024).limit(3)
-        )
+        results = list(client.awards.search().grants().fiscal_year(2024).limit(3))
         assert len(results) > 0
         assert results[0].generated_unique_award_id is not None
 
@@ -63,11 +59,7 @@ class TestAwardFiltersIntegration:
         # Search for awards with a specific program activity code
         # Using common program activity codes that should have results
         results = list(
-            client.awards.search()
-            .grants()
-            .fiscal_year(2024)
-            .program_activity(1)
-            .limit(3)
+            client.awards.search().grants().fiscal_year(2024).program_activity(1).limit(3)
         )
         # May or may not have results depending on data availability
         assert isinstance(results, list)
@@ -98,9 +90,7 @@ class TestRecipientsResourceIntegration:
     def test_find_by_recipient_id(self, client):
         """Test finding recipient by ID with year parameter."""
         # Get a recipient ID from spending search
-        spending = list(
-            client.spending.search().by_recipient().fiscal_year(2024).limit(5)
-        )
+        spending = list(client.spending.search().by_recipient().fiscal_year(2024).limit(5))
         recipient_id = None
         for s in spending:
             if s.recipient_id:
@@ -108,9 +98,7 @@ class TestRecipientsResourceIntegration:
                 break
 
         if recipient_id:
-            recipient = client.recipients.find_by_recipient_id(
-                recipient_id, year="latest"
-            )
+            recipient = client.recipients.find_by_recipient_id(recipient_id, year="latest")
             assert recipient is not None
             assert recipient.name is not None
 
@@ -127,9 +115,7 @@ class TestAgencyResourceIntegration:
 
     def test_find_funding_agencies(self, client):
         """Test funding agency search."""
-        results = list(
-            client.agencies.find_all_funding_agencies_by_name("Defense").limit(3)
-        )
+        results = list(client.agencies.search().name("Defense").agency_type("funding").limit(3))
         assert len(results) > 0
 
 
@@ -138,26 +124,30 @@ class TestSpendingResourceIntegration:
 
     def test_spending_by_recipient(self, client):
         """Test spending by recipient."""
-        results = list(
-            client.spending.search().by_recipient().fiscal_year(2024).limit(3)
-        )
+        results = list(client.spending.search().by_recipient().fiscal_year(2024).limit(3))
         assert len(results) > 0
         assert results[0].name is not None
         assert results[0].amount is not None
 
     def test_spending_by_district(self, client):
         """Test spending by congressional district."""
-        results = list(
-            client.spending.search().by_district().fiscal_year(2024).limit(3)
-        )
+        results = list(client.spending.search().by_district().fiscal_year(2024).limit(3))
         assert len(results) > 0
 
     def test_spending_by_state(self, client):
         """Test spending by state."""
-        results = list(
-            client.spending.search().by_state().fiscal_year(2024).limit(3)
+        result = (
+            client.spending.search()
+            .by_state()
+            .agency("National Aeronautics and Space Administration")
+            .fiscal_year(2024)
+            .limit(1)
+            .order_by("amount", "desc")
+            .first()
         )
-        assert len(results) > 0
+        assert result is not None
+        assert result.code
+        assert result.amount
 
 
 class TestAwardTransactionsIntegration:
@@ -166,9 +156,7 @@ class TestAwardTransactionsIntegration:
     def test_transactions_via_award_object(self, client):
         """Test getting transactions through award object."""
         # Get a contract award
-        awards = list(
-            client.awards.search().contracts().fiscal_year(2024).limit(1)
-        )
+        awards = list(client.awards.search().contracts().fiscal_year(2024).limit(1))
         assert len(awards) > 0, "Need at least one contract to test"
 
         award = awards[0]
@@ -187,9 +175,7 @@ class TestAwardFundingIntegration:
     def test_funding_via_award_object(self, client):
         """Test getting funding history through award object."""
         # Get a contract award
-        awards = list(
-            client.awards.search().contracts().fiscal_year(2024).limit(1)
-        )
+        awards = list(client.awards.search().contracts().fiscal_year(2024).limit(1))
         assert len(awards) > 0, "Need at least one contract to test"
 
         award = awards[0]
@@ -206,9 +192,7 @@ class TestAwardSubawardsIntegration:
     def test_subawards_via_contract_object(self, client):
         """Test getting subawards through contract award object."""
         # Get contract awards
-        awards = list(
-            client.awards.search().contracts().fiscal_year(2024).limit(5)
-        )
+        awards = list(client.awards.search().contracts().fiscal_year(2024).limit(5))
         assert len(awards) > 0, "Need at least one contract to test"
 
         # Find an award with subawards
