@@ -74,10 +74,10 @@ def parse_date_string(
         return value
     try:
         return datetime.strptime(value, format_str).date()
-    except ValueError:
+    except ValueError as e:
         raise ValidationError(
             f"Invalid {field_name} format: '{value}'. Expected '{format_str}'."
-        )
+        ) from e
 
 
 def parse_enum_value(
@@ -121,3 +121,31 @@ def parse_enum_value(
     raise ValidationError(
         f"Invalid {field_name}: '{value}'. Valid options: {valid_options}"
     )
+
+
+def validate_sort_field(
+    field: str,
+    valid_fields: set[str],
+    context: str = "query",
+) -> None:
+    """Validate that a sort field is allowed for the query type.
+
+    Args:
+        field: The sort field to validate.
+        valid_fields: Set of valid sort field names.
+        context: Description of the query context for error messages.
+
+    Raises:
+        ValidationError: If field is not in valid_fields.
+
+    Example:
+        >>> validate_sort_field("Award Amount", {"Award Amount", "Award ID"}, "awards search")
+        >>> validate_sort_field("Invalid Field", {"Award Amount", "Award ID"}, "awards search")
+        # Raises ValidationError: Invalid sort field 'Invalid Field' for awards search.
+    """
+    if field not in valid_fields:
+        sorted_fields = sorted(valid_fields)
+        raise ValidationError(
+            f"Invalid sort field '{field}' for {context}. "
+            f"Valid fields: {', '.join(sorted_fields)}"
+        )
