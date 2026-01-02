@@ -712,7 +712,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     )
             ... )
 
-            >>> # Find awards funded by DOE but managed by other agencies
+            >>> # Find awards funded by Department of Energy but managed by other agencies
             >>> doe_funded = (
             ...     client.awards.search()
             ...     .contracts()

@@ -39,7 +39,7 @@ These documentation links provide detailed information about request parameters,
 ### Award Details
 - **Endpoint**: `/api/v2/awards/{award_id}/`
 - **Method**: GET
-- **Documentation**:https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/awards/award_id.md
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/awards/award_id.md
 - **Purpose**: Get detailed information about a specific federal award
 - **Coresponding Query Builder**: `src/usaspending/queries/award_query.py`
 
@@ -65,7 +65,7 @@ These documentation links provide detailed information about request parameters,
 - **Corresponding Query Builder**: `src/usaspending/queries/funding_search.py`
 
 ### Subawards
--- **Endpoint**: `/api/v2/subawards/`
+- **Endpoint**: `/api/v2/subawards/`
 - **Method**: POST
 - **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/subawards.md
 - **Purpose**: List subawards for a given award

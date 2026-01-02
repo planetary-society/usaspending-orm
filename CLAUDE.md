@@ -125,7 +125,7 @@ tests/
   - `cache_backend`: Backend type ('file' or 'memory', default: 'file')
 
 ### Logging
-- Implementd via custom `USASpendingLogger` class using Python's `logging` module
+- Implemented via custom `USASpendingLogger` class using Python's `logging` module
 - Log all API requests and responses, including total counts of API calls
 - Log query execution times
 - Implement variable log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)

@@ -93,7 +93,7 @@ results = (
     .order_by("Last Modified Date", "desc")
 )
 
-for award in results.page(1):
+for award in results.limit(50):
     print(f"{award.award_id}: {award.recipient.name}")
 ```
 

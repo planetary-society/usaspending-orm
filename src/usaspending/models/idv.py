@@ -35,9 +35,14 @@ class IDV(Award):
 
     Example:
         >>> # Find all IDVs for an agency
-        >>> idvs = client.awards.search().idvs().agency("NASA").all()
+        >>> idvs = (
+        ...     client.awards.search()
+        ...     .idvs()
+        ...     .agency("National Aeronautics and Space Administration")
+        ...     .all()
+        ... )
         >>> for idv in idvs:
-        ...     print(f"{idv.piid}: {idv.recipient_name} - ${idv.total_obligation:,.2f}")
+        ...     print(f"{idv.award_identifier}: ${idv.total_obligation:,.2f}")
     """
 
     # Download type for bulk download API

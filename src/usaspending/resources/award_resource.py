@@ -105,9 +105,9 @@ class AwardResource(BaseResource):
 
         Example:
             >>> awards = client.awards.search()
-            ...     .agency("NASA")
-            ...     .in_state("TX")
-            ...     .fiscal_years(2023, 2024)
+            ...     .agency("National Aeronautics and Space Administration")
+            ...     .place_of_performance_locations({"state_code": "TX", "country_code": "USA"})
+            ...     .fiscal_year(2024)
             ...     .limit(10)
         """
         logger.debug("Creating new AwardsSearch query builder")

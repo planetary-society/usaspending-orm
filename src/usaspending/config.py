@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import timedelta
+from importlib.metadata import PackageNotFoundError, version
 
 import cachier
 
@@ -9,6 +10,14 @@ from usaspending.exceptions import ConfigurationError
 from usaspending.logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
+
+
+def _resolve_version() -> str:
+    """Resolve the installed package version for user agent reporting."""
+    try:
+        return version("usaspending-orm")
+    except PackageNotFoundError:
+        return "0.0.0"
 
 
 class _Config:
@@ -20,7 +29,7 @@ class _Config:
     def __init__(self):
         # Default settings are defined here as instance attributes
         self.base_url: str = "https://api.usaspending.gov/api/v2/"
-        self.user_agent: str = "usaspending-orm-python/0.7.0"
+        self.user_agent: str = f"usaspending-orm-python/{_resolve_version()}"
         self.timeout: int = 30
         self.max_retries: int = 3
         self.retry_delay: float = 10.0

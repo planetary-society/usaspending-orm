@@ -8,12 +8,12 @@ from __future__ import annotations
 
 # Version information
 try:
-    from importlib.metadata import version
+    from importlib.metadata import PackageNotFoundError, version
 
-    __version__ = version("usaspending")
-except ImportError:
+    __version__ = version("usaspending-orm")
+except (ImportError, PackageNotFoundError):
     # Fallback for development/editable installs
-    __version__ = "2"
+    __version__ = "0.0.0"
 
 __author__ = "Casey Dreier"
 __email__ = "casey.dreier@planetary.org"

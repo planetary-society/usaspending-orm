@@ -75,7 +75,7 @@ awards_query = client.awards.search() \
 This returns a query object that can be further refined or executed to return results.
 The methods `.all()`, `.first()`, `.count()` will trigger a query to the API, as will iterating over the query object.
 
-### Example: Searching for NASA Contracts to SpaceX in 2023
+### Example: Searching for National Aeronautics and Space Administration Contracts to SpaceX in 2023
 
 ```python
 
@@ -135,7 +135,7 @@ Use the client as a context manager (recommended) or explicitly call `close()`:
 
 ```python
 with USASpendingClient() as client:
-    awards = client.awards.search().agencies("NASA").all()
+    awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
     for award in awards:
         # Access lazy-loaded properties inside the context
         print(f"{award.recipient.name}: ${award.total_obligation:,.2f}")
@@ -144,7 +144,7 @@ with USASpendingClient() as client:
 
 # Or explicitly manage session
 client = USASpendingClient()
-awards = client.awards.search().agencies("NASA").all()
+awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
 client.close()
 ```
 
@@ -240,7 +240,7 @@ usaspending_config.configure(cache_enabled=True)
 
 with USASpendingClient() as client:
     # All queries will now be cached
-    awards = client.awards.search().agencies("NASA").all()
+    awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
 ```
 
 The library defaults to file-based caching with a 1-week TTL, but you can customize these settings as needed:
@@ -381,7 +381,7 @@ We welcome contributions to improve and expand the implementation and functional
 
 ## About The Planetary Society
 
-This library was initially developed to serve the needs of The Planetary Society's Space Policy and Advocacy team in tracking and analyzing NASA contract data, and is in-use in our internal and external data tools.
+This library was initially developed to serve the needs of The Planetary Society's Space Policy and Advocacy team in tracking and analyzing National Aeronautics and Space Administration contract data, and is in-use in our internal and external data tools.
 
 We have open-sourced the project to enable others to better use USASpending data. 
 

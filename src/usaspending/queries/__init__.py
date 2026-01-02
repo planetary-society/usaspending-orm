@@ -7,34 +7,33 @@ Base Classes:
     BaseQuery: Shared base class for query builders
     QueryBuilder: Abstract base class for chainable query operations
     ClientSideQueryBuilder: In-memory query builder for non-API relationships
-    
+
 Award Queries:
     AwardQuery: Single award retrieval operations
     AwardsSearch: Complex award search with filtering and chaining
-    
+
 Agency Queries:
     AgencyQuery: Single agency retrieval operations
     AgencyAwardSummary: Agency award summary data retrieval
-    
+
 Recipient Queries:
     SpendingByRecipientsSearch: Recipient search with filtering and chaining
 
 Example:
     >>> from ..client import USASpendingClient
-    >>> client = USASpending()
-    >>> 
+    >>> client = USASpendingClient()
     >>> # Single award retrieval
     >>> award = client.awards.find_by_generated_id("CONT_AWD_123")
-    >>> 
     >>> # Complex award search
-    >>> awards = client.awards.search()\\
-    ...     .agency("NASA")\\
-    ...     .in_state("TX")\\
-    ...     .fiscal_years(2023, 2024)\\
+    >>> awards = (
+    ...     client.awards.search()
+    ...     .agency("National Aeronautics and Space Administration")
+    ...     .place_of_performance_locations({"state_code": "TX", "country_code": "USA"})
+    ...     .fiscal_year(2024)
     ...     .limit(50)
-    >>> 
+    ... )
     >>> for award in awards:
-    ...     print(f"{award.recipient_name}: ${award.amount:,.2f}")
+    ...     print(f"{award.award_identifier}: ${award.total_obligation:,.2f}")
 """
 
 from __future__ import annotations
