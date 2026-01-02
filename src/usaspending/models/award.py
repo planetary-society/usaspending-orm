@@ -37,6 +37,9 @@ class Award(LazyRecord):
     agencies, transactions, and subawards.
     """
 
+    # Download type for bulk download API - override in subclasses
+    _download_type: Optional[str] = None
+
     # Base fields common to all award types
     SEARCH_FIELDS = [
         "Award ID",

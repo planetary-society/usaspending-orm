@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 class Grant(Award):
     """Grant and assistance award types."""
 
+    # Download type for bulk download API
+    _download_type = "assistance"
+
     TYPE_FIELDS = [
         "fain",
         "uri",

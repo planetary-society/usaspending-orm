@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 class Contract(Award):
     """Contract award type including definitive contracts and purchase orders."""
 
+    # Download type for bulk download API
+    _download_type = "contract"
+
     TYPE_FIELDS = [
         "piid",
         "base_exercised_options",

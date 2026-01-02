@@ -39,6 +39,9 @@ class IDV(Award):
         ...     print(f"{idv.piid}: {idv.recipient_name} - ${idv.total_obligation:,.2f}")
     """
 
+    # Download type for bulk download API
+    _download_type = "idv"
+
     TYPE_FIELDS = [
         "piid",
         "base_and_all_options",
