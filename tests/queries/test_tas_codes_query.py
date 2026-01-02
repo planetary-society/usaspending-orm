@@ -1,8 +1,8 @@
 """Tests for TASCodesQuery."""
 
 
-from usaspending.queries.tas_codes_query import TASCodesQuery
 from usaspending.models.treasury_account_symbol import TreasuryAccountSymbol
+from usaspending.queries.tas_codes_query import TASCodesQuery
 
 
 class TestTASCodesQueryBasics:

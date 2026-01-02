@@ -1,15 +1,16 @@
 # src/usaspending/resources/download_resource.py
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
 
-from .base_resource import BaseResource
-from ..logging_config import USASpendingLogger
+from typing import TYPE_CHECKING
+
+from ..download.job import DownloadJob
 
 # Import the manager and type aliases
 from ..download.manager import DownloadManager, FileFormat
-from ..download.job import DownloadJob
+from ..logging_config import USASpendingLogger
 from ..models.download import DownloadStatus
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -28,7 +29,7 @@ class DownloadResource(BaseResource):
         self,
         award_id: str,
         file_format: FileFormat = "csv",
-        destination_dir: Optional[str] = None,
+        destination_dir: str | None = None,
     ) -> DownloadJob:
         """
         Queue a download job for contract award data.
@@ -49,7 +50,7 @@ class DownloadResource(BaseResource):
         self,
         award_id: str,
         file_format: FileFormat = "csv",
-        destination_dir: Optional[str] = None,
+        destination_dir: str | None = None,
     ) -> DownloadJob:
         """
         Queue a download job for assistance award data.
@@ -70,7 +71,7 @@ class DownloadResource(BaseResource):
         self,
         award_id: str,
         file_format: FileFormat = "csv",
-        destination_dir: Optional[str] = None,
+        destination_dir: str | None = None,
     ) -> DownloadJob:
         """
         Queue a download job for IDV (Indefinite Delivery Vehicle) award data.

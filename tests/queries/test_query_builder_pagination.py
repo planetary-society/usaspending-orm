@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import pytest
+from tests.mocks.mock_client import MockUSASpendingClient
+
 from usaspending.exceptions import ValidationError
 from usaspending.queries.awards_search import AwardsSearch
-from tests.mocks.mock_client import MockUSASpendingClient
 
 
 @pytest.fixture

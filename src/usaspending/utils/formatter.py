@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, date
-from pathlib import Path
-from typing import List, Any, Optional, Set, Union
+import decimal
 import re
+from datetime import date, datetime
+from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
+from typing import Any
 
 import yaml
-import decimal
-from decimal import Decimal, ROUND_HALF_UP
-
 from titlecase import titlecase
 
 from ..logging_config import USASpendingLogger
@@ -16,7 +15,7 @@ from ..logging_config import USASpendingLogger
 logger = USASpendingLogger.get_logger(__name__)
 
 
-def to_date(date_string: Union[str, date, None]) -> Optional[date]:
+def to_date(date_string: str | date | None) -> date | None:
     """Convert date string to date object.
 
     Supports multiple date formats:
@@ -64,7 +63,7 @@ def to_date(date_string: Union[str, date, None]) -> Optional[date]:
     return None
 
 
-def round_to_millions(amount: Union[int, float, Decimal]) -> str:
+def round_to_millions(amount: int | float | Decimal) -> str:
     """
     Formats a monetary amount with commas and two decimal places, displaying as millions or billions when appropriate.
 
@@ -80,13 +79,11 @@ def round_to_millions(amount: Union[int, float, Decimal]) -> str:
     if amount is None:
         return "$0.00"
     elif amount >= 1_000_000_000:
-        return "${:,.1f} billion".format(amount / 1_000_000_000)
-    elif amount >= 10_000_000:
-        return "${:,.1f} million".format(amount / 1_000_000)
-    elif amount >= 1_000_000:
-        return "${:,.1f} million".format(amount / 1_000_000)
+        return f"${amount / 1_000_000_000:,.1f} billion"
+    elif amount >= 10_000_000 or amount >= 1_000_000:
+        return f"${amount / 1_000_000:,.1f} million"
     else:
-        return "${:,.2f}".format(amount)
+        return f"${amount:,.2f}"
 
 
 def current_fiscal_year() -> int:
@@ -107,7 +104,7 @@ def current_fiscal_year() -> int:
         return current_date.year + 1
 
 
-def get_past_fiscal_years(num_years: int = 3) -> List[int]:
+def get_past_fiscal_years(num_years: int = 3) -> list[int]:
     """
     Get the past N fiscal years.
     In the US, the federal fiscal year starts on October 1.
@@ -122,15 +119,12 @@ def get_past_fiscal_years(num_years: int = 3) -> List[int]:
     current_year = current_date.year
 
     # We always want the last completed fiscal year
-    if current_date.month < 10:
-        current_fiscal_year = current_year - 1
-    else:
-        current_fiscal_year = current_year
+    current_fiscal_year = current_year - 1 if current_date.month < 10 else current_year
 
     return [current_fiscal_year - i for i in range(num_years)]
 
 
-def to_decimal(x: Any) -> Optional[Decimal]:
+def to_decimal(x: Any) -> Decimal | None:
     """Convert input to a Decimal with 2 decimal places using banker's rounding.
 
     Args:
@@ -147,7 +141,7 @@ def to_decimal(x: Any) -> Optional[Decimal]:
         return None
 
 
-def to_float(x: Any) -> Optional[float]:
+def to_float(x: Any) -> float | None:
     """
     Converts the input value to a float if possible.
     Attempts to cast the provided value to a float. If the conversion fails due to a TypeError or ValueError,
@@ -166,7 +160,7 @@ def to_float(x: Any) -> Optional[float]:
         return None
 
 
-def to_int(x: Any) -> Optional[int]:
+def to_int(x: Any) -> int | None:
     """
     Converts the input value to an integer if possible.
     Attempts to cast the provided value to an integer. If the conversion fails due to a TypeError or ValueError,
@@ -188,7 +182,7 @@ def to_int(x: Any) -> Optional[int]:
 # --- Configuration ---
 # Set of acronyms and initialisms to always keep uppercase.
 # This could be loaded from a config file or environment variables in a larger application.
-DEFAULT_KEEP_UPPERCASE: Set[str] = {
+DEFAULT_KEEP_UPPERCASE: set[str] = {
     # Common Business / Legal
     "LLC",
     "INC",
@@ -246,7 +240,7 @@ PAREN_UPPERCASE_MAX_LEN: int = 9  # Fewer than 10 characters
 
 
 def smart_sentence_case(
-    text: Optional[str],
+    text: str | None,
     paren_max_len: int = PAREN_UPPERCASE_MAX_LEN,
 ) -> str:
     """
@@ -286,7 +280,7 @@ class TextFormatter:
         if cls._special_cases_cache is None:
             yaml_path = Path(__file__).parent / "special_cases.yaml"
             try:
-                with open(yaml_path, "r") as f:
+                with open(yaml_path) as f:
                     cls._special_cases_cache = yaml.safe_load(f) or []
             except FileNotFoundError:
                 logger.warning(f"Special cases file not found: {yaml_path}")
@@ -375,7 +369,7 @@ class TextFormatter:
         return None
 
     @classmethod
-    def to_sentence_case(cls, text: Optional[str], paren_max_len: int = 9) -> str:
+    def to_sentence_case(cls, text: str | None, paren_max_len: int = 9) -> str:
         """
         Convert text to sentence case, preserving special cases from YAML.
 
@@ -421,30 +415,32 @@ class TextFormatter:
                     words_before = re.findall(r"\b\w+\b", text_before)
                     acronym_letters = [c.lower() for c in paren_content if c.isalpha()]
 
-                    if len(acronym_letters) > 0:
+                    if (
+                        len(acronym_letters) > 0
+                        and len(words_before) >= len(acronym_letters)
+                    ):
                         # Try direct match first
-                        if len(words_before) >= len(acronym_letters):
-                            last_n_words = words_before[-len(acronym_letters) :]
-                            if [w[0].lower() for w in last_n_words] == acronym_letters:
-                                # Mark these words for capitalization
-                                acronym_expansion_words.update(last_n_words)
-                            else:
-                                # If direct match failed, try skipping small words
-                                # Filter out small words
-                                content_words = []
-                                for word in words_before:
-                                    if not re.match(SMALL_WORDS, word, re.IGNORECASE):
-                                        content_words.append(word)
+                        last_n_words = words_before[-len(acronym_letters) :]
+                        if [w[0].lower() for w in last_n_words] == acronym_letters:
+                            # Mark these words for capitalization
+                            acronym_expansion_words.update(last_n_words)
+                        else:
+                            # If direct match failed, try skipping small words
+                            # Filter out small words
+                            content_words = []
+                            for word in words_before:
+                                if not re.match(SMALL_WORDS, word, re.IGNORECASE):
+                                    content_words.append(word)
 
-                                if len(content_words) >= len(acronym_letters):
-                                    last_n_content = content_words[
-                                        -len(acronym_letters) :
-                                    ]
-                                    if [
-                                        w[0].lower() for w in last_n_content
-                                    ] == acronym_letters:
-                                        # Mark these words for capitalization
-                                        acronym_expansion_words.update(last_n_content)
+                            if len(content_words) >= len(acronym_letters):
+                                last_n_content = content_words[
+                                    -len(acronym_letters) :
+                                ]
+                                if [
+                                    w[0].lower() for w in last_n_content
+                                ] == acronym_letters:
+                                    # Mark these words for capitalization
+                                    acronym_expansion_words.update(last_n_content)
 
                 # Return uppercase parenthetical if short enough
                 if len(paren_content) <= paren_max_len:
@@ -516,7 +512,7 @@ class TextFormatter:
             "P.C.": "PC",
         }
 
-        if word.upper() in normalized_words.keys():
+        if word.upper() in normalized_words:
             word = normalized_words[word.upper()]
 
         return cls._preserve_special_case(word)

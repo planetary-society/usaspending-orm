@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
     from ..models.agency import Agency
@@ -33,7 +33,7 @@ class TASResource(BaseResource):
     ENDPOINT = "/references/filter_tree/tas/"
 
     @property
-    def agencies(self) -> List["Agency"]:
+    def agencies(self) -> list[Agency]:
         """List all agencies with TAS codes.
 
         Returns a list of Agency model instances for agencies that have

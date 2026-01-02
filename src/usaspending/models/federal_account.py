@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .base_model import ClientAwareModel
 
@@ -30,9 +30,9 @@ class FederalAccount(ClientAwareModel):
 
     def __init__(
         self,
-        data: Dict[str, Any],
-        client: "USASpendingClient",
-        toptier_code: Optional[str] = None,
+        data: dict[str, Any],
+        client: USASpendingClient,
+        toptier_code: str | None = None,
     ):
         """Initialize FederalAccount.
 
@@ -48,32 +48,32 @@ class FederalAccount(ClientAwareModel):
         )
 
     @property
-    def id(self) -> Optional[str]:
+    def id(self) -> str | None:
         """The federal account code (e.g., '080-0120')."""
         return self.get_value("id")
 
     @property
-    def code(self) -> Optional[str]:
+    def code(self) -> str | None:
         """Alias for id property."""
         return self.id
 
     @property
-    def federal_account_code(self) -> Optional[str]:
+    def federal_account_code(self) -> str | None:
         """Alias for id property."""
         return self.id
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """Human-readable account title/description."""
         return self.get_value("description")
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Alias for description property."""
         return self.description
 
     @property
-    def title(self) -> Optional[str]:
+    def title(self) -> str | None:
         """Alias for description property."""
         return self.description
 
@@ -83,18 +83,18 @@ class FederalAccount(ClientAwareModel):
         return self.get_value("count", default=self.tas_codes.count())
 
     @property
-    def ancestors(self) -> List[str]:
+    def ancestors(self) -> list[str]:
         """List of ancestor node IDs (contains toptier_code)."""
         ancestors = self.get_value("ancestors", default=[])
         return ancestors if isinstance(ancestors, list) else []
 
     @property
-    def toptier_code(self) -> Optional[str]:
+    def toptier_code(self) -> str | None:
         """Parent agency toptier code."""
         return self._toptier_code
 
     @property
-    def tas_codes(self) -> "TASCodesQuery":
+    def tas_codes(self) -> TASCodesQuery:
         """Get TAS codes under this federal account.
 
         Returns a query-like object that supports iteration, filtering,

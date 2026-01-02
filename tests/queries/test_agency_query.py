@@ -2,9 +2,9 @@
 
 import pytest
 
-from usaspending.queries.agency_query import AgencyQuery
-from usaspending.models.agency import Agency
 from usaspending.exceptions import ValidationError
+from usaspending.models.agency import Agency
+from usaspending.queries.agency_query import AgencyQuery
 
 
 class TestAgencyQueryInitialization:

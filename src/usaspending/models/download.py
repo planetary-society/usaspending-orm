@@ -1,8 +1,9 @@
 # src/usaspending/models/download.py
 
 from __future__ import annotations
-from typing import Optional, Literal
+
 from enum import Enum
+from typing import Literal
 
 from ..utils.formatter import to_float, to_int
 from .base_model import BaseModel
@@ -26,7 +27,7 @@ class DownloadStatus(BaseModel):
     """Represents the status details of a download job returned by the API."""
 
     @property
-    def file_name(self) -> Optional[str]:
+    def file_name(self) -> str | None:
         """Name of the downloaded file.
 
         Returns:
@@ -35,7 +36,7 @@ class DownloadStatus(BaseModel):
         return self.get_value("file_name")
 
     @property
-    def message(self) -> Optional[str]:
+    def message(self) -> str | None:
         """Error message if the status is failed.
 
         Returns:
@@ -44,7 +45,7 @@ class DownloadStatus(BaseModel):
         return self.get_value("message")
 
     @property
-    def seconds_elapsed(self) -> Optional[float]:
+    def seconds_elapsed(self) -> float | None:
         """Time elapsed for the download job.
 
         Returns:
@@ -68,7 +69,7 @@ class DownloadStatus(BaseModel):
         return DownloadState.UNKNOWN
 
     @property
-    def total_columns(self) -> Optional[int]:
+    def total_columns(self) -> int | None:
         """Total number of columns in the result.
 
         Returns:
@@ -77,7 +78,7 @@ class DownloadStatus(BaseModel):
         return to_int(self.get_value("total_columns"))
 
     @property
-    def total_rows(self) -> Optional[int]:
+    def total_rows(self) -> int | None:
         """Total number of rows in the result.
 
         Returns:
@@ -86,7 +87,7 @@ class DownloadStatus(BaseModel):
         return to_int(self.get_value("total_rows"))
 
     @property
-    def total_size_kb(self) -> Optional[float]:
+    def total_size_kb(self) -> float | None:
         """Estimated file size in kilobytes.
 
         Returns:
@@ -95,7 +96,7 @@ class DownloadStatus(BaseModel):
         return to_float(self.get_value("total_size"))
 
     @property
-    def file_url(self) -> Optional[str]:
+    def file_url(self) -> str | None:
         """URL for the file (relative path).
 
         Returns:

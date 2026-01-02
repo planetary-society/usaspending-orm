@@ -7,7 +7,7 @@ import json
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from usaspending import USASpendingClient
 from usaspending.config import config
@@ -79,14 +79,14 @@ class MockUSASpendingClient(USASpendingClient):
         super().__init__()
 
         # Response storage
-        self._responses: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-        self._response_indices: Dict[str, int] = defaultdict(int)  # Track current index per endpoint
-        self._default_responses: Dict[str, Dict[str, Any]] = {}
-        self._error_responses: Dict[str, Dict[str, Any]] = {}
+        self._responses: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        self._response_indices: dict[str, int] = defaultdict(int)  # Track current index per endpoint
+        self._default_responses: dict[str, dict[str, Any]] = {}
+        self._error_responses: dict[str, dict[str, Any]] = {}
 
         # Request tracking
-        self._request_history: List[Dict[str, Any]] = []
-        self._request_counts: Dict[str, int] = defaultdict(int)
+        self._request_history: list[dict[str, Any]] = []
+        self._request_counts: dict[str, int] = defaultdict(int)
 
         # Rate limiting simulation
         self._simulate_rate_limit = False
@@ -99,10 +99,10 @@ class MockUSASpendingClient(USASpendingClient):
         self,
         method: str,
         endpoint: str,
-        json: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None,
+        json: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Mock implementation of _make_request.
 
         Args:
@@ -152,7 +152,7 @@ class MockUSASpendingClient(USASpendingClient):
                 )
 
         # Check for specific responses (with pagination support)
-        if endpoint in self._responses and self._responses[endpoint]:
+        if self._responses.get(endpoint):
             responses = self._responses[endpoint]
             
             # Determine which page to return
@@ -225,7 +225,7 @@ class MockUSASpendingClient(USASpendingClient):
             return ResponseBuilder.paginated_response([], has_next=False)
 
     def set_response(
-        self, endpoint: str, response_data: Dict[str, Any], status_code: int = 200
+        self, endpoint: str, response_data: dict[str, Any], status_code: int = 200
     ) -> None:
         """Set a single response for an endpoint.
 
@@ -245,7 +245,7 @@ class MockUSASpendingClient(USASpendingClient):
     def set_paginated_response(
         self,
         endpoint: str,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         page_size: int = 100,
     ) -> None:
         """Automatically paginate a list of items.
@@ -280,7 +280,7 @@ class MockUSASpendingClient(USASpendingClient):
         self._auto_setup_count_endpoint(endpoint, len(items))
 
     def set_fixture_response(
-        self, endpoint: str, fixture_name: str, transform: Optional[callable] = None
+        self, endpoint: str, fixture_name: str, transform: callable | None = None
     ) -> None:
         """Load response from fixture file.
 
@@ -303,8 +303,8 @@ class MockUSASpendingClient(USASpendingClient):
         self,
         endpoint: str,
         error_code: int,
-        error_message: Optional[str] = None,
-        detail: Optional[str] = None,
+        error_message: str | None = None,
+        detail: str | None = None,
         auto_count_error: bool = True,
     ) -> None:
         """Simulate API errors.
@@ -334,7 +334,7 @@ class MockUSASpendingClient(USASpendingClient):
                 self.set_response(count_endpoint, error_data, status_code=error_code)
 
     def add_response_sequence(
-        self, endpoint: str, responses: List[Dict[str, Any]]
+        self, endpoint: str, responses: list[dict[str, Any]]
     ) -> None:
         """Add multiple responses for sequential calls.
 
@@ -420,7 +420,7 @@ class MockUSASpendingClient(USASpendingClient):
 
     # Request tracking and assertions
 
-    def get_request_count(self, endpoint: Optional[str] = None) -> int:
+    def get_request_count(self, endpoint: str | None = None) -> int:
         """Get count of requests made.
 
         Args:
@@ -434,8 +434,8 @@ class MockUSASpendingClient(USASpendingClient):
         return len(self._request_history)
 
     def get_last_request(
-        self, endpoint: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, endpoint: str | None = None
+    ) -> dict[str, Any] | None:
         """Get the last request made.
 
         Args:
@@ -460,8 +460,8 @@ class MockUSASpendingClient(USASpendingClient):
         self,
         endpoint: str,
         method: str = "GET",
-        json: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None,
+        json: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
     ) -> None:
         """Assert that a specific request was made.
 
@@ -498,7 +498,7 @@ class MockUSASpendingClient(USASpendingClient):
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
 
-    def reset_response_index(self, endpoint: Optional[str] = None) -> None:
+    def reset_response_index(self, endpoint: str | None = None) -> None:
         """Reset the response index for an endpoint (or all endpoints).
 
         This allows re-iterating through the same responses without needing
@@ -517,10 +517,10 @@ class MockUSASpendingClient(USASpendingClient):
         self,
         method: str,
         endpoint: str,
-        json: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None,
+        json: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Pass through to _make_request with request counter logic."""
         # Increment request counter and check for proactive session reset
         # (Same logic as parent class)
@@ -546,7 +546,7 @@ class MockUSASpendingClient(USASpendingClient):
         self,
         download_type: str,
         award_id: str,
-        response_data: Optional[Dict[str, Any]] = None,
+        response_data: dict[str, Any] | None = None,
     ) -> None:
         """Mock download queue response.
 
@@ -595,7 +595,7 @@ class MockUSASpendingClient(USASpendingClient):
         self,
         file_name: str,
         status: str = "finished",
-        custom_data: Optional[Dict[str, Any]] = None,
+        custom_data: dict[str, Any] | None = None,
     ) -> None:
         """Mock download status response.
 
@@ -645,7 +645,7 @@ class MockUSASpendingClient(USASpendingClient):
     # Convenience methods for common scenarios
 
     def mock_award_search(
-        self, awards: List[Dict[str, Any]], page_size: int = 100
+        self, awards: list[dict[str, Any]], page_size: int = 100
     ) -> None:
         """Set up mock responses for award search.
 
@@ -690,8 +690,8 @@ class MockUSASpendingClient(USASpendingClient):
     def mock_transactions_for_award(
         self,
         award_id: str,
-        fixture_name: Optional[str] = None,
-        transactions: Optional[List[Dict[str, Any]]] = None,
+        fixture_name: str | None = None,
+        transactions: list[dict[str, Any]] | None = None,
     ) -> None:
         """Mock transactions response for a specific award.
 
@@ -733,7 +733,7 @@ class MockUSASpendingClient(USASpendingClient):
             self.set_response("/transactions/", response)
 
     def mock_recipient_search(
-        self, recipients: List[Dict[str, Any]], page_size: int = 50
+        self, recipients: list[dict[str, Any]], page_size: int = 50
     ) -> None:
         """Set up mock responses for recipient search.
 

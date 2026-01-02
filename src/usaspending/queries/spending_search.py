@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Literal
+from typing import Any, Literal
 
 from ..client import USASpendingClient
 from ..exceptions import ValidationError
-from ..models.spending import Spending
-from ..models.recipient_spending import RecipientSpending
-from ..models.district_spending import DistrictSpending
-from ..models.state_spending import StateSpending
-from .query_builder import SearchQueryBuilder
 from ..logging_config import USASpendingLogger
+from ..models.district_spending import DistrictSpending
+from ..models.recipient_spending import RecipientSpending
+from ..models.spending import Spending
+from ..models.state_spending import StateSpending
 from ..utils.validations import validate_non_empty_string
+from .query_builder import SearchQueryBuilder
+
 # Note: We don't use SimpleListFilter for recipient_id as the API expects a string, not an array
 
 # Import award type codes from models
@@ -42,10 +43,10 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
             client: The USASpending client instance.
         """
         super().__init__(client)
-        self._category: Optional[SpendingCategory] = None
+        self._category: SpendingCategory | None = None
         self._spending_level: SpendingLevel = "transactions"
         self._subawards: bool = False
-        self._recipient_id: Optional[str] = None
+        self._recipient_id: str | None = None
 
     @property
     def _endpoint(self) -> str:

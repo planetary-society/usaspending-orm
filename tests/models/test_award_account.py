@@ -1,10 +1,11 @@
 """Tests for AwardAccount model."""
 
-import pytest
 from decimal import Decimal
 
-from usaspending.models.award_account import AwardAccount
+import pytest
+
 from usaspending.models.agency import Agency
+from usaspending.models.award_account import AwardAccount
 
 
 class TestAwardAccountInitialization:

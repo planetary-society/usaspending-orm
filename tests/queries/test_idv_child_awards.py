@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from usaspending.queries.idv_child_awards import IDVChildAwardsSearch
-from usaspending.models.award import Award
 from usaspending.exceptions import ValidationError
+from usaspending.models.award import Award
+from usaspending.queries.idv_child_awards import IDVChildAwardsSearch
 
 
 class TestIDVChildAwardsSearchInitialization:

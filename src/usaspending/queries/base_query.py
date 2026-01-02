@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Generic, Iterator, Optional, TypeVar
+from collections.abc import Iterator
+from typing import Generic, TypeVar
 
 from ..exceptions import ValidationError
 
@@ -17,9 +18,9 @@ class BaseQuery(ABC, Generic[T]):
     def __init__(self) -> None:
         """Initialize base query state."""
         self._page_size = 100
-        self._total_limit: Optional[int] = None
-        self._max_pages: Optional[int] = None
-        self._order_by: Optional[str] = None
+        self._total_limit: int | None = None
+        self._max_pages: int | None = None
+        self._order_by: str | None = None
         self._order_direction = "desc"
 
     @abstractmethod
@@ -103,7 +104,7 @@ class BaseQuery(ABC, Generic[T]):
         clone._order_direction = direction
         return clone
 
-    def first(self) -> Optional[T]:
+    def first(self) -> T | None:
         """Return the first result, or None if no results are available."""
         for result in self.limit(1):
             return result

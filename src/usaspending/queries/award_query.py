@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .single_resource_base import SingleResourceBase
 from ..client import USASpendingClient
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
+from .single_resource_base import SingleResourceBase
 
 if TYPE_CHECKING:
     from ..models.award import Award
@@ -25,11 +25,11 @@ class AwardQuery(SingleResourceBase):
         """Base endpoint for single award retrieval."""
         return "/awards/"
 
-    def find_by_id(self, award_id: str) -> "Award":
+    def find_by_id(self, award_id: str) -> Award:
         """Filter by unique award identifier."""
         return self.find_by_generated_id(award_id)
 
-    def find_by_generated_id(self, award_id: str) -> "Award":
+    def find_by_generated_id(self, award_id: str) -> Award:
         """Filter by USASpending's internally generated unique award identifier."""
         if not award_id:
             raise ValidationError("award_id is required")

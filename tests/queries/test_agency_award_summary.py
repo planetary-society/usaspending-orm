@@ -1,9 +1,10 @@
 """Tests for AgencyAwardSummary query implementation."""
 
 import pytest
-from usaspending.queries.agency_award_summary import AgencyAwardSummary
+
 from usaspending.exceptions import ValidationError
 from usaspending.models.award_types import CONTRACT_CODES, GRANT_CODES
+from usaspending.queries.agency_award_summary import AgencyAwardSummary
 
 
 class TestAgencyAwardSummaryInitialization:

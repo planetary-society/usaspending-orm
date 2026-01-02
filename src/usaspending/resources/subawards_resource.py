@@ -1,10 +1,11 @@
 """Subawards resource implementation."""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
-from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
@@ -28,7 +29,7 @@ class SubAwardsResource(BaseResource):
     the Federal Funding Accountability and Transparency Act (FFATA).
     """
 
-    def search(self) -> "SubAwardsSearch":
+    def search(self) -> SubAwardsSearch:
         """Create a subawards search query builder.
 
         Returns:
@@ -47,7 +48,7 @@ class SubAwardsResource(BaseResource):
 
         return SubAwardsSearch(self._client)
 
-    def award_id(self, award_id: str) -> "SubAwardsSearch":
+    def award_id(self, award_id: str) -> SubAwardsSearch:
         """Create a subawards search query for a specific award.
 
         This is a convenience method that chains search().award_id(award_id).

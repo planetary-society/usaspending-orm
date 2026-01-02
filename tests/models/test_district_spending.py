@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
 from decimal import Decimal
+
+import pytest
 
 from usaspending.models.district_spending import DistrictSpending
 from usaspending.models.spending import Spending

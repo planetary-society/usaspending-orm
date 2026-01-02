@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from usaspending.models.award_types import get_award_group
 
 
@@ -11,12 +12,12 @@ class ResponseBuilder:
 
     @staticmethod
     def paginated_response(
-        results: List[Dict[str, Any]],
+        results: list[dict[str, Any]],
         page: int = 1,
         has_next: bool = False,
-        messages: Optional[List[str]] = None,
+        messages: list[str] | None = None,
         page_size: int = 20,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build a paginated response with metadata.
 
         Args:
@@ -45,8 +46,8 @@ class ResponseBuilder:
 
     @staticmethod
     def award_search_response(
-        awards: List[Dict[str, Any]], page: int = 1, has_next: bool = False
-    ) -> Dict[str, Any]:
+        awards: list[dict[str, Any]], page: int = 1, has_next: bool = False
+    ) -> dict[str, Any]:
         """Build an award search response with proper field mapping.
 
         Args:
@@ -76,7 +77,7 @@ class ResponseBuilder:
         loans: int = 0,
         direct_payments: int = 0,
         other: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build an award count response.
 
         Args:
@@ -105,8 +106,8 @@ class ResponseBuilder:
 
     @staticmethod
     def transaction_response(
-        transactions: List[Dict[str, Any]], page: int = 1, has_next: bool = False
-    ) -> Dict[str, Any]:
+        transactions: list[dict[str, Any]], page: int = 1, has_next: bool = False
+    ) -> dict[str, Any]:
         """Build a transaction search response.
 
         Args:
@@ -121,8 +122,8 @@ class ResponseBuilder:
 
     @staticmethod
     def error_response(
-        status_code: int, detail: Optional[str] = None, error: Optional[str] = None
-    ) -> Dict[str, Any]:
+        status_code: int, detail: str | None = None, error: str | None = None
+    ) -> dict[str, Any]:
         """Build an error response.
 
         Args:
@@ -147,7 +148,7 @@ class ResponseBuilder:
         total_obligation: float = 1000000.0,
         award_type: str = "A",
         awarding_agency: str = "Test Agency",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build an award detail response.
 
         Args:

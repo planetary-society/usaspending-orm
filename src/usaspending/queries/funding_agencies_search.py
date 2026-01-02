@@ -5,8 +5,8 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
-from .agencies_search import AgenciesSearch
 from ..logging_config import USASpendingLogger
+from .agencies_search import AgenciesSearch
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient

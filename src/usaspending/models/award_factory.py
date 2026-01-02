@@ -1,18 +1,19 @@
 """Factory for creating appropriate Award subclass instances."""
 
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING, Union
 
-from .award_types import get_award_group
+from typing import TYPE_CHECKING, Any
+
 from ..exceptions import ValidationError
+from .award_types import get_award_group
 
 if TYPE_CHECKING:
-    from .award import Award
     from ..client import USASpendingClient
+    from .award import Award
 
 
 def create_award(
-    data_or_id: Union[Dict[str, Any], str], client: USASpendingClient
+    data_or_id: dict[str, Any] | str, client: USASpendingClient
 ) -> Award:
     """Create the appropriate Award subclass based on the award data.
 

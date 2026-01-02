@@ -1,16 +1,17 @@
-from .base_model import BaseModel
 from dataclasses import dataclass
 from datetime import date
-from typing import Dict, Any, Optional
 from decimal import Decimal
-from ..utils.formatter import to_decimal, smart_sentence_case, to_date
+from typing import Any, Optional
+
+from ..utils.formatter import smart_sentence_case, to_date, to_decimal
+from .base_model import BaseModel
 
 
 @dataclass
 class Transaction(BaseModel):
     """Represents a single transaction record for an award."""
 
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: dict[str, Any]):
         """Initialize Transaction.
 
         Args:

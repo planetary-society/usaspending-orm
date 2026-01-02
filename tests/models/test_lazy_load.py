@@ -1,7 +1,9 @@
 # tests/models/test_lazy_load.py
-import pytest
 from unittest.mock import Mock
+
+import pytest
 from src.usaspending.models.lazy_record import LazyRecord
+
 from tests.mocks.mock_client import MockUSASpendingClient
 
 

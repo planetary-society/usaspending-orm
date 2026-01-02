@@ -1,6 +1,7 @@
 """Test rate limiter integration with USASpending client."""
 
 import time
+
 from usaspending.config import config
 
 

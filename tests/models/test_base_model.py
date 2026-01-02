@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from usaspending.exceptions import DetachedInstanceError, ValidationError
 from usaspending.models.base_model import BaseModel, ClientAwareModel
-from usaspending.exceptions import ValidationError, DetachedInstanceError
 
 
 class TestBaseModelGetValue:
@@ -318,7 +318,7 @@ class TestBaseModelValidation:
         result = BaseModel.validate_init_data(original_data, "Test")
 
         assert result == original_data
-        assert all(key in result for key in original_data.keys())
+        assert all(key in result for key in original_data)
         assert result["optional_field"] is None
         assert result["empty_list"] == []
         assert result["empty_dict"] == {}
@@ -505,6 +505,7 @@ class TestReattachMethod:
     def test_reattach_non_recursive_skips_nested_objects(self):
         """Test that non-recursive reattach doesn't affect nested objects."""
         from unittest.mock import Mock
+
         from usaspending.models.lazy_record import LazyRecord
 
         # Create nested LazyRecord
@@ -535,6 +536,7 @@ class TestReattachMethod:
     def test_reattach_recursive_updates_nested_objects(self):
         """Test that recursive reattach updates nested LazyRecord objects."""
         from unittest.mock import Mock
+
         from usaspending.models.lazy_record import LazyRecord
 
         # Create nested LazyRecord
@@ -568,6 +570,7 @@ class TestReattachMethod:
     def test_reattach_handles_circular_references(self):
         """Test that reattach prevents infinite loops with circular references."""
         from unittest.mock import Mock
+
         from usaspending.models.lazy_record import LazyRecord
 
         class TestLazyRecord(LazyRecord):
@@ -602,6 +605,7 @@ class TestReattachMethod:
     def test_reattach_skips_non_lazyrecord_properties(self):
         """Test that reattach only affects LazyRecord instances."""
         from unittest.mock import Mock
+
         from usaspending.models.base_model import BaseModel
 
         mock_client1 = Mock()

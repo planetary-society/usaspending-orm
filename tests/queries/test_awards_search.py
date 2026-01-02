@@ -6,15 +6,15 @@ from unittest.mock import Mock
 
 import pytest
 
-from usaspending.exceptions import ValidationError, APIError
+from usaspending.exceptions import APIError, ValidationError
 from usaspending.models import Award
-from usaspending.queries.awards_search import AwardsSearch
 from usaspending.models.award_types import (
     CONTRACT_CODES,
+    GRANT_CODES,
     IDV_CODES,
     LOAN_CODES,
-    GRANT_CODES,
 )
+from usaspending.queries.awards_search import AwardsSearch
 
 
 @pytest.fixture

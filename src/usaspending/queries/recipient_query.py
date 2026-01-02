@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
-from .single_resource_base import SingleResourceBase
-from .filters import parse_fiscal_year
-from ..exceptions import ValidationError
 from ..client import USASpendingClient
+from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
+from .filters import parse_fiscal_year
+from .single_resource_base import SingleResourceBase
 
 if TYPE_CHECKING:
     from ..models.recipient import Recipient
@@ -28,8 +28,8 @@ class RecipientQuery(SingleResourceBase):
     def find_by_id(
         self,
         recipient_id: str,
-        year: Optional[Union[int, str]] = None,
-    ) -> "Recipient":
+        year: int | str | None = None,
+    ) -> Recipient:
         """
         Retrieve a recipient by unique identifier.
 
@@ -73,7 +73,7 @@ class RecipientQuery(SingleResourceBase):
 
         return Recipient(response, client=self._client)
 
-    def _validate_year(self, year: Union[int, str]) -> str:
+    def _validate_year(self, year: int | str) -> str:
         """
         Validate and normalize the year parameter.
 

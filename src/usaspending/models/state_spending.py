@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from .spending import Spending
 
@@ -17,7 +17,7 @@ class StateSpending(Spending):
     state-specific properties.
     """
 
-    def __init__(self, data: dict, client: Optional["USASpendingClient"] = None):
+    def __init__(self, data: dict, client: USASpendingClient | None = None):
         """Initialize StateSpending model.
 
         Args:
@@ -27,7 +27,7 @@ class StateSpending(Spending):
         super().__init__(data, client)
 
     @property
-    def state_code(self) -> Optional[str]:
+    def state_code(self) -> str | None:
         """State/territory code (e.g., 'WA', 'CA').
 
         Returns:
@@ -36,7 +36,7 @@ class StateSpending(Spending):
         return self.code
 
     @property
-    def state_name(self) -> Optional[str]:
+    def state_name(self) -> str | None:
         """Full state/territory name (e.g., 'Washington').
 
         Returns:

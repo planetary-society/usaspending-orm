@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from usaspending.resources.spending_resource import SpendingResource
-from usaspending.resources.base_resource import BaseResource
 from usaspending.queries.spending_search import SpendingSearch
+from usaspending.resources.base_resource import BaseResource
+from usaspending.resources.spending_resource import SpendingResource
 
 
 class TestSpendingResourceInitialization:

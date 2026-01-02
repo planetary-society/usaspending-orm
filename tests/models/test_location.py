@@ -1,8 +1,9 @@
 """Tests for Location model."""
 
 import json
-import pytest
 from pathlib import Path
+
+import pytest
 
 from usaspending.models.location import Location
 
@@ -11,7 +12,7 @@ from usaspending.models.location import Location
 def grant_data():
     """Load grant fixture data."""
     fixture_path = Path(__file__).parent.parent / "fixtures" / "awards" / "grant.json"
-    with open(fixture_path, "r") as f:
+    with open(fixture_path) as f:
         return json.load(f)
 
 

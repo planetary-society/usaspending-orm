@@ -14,8 +14,8 @@ import datetime
 
 import pytest
 
-from usaspending.queries.awards_search import AwardsSearch
 from usaspending.exceptions import ValidationError
+from usaspending.queries.awards_search import AwardsSearch
 
 
 @pytest.fixture

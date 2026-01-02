@@ -1,8 +1,10 @@
 """Tests for configuration module."""
 
-import pytest
-from unittest.mock import patch
 from datetime import timedelta
+from unittest.mock import patch
+
+import pytest
+
 from usaspending.config import _Config
 from usaspending.exceptions import ConfigurationError
 

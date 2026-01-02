@@ -1,8 +1,10 @@
 """Tests for TransactionsSearch query builder."""
 
 import pytest
-from usaspending.queries.transactions_search import TransactionsSearch
+
 from usaspending.models.transaction import Transaction
+from usaspending.queries.transactions_search import TransactionsSearch
+
 
 class TestTransactionsSearchIndexing:
     """Test TransactionsSearch indexing and slicing support."""

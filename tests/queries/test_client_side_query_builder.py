@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, Optional, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Any, Callable
 
 import pytest
 
@@ -20,8 +21,8 @@ class DefCodesQuery(ClientSideQueryBuilder[dict[str, Any]]):
     def __init__(
         self,
         items: Iterable[Any],
-        transform: Optional[Callable[[Any], Any]] = None,
-        keyword_fields: Optional[Sequence[str]] = None,
+        transform: Callable[[Any], Any] | None = None,
+        keyword_fields: Sequence[str] | None = None,
     ) -> None:
         """Initialize the def_codes query builder.
 
@@ -38,7 +39,7 @@ class DefCodesQuery(ClientSideQueryBuilder[dict[str, Any]]):
             keyword_fields=keyword_fields,
         )
 
-    def disaster(self, value: str) -> "DefCodesQuery":
+    def disaster(self, value: str) -> DefCodesQuery:
         """Filter def_codes by disaster type.
 
         Args:
@@ -49,7 +50,7 @@ class DefCodesQuery(ClientSideQueryBuilder[dict[str, Any]]):
         """
         return self._add_filter_object(SimpleStringFilter(key="disaster", value=value))
 
-    def codes(self, *codes: str) -> "DefCodesQuery":
+    def codes(self, *codes: str) -> DefCodesQuery:
         """Filter def_codes by code values.
 
         Args:
@@ -62,7 +63,7 @@ class DefCodesQuery(ClientSideQueryBuilder[dict[str, Any]]):
             SimpleListFilter(key="code", values=list(codes))
         )
 
-    def public_law_contains(self, text: str) -> "DefCodesQuery":
+    def public_law_contains(self, text: str) -> DefCodesQuery:
         """Filter def_codes by a substring in public_law.
 
         Args:

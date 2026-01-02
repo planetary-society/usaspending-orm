@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
     from ..models.agency import Agency
@@ -22,7 +22,7 @@ class AgencyResource(BaseResource):
     Provides access to agency overview and detail endpoints.
     """
 
-    def search(self) -> "AgenciesSearch":
+    def search(self) -> AgenciesSearch:
         """Create a new agency autocomplete query builder.
 
         Returns:
@@ -46,8 +46,8 @@ class AgencyResource(BaseResource):
         return AgenciesSearch(self._client)
 
     def find_by_toptier_code(
-        self, toptier_code: str, fiscal_year: Optional[int] = None
-    ) -> "Agency":
+        self, toptier_code: str, fiscal_year: int | None = None
+    ) -> Agency:
         """Retrieve agency overview for a specific toptier code and fiscal year.
 
         Args:
@@ -77,7 +77,7 @@ class AgencyResource(BaseResource):
 
         return AgencyQuery(self._client).find_by_id(toptier_code, fiscal_year)
 
-    def subagencies(self, toptier_code: str) -> "SubAgencyQuery":
+    def subagencies(self, toptier_code: str) -> SubAgencyQuery:
         """Create a SubAgencyQuery builder for the given toptier agency.
 
         Args:
@@ -102,7 +102,7 @@ class AgencyResource(BaseResource):
 
         return SubAgencyQuery(self._client, toptier_code)
 
-    def find_all_funding_agencies_by_name(self, name: str) -> "AgenciesSearch":
+    def find_all_funding_agencies_by_name(self, name: str) -> AgenciesSearch:
         """Search for funding agencies and offices by name.
 
         Deprecated: Use search().name(name).agency_type("funding") instead.
@@ -135,7 +135,7 @@ class AgencyResource(BaseResource):
 
         return self.search().name(name).agency_type("funding")
 
-    def find_all_awarding_agencies_by_name(self, name: str) -> "AgenciesSearch":
+    def find_all_awarding_agencies_by_name(self, name: str) -> AgenciesSearch:
         """Search for funding agencies and offices by name.
 
         Deprecated: Use search().name(name).agency_type("awarding") instead.

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..logging_config import USASpendingLogger
 from ..utils.validations import validate_non_empty_string
@@ -49,7 +49,7 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
 
     def __init__(
         self,
-        client: "USASpendingClient",
+        client: USASpendingClient,
         toptier_code: str,
     ):
         """Initialize FederalAccountsQuery.
@@ -60,13 +60,13 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
         """
         self._client = client
         self._toptier_code = toptier_code
-        self._results: Optional[List["FederalAccount"]] = None
+        self._results: list[FederalAccount] | None = None
         super().__init__(
             items=[],
             keyword_fields=["description", "name", "title"],
         )
 
-    def _fetch(self) -> List["FederalAccount"]:
+    def _fetch(self) -> list[FederalAccount]:
         """Fetch federal accounts from the API.
 
         Returns:
@@ -99,11 +99,11 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
 
         return self._results
 
-    def _materialize(self) -> list["FederalAccount"]:
+    def _materialize(self) -> list[FederalAccount]:
         """Return fetched federal accounts for client-side filtering."""
         return list(self._fetch())
 
-    def code(self, code: str) -> "FederalAccountsQuery":
+    def code(self, code: str) -> FederalAccountsQuery:
         """Filter by federal account code.
 
         Args:
@@ -115,7 +115,7 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
         validated = validate_non_empty_string(code, "code")
         return self._add_filter_object(SimpleStringFilter(key="id", value=validated))
 
-    def codes(self, *codes: str) -> "FederalAccountsQuery":
+    def codes(self, *codes: str) -> FederalAccountsQuery:
         """Filter by multiple federal account codes.
 
         Args:
@@ -128,7 +128,7 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
             SimpleListFilter(key="id", values=list(codes))
         )
 
-    def description(self, text: str) -> "FederalAccountsQuery":
+    def description(self, text: str) -> FederalAccountsQuery:
         """Filter by description text (case-insensitive substring).
 
         Args:
@@ -140,7 +140,7 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
         validated = validate_non_empty_string(text, "description")
         return self._add_filter_object(KeywordsFilter(values=[validated]))
 
-    def account_name(self, text: str) -> "FederalAccountsQuery":
+    def account_name(self, text: str) -> FederalAccountsQuery:
         """Alias for description().
 
         Args:
@@ -153,7 +153,7 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
 
     def fiscal_year(
         self, year: int, include_noyear_accounts: bool = False
-    ) -> "FederalAccountsQuery":
+    ) -> FederalAccountsQuery:
         """Filter to federal accounts with active TAS codes for a fiscal year.
 
         Returns only federal accounts that have at least one Treasury Account
@@ -185,12 +185,12 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
                 return False
             return tas.fiscal_year(year)
 
-        def predicate(account: "FederalAccount") -> bool:
+        def predicate(account: FederalAccount) -> bool:
             return any(tas_matches(tas) for tas in account.tas_codes)
 
         return self._add_filter(predicate)
 
-    def _clone(self) -> "FederalAccountsQuery":
+    def _clone(self) -> FederalAccountsQuery:
         """Create a copy for method chaining."""
         clone = self.__class__(self._client, self._toptier_code)
         clone._results = self._results

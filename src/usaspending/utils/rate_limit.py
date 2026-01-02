@@ -5,7 +5,6 @@ from __future__ import annotations
 import threading
 import time
 from collections import deque
-from typing import Deque, Optional
 
 from ..logging_config import USASpendingLogger
 
@@ -37,7 +36,7 @@ class RateLimiter:
 
         self.max_calls = max_calls
         self.period = period
-        self._call_times: Deque[float] = deque()
+        self._call_times: deque[float] = deque()
         self._lock = threading.Lock()
 
         logger.debug(f"Initialized RateLimiter: {max_calls} calls per {period}s")
@@ -113,7 +112,7 @@ class RateLimiter:
             return max(0, self.max_calls - len(self._call_times))
 
     @property
-    def next_available_time(self) -> Optional[float]:
+    def next_available_time(self) -> float | None:
         """
         Get the timestamp when the next call will be available.
 

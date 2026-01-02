@@ -4,9 +4,7 @@
 from __future__ import annotations
 
 import logging
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from usaspending.logging_config import (
     USASpendingLogger,

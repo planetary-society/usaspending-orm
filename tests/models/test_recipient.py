@@ -1,14 +1,16 @@
 """Tests for Recipient model functionality."""
 
 from __future__ import annotations
-import pytest
+
 from unittest.mock import Mock
 
-from tests.utils import assert_decimal_equal
+import pytest
+
 from tests.conftest import load_json_fixture
-from usaspending.models.recipient import Recipient
-from usaspending.models.location import Location
+from tests.utils import assert_decimal_equal
 from usaspending.exceptions import ValidationError
+from usaspending.models.location import Location
+from usaspending.models.recipient import Recipient
 from usaspending.utils.formatter import contracts_titlecase
 
 

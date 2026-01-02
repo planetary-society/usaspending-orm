@@ -1,8 +1,9 @@
 """Tests for the restructured Agency model functionality."""
 
 from __future__ import annotations
-from unittest.mock import Mock
+
 from datetime import date
+from unittest.mock import Mock
 
 from tests.utils import assert_decimal_equal
 from usaspending.models.agency import Agency

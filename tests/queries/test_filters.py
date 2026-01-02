@@ -9,24 +9,24 @@ import pytest
 
 from usaspending.exceptions import ValidationError
 from usaspending.queries.filters import (
+    MIN_API_DATE,
+    MIN_FISCAL_YEAR,
     AgencyFilter,
     AgencySpec,
     AwardAmount,
     AwardAmountFilter,
     AwardDateType,
     KeywordsFilter,
-    LocationSpec,
     LocationFilter,
-    MIN_API_DATE,
-    MIN_FISCAL_YEAR,
+    LocationSpec,
     NAICSFilter,
     PSCFilter,
-    parse_fiscal_year,
-    parse_location_spec,
     SimpleListFilter,
     TieredCodeFilter,
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
+    parse_fiscal_year,
+    parse_location_spec,
 )
 
 # ==============================================================================

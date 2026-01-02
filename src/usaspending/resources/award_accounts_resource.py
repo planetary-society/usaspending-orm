@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
     from ..queries.award_accounts_query import AwardAccountsQuery
@@ -20,7 +20,7 @@ class AwardAccountsResource(BaseResource):
     including funding agency information and obligated amounts.
     """
 
-    def award_id(self, award_id: str) -> "AwardAccountsQuery":
+    def award_id(self, award_id: str) -> AwardAccountsQuery:
         """Create an accounts query for a specific award.
 
         Args:

@@ -280,11 +280,11 @@ class TestExceptionChaining:
 
     def test_download_error_can_be_chained(self):
         """DownloadError can be chained from another exception."""
-        original = IOError("Disk full")
+        original = OSError("Disk full")
         try:
             try:
                 raise original
-            except IOError as e:
+            except OSError as e:
                 raise DownloadError(
                     "Failed to save file",
                     file_name="award.zip",

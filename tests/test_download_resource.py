@@ -1,9 +1,10 @@
 """Tests for download resource functionality."""
 
 import pytest
-from usaspending.models.download import DownloadState
-from usaspending.exceptions import DownloadError
+
 from tests.mocks.mock_client import MockUSASpendingClient
+from usaspending.exceptions import DownloadError
+from usaspending.models.download import DownloadState
 
 
 def test_queue_assistance_download(mock_usa_client):
@@ -206,7 +207,7 @@ def test_download_csv_format(mock_usa_client):
     """Test downloading with CSV format (default)."""
     mock_usa_client.mock_download_queue("contract", "CONT_CSV")
 
-    job = mock_usa_client.downloads.contract("CONT_CSV", file_format="csv")
+    mock_usa_client.downloads.contract("CONT_CSV", file_format="csv")
 
     mock_usa_client.assert_called_with(
         MockUSASpendingClient.Endpoints.DOWNLOAD_CONTRACT,
@@ -219,7 +220,7 @@ def test_download_tsv_format(mock_usa_client):
     """Test downloading with TSV format."""
     mock_usa_client.mock_download_queue("contract", "CONT_TSV")
 
-    job = mock_usa_client.downloads.contract("CONT_TSV", file_format="tsv")
+    mock_usa_client.downloads.contract("CONT_TSV", file_format="tsv")
 
     mock_usa_client.assert_called_with(
         MockUSASpendingClient.Endpoints.DOWNLOAD_CONTRACT,
@@ -232,7 +233,7 @@ def test_download_pstxt_format(mock_usa_client):
     """Test downloading with pipe-separated text format."""
     mock_usa_client.mock_download_queue("assistance", "ASST_PSV")
 
-    job = mock_usa_client.downloads.assistance("ASST_PSV", file_format="pstxt")
+    mock_usa_client.downloads.assistance("ASST_PSV", file_format="pstxt")
 
     mock_usa_client.assert_called_with(
         MockUSASpendingClient.Endpoints.DOWNLOAD_ASSISTANCE,
@@ -251,10 +252,11 @@ class TestZipSlipProtection:
 
     def test_zipslip_path_traversal_blocked(self, tmp_path):
         """Test that path traversal in ZIP entries is blocked."""
-        import zipfile
         import os
-        from usaspending.download.manager import DownloadManager
+        import zipfile
         from unittest.mock import MagicMock
+
+        from usaspending.download.manager import DownloadManager
 
         # Create a malicious ZIP file with path traversal
         malicious_zip = tmp_path / "malicious.zip"
@@ -280,9 +282,9 @@ class TestZipSlipProtection:
     def test_zipslip_absolute_path_blocked(self, tmp_path):
         """Test that absolute paths in ZIP entries are blocked."""
         import zipfile
-        import os
-        from usaspending.download.manager import DownloadManager
         from unittest.mock import MagicMock
+
+        from usaspending.download.manager import DownloadManager
 
         # Create ZIP with absolute path
         malicious_zip = tmp_path / "absolute.zip"
@@ -303,10 +305,11 @@ class TestZipSlipProtection:
 
     def test_valid_zip_extraction_succeeds(self, tmp_path):
         """Test that valid ZIP files extract correctly."""
-        import zipfile
         import os
-        from usaspending.download.manager import DownloadManager
+        import zipfile
         from unittest.mock import MagicMock
+
+        from usaspending.download.manager import DownloadManager
 
         # Create a valid ZIP file
         valid_zip = tmp_path / "valid.zip"
@@ -337,9 +340,9 @@ class TestPathTraversalProtection:
 
     def test_malicious_filename_sanitized(self, tmp_path):
         """Test that malicious file names from API are sanitized."""
-        from usaspending.download.job import DownloadJob
         from unittest.mock import MagicMock
-        import os
+
+        from usaspending.download.job import DownloadJob
 
         # Create a mock manager
         mock_manager = MagicMock()
@@ -365,9 +368,10 @@ class TestPathTraversalProtection:
 
     def test_empty_filename_rejected(self, tmp_path):
         """Test that empty file names after sanitization are rejected."""
-        from usaspending.download.job import DownloadJob
-        from unittest.mock import MagicMock
         import os
+        from unittest.mock import MagicMock
+
+        from usaspending.download.job import DownloadJob
 
         mock_manager = MagicMock()
         mock_manager.check_status.return_value = MagicMock(
@@ -428,8 +432,9 @@ class TestDownloadErrorHandling:
 
     def test_bad_zip_file_raises_error(self, tmp_path):
         """Test that invalid ZIP files raise appropriate errors."""
-        from usaspending.download.manager import DownloadManager
         from unittest.mock import MagicMock
+
+        from usaspending.download.manager import DownloadManager
 
         # Create an invalid ZIP file (just text content)
         bad_zip = tmp_path / "bad.zip"

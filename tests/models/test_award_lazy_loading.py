@@ -9,11 +9,12 @@ triggered when a property not present in the search result is accessed.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import Mock
 
-from usaspending.models import Award, Recipient, Location, PeriodOfPerformance
+import pytest
+
 from tests.utils import assert_decimal_equal
+from usaspending.models import Award, Location, PeriodOfPerformance, Recipient
 
 
 class BaseTestAwardLazyLoading:

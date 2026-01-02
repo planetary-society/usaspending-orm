@@ -1,13 +1,14 @@
 # usaspending/models/base_model.py
 from __future__ import annotations
 
-from typing import Optional, Dict, Any, List, Set, TYPE_CHECKING, Union, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 from weakref import ref
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
 
-from ..exceptions import ValidationError, DetachedInstanceError
+from ..exceptions import DetachedInstanceError, ValidationError
 
 
 class BaseModel:
@@ -17,7 +18,7 @@ class BaseModel:
     including initialization, data validation, and dictionary conversion.
     """
 
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: dict[str, Any]):
         """Initialize the model with data.
 
         Args:
@@ -29,9 +30,9 @@ class BaseModel:
     def validate_init_data(
         data_or_id: Any,
         model_name: str,
-        id_field: Optional[str] = None,
+        id_field: str | None = None,
         allow_string_id: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Validate and normalize initialization data for models.
 
         Args:
@@ -77,7 +78,7 @@ class BaseModel:
             raise ValidationError(f"{model_name} expects dict, got {type_name}")
 
     @property
-    def raw(self) -> Dict[str, Any]:
+    def raw(self) -> dict[str, Any]:
         """Get the underlying raw data dictionary.
 
         Returns:
@@ -85,7 +86,7 @@ class BaseModel:
         """
         return self._data
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the model data to a dictionary.
 
         Returns:
@@ -93,7 +94,7 @@ class BaseModel:
         """
         return self._data
 
-    def get_value(self, keys: Union[List[str], str], default: Any = None) -> Any:
+    def get_value(self, keys: list[str] | str, default: Any = None) -> Any:
         """Return the first non-None value from the given keys.
 
         Args:
@@ -127,7 +128,7 @@ class ClientAwareModel(BaseModel):
     creating circular references.
     """
 
-    def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
+    def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize the client-aware model.
 
         Args:
@@ -142,7 +143,7 @@ class ClientAwareModel(BaseModel):
         self._client_ref = ref(client)  # Weak reference prevents circular refs
 
     @property
-    def _client(self) -> "USASpendingClient":
+    def _client(self) -> USASpendingClient:
         """Get client instance if still alive and usable.
 
         Returns:
@@ -173,9 +174,9 @@ class ClientAwareModel(BaseModel):
 
     def reattach(
         self,
-        client: "USASpendingClient",
+        client: USASpendingClient,
         recursive: bool = False,
-        _visited: Optional[Set[int]] = None,
+        _visited: set[int] | None = None,
     ) -> None:
         """Reattach this model to a new client session.
 

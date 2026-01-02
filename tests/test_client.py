@@ -1,8 +1,9 @@
 """Test 400 Bad Request error handling with detail property."""
 
-import pytest
 import logging
 import unittest.mock
+
+import pytest
 
 from usaspending import USASpendingClient
 from usaspending.exceptions import APIError, HTTPError
@@ -323,12 +324,10 @@ class TestClientSessionManagement:
         mock_response.content = b'{"detail": "Test error"}'
         mock_response.json.return_value = {"detail": "Test error"}
 
-        with caplog.at_level(logging.ERROR):
-            with unittest.mock.patch.object(
-                client._session, "request", return_value=mock_response
-            ):
-                with pytest.raises(APIError):
-                    client._make_uncached_request("GET", "/test")
+        with caplog.at_level(logging.ERROR), unittest.mock.patch.object(
+            client._session, "request", return_value=mock_response
+        ), pytest.raises(APIError):
+            client._make_uncached_request("GET", "/test")
 
         error_messages = [
             record.message for record in caplog.records if record.levelname == "ERROR"
@@ -337,8 +336,9 @@ class TestClientSessionManagement:
 
     def test_error_logging_with_session_limit_warning(self, caplog):
         """Test that errors near session limit include warning context."""
-        from usaspending import config
         import requests
+
+        from usaspending import config
 
         client = USASpendingClient()
         # Set request count close to session limit
@@ -352,12 +352,10 @@ class TestClientSessionManagement:
             "500 Server Error"
         )
 
-        with caplog.at_level(logging.ERROR):
-            with unittest.mock.patch.object(
-                client._session, "request", return_value=mock_response
-            ):
-                with pytest.raises(HTTPError):
-                    client._make_uncached_request("GET", "/test")
+        with caplog.at_level(logging.ERROR), unittest.mock.patch.object(
+            client._session, "request", return_value=mock_response
+        ), pytest.raises(HTTPError):
+            client._make_uncached_request("GET", "/test")
 
         error_messages = [
             record.message for record in caplog.records if record.levelname == "ERROR"

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .base_model import ClientAwareModel
 
@@ -49,10 +49,10 @@ class TreasuryAccountSymbol(ClientAwareModel):
 
     def __init__(
         self,
-        data: Dict[str, Any],
-        client: "USASpendingClient",
-        toptier_code: Optional[str] = None,
-        federal_account: Optional[str] = None,
+        data: dict[str, Any],
+        client: USASpendingClient,
+        toptier_code: str | None = None,
+        federal_account: str | None = None,
     ):
         """Initialize TreasuryAccountSymbol.
 
@@ -75,9 +75,9 @@ class TreasuryAccountSymbol(ClientAwareModel):
             self._federal_account = ancestors[1]
 
         # Parse TAS ID components
-        self._parsed: Optional[Dict[str, Optional[str]]] = None
+        self._parsed: dict[str, str | None] | None = None
 
-    def _parse_tas_id(self) -> Dict[str, Optional[str]]:
+    def _parse_tas_id(self) -> dict[str, str | None]:
         """Parse TAS ID into components.
 
         Returns:
@@ -113,22 +113,22 @@ class TreasuryAccountSymbol(ClientAwareModel):
         return self._parsed
 
     @property
-    def id(self) -> Optional[str]:
+    def id(self) -> str | None:
         """The full TAS code (e.g., '080-2011/2012-0120-000')."""
         return self.get_value("id")
 
     @property
-    def tas_code(self) -> Optional[str]:
+    def tas_code(self) -> str | None:
         """Alias for id property."""
         return self.id
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """Human-readable TAS title/description."""
         return self.get_value("description")
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Alias for description property."""
         return self.description
 
@@ -138,23 +138,23 @@ class TreasuryAccountSymbol(ClientAwareModel):
         return self.get_value("count", default=0)
 
     @property
-    def ancestors(self) -> List[str]:
+    def ancestors(self) -> list[str]:
         """List of ancestor node IDs [toptier_code, federal_account]."""
         ancestors = self.get_value("ancestors", default=[])
         return ancestors if isinstance(ancestors, list) else []
 
     @property
-    def toptier_code(self) -> Optional[str]:
+    def toptier_code(self) -> str | None:
         """Parent agency toptier code."""
         return self._toptier_code
 
     @property
-    def federal_account_code(self) -> Optional[str]:
+    def federal_account_code(self) -> str | None:
         """Parent federal account code."""
         return self._federal_account
 
     @property
-    def aid(self) -> Optional[str]:
+    def aid(self) -> str | None:
         """Agency Identifier (e.g., '080').
 
         The AID is a 2-4 digit code identifying the agency responsible
@@ -163,7 +163,7 @@ class TreasuryAccountSymbol(ClientAwareModel):
         return self._parse_tas_id()["aid"]
 
     @property
-    def main(self) -> Optional[str]:
+    def main(self) -> str | None:
         """Main Account Code (e.g., '0120').
 
         The main account code is a 4-digit code identifying the type
@@ -172,7 +172,7 @@ class TreasuryAccountSymbol(ClientAwareModel):
         return self._parse_tas_id()["main"]
 
     @property
-    def sub(self) -> Optional[str]:
+    def sub(self) -> str | None:
         """Sub-Account Code (e.g., '000').
 
         The sub-account code provides additional detail about the
@@ -181,7 +181,7 @@ class TreasuryAccountSymbol(ClientAwareModel):
         return self._parse_tas_id()["sub"]
 
     @property
-    def bpoa(self) -> Optional[int]:
+    def bpoa(self) -> int | None:
         """Beginning Period of Availability (fiscal year).
 
         Returns:
@@ -192,7 +192,7 @@ class TreasuryAccountSymbol(ClientAwareModel):
         return int(bpoa_str) if bpoa_str else None
 
     @property
-    def epoa(self) -> Optional[int]:
+    def epoa(self) -> int | None:
         """Ending Period of Availability (fiscal year).
 
         Returns:
@@ -203,7 +203,7 @@ class TreasuryAccountSymbol(ClientAwareModel):
         return int(epoa_str) if epoa_str else None
 
     @property
-    def availability_type_code(self) -> Optional[str]:
+    def availability_type_code(self) -> str | None:
         """Availability Type Code.
 
         Returns:

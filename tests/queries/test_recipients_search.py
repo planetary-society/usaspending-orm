@@ -1,10 +1,10 @@
 """Tests for RecipientsSearch implementation."""
 
 import pytest
-
-from usaspending.queries.recipients_search import RecipientsSearch
-from usaspending.models.recipient import Recipient
 from tests.mocks.mock_client import MockUSASpendingClient
+
+from usaspending.models.recipient import Recipient
+from usaspending.queries.recipients_search import RecipientsSearch
 
 
 class TestRecipientsSearchInitialization:

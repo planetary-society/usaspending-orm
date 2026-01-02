@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..exceptions import ValidationError
-from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
 from ..utils.validations import validate_non_empty_string
+from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -36,7 +36,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
     """
 
     # Map user-friendly sort field names to API field names
-    SORT_FIELD_MAP = {
+    SORT_FIELD_MAP: ClassVar[dict[str, str]] = {
         "account_title": "account_title",
         "title": "account_title",
         "agency": "agency",
@@ -48,24 +48,24 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         "total_transaction_obligated_amount": "total_transaction_obligated_amount",
     }
 
-    def __init__(self, client: "USASpendingClient"):
+    def __init__(self, client: USASpendingClient):
         """Initialize the AwardAccountsQuery.
 
         Args:
             client: The USASpending client instance.
         """
         super().__init__(client)
-        self._award_id: Optional[str] = None
+        self._award_id: str | None = None
         self._sort_field: str = "federal_account"
         self._sort_order: str = "desc"
-        self._cached_count: Optional[int] = None
+        self._cached_count: int | None = None
 
     @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
         return "/awards/accounts/"
 
-    def _clone(self) -> "AwardAccountsQuery":
+    def _clone(self) -> AwardAccountsQuery:
         """Creates an immutable copy of the query builder."""
         clone = super()._clone()
         clone._award_id = self._award_id
@@ -74,7 +74,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         clone._cached_count = self._cached_count
         return clone
 
-    def _build_payload(self, page: int) -> Dict[str, Any]:
+    def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload."""
         if not self._award_id:
             raise ValidationError(
@@ -91,7 +91,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
 
         return payload
 
-    def _transform_result(self, result: Dict[str, Any]) -> "AwardAccount":
+    def _transform_result(self, result: dict[str, Any]) -> AwardAccount:
         """Transforms a single API result item into an AwardAccount model."""
         from ..models.award_account import AwardAccount
 
@@ -140,7 +140,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
     # Filter Methods
     # ==========================================================================
 
-    def award_id(self, award_id: str) -> "AwardAccountsQuery":
+    def award_id(self, award_id: str) -> AwardAccountsQuery:
         """Filter accounts for a specific award.
 
         Args:
@@ -156,7 +156,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         clone._cached_count = None  # Clear cache for new award
         return clone
 
-    def order_by(self, field: str, direction: str = "desc") -> "AwardAccountsQuery":
+    def order_by(self, field: str, direction: str = "desc") -> AwardAccountsQuery:
         """Set the sort order for results.
 
         Args:

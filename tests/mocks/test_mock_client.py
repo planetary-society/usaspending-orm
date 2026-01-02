@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from usaspending.exceptions import APIError, HTTPError
 from tests.mocks import MockUSASpendingClient, ResponseBuilder
+from usaspending.exceptions import APIError, HTTPError
 
 
 class TestMockUSASpendingClient:

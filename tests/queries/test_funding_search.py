@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from usaspending.queries.funding_search import FundingSearch
-from usaspending.models.funding import Funding
 from usaspending.exceptions import ValidationError
+from usaspending.models.funding import Funding
+from usaspending.queries.funding_search import FundingSearch
 
 
 class TestFundingSearch:

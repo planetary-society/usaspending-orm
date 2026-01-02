@@ -1,12 +1,13 @@
 """Contract award model for USASpending data."""
 
 from __future__ import annotations
-from typing import Dict, Any, Optional, TYPE_CHECKING
-from functools import cached_property
-from decimal import Decimal
 
-from .award import Award
+from decimal import Decimal
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, ClassVar
+
 from ..utils.formatter import to_decimal
+from .award import Award
 
 if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
@@ -18,7 +19,7 @@ class Contract(Award):
     # Download type for bulk download API
     _download_type = "contract"
 
-    TYPE_FIELDS = [
+    TYPE_FIELDS: ClassVar[list[str]] = [
         "piid",
         "base_exercised_options",
         "base_and_all_options",
@@ -32,18 +33,10 @@ class Contract(Award):
         "latest_transaction_contract_data",
     ]
 
-    SEARCH_FIELDS = Award.SEARCH_FIELDS + [
-        "Start Date",
-        "End Date",
-        "Award Amount",
-        "Total Outlays",
-        "Contract Award Type",
-        "NAICS",
-        "PSC",
-    ]
+    SEARCH_FIELDS: ClassVar[list[str]] = [*Award.SEARCH_FIELDS, "Start Date", "End Date", "Award Amount", "Total Outlays", "Contract Award Type", "NAICS", "PSC"]
 
     @property
-    def piid(self) -> Optional[str]:
+    def piid(self) -> str | None:
         """Procurement Instrument Identifier (PIID).
 
         A unique identifier assigned to a federal contract, purchase order, basic
@@ -58,7 +51,7 @@ class Contract(Award):
         return self._lazy_get("piid")
 
     @property
-    def base_exercised_options(self) -> Optional[Decimal]:
+    def base_exercised_options(self) -> Decimal | None:
         """Sum of base exercised options value from associated transactions.
 
         Returns:
@@ -67,7 +60,7 @@ class Contract(Award):
         return to_decimal(self._lazy_get("base_exercised_options", default=None))
 
     @property
-    def base_and_all_options(self) -> Optional[Decimal]:
+    def base_and_all_options(self) -> Decimal | None:
         """Sum of base and all options value from associated transactions.
 
         Returns:
@@ -76,7 +69,7 @@ class Contract(Award):
         return to_decimal(self._lazy_get("base_and_all_options", default=None))
 
     @property
-    def contract_award_type(self) -> Optional[str]:
+    def contract_award_type(self) -> str | None:
         """Contract award type description.
 
         Returns:
@@ -85,7 +78,7 @@ class Contract(Award):
         return self.type_description
 
     @property
-    def naics_code(self) -> Optional[str]:
+    def naics_code(self) -> str | None:
         """NAICS industry classification code.
 
         Returns:
@@ -103,7 +96,7 @@ class Contract(Award):
         return None
 
     @property
-    def naics_description(self) -> Optional[str]:
+    def naics_description(self) -> str | None:
         """NAICS industry classification description.
 
         Returns:
@@ -121,7 +114,7 @@ class Contract(Award):
         return None
 
     @property
-    def psc_code(self) -> Optional[str]:
+    def psc_code(self) -> str | None:
         """Product/Service Code (PSC) for contracts.
 
         Returns:
@@ -135,7 +128,7 @@ class Contract(Award):
         return None
 
     @property
-    def psc_description(self) -> Optional[str]:
+    def psc_description(self) -> str | None:
         """Product/Service Code (PSC) description.
 
         Returns:
@@ -149,7 +142,7 @@ class Contract(Award):
         return None
 
     @cached_property
-    def psc_hierarchy(self) -> Optional[Dict[str, Any]]:
+    def psc_hierarchy(self) -> dict[str, Any] | None:
         """Product/Service Code (PSC) hierarchy information.
 
         Returns:
@@ -158,7 +151,7 @@ class Contract(Award):
         return self._lazy_get("psc_hierarchy")
 
     @cached_property
-    def naics_hierarchy(self) -> Optional[Dict[str, Any]]:
+    def naics_hierarchy(self) -> dict[str, Any] | None:
         """North American Industry Classification System (NAICS) hierarchy.
 
         Returns:
@@ -167,7 +160,7 @@ class Contract(Award):
         return self._lazy_get("naics_hierarchy")
 
     @cached_property
-    def latest_transaction_contract_data(self) -> Optional[Dict[str, Any]]:
+    def latest_transaction_contract_data(self) -> dict[str, Any] | None:
         """Latest contract transaction data with procurement-specific details.
 
         Returns:
@@ -176,7 +169,7 @@ class Contract(Award):
         return self._lazy_get("latest_transaction_contract_data")
 
     @property
-    def subawards(self) -> "SubAwardsSearch":
+    def subawards(self) -> SubAwardsSearch:
         """Get subawards query builder for this contract award with appropriate award type filters.
 
         Automatically applies contract award type filters.

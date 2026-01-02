@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
 from decimal import Decimal
+from typing import TYPE_CHECKING
+
 from ..utils.formatter import to_decimal
 from .base_model import BaseModel
 
@@ -18,7 +19,7 @@ class Spending(BaseModel):
     This model provides access to spending data with amounts, names, codes, and outlays.
     """
 
-    def __init__(self, data: dict, client: Optional["USASpendingClient"] = None):
+    def __init__(self, data: dict, client: USASpendingClient | None = None):
         """Initialize Spending model.
 
         Args:
@@ -29,7 +30,7 @@ class Spending(BaseModel):
         self._client = client
 
     @property
-    def id(self) -> Optional[int]:
+    def id(self) -> int | None:
         """Database ID for the spending record.
 
         Returns:
@@ -38,7 +39,7 @@ class Spending(BaseModel):
         return self.get_value(["id"])
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Display name for the spending category (recipient name or district name).
 
         Returns:
@@ -47,7 +48,7 @@ class Spending(BaseModel):
         return self.get_value(["name"])
 
     @property
-    def code(self) -> Optional[str]:
+    def code(self) -> str | None:
         """Code associated with the spending record (DUNS, district code, etc.).
 
         Returns:
@@ -56,7 +57,7 @@ class Spending(BaseModel):
         return self.get_value(["code"])
 
     @property
-    def amount(self) -> Optional[Decimal]:
+    def amount(self) -> Decimal | None:
         """Total spending amount for this record.
 
         Returns:
@@ -65,7 +66,7 @@ class Spending(BaseModel):
         return to_decimal(self.get_value(["amount"]))
 
     @property
-    def total_outlays(self) -> Optional[Decimal]:
+    def total_outlays(self) -> Decimal | None:
         """Total outlays for this spending record.
 
         Returns:
@@ -74,7 +75,7 @@ class Spending(BaseModel):
         return to_decimal(self.get_value(["total_outlays"]))
 
     @property
-    def spending_level(self) -> Optional[str]:
+    def spending_level(self) -> str | None:
         """The spending level used for this data (transactions, awards, subawards).
 
         Returns:
@@ -83,7 +84,7 @@ class Spending(BaseModel):
         return self.get_value(["spending_level"])
 
     @property
-    def category(self) -> Optional[str]:
+    def category(self) -> str | None:
         """The category type (recipient or district).
 
         Returns:

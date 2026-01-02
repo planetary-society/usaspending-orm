@@ -7,35 +7,36 @@ proper function behavior, and correct handling of overlapping categories.
 
 from __future__ import annotations
 
-import pytest
 import time
 
+import pytest
+
 from usaspending.models.recipient_business_categories import (
-    BUSINESS_CATEGORY_GROUPS,
-    BUSINESS_CATEGORY_DESCRIPTIONS,
-    BUSINESS_CATEGORIES,
     ALL_BUSINESS_CATEGORIES,
+    BUSINESS_CATEGORIES,
+    BUSINESS_CATEGORY_DESCRIPTIONS,
+    BUSINESS_CATEGORY_GROUPS,
     CATEGORY_BUSINESS_CODES,
-    MINORITY_OWNED_CODES,
-    WOMEN_OWNED_CODES,
-    VETERAN_OWNED_CODES,
-    SPECIAL_DESIGNATIONS_CODES,
-    NONPROFIT_CODES,
-    HIGHER_EDUCATION_CODES,
     GOVERNMENT_CODES,
+    HIGHER_EDUCATION_CODES,
     INDIVIDUALS_CODES,
+    MINORITY_OWNED_CODES,
+    NONPROFIT_CODES,
     OVERLAPPING_CATEGORIES,
-    get_category_group,
+    SPECIAL_DESIGNATIONS_CODES,
+    VETERAN_OWNED_CODES,
+    WOMEN_OWNED_CODES,
     get_all_groups_for_code,
-    is_valid_business_category,
+    get_category_group,
     get_description,
-    is_small_business,
-    is_minority_owned,
-    is_women_owned,
-    is_veteran_owned,
-    is_government_entity,
     is_educational_institution,
+    is_government_entity,
+    is_minority_owned,
     is_nonprofit_organization,
+    is_small_business,
+    is_valid_business_category,
+    is_veteran_owned,
+    is_women_owned,
 )
 
 

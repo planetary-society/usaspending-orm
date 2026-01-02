@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..exceptions import ValidationError
-from ..models.funding import Funding
-from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
+from ..models.funding import Funding
 from ..utils.validations import validate_non_empty_string
+from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -23,7 +23,7 @@ class FundingSearch(QueryBuilder["Funding"]):
     """
 
     # Map user-friendly sort field names to API field names
-    SORT_FIELD_MAP = {
+    SORT_FIELD_MAP: ClassVar[dict[str, str]] = {
         "account_title": "account_title",
         "awarding_agency": "awarding_agency_name",
         "disaster_code": "disaster_emergency_fund_code",
@@ -38,7 +38,7 @@ class FundingSearch(QueryBuilder["Funding"]):
         "obligation": "transaction_obligated_amount",
     }
 
-    def __init__(self, client: "USASpendingClient"):
+    def __init__(self, client: USASpendingClient):
         """
         Initializes the FundingSearch query builder.
 
@@ -63,7 +63,7 @@ class FundingSearch(QueryBuilder["Funding"]):
         clone._sort_order = self._sort_order
         return clone
 
-    def _build_payload(self, page: int) -> Dict[str, Any]:
+    def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload."""
         if not self._award_id:
             raise ValidationError(
@@ -80,7 +80,7 @@ class FundingSearch(QueryBuilder["Funding"]):
 
         return payload
 
-    def _transform_result(self, result: Dict[str, Any]) -> Funding:
+    def _transform_result(self, result: dict[str, Any]) -> Funding:
         """Transforms a single API result item into a Funding model."""
         return Funding(result, client=self._client)
 

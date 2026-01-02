@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any, Callable
 
 import pytest
-
 from tests.mocks import MockUSASpendingClient
+
 from usaspending.exceptions import ValidationError
 from usaspending.models.recipient import Recipient
 from usaspending.queries.recipient_query import RecipientQuery

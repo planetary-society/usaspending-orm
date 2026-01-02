@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from tests.mocks.mock_client import MockUSASpendingClient
 from usaspending.exceptions import APIError
 from usaspending.models import Award
-from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestMockClientExamples:

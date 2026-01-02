@@ -63,7 +63,7 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     from .queries.filters import BaseFilter
@@ -91,7 +91,7 @@ class USASpendingLogger:
         client = USASpendingClient()
     """
 
-    _loggers: Dict[str, logging.Logger] = {}
+    _loggers: ClassVar[dict[str, logging.Logger]] = {}
 
     @classmethod
     def get_logger(cls, name: str) -> logging.Logger:
@@ -172,8 +172,8 @@ def log_api_request(
     logger: logging.Logger,
     method: str,
     url: str,
-    params: Optional[Dict[str, Any]] = None,
-    json_data: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
+    json_data: dict[str, Any] | None = None,
 ) -> None:
     """Log an API request with appropriate detail level.
 
@@ -204,9 +204,9 @@ def log_api_request(
 def log_api_response(
     logger: logging.Logger,
     status_code: int,
-    response_size: Optional[int] = None,
-    duration: Optional[float] = None,
-    error: Optional[str] = None,
+    response_size: int | None = None,
+    duration: float | None = None,
+    error: str | None = None,
 ) -> None:
     """Log an API response with appropriate detail level.
 
@@ -244,7 +244,7 @@ def log_api_response(
 def log_query_execution(
     logger: logging.Logger,
     query_type: str,
-    filter_objects: list["BaseFilter"],
+    filter_objects: list[BaseFilter],
     endpoint: str,
     page: int = 1,
 ) -> None:

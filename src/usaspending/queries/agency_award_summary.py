@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Dict, Any, List
-from .single_resource_base import SingleResourceBase
-from ..exceptions import ValidationError
+from typing import TYPE_CHECKING, Any
+
 from ..client import USASpendingClient
+from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
+from .single_resource_base import SingleResourceBase
 
 if TYPE_CHECKING:
     pass
@@ -47,7 +48,7 @@ class AgencyAwardSummary(SingleResourceBase):
         """
         return f"{self._endpoint}{resource_id}/awards/"
 
-    def find_by_id(self, toptier_code: str) -> Dict[str, Any]:
+    def find_by_id(self, toptier_code: str) -> dict[str, Any]:
         """Not used for award summary - use get_awards_summary instead.
 
         Raises:
@@ -60,10 +61,10 @@ class AgencyAwardSummary(SingleResourceBase):
     def get_awards_summary(
         self,
         toptier_code: str,
-        fiscal_year: Optional[int] = None,
+        fiscal_year: int | None = None,
         agency_type: str = "awarding",
-        award_type_codes: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        award_type_codes: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Retrieve agency award summary with optional filters.
 
         Args:

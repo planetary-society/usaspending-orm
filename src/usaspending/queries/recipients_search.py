@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 from ..client import USASpendingClient
-from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
+from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
     from ..models.recipient import Recipient
@@ -44,7 +44,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
             client: The USASpending client instance.
         """
         super().__init__(client)
-        self._keyword: Optional[str] = None
+        self._keyword: str | None = None
         self._award_type: AwardType = "all"
         self._sort_field: SortField = "amount"
         self._sort_direction: SortDirection = "desc"
@@ -79,7 +79,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
 
         return payload
 
-    def _transform_result(self, result: dict[str, Any]) -> "Recipient":
+    def _transform_result(self, result: dict[str, Any]) -> Recipient:
         """Transforms a single API result item into a Recipient model."""
         from ..models.recipient import Recipient
 

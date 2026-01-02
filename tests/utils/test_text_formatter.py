@@ -1,7 +1,8 @@
 """Tests for TextFormatter class."""
 
+from unittest.mock import mock_open, patch
+
 import pytest
-from unittest.mock import patch, mock_open
 import yaml
 
 from usaspending.utils.formatter import TextFormatter
@@ -34,10 +35,12 @@ class TestTextFormatter:
 
     def test_load_special_cases_yaml_error(self):
         """Test graceful handling of YAML parsing errors."""
-        with patch("builtins.open", mock_open(read_data="invalid: yaml: content:")):
-            with patch("yaml.safe_load", side_effect=yaml.YAMLError):
-                cases = TextFormatter._load_special_cases()
-                assert cases == []
+        with (
+            patch("builtins.open", mock_open(read_data="invalid: yaml: content:")),
+            patch("yaml.safe_load", side_effect=yaml.YAMLError),
+        ):
+            cases = TextFormatter._load_special_cases()
+            assert cases == []
 
     def test_get_special_cases_set(self):
         """Test conversion of special cases to uppercase set."""

@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, TYPE_CHECKING, Iterator, List, Union
+from collections.abc import Iterator
 from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 from ..exceptions import ValidationError
-from ..models.transaction import Transaction
-from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
+from ..models.transaction import Transaction
 from ..utils.validations import parse_date_string, validate_non_empty_string
+from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -36,7 +37,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         }
     )
 
-    def __init__(self, client: "USASpendingClient"):
+    def __init__(self, client: USASpendingClient):
         """
         Initializes the TransactionsSearch query builder.
 
@@ -61,7 +62,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         clone._client_filters = self._client_filters.copy()
         return clone
 
-    def _build_payload(self, page: int) -> Dict[str, Any]:
+    def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload from the filter objects."""
 
         if not self._award_id:
@@ -87,7 +88,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
 
         return payload
 
-    def _transform_result(self, result: Dict[str, Any]) -> Transaction:
+    def _transform_result(self, result: dict[str, Any]) -> Transaction:
         """Transforms a single API result item into a Transaction model."""
         return Transaction(result)
 
@@ -123,7 +124,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         )
         return total
 
-    def __getitem__(self, key: Union[int, slice]) -> Union[Transaction, List[Transaction]]:
+    def __getitem__(self, key: int | slice) -> Transaction | list[Transaction]:
         """
         Retrieve specific transaction(s) by index or slice.
 
@@ -181,7 +182,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         clone._award_id = validated_id
         return clone
 
-    def since(self, date: str) -> "TransactionsSearch":
+    def since(self, date: str) -> TransactionsSearch:
         """
         Filter transactions to those on or after the specified date.
 
@@ -219,7 +220,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         clone._client_filters["since_date"] = date
         return clone
 
-    def until(self, date: str) -> "TransactionsSearch":
+    def until(self, date: str) -> TransactionsSearch:
         """
         Filter transactions to those on or before the specified date.
 
@@ -256,7 +257,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         clone._client_filters["until_date"] = date
         return clone
 
-    def order_by(self, field: str, direction: str = "desc") -> "TransactionsSearch":
+    def order_by(self, field: str, direction: str = "desc") -> TransactionsSearch:
         """
         Set the sort order for transaction results.
 

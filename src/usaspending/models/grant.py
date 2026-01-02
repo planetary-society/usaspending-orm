@@ -1,12 +1,13 @@
 """Grant award model for USASpending data."""
 
 from __future__ import annotations
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
-from functools import cached_property
-from decimal import Decimal
 
-from .award import Award
+from decimal import Decimal
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, ClassVar
+
 from ..utils.formatter import to_decimal
+from .award import Award
 
 if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
@@ -18,7 +19,7 @@ class Grant(Award):
     # Download type for bulk download API
     _download_type = "assistance"
 
-    TYPE_FIELDS = [
+    TYPE_FIELDS: ClassVar[list[str]] = [
         "fain",
         "uri",
         "record_type",
@@ -32,20 +33,10 @@ class Grant(Award):
         "transaction_obligated_amount",
     ]
 
-    SEARCH_FIELDS = Award.SEARCH_FIELDS + [
-        "Start Date",
-        "End Date",
-        "Award Amount",
-        "Total Outlays",
-        "Award Type",
-        "SAI Number",
-        "CFDA Number",
-        "Assistance Listings",
-        "primary_assistance_listing",
-    ]
+    SEARCH_FIELDS: ClassVar[list[str]] = [*Award.SEARCH_FIELDS, "Start Date", "End Date", "Award Amount", "Total Outlays", "Award Type", "SAI Number", "CFDA Number", "Assistance Listings", "primary_assistance_listing"]
 
     @property
-    def fain(self) -> Optional[str]:
+    def fain(self) -> str | None:
         """Federal Award Identification Number (FAIN).
 
         An identification code assigned to each financial assistance award tracking
@@ -61,7 +52,7 @@ class Grant(Award):
         return self._lazy_get("fain")
 
     @property
-    def uri(self) -> Optional[str]:
+    def uri(self) -> str | None:
         """The Unique Record Identifier (URI) of the award.
 
         Returns:
@@ -70,7 +61,7 @@ class Grant(Award):
         return self._lazy_get("uri")
 
     @property
-    def record_type(self) -> Optional[int]:
+    def record_type(self) -> int | None:
         """Grant record type identifier.
 
         Returns:
@@ -79,7 +70,7 @@ class Grant(Award):
         return self._lazy_get("record_type")
 
     @property
-    def cfda_info(self) -> List[Dict[str, Any]]:
+    def cfda_info(self) -> list[dict[str, Any]]:
         """Catalog of Federal Domestic Assistance (CFDA) information for grants.
 
         Returns:
@@ -88,7 +79,7 @@ class Grant(Award):
         return self._lazy_get("cfda_info", "Assistance Listings", default=[])
 
     @property
-    def cfda_number(self) -> Optional[str]:
+    def cfda_number(self) -> str | None:
         """Primary CFDA number for grants.
 
         Returns:
@@ -105,7 +96,7 @@ class Grant(Award):
         return self._lazy_get("cfda_number", "CFDA Number")
 
     @property
-    def primary_cfda_info(self) -> Optional[Dict[str, Any]]:
+    def primary_cfda_info(self) -> dict[str, Any] | None:
         """Primary CFDA program information.
 
         Returns:
@@ -114,7 +105,7 @@ class Grant(Award):
         return self._lazy_get("primary_cfda_info", "primary_assistance_listing")
 
     @property
-    def sai_number(self) -> Optional[str]:
+    def sai_number(self) -> str | None:
         """System for Award Identification (SAI) number for grants.
 
         Returns:
@@ -123,7 +114,7 @@ class Grant(Award):
         return self._lazy_get("sai_number", "SAI Number")
 
     @cached_property
-    def funding_opportunity(self) -> Optional[Dict[str, Any]]:
+    def funding_opportunity(self) -> dict[str, Any] | None:
         """Funding opportunity details for grants.
 
         Returns:
@@ -132,7 +123,7 @@ class Grant(Award):
         return self._lazy_get("funding_opportunity")
 
     @property
-    def non_federal_funding(self) -> Optional[Decimal]:
+    def non_federal_funding(self) -> Decimal | None:
         """Summation of this award's transactions' non-federal funding amount.
 
         Returns:
@@ -141,7 +132,7 @@ class Grant(Award):
         return to_decimal(self._lazy_get("non_federal_funding", default=None))
 
     @property
-    def total_funding(self) -> Optional[Decimal]:
+    def total_funding(self) -> Decimal | None:
         """Sum of the federal action obligations and the Non-Federal funding amount.
 
         Returns:
@@ -150,7 +141,7 @@ class Grant(Award):
         return to_decimal(self._lazy_get("total_funding", default=None))
 
     @property
-    def transaction_obligated_amount(self) -> Optional[Decimal]:
+    def transaction_obligated_amount(self) -> Decimal | None:
         """Transaction-level obligated amount.
 
         Returns:
@@ -159,7 +150,7 @@ class Grant(Award):
         return to_decimal(self._lazy_get("transaction_obligated_amount", default=None))
 
     @property
-    def total_subsidy_cost(self) -> Optional[Decimal]:
+    def total_subsidy_cost(self) -> Decimal | None:
         """Total subsidy cost for this award.
 
         Returns:
@@ -168,7 +159,7 @@ class Grant(Award):
         return to_decimal(self._lazy_get("total_subsidy_cost", default=None))
 
     @property
-    def base_exercised_options(self) -> Optional[Decimal]:
+    def base_exercised_options(self) -> Decimal | None:
         """Total amount obligated for the base and exercised options of this award.
 
         Returns:
@@ -177,7 +168,7 @@ class Grant(Award):
         return to_decimal(self._lazy_get("base_exercised_options", default=None))
 
     @property
-    def base_and_all_options(self) -> Optional[Decimal]:
+    def base_and_all_options(self) -> Decimal | None:
         """Total amount obligated for the base and all options of this award.
 
         Returns:
@@ -186,7 +177,7 @@ class Grant(Award):
         return to_decimal(self._lazy_get("base_and_all_options", default=None))
 
     @property
-    def subawards(self) -> "SubAwardsSearch":
+    def subawards(self) -> SubAwardsSearch:
         """Get subawards query builder for this grant award with appropriate award type filters.
 
         Automatically applies grant award type filters.

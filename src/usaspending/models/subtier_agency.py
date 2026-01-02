@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Optional, List, TYPE_CHECKING, Dict, Any
 from decimal import Decimal
-from ..utils.formatter import to_decimal, to_int, contracts_titlecase
+from typing import TYPE_CHECKING, Any
+
+from ..utils.formatter import contracts_titlecase, to_decimal, to_int
 from .base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -19,7 +20,7 @@ class SubTierAgency(BaseModel):
     """
 
     def __init__(
-        self, data: Dict[str, Any], client: Optional["USASpendingClient"] = None
+        self, data: dict[str, Any], client: USASpendingClient | None = None
     ):
         """Initialize SubTierAgency model.
 
@@ -40,7 +41,7 @@ class SubTierAgency(BaseModel):
         self._client = client
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Name of the subtier agency.
 
         Returns:
@@ -49,7 +50,7 @@ class SubTierAgency(BaseModel):
         return contracts_titlecase(self.get_value("name"))
 
     @property
-    def code(self) -> Optional[str]:
+    def code(self) -> str | None:
         """Code of the subtier agency.
 
         Returns:
@@ -58,7 +59,7 @@ class SubTierAgency(BaseModel):
         return self.get_value("code")
 
     @property
-    def abbreviation(self) -> Optional[str]:
+    def abbreviation(self) -> str | None:
         """Abbreviation of the subtier agency.
 
         Returns:
@@ -67,7 +68,7 @@ class SubTierAgency(BaseModel):
         return self.get_value("abbreviation")
 
     @property
-    def total_obligations(self) -> Optional[Decimal]:
+    def total_obligations(self) -> Decimal | None:
         """Total obligations for this subtier agency.
 
         Returns:
@@ -77,7 +78,7 @@ class SubTierAgency(BaseModel):
         return to_decimal(obligations)
 
     @property
-    def transaction_count(self) -> Optional[int]:
+    def transaction_count(self) -> int | None:
         """Number of transactions for this subtier agency.
 
         Returns:
@@ -87,7 +88,7 @@ class SubTierAgency(BaseModel):
         return to_int(count)
 
     @property
-    def new_award_count(self) -> Optional[int]:
+    def new_award_count(self) -> int | None:
         """Number of new awards for this subtier agency.
 
         Returns:
@@ -97,7 +98,7 @@ class SubTierAgency(BaseModel):
         return to_int(count)
 
     @property
-    def offices(self) -> List["SubTierAgency"]:
+    def offices(self) -> list[SubTierAgency]:
         """List of offices under this subtier agency.
 
         Returns:

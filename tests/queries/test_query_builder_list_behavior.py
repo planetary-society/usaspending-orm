@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from usaspending.queries.awards_search import AwardsSearch
 from tests.mocks.mock_client import MockUSASpendingClient
+
+from usaspending.queries.awards_search import AwardsSearch
 
 
 @pytest.fixture

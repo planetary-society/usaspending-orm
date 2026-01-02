@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from ..logging_config import USASpendingLogger
 from ..utils.validations import validate_non_empty_string
@@ -49,7 +49,7 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
 
     def __init__(
         self,
-        client: "USASpendingClient",
+        client: USASpendingClient,
         toptier_code: str,
         federal_account: str,
     ):
@@ -63,13 +63,13 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
         self._client = client
         self._toptier_code = toptier_code
         self._federal_account = federal_account
-        self._results: Optional[List["TreasuryAccountSymbol"]] = None
+        self._results: list[TreasuryAccountSymbol] | None = None
         super().__init__(
             items=[],
             keyword_fields=["description", "name"],
         )
 
-    def _fetch(self) -> List["TreasuryAccountSymbol"]:
+    def _fetch(self) -> list[TreasuryAccountSymbol]:
         """Fetch TAS codes from the API.
 
         Returns:
@@ -114,11 +114,11 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
 
         return self._results
 
-    def _materialize(self) -> list["TreasuryAccountSymbol"]:
+    def _materialize(self) -> list[TreasuryAccountSymbol]:
         """Return fetched TAS codes for client-side filtering."""
         return list(self._fetch())
 
-    def code(self, code: str) -> "TASCodesQuery":
+    def code(self, code: str) -> TASCodesQuery:
         """Filter by TAS code.
 
         Args:
@@ -130,7 +130,7 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
         validated = validate_non_empty_string(code, "code")
         return self._add_filter_object(SimpleStringFilter(key="id", value=validated))
 
-    def codes(self, *codes: str) -> "TASCodesQuery":
+    def codes(self, *codes: str) -> TASCodesQuery:
         """Filter by multiple TAS codes.
 
         Args:
@@ -141,7 +141,7 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
         """
         return self._add_filter_object(SimpleListFilter(key="id", values=list(codes)))
 
-    def availability_type_code(self, code: str) -> "TASCodesQuery":
+    def availability_type_code(self, code: str) -> TASCodesQuery:
         """Filter by availability type code.
 
         Args:
@@ -155,7 +155,7 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
             SimpleStringFilter(key="availability_type_code", value=validated)
         )
 
-    def description(self, text: str) -> "TASCodesQuery":
+    def description(self, text: str) -> TASCodesQuery:
         """Filter by description text (case-insensitive substring).
 
         Args:
@@ -167,7 +167,7 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
         validated = validate_non_empty_string(text, "description")
         return self._add_filter_object(KeywordsFilter(values=[validated]))
 
-    def name(self, text: str) -> "TASCodesQuery":
+    def name(self, text: str) -> TASCodesQuery:
         """Alias for description().
 
         Args:
@@ -178,7 +178,7 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
         """
         return self.description(text)
 
-    def fiscal_year(self, year: int) -> "TASCodesQuery":
+    def fiscal_year(self, year: int) -> TASCodesQuery:
         """Filter to TAS codes covering a fiscal year.
 
         Args:
@@ -187,12 +187,12 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
         Returns:
             TASCodesQuery: Filtered query.
         """
-        def predicate(tas: "TreasuryAccountSymbol") -> bool:
+        def predicate(tas: TreasuryAccountSymbol) -> bool:
             return tas.fiscal_year(year)
 
         return self._add_filter(predicate)
 
-    def _clone(self) -> "TASCodesQuery":
+    def _clone(self) -> TASCodesQuery:
         """Create a copy for method chaining."""
         clone = self.__class__(self._client, self._toptier_code, self._federal_account)
         clone._results = self._results

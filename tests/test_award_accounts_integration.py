@@ -92,7 +92,7 @@ class TestAwardAccountsDataAccess:
     @pytest.fixture
     def first_account(self, award_with_accounts):
         """Get first account from award."""
-        return list(award_with_accounts.accounts)[0]
+        return next(iter(award_with_accounts.accounts))
 
     def test_account_properties_accessible(self, first_account, first_account_data):
         """Test that account properties are accessible through award.accounts."""

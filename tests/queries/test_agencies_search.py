@@ -1,16 +1,16 @@
 """Tests for AgenciesSearch query implementations."""
 
-from typing import Type, TypeVar
+from typing import TypeVar
 
 import pytest
+from tests.mocks.mock_client import MockUSASpendingClient
 
-from usaspending.queries.agencies_search import AgenciesSearch
-from usaspending.queries.funding_agencies_search import FundingAgenciesSearch
-from usaspending.queries.awarding_agencies_search import AwardingAgenciesSearch
 from usaspending.exceptions import ValidationError
 from usaspending.models.agency import Agency
 from usaspending.models.subtier_agency import SubTierAgency
-from tests.mocks.mock_client import MockUSASpendingClient
+from usaspending.queries.agencies_search import AgenciesSearch
+from usaspending.queries.awarding_agencies_search import AwardingAgenciesSearch
+from usaspending.queries.funding_agencies_search import FundingAgenciesSearch
 
 T = TypeVar("T", bound=AgenciesSearch)
 
@@ -33,7 +33,7 @@ SEARCH_CLASS_PARAMS = [
 
 
 def init_search(
-    search_class: Type[T], mock_usa_client: MockUSASpendingClient
+    search_class: type[T], mock_usa_client: MockUSASpendingClient
 ) -> T:
     """Instantiate deprecated search classes with warning."""
     with pytest.warns(

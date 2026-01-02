@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from tests.utils import assert_decimal_equal
 from tests.conftest import load_json_fixture
-from usaspending.models import RecipientSpending, Recipient
+from tests.utils import assert_decimal_equal
+from usaspending.models import Recipient, RecipientSpending
 from usaspending.queries.spending_search import SpendingSearch
 from usaspending.utils.formatter import contracts_titlecase, round_to_millions
 

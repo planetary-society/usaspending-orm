@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from usaspending.models.award import Award
 from usaspending.models.agency import Agency
+from usaspending.models.award import Award
 from usaspending.models.subtier_agency import SubTierAgency
 
 

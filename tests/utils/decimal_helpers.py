@@ -1,7 +1,7 @@
 """Helper utilities for testing with Decimal values."""
 
 from decimal import Decimal
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 
 def decimal_equal(actual: Any, expected: Union[float, int, str, Decimal]) -> bool:
@@ -33,7 +33,7 @@ def decimal_equal(actual: Any, expected: Union[float, int, str, Decimal]) -> boo
 
 
 def assert_decimal_equal(
-    actual: Any, expected: Union[float, int, str, Decimal], message: str = None
+    actual: Any, expected: Union[float, int, str, Decimal], message: Optional[str] = None
 ):
     """
     Assert that a Decimal value equals the expected value.

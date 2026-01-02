@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from usaspending.models.award_factory import create_award
+from usaspending.exceptions import ValidationError
 from usaspending.models.award import Award
+from usaspending.models.award_factory import create_award
 from usaspending.models.contract import Contract
 from usaspending.models.grant import Grant
 from usaspending.models.idv import IDV
 from usaspending.models.loan import Loan
-from usaspending.exceptions import ValidationError
 
 
 class TestAwardFactory:

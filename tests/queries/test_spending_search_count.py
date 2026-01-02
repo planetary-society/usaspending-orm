@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import pytest
-
-from usaspending.queries.spending_search import SpendingSearch
-from usaspending.exceptions import ValidationError
 from tests.mocks.mock_client import MockUSASpendingClient
+
+from usaspending.exceptions import ValidationError
+from usaspending.queries.spending_search import SpendingSearch
 
 
 class TestSpendingSearchCount:

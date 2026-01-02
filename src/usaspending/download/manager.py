@@ -7,13 +7,14 @@ and extracting their contents.
 """
 
 from __future__ import annotations
-import zipfile
+
 import os
-from typing import TYPE_CHECKING, Optional, List
+import zipfile
+from typing import TYPE_CHECKING
 
 from ..exceptions import APIError, DownloadError
 from ..logging_config import USASpendingLogger
-from ..models.download import DownloadStatus, AwardType, FileFormat
+from ..models.download import AwardType, DownloadStatus, FileFormat
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -35,7 +36,7 @@ class DownloadManager:
         download_type: AwardType,
         award_id: str,
         file_format: FileFormat,
-        destination_dir: Optional[str],
+        destination_dir: str | None,
     ) -> DownloadJob:
         """
         Sends the initial request to the API to start the download job.
@@ -112,7 +113,7 @@ class DownloadManager:
                 e.file_name = file_name
             raise
 
-    def unzip_file(self, zip_path: str, extract_dir: str) -> List[str]:
+    def unzip_file(self, zip_path: str, extract_dir: str) -> list[str]:
         """
         Unzips the downloaded file with path traversal protection.
 
@@ -164,7 +165,7 @@ class DownloadManager:
             raise DownloadError(
                 f"Downloaded file is not a valid zip archive: {zip_path}",
                 file_name=os.path.basename(zip_path),
-            )
+            ) from None
         except DownloadError:
             # Re-raise DownloadError (including path traversal errors)
             raise

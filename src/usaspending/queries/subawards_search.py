@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any, Dict, TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from ..exceptions import ValidationError
-from ..models.subaward import SubAward
-from .awards_search import AwardsSearch
 from ..logging_config import USASpendingLogger
 from ..models.award_types import get_award_group
+from ..models.subaward import SubAward
 from ..utils.validations import validate_non_empty_string
+from .awards_search import AwardsSearch
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -25,7 +25,7 @@ class SubAwardsSearch(AwardsSearch):
     filter logic while specializing for subawards.
     """
 
-    def __init__(self, client: "USASpendingClient"):
+    def __init__(self, client: USASpendingClient):
         """
         Initializes the SubAwardsSearch query builder.
 
@@ -33,7 +33,7 @@ class SubAwardsSearch(AwardsSearch):
             client: The USASpending client instance.
         """
         super().__init__(client)
-        self._award_id: Optional[str] = None
+        self._award_id: str | None = None
 
     def _clone(self) -> SubAwardsSearch:
         """Creates an immutable copy of the query builder."""
@@ -47,7 +47,7 @@ class SubAwardsSearch(AwardsSearch):
         clone._award_id = self._award_id
         return clone
 
-    def _build_payload(self, page: int) -> Dict[str, Any]:
+    def _build_payload(self, page: int) -> dict[str, Any]:
         """
         Constructs the final API request payload for subawards.
 
@@ -67,7 +67,7 @@ class SubAwardsSearch(AwardsSearch):
 
         return payload
 
-    def _transform_result(self, result: Dict[str, Any]) -> SubAward:
+    def _transform_result(self, result: dict[str, Any]) -> SubAward:
         """Transforms a single API result item into a SubAward model."""
         return SubAward(result, self._client)
 
@@ -141,7 +141,7 @@ class SubAwardsSearch(AwardsSearch):
             count += 1
         return count
 
-    def count_awards_by_type(self) -> Dict[str, int]:
+    def count_awards_by_type(self) -> dict[str, int]:
         """
         Override parent method to use subawards-specific count endpoint.
 
@@ -195,10 +195,10 @@ class SubAwardsSearch(AwardsSearch):
 
     def time_period(
         self,
-        start_date: Union[datetime.date, str],
-        end_date: Union[datetime.date, str],
+        start_date: datetime.date | str,
+        end_date: datetime.date | str,
         new_awards_only: bool = False,
-        date_type: Optional[str] = None,
+        date_type: str | None = None,
     ) -> SubAwardsSearch:
         """
         Filter subawards by a specific date range.

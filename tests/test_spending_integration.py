@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from usaspending import USASpendingClient
-from usaspending.resources.spending_resource import SpendingResource
 from usaspending.queries.spending_search import SpendingSearch
+from usaspending.resources.spending_resource import SpendingResource
 
 
 class TestSpendingIntegration:

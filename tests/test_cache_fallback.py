@@ -6,8 +6,9 @@ or other problems), the client gracefully falls back to making uncached
 requests to maintain functionality.
 """
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 from src.usaspending.exceptions import ValidationError
 
 
@@ -103,8 +104,8 @@ class TestCachingFallback:
 
     def test_api_errors_dont_trigger_duplicate_calls(self):
         """Test that API errors don't cause duplicate calls due to fallback logic."""
-        from src.usaspending.exceptions import APIError
         from src.usaspending.config import config
+        from src.usaspending.exceptions import APIError
 
         original_cache_enabled = config.cache_enabled
 
@@ -131,8 +132,8 @@ class TestCachingFallback:
 
     def test_http_errors_dont_trigger_duplicate_calls(self):
         """Test that HTTP errors don't cause duplicate calls due to fallback logic."""
-        from src.usaspending.exceptions import HTTPError
         from src.usaspending.config import config
+        from src.usaspending.exceptions import HTTPError
 
         original_cache_enabled = config.cache_enabled
 

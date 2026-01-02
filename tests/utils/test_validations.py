@@ -15,7 +15,6 @@ from usaspending.utils.validations import (
     validate_non_empty_string,
 )
 
-
 # ==============================================================================
 # Test Enums for parse_enum_value tests
 # ==============================================================================

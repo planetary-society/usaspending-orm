@@ -1,12 +1,12 @@
 """Tests for agency resource implementation."""
 
 import pytest
-
-from usaspending.resources.agency_resource import AgencyResource
-from usaspending.models.agency import Agency
-from usaspending.exceptions import ValidationError
-from usaspending.queries.agencies_search import AgenciesSearch
 from tests.mocks import MockUSASpendingClient
+
+from usaspending.exceptions import ValidationError
+from usaspending.models.agency import Agency
+from usaspending.queries.agencies_search import AgenciesSearch
+from usaspending.resources.agency_resource import AgencyResource
 
 
 class TestAgencyResourceInitialization:

@@ -1,6 +1,9 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional
+
+from typing import Any
+
 from titlecase import titlecase
+
 from ..utils.formatter import contracts_titlecase
 from .base_model import BaseModel
 
@@ -8,7 +11,7 @@ from .base_model import BaseModel
 class Location(BaseModel):
     """Location model for USASpending data."""
 
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: dict[str, Any]):
         """Initialize Location.
 
         Args:
@@ -18,7 +21,7 @@ class Location(BaseModel):
 
     # simple direct fields --------------------------------------------------
     @property
-    def address_line1(self) -> Optional[str]:
+    def address_line1(self) -> str | None:
         """First line of the address.
 
         Returns:
@@ -27,7 +30,7 @@ class Location(BaseModel):
         return self._format_location_string_property(self.get_value(["address_line1"]))
 
     @property
-    def address_line2(self) -> Optional[str]:
+    def address_line2(self) -> str | None:
         """Second line of the address.
 
         Returns:
@@ -36,7 +39,7 @@ class Location(BaseModel):
         return self._format_location_string_property(self.get_value(["address_line2"]))
 
     @property
-    def address_line3(self) -> Optional[str]:
+    def address_line3(self) -> str | None:
         """Third line of the address.
 
         Returns:
@@ -45,7 +48,7 @@ class Location(BaseModel):
         return self._format_location_string_property(self.get_value(["address_line3"]))
 
     @property
-    def city_name(self) -> Optional[str]:
+    def city_name(self) -> str | None:
         """Name of the city.
 
         Returns:
@@ -57,7 +60,7 @@ class Location(BaseModel):
         return titlecase(city_name)
 
     @property
-    def city(self) -> Optional[str]:
+    def city(self) -> str | None:
         """Alias for city_name.
 
         Returns:
@@ -66,7 +69,7 @@ class Location(BaseModel):
         return self.city_name
 
     @property
-    def state_name(self) -> Optional[str]:
+    def state_name(self) -> str | None:
         """Full name of the state.
 
         Returns:
@@ -78,7 +81,7 @@ class Location(BaseModel):
         return titlecase(state_name)
 
     @property
-    def country_name(self) -> Optional[str]:
+    def country_name(self) -> str | None:
         """Name of the country.
 
         Returns:
@@ -92,7 +95,7 @@ class Location(BaseModel):
         return country
 
     @property
-    def zip4(self) -> Optional[str]:
+    def zip4(self) -> str | None:
         """ZIP+4 postal code.
 
         Returns:
@@ -101,7 +104,7 @@ class Location(BaseModel):
         return self.get_value(["zip4"])
 
     @property
-    def county_name(self) -> Optional[str]:
+    def county_name(self) -> str | None:
         """Name of the county.
 
         Returns:
@@ -113,7 +116,7 @@ class Location(BaseModel):
         return titlecase(county_name)
 
     @property
-    def county_code(self) -> Optional[str]:
+    def county_code(self) -> str | None:
         """County code.
 
         Returns:
@@ -122,7 +125,7 @@ class Location(BaseModel):
         return self.get_value(["county_code"])
 
     @property
-    def congressional_code(self) -> Optional[str]:
+    def congressional_code(self) -> str | None:
         """Congressional district code.
 
         Returns:
@@ -131,7 +134,7 @@ class Location(BaseModel):
         return self.get_value(["congressional_code", "district"])
 
     @property
-    def foreign_province(self) -> Optional[str]:
+    def foreign_province(self) -> str | None:
         """Province name for foreign locations.
 
         Returns:
@@ -140,7 +143,7 @@ class Location(BaseModel):
         return self.get_value(["foreign_province"])
 
     @property
-    def foreign_postal_code(self) -> Optional[str]:
+    def foreign_postal_code(self) -> str | None:
         """Postal code for foreign locations.
 
         Returns:
@@ -150,7 +153,7 @@ class Location(BaseModel):
 
     # dual-source fields ----------------------------------------------------
     @property
-    def state_code(self) -> Optional[str]:
+    def state_code(self) -> str | None:
         """Two-letter state abbreviation.
 
         Returns:
@@ -159,7 +162,7 @@ class Location(BaseModel):
         return self.get_value(["state_code", "Place of Performance State Code"])
 
     @property
-    def country_code(self) -> Optional[str]:
+    def country_code(self) -> str | None:
         """Country code.
 
         Returns:
@@ -170,7 +173,7 @@ class Location(BaseModel):
         )
 
     @property
-    def zip5(self) -> Optional[str]:
+    def zip5(self) -> str | None:
         """5-digit ZIP code.
 
         Returns:
@@ -181,7 +184,7 @@ class Location(BaseModel):
 
     # convenience -----------------------------------------------------------
     @property
-    def district(self) -> Optional[str]:
+    def district(self) -> str | None:
         """Formatted district string (State-District).
 
         Returns:
@@ -191,7 +194,7 @@ class Location(BaseModel):
         return "-".join(pieces) or ""
 
     @property
-    def formatted_address(self) -> Optional[str]:
+    def formatted_address(self) -> str | None:
         """Full address formatted as a multi-line string.
 
         Returns:
@@ -209,7 +212,7 @@ class Location(BaseModel):
             lines.append(self.country_name)
         return "\n".join(lines) or None
 
-    def _format_location_string_property(self, text: str) -> Optional[str]:
+    def _format_location_string_property(self, text: str) -> str | None:
         """Format a location string with string check.
 
         Args:

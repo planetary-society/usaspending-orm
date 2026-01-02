@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from usaspending.models.subaward import SubAward
-from usaspending.models.recipient import Recipient
-from usaspending.models.location import Location
 from usaspending.models.award import Award
+from usaspending.models.location import Location
+from usaspending.models.recipient import Recipient
+from usaspending.models.subaward import SubAward
 
 
 class TestSubAwardModel:
@@ -26,7 +26,7 @@ class TestSubAwardModel:
             / "awards"
             / "search_results_subawards.json"
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path) as f:
             data = json.load(f)
         return data["results"][0]  # First subaward from the fixture
 
@@ -160,6 +160,7 @@ class TestSubAwardModel:
     def test_subaward_place_of_performance(self, subaward_data, mock_usa_client):
         """Test SubAward place_of_performance property."""
         from titlecase import titlecase
+
         from usaspending.utils.formatter import contracts_titlecase
 
         subaward = SubAward(subaward_data, mock_usa_client)

@@ -1,10 +1,9 @@
 """Tests for SubAgencyQuery query implementation."""
 
 import pytest
-from usaspending.queries.sub_agency_query import SubAgencyQuery
+
 from usaspending.exceptions import ValidationError
-from usaspending.models.award_types import CONTRACT_CODES, GRANT_CODES
-from tests.mocks.mock_client import MockUSASpendingClient
+from usaspending.queries.sub_agency_query import SubAgencyQuery
 
 
 class TestSubAgencyQueryInitialization:

@@ -1,18 +1,20 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional, TYPE_CHECKING
+
 from datetime import date
-from functools import cached_property
 from decimal import Decimal
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, ClassVar
+
 from ..utils.formatter import (
     contracts_titlecase,
     smart_sentence_case,
-    to_decimal,
     to_date,
+    to_decimal,
 )
-from .base_model import ClientAwareModel
-from .recipient import Recipient
-from .location import Location
 from .award import Award
+from .base_model import ClientAwareModel
+from .location import Location
+from .recipient import Recipient
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -46,7 +48,7 @@ class SubAward(ClientAwareModel):
         ...     print(f"{subaward.sub_awardee_name}: ${subaward.sub_award_amount:,.2f}")
     """
 
-    def __init__(self, data: Dict[str, Any], client: USASpendingClient):
+    def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize SubAward instance.
 
         Args:
@@ -56,7 +58,7 @@ class SubAward(ClientAwareModel):
         super().__init__(data, client)
 
     # Contract Subaward fields
-    CONTRACT_SUBAWARD_FIELDS = [
+    CONTRACT_SUBAWARD_FIELDS: ClassVar[list[str]] = [
         "Awarding Agency",
         "Awarding Sub Agency",
         "NAICS",
@@ -82,7 +84,7 @@ class SubAward(ClientAwareModel):
     ]
 
     # Grant Subaward fields
-    GRANT_SUBAWARD_FIELDS = [
+    GRANT_SUBAWARD_FIELDS: ClassVar[list[str]] = [
         "Assistance Listing",
         "Awarding Agency",
         "Awarding Sub Agency",
@@ -107,7 +109,7 @@ class SubAward(ClientAwareModel):
     ]
 
     @cached_property
-    def place_of_performance(self) -> Optional[Location]:
+    def place_of_performance(self) -> Location | None:
         """Place of performance details for the subaward.
 
         Returns:
@@ -120,7 +122,7 @@ class SubAward(ClientAwareModel):
             return None
 
     @cached_property
-    def recipient(self) -> Optional[Recipient]:
+    def recipient(self) -> Recipient | None:
         """Sub-award recipient and location.
 
         Returns:
@@ -144,7 +146,7 @@ class SubAward(ClientAwareModel):
         return recipient
 
     @cached_property
-    def parent_award(self) -> Optional[Award]:
+    def parent_award(self) -> Award | None:
         """Prime award associated with this subaward.
 
         Returns:
@@ -159,7 +161,7 @@ class SubAward(ClientAwareModel):
             return None
 
     @property
-    def id(self) -> Optional[str]:
+    def id(self) -> str | None:
         """Internal subaward identifier.
 
         Returns:
@@ -168,7 +170,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("internal_id")
 
     @property
-    def sub_award_id(self) -> Optional[str]:
+    def sub_award_id(self) -> str | None:
         """Subaward identifier.
 
         Returns:
@@ -177,7 +179,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("Sub-Award ID")
 
     @property
-    def sub_award_type(self) -> Optional[str]:
+    def sub_award_type(self) -> str | None:
         """Type of subaward (e.g., sub-contract, sub-grant).
 
         Returns:
@@ -186,7 +188,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("Sub-Award Type")
 
     @property
-    def sub_awardee_name(self) -> Optional[str]:
+    def sub_awardee_name(self) -> str | None:
         """Name of the subaward recipient.
 
         Returns:
@@ -196,7 +198,7 @@ class SubAward(ClientAwareModel):
         return contracts_titlecase(name) if name else None
 
     @property
-    def sub_award_date(self) -> Optional[date]:
+    def sub_award_date(self) -> date | None:
         """Date the subaward was issued.
 
         Returns:
@@ -205,7 +207,7 @@ class SubAward(ClientAwareModel):
         return to_date(self.get_value("Sub-Award Date"))
 
     @property
-    def sub_award_amount(self) -> Optional[Decimal]:
+    def sub_award_amount(self) -> Decimal | None:
         """Amount of the subaward.
 
         Returns:
@@ -214,7 +216,7 @@ class SubAward(ClientAwareModel):
         return to_decimal(self.get_value("Sub-Award Amount"))
 
     @property
-    def awarding_agency(self) -> Optional[str]:
+    def awarding_agency(self) -> str | None:
         """Name of the awarding agency.
 
         Returns:
@@ -223,7 +225,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("Awarding Agency")
 
     @property
-    def awarding_sub_agency(self) -> Optional[str]:
+    def awarding_sub_agency(self) -> str | None:
         """Name of the awarding sub-agency.
 
         Returns:
@@ -232,7 +234,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("Awarding Sub Agency")
 
     @property
-    def prime_award_id(self) -> Optional[str]:
+    def prime_award_id(self) -> str | None:
         """Prime award identifier (PIID/FAIN/URI).
 
         Returns:
@@ -241,7 +243,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("Prime Award ID")
 
     @property
-    def prime_recipient_name(self) -> Optional[str]:
+    def prime_recipient_name(self) -> str | None:
         """Name of the prime award recipient.
 
         Returns:
@@ -251,7 +253,7 @@ class SubAward(ClientAwareModel):
         return contracts_titlecase(name) if name else None
 
     @property
-    def prime_award_recipient_id(self) -> Optional[str]:
+    def prime_award_recipient_id(self) -> str | None:
         """Prime award recipient identifier.
 
         Returns:
@@ -260,7 +262,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("prime_award_recipient_id")
 
     @property
-    def sub_award_description(self) -> Optional[str]:
+    def sub_award_description(self) -> str | None:
         """Description of the subaward.
 
         Returns:
@@ -270,7 +272,7 @@ class SubAward(ClientAwareModel):
         return smart_sentence_case(desc) if desc else None
 
     @property
-    def subaward_description_sorted(self) -> Optional[str]:
+    def subaward_description_sorted(self) -> str | None:
         """Sorted version of the subaward description for API internal use.
 
         Returns:
@@ -279,7 +281,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("subaward_description_sorted")
 
     @property
-    def sub_recipient_uei(self) -> Optional[str]:
+    def sub_recipient_uei(self) -> str | None:
         """Sub-recipient Unique Entity Identifier.
 
         Returns:
@@ -288,7 +290,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("Sub-Recipient UEI")
 
     @property
-    def prime_award_recipient_uei(self) -> Optional[str]:
+    def prime_award_recipient_uei(self) -> str | None:
         """Prime award recipient Unique Entity Identifier.
 
         Returns:
@@ -297,7 +299,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("Prime Award Recipient UEI")
 
     @property
-    def prime_award_generated_internal_id(self) -> Optional[str]:
+    def prime_award_generated_internal_id(self) -> str | None:
         """USASpending-generated unique identifier for the prime award.
 
         Returns:
@@ -306,7 +308,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("prime_award_generated_internal_id")
 
     @property
-    def prime_award_internal_id(self) -> Optional[int]:
+    def prime_award_internal_id(self) -> int | None:
         """Internal database ID for the prime award.
 
         Returns:
@@ -316,7 +318,7 @@ class SubAward(ClientAwareModel):
         return int(val) if val is not None else None
 
     @property
-    def naics(self) -> Optional[str]:
+    def naics(self) -> str | None:
         """NAICS code for contract subawards.
 
         Returns:
@@ -325,7 +327,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("NAICS")
 
     @property
-    def psc(self) -> Optional[str]:
+    def psc(self) -> str | None:
         """Product Service Code for contract subawards.
 
         Returns:
@@ -334,7 +336,7 @@ class SubAward(ClientAwareModel):
         return self.get_value("PSC")
 
     @property
-    def assistance_listing(self) -> Optional[str]:
+    def assistance_listing(self) -> str | None:
         """Assistance listing for grant subawards.
 
         Returns:
@@ -351,7 +353,7 @@ class SubAward(ClientAwareModel):
         return f"<SubAward {self.sub_award_id or '?'} {self.sub_awardee_name or '?'} ${self.sub_award_amount or 0:,.2f}>"
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Alias for sub_awardee_name.
 
         Returns:
@@ -360,7 +362,7 @@ class SubAward(ClientAwareModel):
         return self.sub_awardee_name
 
     @property
-    def amount(self) -> Optional[float]:
+    def amount(self) -> float | None:
         """Alias for sub_award_amount.
 
         Returns:
@@ -369,7 +371,7 @@ class SubAward(ClientAwareModel):
         return self.sub_award_amount
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """Alias for sub_award_description.
 
         Returns:
@@ -378,7 +380,7 @@ class SubAward(ClientAwareModel):
         return self.sub_award_description
 
     @property
-    def award_date(self) -> Optional[date]:
+    def award_date(self) -> date | None:
         """Alias for sub_award_date.
 
         Returns:

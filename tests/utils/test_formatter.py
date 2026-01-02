@@ -1,12 +1,13 @@
 """Tests for formatter utility functions."""
 
+from unittest.mock import mock_open, patch
+
 import pytest
-from unittest.mock import patch, mock_open
 import yaml
 
 from usaspending.utils.formatter import (
-    contracts_titlecase,
     TextFormatter,
+    contracts_titlecase,
     to_date,
 )
 

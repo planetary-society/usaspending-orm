@@ -171,7 +171,7 @@ class TestFundingModel:
         try:
             repr(funding)
         except Exception as e:
-            assert False, f"Repr with missing data failed with exception: {e}"
+            raise AssertionError(f"Repr with missing data failed with exception: {e}") from e
 
     def test_funding_repr_with_partial_data(self, mock_usa_client):
         """Test string representation with partial data."""

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..exceptions import ValidationError
-from .query_builder import QueryBuilder
 from ..logging_config import USASpendingLogger
 from ..utils.validations import validate_non_empty_string
+from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -37,7 +37,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
     """
 
     # Map user-friendly sort field names to API field names
-    SORT_FIELD_MAP = {
+    SORT_FIELD_MAP: ClassVar[dict[str, str]] = {
         "award_type": "award_type",
         "description": "description",
         "funding_agency": "funding_agency",
@@ -50,7 +50,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         "last_date_to_order": "last_date_to_order",
     }
 
-    def __init__(self, client: "USASpendingClient", award_id: str):
+    def __init__(self, client: USASpendingClient, award_id: str):
         """Initialize the IDVChildAwardsSearch query builder.
 
         Args:
@@ -69,7 +69,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         """The API endpoint for this query."""
         return "/idvs/awards/"
 
-    def _clone(self) -> "IDVChildAwardsSearch":
+    def _clone(self) -> IDVChildAwardsSearch:
         """Creates an immutable copy of the query builder."""
         clone = IDVChildAwardsSearch(self._client, self._award_id)
         clone._total_limit = self._total_limit
@@ -79,7 +79,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         clone._idv_award_type = self._idv_award_type
         return clone
 
-    def _build_payload(self, page: int) -> Dict[str, Any]:
+    def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload."""
         payload = {
             "award_id": self._award_id,
@@ -91,7 +91,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         }
         return payload
 
-    def _transform_result(self, result: Dict[str, Any]) -> "Award":
+    def _transform_result(self, result: dict[str, Any]) -> Award:
         """Transforms a single API result item into an Award model.
 
         The child awards are contracts/delivery orders, so we use the
@@ -127,7 +127,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
     # Filter Methods
     # ==========================================================================
 
-    def order_by(self, field: str, direction: str = "desc") -> "IDVChildAwardsSearch":
+    def order_by(self, field: str, direction: str = "desc") -> IDVChildAwardsSearch:
         """Set the sort order for results.
 
         Args:
@@ -166,7 +166,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         clone._sort_order = direction
         return clone
 
-    def award_type(self, type_filter: str) -> "IDVChildAwardsSearch":
+    def award_type(self, type_filter: str) -> IDVChildAwardsSearch:
         """Filter by award type.
 
         Args:

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from usaspending.queries.spending_search import SpendingSearch
-from usaspending.models.recipient_spending import RecipientSpending
-from usaspending.models.district_spending import DistrictSpending
 from usaspending.exceptions import ValidationError
+from usaspending.models.district_spending import DistrictSpending
+from usaspending.models.recipient_spending import RecipientSpending
+from usaspending.queries.spending_search import SpendingSearch
 
 
 class TestSpendingSearchInitialization:

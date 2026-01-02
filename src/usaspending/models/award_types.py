@@ -126,7 +126,7 @@ def get_award_group(value: str) -> str:
         singular = group_name.rstrip("s")
 
         # Match group name (singular or plural)
-        if val == group_name or val == singular:
+        if val in (group_name, singular):
             return singular
         # Match type code
         if val.upper() in codes:

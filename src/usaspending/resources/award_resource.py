@@ -1,14 +1,15 @@
 """Award resource implementation."""
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
 
-from .base_resource import BaseResource
+from typing import TYPE_CHECKING
+
 from ..logging_config import USASpendingLogger
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
-    from ..queries.awards_search import AwardsSearch
     from ..models.award import Award
+    from ..queries.awards_search import AwardsSearch
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -19,7 +20,7 @@ class AwardResource(BaseResource):
     Provides access to award search and retrieval endpoints.
     """
 
-    def find_by_generated_id(self, generated_award_id: str) -> "Award":
+    def find_by_generated_id(self, generated_award_id: str) -> Award:
         """Retrieve a single award by the system's internally generated
         award entry ID (e.g. "CONT_AWD_80GSFC18C0008_8000_-NONE-_-NONE-")
 
@@ -38,7 +39,7 @@ class AwardResource(BaseResource):
 
         return AwardQuery(self._client).find_by_generated_id(generated_award_id)
 
-    def find_by_award_id(self, award_id: str) -> Optional["Award"]:
+    def find_by_award_id(self, award_id: str) -> Award | None:
         """Find an award by its PIID or FAIN unique identifier.
         Args:
             award_id: Unique identifier for the award (PIID or FAIN)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from .spending import Spending
 
@@ -17,7 +17,7 @@ class DistrictSpending(Spending):
     district-specific parsing and display logic.
     """
 
-    def __init__(self, data: dict, client: Optional["USASpendingClient"] = None):
+    def __init__(self, data: dict, client: USASpendingClient | None = None):
         """Initialize DistrictSpending model.
 
         Args:
@@ -27,7 +27,7 @@ class DistrictSpending(Spending):
         super().__init__(data, client)
 
     @property
-    def district_code(self) -> Optional[str]:
+    def district_code(self) -> str | None:
         """Congressional district code.
 
         Returns:
@@ -36,7 +36,7 @@ class DistrictSpending(Spending):
         return self.code
 
     @property
-    def state_code(self) -> Optional[str]:
+    def state_code(self) -> str | None:
         """Extract state code from district name if available.
 
         District names typically follow format like 'TX-12' or 'MS-MULTIPLE DISTRICTS'.
@@ -52,7 +52,7 @@ class DistrictSpending(Spending):
         return None
 
     @property
-    def district_number(self) -> Optional[str]:
+    def district_number(self) -> str | None:
         """Extract district number from district name if available.
 
         Returns the numeric part or special designation like 'MULTIPLE DISTRICTS'.

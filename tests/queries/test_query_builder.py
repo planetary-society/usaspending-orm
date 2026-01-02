@@ -8,8 +8,6 @@ Tests cover:
 
 from __future__ import annotations
 
-import pytest
-
 from tests.mocks.mock_client import MockUSASpendingClient
 
 

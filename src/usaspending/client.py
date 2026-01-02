@@ -1,30 +1,31 @@
 """Main USASpending client."""
 
 from __future__ import annotations
+
 import time
 import uuid
-from typing import Optional, Dict, Any, TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-import requests
 import cachier
+import requests
 
 from .config import config
-from .exceptions import HTTPError, APIError, ValidationError, RateLimitError
+from .exceptions import APIError, HTTPError, RateLimitError, ValidationError
 from .logging_config import USASpendingLogger, log_api_request, log_api_response
 
 if TYPE_CHECKING:
-    from .resources.base_resource import BaseResource
+    from .resources.agency_resource import AgencyResource
+    from .resources.award_accounts_resource import AwardAccountsResource
     from .resources.award_resource import AwardResource
-    from .resources.transactions_resource import TransactionsResource
+    from .resources.base_resource import BaseResource
+    from .resources.download_resource import DownloadResource
+    from .resources.funding_resource import FundingResource
     from .resources.recipients_resource import RecipientsResource
     from .resources.spending_resource import SpendingResource
-    from .resources.funding_resource import FundingResource
-    from .resources.download_resource import DownloadResource
     from .resources.subawards_resource import SubAwardsResource
-    from .resources.agency_resource import AgencyResource
     from .resources.tas_resource import TASResource
-    from .resources.award_accounts_resource import AwardAccountsResource
+    from .resources.transactions_resource import TransactionsResource
     from .utils.rate_limit import RateLimiter
     from .utils.retry import RetryHandler
 
@@ -60,7 +61,7 @@ def _freeze_cache_value(value: Any) -> Any:
     return ("repr", repr(value))
 
 
-def _cache_key(args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Tuple[Any, Any]:
+def _cache_key(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, Any]:
     """Build a stable cache key for cachier from args and kwargs."""
     return (_freeze_cache_value(args), _freeze_cache_value(kwargs))
 
@@ -90,11 +91,11 @@ class USASpendingClient:
         self._cache_namespace = uuid.uuid4().hex
 
         # Lazy-loaded components
-        self._rate_limiter: Optional[RateLimiter] = None
-        self._retry_handler: Optional[RetryHandler] = None
+        self._rate_limiter: RateLimiter | None = None
+        self._retry_handler: RetryHandler | None = None
 
         # Resource cache
-        self._resources: Dict[str, BaseResource] = {}
+        self._resources: dict[str, BaseResource] = {}
 
         logger.debug("USASpending client initialized successfully")
 
@@ -145,7 +146,7 @@ class USASpendingClient:
         return self._retry_handler
 
     @property
-    def awards(self) -> "AwardResource":
+    def awards(self) -> AwardResource:
         """Access award endpoints."""
         if "awards" not in self._resources:
             from .resources.award_resource import AwardResource
@@ -154,7 +155,7 @@ class USASpendingClient:
         return self._resources["awards"]
 
     @property
-    def downloads(self) -> "DownloadResource":
+    def downloads(self) -> DownloadResource:
         """
         Access download operations for detailed award data.
 
@@ -167,7 +168,7 @@ class USASpendingClient:
         return self._resources["downloads"]
 
     @property
-    def recipients(self) -> "RecipientsResource":
+    def recipients(self) -> RecipientsResource:
         """Access recipient endpoints."""
         if "recipients" not in self._resources:
             from .resources.recipients_resource import RecipientsResource
@@ -176,7 +177,7 @@ class USASpendingClient:
         return self._resources["recipients"]
 
     @property
-    def transactions(self) -> "TransactionsResource":
+    def transactions(self) -> TransactionsResource:
         """Access transaction endpoints."""
         if "transactions" not in self._resources:
             from .resources.transactions_resource import TransactionsResource
@@ -185,7 +186,7 @@ class USASpendingClient:
         return self._resources["transactions"]
 
     @property
-    def spending(self) -> "SpendingResource":
+    def spending(self) -> SpendingResource:
         """Access spending by category endpoints."""
         if "spending" not in self._resources:
             from .resources.spending_resource import SpendingResource
@@ -194,7 +195,7 @@ class USASpendingClient:
         return self._resources["spending"]
 
     @property
-    def funding(self) -> "FundingResource":
+    def funding(self) -> FundingResource:
         """Access funding endpoints."""
         if "funding" not in self._resources:
             from .resources.funding_resource import FundingResource
@@ -203,7 +204,7 @@ class USASpendingClient:
         return self._resources["funding"]
 
     @property
-    def subawards(self) -> "SubAwardsResource":
+    def subawards(self) -> SubAwardsResource:
         """Access subaward endpoints."""
         if "subawards" not in self._resources:
             from .resources.subawards_resource import SubAwardsResource
@@ -212,7 +213,7 @@ class USASpendingClient:
         return self._resources["subawards"]
 
     @property
-    def agencies(self) -> "AgencyResource":
+    def agencies(self) -> AgencyResource:
         """Access agency endpoints."""
         if "agencies" not in self._resources:
             from .resources.agency_resource import AgencyResource
@@ -221,7 +222,7 @@ class USASpendingClient:
         return self._resources["agencies"]
 
     @property
-    def tas(self) -> "TASResource":
+    def tas(self) -> TASResource:
         """Access TAS (Treasury Account Symbol) endpoints.
 
         Provides access to the TAS filter tree hierarchy for discovering
@@ -244,7 +245,7 @@ class USASpendingClient:
         return self._resources["tas"]
 
     @property
-    def award_accounts(self) -> "AwardAccountsResource":
+    def award_accounts(self) -> AwardAccountsResource:
         """Access award federal accounts endpoints.
 
         Provides access to federal accounts associated with specific awards,
@@ -270,10 +271,10 @@ class USASpendingClient:
         self,
         method: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        json: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """A cacheable HTTP request method with fallback for cache failures."""
         try:
             # Try cached version first if caching is enabled
@@ -320,10 +321,10 @@ class USASpendingClient:
         cache_namespace: str,
         method: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        json: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Internal cached request method.
 
         Args:
@@ -342,10 +343,10 @@ class USASpendingClient:
         self,
         method: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        json: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make HTTP request with retry and rate limiting.
 
         Args:
@@ -433,7 +434,7 @@ class USASpendingClient:
                         duration,
                         error_msg_with_context,
                     )
-                    raise APIError(error_msg, status_code=400)
+                    raise APIError(error_msg, status_code=400) from None
 
             # Handle other HTTP errors
             try:
@@ -450,7 +451,7 @@ class USASpendingClient:
                 raise HTTPError(
                     f"HTTP {response.status_code}: {e}",
                     status_code=response.status_code,
-                )
+                ) from e
 
             # Parse JSON response
             try:
@@ -465,7 +466,7 @@ class USASpendingClient:
                     duration,
                     error_msg_with_context,
                 )
-                raise APIError(f"Invalid JSON response: {e}")
+                raise APIError(f"Invalid JSON response: {e}") from e
 
             # Check for API errors (fallback for other error patterns)
             # Note: Don't treat "message" alone as an error indicator since some endpoints
@@ -537,6 +538,7 @@ class USASpendingClient:
             DownloadError: If download fails
         """
         import os
+
         from .exceptions import DownloadError
 
         # Construct full URL
@@ -564,7 +566,7 @@ class USASpendingClient:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:
                             f.write(chunk)
-            except IOError as e:
+            except OSError as e:
                 raise DownloadError(
                     f"Error writing file to disk: {e}",
                     file_name=os.path.basename(destination_path),
@@ -619,7 +621,7 @@ class USASpendingClient:
             self._request_count = 0
             logger.info(f"Session reset after {old_count} requests")
 
-    def __enter__(self) -> "USASpendingClient":
+    def __enter__(self) -> USASpendingClient:
         """Enter context manager.
 
         Returns:

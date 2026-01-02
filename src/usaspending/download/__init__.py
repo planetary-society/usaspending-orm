@@ -2,7 +2,7 @@
 
 """Download management utilities for USASpending API client."""
 
-from .manager import DownloadManager
 from .job import DownloadJob
+from .manager import DownloadManager
 
-__all__ = ["DownloadManager", "DownloadJob"]
+__all__ = ["DownloadJob", "DownloadManager"]

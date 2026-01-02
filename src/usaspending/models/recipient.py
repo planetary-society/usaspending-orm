@@ -1,14 +1,14 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union
-from functools import cached_property
+
 import re
 from decimal import Decimal
-
-from .lazy_record import LazyRecord
-from .location import Location
-from ..utils.formatter import to_decimal, contracts_titlecase
+from functools import cached_property
+from typing import TYPE_CHECKING, Any
 
 from ..logging_config import USASpendingLogger
+from ..utils.formatter import contracts_titlecase, to_decimal
+from .lazy_record import LazyRecord
+from .location import Location
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -39,7 +39,7 @@ class Recipient(LazyRecord):
 
     def __init__(
         self,
-        data_or_id: Union[Dict[str, Any], str],
+        data_or_id: dict[str, Any] | str,
         client: USASpendingClient,
     ):
         """Initialize Recipient.
@@ -60,7 +60,7 @@ class Recipient(LazyRecord):
 
         super().__init__(raw, client)
 
-    def _fetch_details(self) -> Optional[Dict[str, Any]]:
+    def _fetch_details(self) -> dict[str, Any] | None:
         """Fetch full recipient details from the API.
 
         Returns:
@@ -116,7 +116,7 @@ class Recipient(LazyRecord):
         return f"{base}-{letter}" if letter else base
 
     @property
-    def recipient_id(self) -> Optional[str]:
+    def recipient_id(self) -> str | None:
         """Recipient identifier (hash).
 
         Returns:
@@ -125,7 +125,7 @@ class Recipient(LazyRecord):
         return self.get_value(["recipient_id", "recipient_hash"], default=None)
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Recipient name.
 
         Returns:
@@ -136,7 +136,7 @@ class Recipient(LazyRecord):
         )
 
     @property
-    def alternate_names(self) -> List[Optional[str]]:
+    def alternate_names(self) -> list[str | None]:
         """List of alternate names for the recipient.
 
         Returns:
@@ -151,7 +151,7 @@ class Recipient(LazyRecord):
             return []
 
     @property
-    def duns(self) -> Optional[str]:
+    def duns(self) -> str | None:
         """DUNS number.
 
         Returns:
@@ -162,7 +162,7 @@ class Recipient(LazyRecord):
         )
 
     @property
-    def uei(self) -> Optional[str]:
+    def uei(self) -> str | None:
         """Unique Entity Identifier (UEI).
 
         Returns:
@@ -171,7 +171,7 @@ class Recipient(LazyRecord):
         return self._lazy_get("uei", "recipient_uei")
 
     @cached_property
-    def parent(self) -> Optional["Recipient"]:
+    def parent(self) -> Recipient | None:
         """Parent recipient.
 
         Returns:
@@ -195,7 +195,7 @@ class Recipient(LazyRecord):
             )
 
     @cached_property
-    def parents(self) -> List["Recipient"]:
+    def parents(self) -> list[Recipient]:
         """List of parent recipients.
 
         Returns:
@@ -224,7 +224,7 @@ class Recipient(LazyRecord):
         return plist
 
     @property
-    def business_types(self) -> List[str]:
+    def business_types(self) -> list[str]:
         """Business types/categories.
 
         Returns:
@@ -233,7 +233,7 @@ class Recipient(LazyRecord):
         return self._lazy_get("business_types", "business_categories", default=[])
 
     @property
-    def business_categories(self) -> List[str]:
+    def business_categories(self) -> list[str]:
         """Alias for business_types.
 
         Returns:
@@ -242,7 +242,7 @@ class Recipient(LazyRecord):
         return self.business_types
 
     @cached_property
-    def location(self) -> Optional[Location]:
+    def location(self) -> Location | None:
         """Recipient location.
 
         Returns:
@@ -252,7 +252,7 @@ class Recipient(LazyRecord):
         return Location(data) if data else None
 
     @property
-    def total_transaction_amount(self) -> Optional[Decimal]:
+    def total_transaction_amount(self) -> Decimal | None:
         """Total transaction amount.
 
         Returns:
@@ -261,7 +261,7 @@ class Recipient(LazyRecord):
         return to_decimal(self._lazy_get("total_transaction_amount"))
 
     @property
-    def total_transactions(self) -> Optional[int]:
+    def total_transactions(self) -> int | None:
         """Total number of transactions.
 
         Returns:
@@ -270,7 +270,7 @@ class Recipient(LazyRecord):
         return self._lazy_get("total_transactions")
 
     @property
-    def total_face_value_loan_amount(self) -> Optional[Decimal]:
+    def total_face_value_loan_amount(self) -> Decimal | None:
         """Total face value of loan amount.
 
         Returns:
@@ -279,7 +279,7 @@ class Recipient(LazyRecord):
         return to_decimal(self._lazy_get("total_face_value_loan_amount"))
 
     @property
-    def total_face_value_loan_transactions(self) -> Optional[int]:
+    def total_face_value_loan_transactions(self) -> int | None:
         """Total number of loan transactions.
 
         Returns:

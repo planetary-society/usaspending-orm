@@ -1,10 +1,11 @@
 """Funding resource implementation."""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
-from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
     from ..queries.funding_search import FundingSearch
@@ -18,7 +19,7 @@ class FundingResource(BaseResource):
     Provides access to federal account funding data for awards.
     """
 
-    def award_id(self, award_id: str) -> "FundingSearch":
+    def award_id(self, award_id: str) -> FundingSearch:
         """Create a funding search query for a specific award.
 
         Args:

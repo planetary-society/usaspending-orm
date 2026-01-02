@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator, Sequence
 from typing import (
     Any,
     Callable,
-    Iterable,
-    Iterator,
-    Optional,
-    Sequence,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -39,7 +35,7 @@ class FilterAdapter:
     def __init__(
         self,
         resolve_field: Callable[[Any, str], Any],
-        keyword_fields: Optional[Sequence[str]] = None,
+        keyword_fields: Sequence[str] | None = None,
     ) -> None:
         """Initialize the adapter.
 
@@ -133,8 +129,8 @@ class ClientSideQueryBuilder(BaseQuery[T]):
     def __init__(
         self,
         items: Iterable[Any],
-        transform: Optional[Callable[[Any], T]] = None,
-        keyword_fields: Optional[Sequence[str]] = None,
+        transform: Callable[[Any], T] | None = None,
+        keyword_fields: Sequence[str] | None = None,
     ) -> None:
         """Initialize the client-side query builder.
 
@@ -228,10 +224,9 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         items = self._apply_filters(items)
         items = self._apply_ordering(items)
         items = self._apply_limits(items)
-        for item in items:
-            yield item
+        yield from items
 
-    def __getitem__(self, key: Union[int, slice]) -> Union[T, list[T]]:
+    def __getitem__(self, key: int | slice) -> T | list[T]:
         """Support list-like indexing and slicing.
 
         Args:
@@ -319,8 +314,5 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         """Resolve a field on a dict or object instance."""
         value = item
         for part in field.split("."):
-            if isinstance(value, dict):
-                value = value.get(part)
-            else:
-                value = getattr(value, part, None)
+            value = value.get(part) if isinstance(value, dict) else getattr(value, part, None)
         return value

@@ -6,11 +6,11 @@ import json
 from pathlib import Path
 
 import pytest
+from tests.mocks.mock_client import MockUSASpendingClient
 
 from usaspending.exceptions import ValidationError
 from usaspending.models.subaward import SubAward
 from usaspending.queries.subawards_search import SubAwardsSearch
-from tests.mocks.mock_client import MockUSASpendingClient
 
 
 class TestSubAwardsSearch:
@@ -25,7 +25,7 @@ class TestSubAwardsSearch:
             / "awards"
             / "search_results_subawards.json"
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path) as f:
             return json.load(f)
 
     def test_subawards_search_initialization(self, mock_usa_client):

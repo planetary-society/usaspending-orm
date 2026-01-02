@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-
-from usaspending.models.funding import Funding
-from usaspending.models.award import Award
 from tests.mocks.mock_client import MockUSASpendingClient
 from tests.utils import assert_decimal_equal
+from usaspending.models.award import Award
+from usaspending.models.funding import Funding
 
 
 class TestClientFunding:

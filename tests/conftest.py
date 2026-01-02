@@ -1,9 +1,10 @@
 """Shared test fixtures for USASpending API tests."""
 
-import json
 import copy
-import pytest
+import json
 from pathlib import Path
+
+import pytest
 
 from tests.mocks import MockUSASpendingClient
 from usaspending.config import config

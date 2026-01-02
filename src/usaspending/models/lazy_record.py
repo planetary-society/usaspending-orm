@@ -1,7 +1,7 @@
 # usaspending/models/lazy_record.py
 from __future__ import annotations
 
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .base_model import ClientAwareModel
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class LazyRecord(ClientAwareModel):
     """Enhanced LazyRecord that maintains client reference."""
 
-    def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
+    def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize LazyRecord.
 
         Args:
@@ -52,7 +52,7 @@ class LazyRecord(ClientAwareModel):
         """
         self._ensure_details()
 
-    def _fetch_details(self) -> Optional[Dict[str, Any]]:
+    def _fetch_details(self) -> dict[str, Any] | None:
         """Fetch details from the source.
 
         Override this method in subclasses to implement the specific

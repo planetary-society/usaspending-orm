@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
-from typing import Dict, Any, Optional, TYPE_CHECKING
 from decimal import Decimal
+from typing import TYPE_CHECKING, Any
 
+from ..utils.formatter import round_to_millions, to_decimal
 from .base_model import ClientAwareModel
-from ..utils.formatter import to_decimal, round_to_millions
 
 if TYPE_CHECKING:
+    from ..client import USASpendingClient
     from .agency import Agency
     from .federal_account import FederalAccount
-    from ..client import USASpendingClient
 
 
 class Funding(ClientAwareModel):
     """Represents federal account funding data for an award."""
 
-    def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
+    def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize Funding instance.
 
         Args:
@@ -27,7 +27,7 @@ class Funding(ClientAwareModel):
         super().__init__(data, client)
 
     @property
-    def transaction_obligated_amount(self) -> Optional[Decimal]:
+    def transaction_obligated_amount(self) -> Decimal | None:
         """Amount obligated for this funding record.
 
         Returns:
@@ -36,7 +36,7 @@ class Funding(ClientAwareModel):
         return to_decimal(self.get_value("transaction_obligated_amount", default=0.0))
 
     @property
-    def gross_outlay_amount(self) -> Optional[Decimal]:
+    def gross_outlay_amount(self) -> Decimal | None:
         """Gross outlay amount for this funding record.
 
         Returns:
@@ -45,7 +45,7 @@ class Funding(ClientAwareModel):
         return to_decimal(self.get_value("gross_outlay_amount", default=0.0))
 
     @property
-    def disaster_emergency_fund_code(self) -> Optional[str]:
+    def disaster_emergency_fund_code(self) -> str | None:
         """Code indicating whether funding is associated with a disaster.
 
         Returns:
@@ -54,7 +54,7 @@ class Funding(ClientAwareModel):
         return self.get_value("disaster_emergency_fund_code")
 
     @property
-    def federal_account_code(self) -> Optional[str]:
+    def federal_account_code(self) -> str | None:
         """Identifier of the federal account.
 
         Returns:
@@ -63,7 +63,7 @@ class Funding(ClientAwareModel):
         return self.get_value("federal_account")
 
     @property
-    def federal_account(self) -> Optional["FederalAccount"]:
+    def federal_account(self) -> FederalAccount | None:
         """Retrieve the FederalAccount object for this funding record.
 
         Returns:
@@ -92,7 +92,7 @@ class Funding(ClientAwareModel):
         )
 
     @property
-    def account_title(self) -> Optional[str]:
+    def account_title(self) -> str | None:
         """Federal account title.
 
         Returns:
@@ -101,7 +101,7 @@ class Funding(ClientAwareModel):
         return self.get_value("account_title")
 
     @property
-    def funding_agency_name(self) -> Optional[str]:
+    def funding_agency_name(self) -> str | None:
         """Name of the funding agency.
 
         Returns:
@@ -110,7 +110,7 @@ class Funding(ClientAwareModel):
         return self.get_value("funding_agency_name")
 
     @property
-    def funding_agency_id(self) -> Optional[int]:
+    def funding_agency_id(self) -> int | None:
         """Internal surrogate identifier of the funding agency.
 
         Returns:
@@ -120,7 +120,7 @@ class Funding(ClientAwareModel):
         return int(value) if value is not None else None
 
     @property
-    def funding_toptier_agency_id(self) -> Optional[str]:
+    def funding_toptier_agency_id(self) -> str | None:
         """Top-tier funding agency identifier.
 
         Returns:
@@ -130,7 +130,7 @@ class Funding(ClientAwareModel):
         return str(value) if value is not None else None
 
     @property
-    def funding_agency_slug(self) -> Optional[str]:
+    def funding_agency_slug(self) -> str | None:
         """URL-friendly funding agency identifier.
 
         Returns:
@@ -139,7 +139,7 @@ class Funding(ClientAwareModel):
         return self.get_value("funding_agency_slug")
 
     @property
-    def funding_agency(self) -> Optional["Agency"]:
+    def funding_agency(self) -> Agency | None:
         """Retrieve the Agency object for the funding agency.
 
         Constructs an Agency from the existing Funding data without making
@@ -164,7 +164,7 @@ class Funding(ClientAwareModel):
         return Agency(data=data, client=self._client)
 
     @property
-    def awarding_agency_name(self) -> Optional[str]:
+    def awarding_agency_name(self) -> str | None:
         """Name of the awarding agency.
 
         Returns:
@@ -173,7 +173,7 @@ class Funding(ClientAwareModel):
         return self.get_value("awarding_agency_name")
 
     @property
-    def awarding_agency_id(self) -> Optional[int]:
+    def awarding_agency_id(self) -> int | None:
         """Internal surrogate identifier of the awarding agency.
 
         Returns:
@@ -183,7 +183,7 @@ class Funding(ClientAwareModel):
         return int(value) if value is not None else None
 
     @property
-    def awarding_toptier_agency_id(self) -> Optional[str]:
+    def awarding_toptier_agency_id(self) -> str | None:
         """Top-tier awarding agency identifier.
 
         Returns:
@@ -193,7 +193,7 @@ class Funding(ClientAwareModel):
         return str(value) if value is not None else None
 
     @property
-    def awarding_agency_slug(self) -> Optional[str]:
+    def awarding_agency_slug(self) -> str | None:
         """URL-friendly awarding agency identifier.
 
         Returns:
@@ -202,7 +202,7 @@ class Funding(ClientAwareModel):
         return self.get_value("awarding_agency_slug")
 
     @property
-    def awarding_agency(self) -> Optional["Agency"]:
+    def awarding_agency(self) -> Agency | None:
         """Retrieve the Agency object for the awarding agency.
 
         Constructs an Agency from the existing Funding data without making
@@ -227,7 +227,7 @@ class Funding(ClientAwareModel):
         return Agency(data=data, client=self._client)
 
     @property
-    def object_class(self) -> Optional[str]:
+    def object_class(self) -> str | None:
         """Object class code.
 
         Returns:
@@ -236,7 +236,7 @@ class Funding(ClientAwareModel):
         return self.get_value("object_class")
 
     @property
-    def object_class_name(self) -> Optional[str]:
+    def object_class_name(self) -> str | None:
         """Object class name/description.
 
         Returns:
@@ -245,7 +245,7 @@ class Funding(ClientAwareModel):
         return self.get_value("object_class_name")
 
     @property
-    def program_activity_code(self) -> Optional[str]:
+    def program_activity_code(self) -> str | None:
         """Program activity code.
 
         Returns:
@@ -254,7 +254,7 @@ class Funding(ClientAwareModel):
         return self.get_value("program_activity_code")
 
     @property
-    def program_activity_name(self) -> Optional[str]:
+    def program_activity_name(self) -> str | None:
         """Program activity name.
 
         Returns:
@@ -263,7 +263,7 @@ class Funding(ClientAwareModel):
         return self.get_value("program_activity_name")
 
     @property
-    def reporting_fiscal_year(self) -> Optional[int]:
+    def reporting_fiscal_year(self) -> int | None:
         """Fiscal year of the submission date.
 
         Returns:
@@ -273,7 +273,7 @@ class Funding(ClientAwareModel):
         return int(value) if value is not None else None
 
     @property
-    def reporting_fiscal_quarter(self) -> Optional[int]:
+    def reporting_fiscal_quarter(self) -> int | None:
         """Fiscal quarter of the submission date.
 
         Returns:
@@ -283,7 +283,7 @@ class Funding(ClientAwareModel):
         return int(value) if value is not None else None
 
     @property
-    def reporting_fiscal_month(self) -> Optional[int]:
+    def reporting_fiscal_month(self) -> int | None:
         """Fiscal month of the submission date.
 
         Returns:
@@ -293,7 +293,7 @@ class Funding(ClientAwareModel):
         return int(value) if value is not None else None
 
     @property
-    def is_quarterly_submission(self) -> Optional[bool]:
+    def is_quarterly_submission(self) -> bool | None:
         """Indicates if submission is quarterly.
 
         Returns:
@@ -311,10 +311,7 @@ class Funding(ClientAwareModel):
         month = self.reporting_fiscal_month
 
         # Format month with zero padding if it's a number
-        if month is not None:
-            month_str = f"{month:02d}"
-        else:
-            month_str = "?"
+        month_str = f"{month:02d}" if month is not None else "?"
 
         if self.transaction_obligated_amount:
             amount = self.transaction_obligated_amount

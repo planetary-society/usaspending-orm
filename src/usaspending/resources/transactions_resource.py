@@ -1,10 +1,11 @@
 """Transactions resource implementation."""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
-from .base_resource import BaseResource
 from ..logging_config import USASpendingLogger
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
     from ..queries.transactions_search import TransactionsSearch
@@ -18,7 +19,7 @@ class TransactionsResource(BaseResource):
     Provides access to transaction search and retrieval endpoints.
     """
 
-    def award_id(self, award_id: str) -> "TransactionsSearch":
+    def award_id(self, award_id: str) -> TransactionsSearch:
         """Create a transactions search query for a specific award.
 
         Args:

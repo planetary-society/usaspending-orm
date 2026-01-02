@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Dict, Any
-from .single_resource_base import SingleResourceBase
-from ..exceptions import ValidationError
+from typing import TYPE_CHECKING, Any
+
 from ..client import USASpendingClient
+from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
+from .single_resource_base import SingleResourceBase
 
 if TYPE_CHECKING:
     from ..models.agency import Agency
@@ -36,8 +37,8 @@ class AgencyQuery(SingleResourceBase):
         return "/agency/"
 
     def find_by_id(
-        self, toptier_code: str, fiscal_year: Optional[int] = None
-    ) -> "Agency":
+        self, toptier_code: str, fiscal_year: int | None = None
+    ) -> Agency:
         """Retrieve agency by toptier code and optional fiscal year.
 
         Args:
@@ -77,8 +78,8 @@ class AgencyQuery(SingleResourceBase):
         return Agency(response, client=self._client)
 
     def _get_resource_with_params(
-        self, toptier_code: str, fiscal_year: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, toptier_code: str, fiscal_year: int | None = None
+    ) -> dict[str, Any]:
         """Retrieve agency with optional query parameters.
 
         Args:

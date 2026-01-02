@@ -10,18 +10,18 @@ from __future__ import annotations
 import pytest
 
 from usaspending.models.award_types import (
-    AWARD_TYPE_GROUPS,
+    ALL_AWARD_CODES,
     AWARD_TYPE_DESCRIPTIONS,
+    AWARD_TYPE_GROUPS,
     CONTRACT_CODES,
+    DIRECT_PAYMENT_CODES,
+    GRANT_CODES,
     IDV_CODES,
     LOAN_CODES,
-    GRANT_CODES,
-    DIRECT_PAYMENT_CODES,
     OTHER_CODES,
-    ALL_AWARD_CODES,
-    is_valid_award_type,
-    get_description,
     get_award_group,
+    get_description,
+    is_valid_award_type,
 )
 
 
@@ -375,7 +375,7 @@ class TestDataConsistency:
             "other_assistance": "",  # No specialized class
         }
         for category, codes_dict in AWARD_TYPE_GROUPS.items():
-            for code in codes_dict.keys():
+            for code in codes_dict:
                 assert get_award_group(code) == expected_groups[category]
 
 

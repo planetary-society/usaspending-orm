@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from ..client import USASpendingClient
 from ..exceptions import ValidationError
@@ -31,7 +31,7 @@ class SingleResourceBase(ABC):
         pass
 
     def _get_resource(
-        self, resource_id: str, params: Optional[dict[str, Any]] = None
+        self, resource_id: str, params: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Retrieve a single resource by ID.
 

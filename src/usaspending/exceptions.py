@@ -25,8 +25,6 @@ Example:
 
 from __future__ import annotations
 
-from typing import Optional
-
 
 class USASpendingError(Exception):
     """Base exception for all USASpending client errors.
@@ -74,8 +72,8 @@ class APIError(USASpendingError):
     def __init__(
         self,
         message: str,
-        status_code: Optional[int] = None,
-        response_body: Optional[dict] = None,
+        status_code: int | None = None,
+        response_body: dict | None = None,
     ):
         super().__init__(message)
         self.status_code = status_code
@@ -148,7 +146,7 @@ class RateLimitError(USASpendingError):
     def __init__(
         self,
         message: str = "Rate limit exceeded",
-        retry_after: Optional[int] = None,
+        retry_after: int | None = None,
     ):
         super().__init__(message)
         self.retry_after = retry_after
@@ -288,8 +286,8 @@ class DownloadError(USASpendingError):
     def __init__(
         self,
         message: str,
-        file_name: Optional[str] = None,
-        status: Optional[str] = None,
+        file_name: str | None = None,
+        status: str | None = None,
     ):
         super().__init__(message)
         self.file_name = file_name

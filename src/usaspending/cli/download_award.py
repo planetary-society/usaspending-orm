@@ -1,9 +1,8 @@
 # src/usaspending/cli/download_award.py
 
 import argparse
-import sys
 import os
-from typing import List
+import sys
 
 # Helper to ensure the package root is in sys.path if running the script directly during development
 if __name__ == "__main__":
@@ -13,8 +12,8 @@ if __name__ == "__main__":
         sys.path.insert(0, project_root)
 
 # Import necessary components from the library
-from usaspending.exceptions import DownloadError
 from usaspending import USASpendingClient
+from usaspending.exceptions import DownloadError
 
 
 def main():
@@ -85,7 +84,7 @@ def main():
         logger.info(f"Job successfully queued. Tracking File: {job.file_name}")
 
         # 2. Wait for completion (blocking operation)
-        extracted_files: List[str] = job.wait_for_completion(
+        extracted_files: list[str] = job.wait_for_completion(
             timeout=args.timeout,
             poll_interval=args.poll_interval,
             cleanup_zip=not args.no_cleanup,

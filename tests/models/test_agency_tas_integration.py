@@ -175,7 +175,7 @@ class TestAgencyFederalAccountChain:
         # Iterate over all federal accounts and their TAS codes
         total_tas_count = 0
         for account in agency.federal_accounts:
-            for tas in account.tas_codes:
+            for _tas in account.tas_codes:
                 total_tas_count += 1
 
         # 16 accounts * 16 TAS codes each = 256

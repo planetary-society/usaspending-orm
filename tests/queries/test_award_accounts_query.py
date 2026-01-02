@@ -2,9 +2,9 @@
 
 import pytest
 
-from usaspending.queries.award_accounts_query import AwardAccountsQuery
-from usaspending.models.award_account import AwardAccount
 from usaspending.exceptions import ValidationError
+from usaspending.models.award_account import AwardAccount
+from usaspending.queries.award_accounts_query import AwardAccountsQuery
 
 
 class TestAwardAccountsQueryInitialization:

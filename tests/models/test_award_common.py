@@ -6,14 +6,16 @@ instead inherited by the concrete test classes in test_award_types.py.
 
 from __future__ import annotations
 
-import pytest
 from datetime import datetime
+
+import pytest
+
+from tests.mocks.mock_client import MockUSASpendingClient
+from tests.utils import assert_decimal_equal
+from usaspending.exceptions import HTTPError, ValidationError
 from usaspending.models import Award, Recipient
 from usaspending.models.agency import Agency
 from usaspending.models.subaward import SubAward
-from usaspending.exceptions import ValidationError, HTTPError
-from tests.mocks.mock_client import MockUSASpendingClient
-from tests.utils import assert_decimal_equal
 
 
 class AwardTestingMixin:
@@ -109,7 +111,7 @@ class AwardTestingMixin:
         """Test funding and awarding agency properties."""
         award = self.AWARD_MODEL(fixture_data, mock_usa_client)
         funding_agency = award.funding_agency
-        if "funding_agency" in fixture_data and fixture_data["funding_agency"]:
+        if fixture_data.get("funding_agency"):
             assert isinstance(funding_agency, Agency)
             assert (
                 funding_agency.name
@@ -119,7 +121,7 @@ class AwardTestingMixin:
             assert funding_agency is None
 
         awarding_agency = award.awarding_agency
-        if "awarding_agency" in fixture_data and fixture_data["awarding_agency"]:
+        if fixture_data.get("awarding_agency"):
             assert isinstance(awarding_agency, Agency)
             assert (
                 awarding_agency.name
@@ -153,7 +155,7 @@ class AwardTestingMixin:
             {"generated_unique_award_id": award_id}, mock_usa_client
         )
         with pytest.raises(HTTPError):
-            award.description
+            _ = award.description
 
         assert mock_usa_client.get_request_count(endpoint) == 1
 

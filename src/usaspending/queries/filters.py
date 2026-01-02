@@ -4,7 +4,7 @@ import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, ClassVar, Literal, Optional, Union
+from typing import Any, ClassVar, Literal
 
 from ..exceptions import ValidationError
 from ..utils.validations import parse_enum_value
@@ -60,16 +60,16 @@ class LocationSpec:
     """Represents a standard location specification for Place of Performance or Recipient filters."""
 
     country_code: str
-    state_code: Optional[str] = None
-    county_code: Optional[str] = None
-    city_name: Optional[str] = None
-    district_original: Optional[str] = (
+    state_code: str | None = None
+    county_code: str | None = None
+    city_name: str | None = None
+    district_original: str | None = (
         None  # Current congressional district (e.g. "IA-03")
     )
-    district_current: Optional[str] = (
+    district_current: str | None = (
         None  # Congressional district when awarded (e.g. "WA-01")
     )
-    zip_code: Optional[str] = None
+    zip_code: str | None = None
 
     def to_dict(self) -> dict[str, str]:
         """Serializes the location to the dictionary format required by the API."""
@@ -96,7 +96,7 @@ class AgencySpec:
     name: str
     type: str  # "awarding" or "funding"
     tier: str  # "toptier" or "subtier"
-    toptier_name: Optional[str] = None  # For scoping subtiers to specific parent
+    toptier_name: str | None = None  # For scoping subtiers to specific parent
 
     def to_dict(self) -> dict[str, str]:
         """Serializes the agency spec to the dictionary format required by the API."""
@@ -149,7 +149,7 @@ class TimePeriodFilter(BaseFilter):
     key: ClassVar[str] = "time_period"
     start_date: datetime.date
     end_date: datetime.date
-    date_type: Optional[AwardDateType] = None
+    date_type: AwardDateType | None = None
 
     def to_dict(self) -> dict[str, list[dict[str, str]]]:
         period: dict[str, str] = {
@@ -220,8 +220,8 @@ class SimpleStringFilter(BaseFilter):
 class AwardAmount:
     """Represents a single award amount range for filtering."""
 
-    lower_bound: Optional[float] = None
-    upper_bound: Optional[float] = None
+    lower_bound: float | None = None
+    upper_bound: float | None = None
 
     def to_dict(self) -> dict[str, float]:
         data = {}
@@ -389,7 +389,7 @@ def parse_award_date_type(date_type: str) -> AwardDateType:
 
 
 def parse_award_amount(
-    amount: Union[dict[str, float], tuple[Optional[float], Optional[float]]],
+    amount: dict[str, float] | tuple[float | None, float | None],
 ) -> AwardAmount:
     """
     Convert a dictionary or tuple to an AwardAmount dataclass.
@@ -536,7 +536,7 @@ def parse_agency_spec(agency: dict[str, str]) -> AgencySpec:
     return AgencySpec(**agency)
 
 
-def parse_fiscal_year(year: Union[int, str]) -> int:
+def parse_fiscal_year(year: int | str) -> int:
     """
     Validate and parse a fiscal year value.
 
@@ -565,7 +565,7 @@ def parse_fiscal_year(year: Union[int, str]) -> int:
         except ValueError:
             raise ValidationError(
                 f"Invalid fiscal year: '{year}'. Must be an integer >= {MIN_FISCAL_YEAR}."
-            )
+            ) from None
 
     if not isinstance(year, int) or year < MIN_FISCAL_YEAR:
         raise ValidationError(

@@ -1,12 +1,13 @@
 """Test session reset functionality in RetryHandler."""
 
-import pytest
-import unittest.mock
 import logging
+import unittest.mock
 
-from usaspending.utils.retry import RetryHandler
-from usaspending.exceptions import HTTPError
+import pytest
+
 from usaspending import config
+from usaspending.exceptions import HTTPError
+from usaspending.utils.retry import RetryHandler
 
 
 @pytest.fixture

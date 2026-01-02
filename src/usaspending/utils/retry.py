@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import random
 import time
-from typing import Any, Callable, Optional
+from typing import Any, Callable, ClassVar
 
 import requests
 
@@ -24,7 +24,7 @@ class RetryHandler:
     """
 
     # HTTP status codes that should be retried
-    RETRYABLE_STATUS_CODES = {
+    RETRYABLE_STATUS_CODES: ClassVar[frozenset[int]] = frozenset({
         429,  # Too Many Requests (rate limit)
         500,  # Internal Server Error
         502,  # Bad Gateway
@@ -35,7 +35,7 @@ class RetryHandler:
         522,  # Connection Timed Out
         523,  # Origin Is Unreachable
         524,  # A Timeout Occurred
-    }
+    })
 
     # Exception types that should be retried
     RETRYABLE_EXCEPTIONS = (
@@ -45,7 +45,7 @@ class RetryHandler:
         requests.exceptions.ReadTimeout,
     )
 
-    def __init__(self, session_reset_callback: Optional[Callable] = None):
+    def __init__(self, session_reset_callback: Callable | None = None):
         """
         Initialize the retry handler.
 
@@ -236,7 +236,7 @@ class RetryHandler:
         logger.debug(f"Calculated retry delay: {delay:.3f}s (attempt {attempt})")
         return delay
 
-    def _get_retry_after_header(self, response: requests.Response) -> Optional[int]:
+    def _get_retry_after_header(self, response: requests.Response) -> int | None:
         """
         Extract the Retry-After header value from a rate limit response.
 

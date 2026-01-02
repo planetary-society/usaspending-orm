@@ -1,11 +1,11 @@
 """Tests for award resource implementation."""
 
 import pytest
-
-from usaspending.resources import AwardResource
-from usaspending.models import Award, Recipient
-from usaspending.exceptions import ValidationError
 from tests.mocks.mock_client import MockUSASpendingClient
+
+from usaspending.exceptions import ValidationError
+from usaspending.models import Award, Recipient
+from usaspending.resources import AwardResource
 
 
 class TestAwardResource:

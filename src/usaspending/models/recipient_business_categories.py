@@ -129,7 +129,7 @@ OVERLAPPING_CATEGORIES = {
 def _build_complete_descriptions():
     """Build complete description map including overlapping categories."""
     descriptions = {}
-    for group_name, group_dict in BUSINESS_CATEGORY_GROUPS.items():
+    for _group_name, group_dict in BUSINESS_CATEGORY_GROUPS.items():
         for code, description in group_dict.items():
             if code not in descriptions:
                 descriptions[code] = description
@@ -269,15 +269,7 @@ def is_small_business(code: str) -> bool:
         return True
 
     # Special designation small businesses
-    if code in {
-        "emerging_small_business",
-        "self_certified_small_disadvanted_business",
-        "small_agricultural_cooperative",
-        "small_disadvantaged_business",
-    }:
-        return True
-
-    return False
+    return code in {"emerging_small_business", "self_certified_small_disadvanted_business", "small_agricultural_cooperative", "small_disadvantaged_business"}
 
 
 def is_minority_owned(code: str) -> bool:

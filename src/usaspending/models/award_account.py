@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from decimal import Decimal
 from functools import cached_property
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from .federal_account import FederalAccount
 from ..utils.formatter import to_decimal, to_int
+from .federal_account import FederalAccount
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -39,7 +39,7 @@ class AwardAccount(FederalAccount):
         ...     print(f"  Funded by: {account.funding_agency.name}")
     """
 
-    def __init__(self, data: Dict[str, Any], client: "USASpendingClient"):
+    def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize AwardAccount.
 
         Maps the award/accounts endpoint field names to the standard
@@ -66,7 +66,7 @@ class AwardAccount(FederalAccount):
         super().__init__(normalized_data, client, toptier_code=toptier_code)
 
     @staticmethod
-    def _extract_toptier_code(federal_account: Optional[str]) -> Optional[str]:
+    def _extract_toptier_code(federal_account: str | None) -> str | None:
         """Extract toptier code from federal account code.
 
         Args:
@@ -85,7 +85,7 @@ class AwardAccount(FederalAccount):
         return None
 
     @property
-    def account_title(self) -> Optional[str]:
+    def account_title(self) -> str | None:
         """Title of the federal account.
 
         Returns:
@@ -94,7 +94,7 @@ class AwardAccount(FederalAccount):
         return self.description
 
     @property
-    def federal_account(self) -> Optional[str]:
+    def federal_account(self) -> str | None:
         """The federal account code (YYY-XXXX)
 
         Returns:
@@ -122,7 +122,7 @@ class AwardAccount(FederalAccount):
         return self.total_transaction_obligated_amount
 
     @property
-    def funding_agency_name(self) -> Optional[str]:
+    def funding_agency_name(self) -> str | None:
         """Name of the funding agency.
 
         Returns:
@@ -131,7 +131,7 @@ class AwardAccount(FederalAccount):
         return self.get_value("funding_agency_name")
 
     @property
-    def funding_agency_abbreviation(self) -> Optional[str]:
+    def funding_agency_abbreviation(self) -> str | None:
         """Abbreviation of the funding agency.
 
         Returns:
@@ -140,7 +140,7 @@ class AwardAccount(FederalAccount):
         return self.get_value("funding_agency_abbreviation")
 
     @property
-    def funding_agency_id(self) -> Optional[int]:
+    def funding_agency_id(self) -> int | None:
         """Internal ID of the funding agency.
 
         Returns:
@@ -149,7 +149,7 @@ class AwardAccount(FederalAccount):
         return to_int(self.get_value("funding_agency_id"))
 
     @property
-    def funding_toptier_agency_id(self) -> Optional[str]:
+    def funding_toptier_agency_id(self) -> str | None:
         """Toptier agency ID for the funding agency.
 
         Returns:
@@ -159,7 +159,7 @@ class AwardAccount(FederalAccount):
         return str(value) if value is not None else None
 
     @property
-    def funding_agency_slug(self) -> Optional[str]:
+    def funding_agency_slug(self) -> str | None:
         """URL slug for the funding agency.
 
         Returns:
@@ -168,7 +168,7 @@ class AwardAccount(FederalAccount):
         return self.get_value("funding_agency_slug")
 
     @cached_property
-    def funding_agency(self) -> Optional["Agency"]:
+    def funding_agency(self) -> Agency | None:
         """Funding agency as an Agency object.
 
         Creates an Agency instance from the funding agency fields.

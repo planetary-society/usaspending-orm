@@ -6,13 +6,14 @@ downloading the completed file, and extracting its contents.
 """
 
 from __future__ import annotations
-import time
-import os
-from typing import TYPE_CHECKING, Dict, Any, Optional, List
 
-from ..exceptions import DownloadError, APIError
+import os
+import time
+from typing import TYPE_CHECKING, Any
+
+from ..exceptions import APIError, DownloadError
 from ..logging_config import USASpendingLogger
-from ..models.download import DownloadStatus, DownloadState
+from ..models.download import DownloadState, DownloadStatus
 
 if TYPE_CHECKING:
     from .manager import DownloadManager
@@ -61,9 +62,9 @@ class DownloadJob:
         self,
         manager: DownloadManager,
         file_name: str,
-        initial_file_url: Optional[str],
-        request_details: Optional[Dict[str, Any]],
-        destination_dir: Optional[str] = None,
+        initial_file_url: str | None,
+        request_details: dict[str, Any] | None,
+        destination_dir: str | None = None,
     ):
         self._manager = manager
         self.file_name = file_name
@@ -71,10 +72,10 @@ class DownloadJob:
         self.request_details = request_details
         self.destination_dir = destination_dir or os.getcwd()
 
-        self._status_details: Optional[DownloadStatus] = None
+        self._status_details: DownloadStatus | None = None
         self._state: DownloadState = DownloadState.PENDING
-        self._result_files: Optional[List[str]] = None
-        self._error_message: Optional[str] = None
+        self._result_files: list[str] | None = None
+        self._error_message: str | None = None
 
     @property
     def state(self) -> DownloadState:
@@ -82,16 +83,16 @@ class DownloadJob:
         return self._state
 
     @property
-    def status_details(self) -> Optional[DownloadStatus]:
+    def status_details(self) -> DownloadStatus | None:
         """Detailed status information from the API (cached)."""
         return self._status_details
 
     @property
-    def error_message(self) -> Optional[str]:
+    def error_message(self) -> str | None:
         return self._error_message
 
     @property
-    def result_files(self) -> Optional[List[str]]:
+    def result_files(self) -> list[str] | None:
         """List of extracted file paths upon successful completion."""
         return self._result_files
 
@@ -134,7 +135,7 @@ class DownloadJob:
         timeout: int = DEFAULT_TIMEOUT,
         poll_interval: int = DEFAULT_POLL_INTERVAL,
         cleanup_zip: bool = False,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Blocks until the download is complete, then downloads and unzips the file.
         """
@@ -171,7 +172,7 @@ class DownloadJob:
             logger.info(f"Job status: {current_state.value}. Waiting...")
             time.sleep(poll_interval)
 
-    def _process_download(self, cleanup_zip: bool) -> List[str]:
+    def _process_download(self, cleanup_zip: bool) -> list[str]:
         """Downloads the finished file, unzips it, and optionally cleans up the zip."""
         os.makedirs(self.destination_dir, exist_ok=True)
 

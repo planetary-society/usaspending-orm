@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
+
+from tests.utils import assert_decimal_equal, decimal_equal
 from usaspending.models import Award
-from tests.utils import decimal_equal, assert_decimal_equal
 
 
 class TestAwardDecimalPrecision:

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
 from decimal import Decimal
-from ..utils.formatter import to_decimal, round_to_millions
+from typing import TYPE_CHECKING
+
+from ..utils.formatter import round_to_millions, to_decimal
 from .recipient import Recipient
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ class RecipientSpending(Recipient):
     fields like recipient_id and UEI.
     """
 
-    def __init__(self, data: dict, client: "USASpendingClient"):
+    def __init__(self, data: dict, client: USASpendingClient):
         """Initialize RecipientSpending model.
 
         Args:
@@ -28,7 +29,7 @@ class RecipientSpending(Recipient):
         super().__init__(data, client)
 
     @property
-    def duns(self) -> Optional[str]:
+    def duns(self) -> str | None:
         """DUNS number (alias for code).
 
         Returns:
@@ -37,7 +38,7 @@ class RecipientSpending(Recipient):
         return self.code
 
     @property
-    def code(self) -> Optional[str]:
+    def code(self) -> str | None:
         """DUNS number from spending data (stored in 'code' field).
 
         Returns:
@@ -46,7 +47,7 @@ class RecipientSpending(Recipient):
         return self.get_value(["code"], default=None)
 
     @property
-    def amount(self) -> Optional[Decimal]:
+    def amount(self) -> Decimal | None:
         """Total spending amount for this record.
 
         Returns:
@@ -55,7 +56,7 @@ class RecipientSpending(Recipient):
         return to_decimal(self.get_value(["amount"]))
 
     @property
-    def total_outlays(self) -> Optional[Decimal]:
+    def total_outlays(self) -> Decimal | None:
         """Total outlays for this spending record.
 
         Returns:
@@ -64,7 +65,7 @@ class RecipientSpending(Recipient):
         return to_decimal(self.get_value(["total_outlays"]))
 
     @property
-    def spending_level(self) -> Optional[str]:
+    def spending_level(self) -> str | None:
         """The spending level used for this data (transactions, awards, subawards).
 
         Returns:

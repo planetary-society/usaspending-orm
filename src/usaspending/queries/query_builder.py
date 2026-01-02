@@ -1,62 +1,56 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import (
-    Iterator,
-    List,
-    Dict,
-    Any,
-    Optional,
-    TypeVar,
-    TYPE_CHECKING,
-    Union,
-)
 import datetime
-
-# Import exceptions for use by all query builders
-from ..exceptions import ValidationError
-
-from .base_query import BaseQuery
-
-from .filters import (
-    BaseFilter,
-    KeywordsFilter,
-    TimePeriodFilter,
-    AwardDateType,
-    LocationScopeFilter,
-    LocationFilter,
-    SimpleListFilter,
-    SimpleStringFilter,
-    AwardAmountFilter,
-    NAICSFilter,
-    PSCFilter,
-    TieredCodeFilter,
-    TreasuryAccountComponentsFilter,
-    MIN_API_DATE,
-    parse_award_date_type,
-    parse_fiscal_year,
-    parse_location_scope,
-    parse_location_spec,
-    parse_agency_spec,
-    AgencyFilter,
-    parse_award_amount,
+from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
 )
 
 from ..config import config
-from ..logging_config import USASpendingLogger, log_query_execution
-from ..utils.validations import parse_date_string, validate_non_empty_string
 
-T = TypeVar("T")
+# Import exceptions for use by all query builders
+from ..exceptions import ValidationError
+from ..logging_config import USASpendingLogger, log_query_execution
 
 # Import award type code constants for convenience methods
 from ..models.award_types import (
     CONTRACT_CODES,
+    DIRECT_PAYMENT_CODES,
+    GRANT_CODES,
     IDV_CODES,
     LOAN_CODES,
-    GRANT_CODES,
-    DIRECT_PAYMENT_CODES,
     OTHER_CODES,
 )
+from ..utils.validations import parse_date_string, validate_non_empty_string
+from .base_query import BaseQuery
+from .filters import (
+    MIN_API_DATE,
+    AgencyFilter,
+    AwardAmountFilter,
+    AwardDateType,
+    BaseFilter,
+    KeywordsFilter,
+    LocationFilter,
+    LocationScopeFilter,
+    NAICSFilter,
+    PSCFilter,
+    SimpleListFilter,
+    SimpleStringFilter,
+    TieredCodeFilter,
+    TimePeriodFilter,
+    TreasuryAccountComponentsFilter,
+    parse_agency_spec,
+    parse_award_amount,
+    parse_award_date_type,
+    parse_fiscal_year,
+    parse_location_scope,
+    parse_location_spec,
+)
+
+T = TypeVar("T")
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -73,11 +67,11 @@ class QueryBuilder(BaseQuery[T], ABC):
     - Use max_pages() to limit the number of API requests made
     """
 
-    def __init__(self, client: "USASpendingClient") -> None:
+    def __init__(self, client: USASpendingClient) -> None:
         super().__init__()
         self._client = client
         self._filter_objects: list[BaseFilter] = []
-        self._cached_count: Optional[int] = None
+        self._cached_count: int | None = None
 
     def __iter__(self) -> Iterator[T]:
         """Iterate over all results, handling pagination automatically.
@@ -148,12 +142,12 @@ class QueryBuilder(BaseQuery[T], ABC):
             page += 1
             pages_fetched += 1
 
-    def first(self) -> Optional[T]:
+    def first(self) -> T | None:
         """Get first result only."""
         logger.debug(f"{self.__class__.__name__}.first() called")
         return super().first()
 
-    def all(self) -> List[T]:
+    def all(self) -> list[T]:
         """Get all results as a list."""
         logger.debug(f"{self.__class__.__name__}.all() called")
         results = super().all()
@@ -169,7 +163,7 @@ class QueryBuilder(BaseQuery[T], ABC):
             self._cached_count = self.count()
         return self._cached_count
 
-    def __getitem__(self, key: Union[int, slice]) -> Union[T, List[T]]:
+    def __getitem__(self, key: int | slice) -> T | list[T]:
         """Support list-like indexing and slicing.
 
         Args:
@@ -280,12 +274,12 @@ class QueryBuilder(BaseQuery[T], ABC):
         pass
 
     @abstractmethod
-    def _build_payload(self, page: int) -> Dict[str, Any]:
+    def _build_payload(self, page: int) -> dict[str, Any]:
         """Build request payload."""
         pass
 
     @abstractmethod
-    def _transform_result(self, data: Dict[str, Any]) -> Optional[T]:
+    def _transform_result(self, data: dict[str, Any]) -> T | None:
         """Transform raw result to model instance.
 
         Args:
@@ -314,12 +308,12 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         return final_filters
 
-    def _fetch_page(self, page: int) -> List[Dict[str, Any]]:
+    def _fetch_page(self, page: int) -> list[dict[str, Any]]:
         """Fetch a single page of results."""
         response = self._execute_query(page)
         return response.get("results", [])
 
-    def _execute_query(self, page: int) -> Dict[str, Any]:
+    def _execute_query(self, page: int) -> dict[str, Any]:
         """Execute the query and return raw response."""
         query_type = self.__class__.__name__
         endpoint = self._endpoint
@@ -340,7 +334,7 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         return response
 
-    def _clone(self) -> "QueryBuilder[T]":
+    def _clone(self) -> QueryBuilder[T]:
         """Create a copy for method chaining."""
         clone = self.__class__(self._client)
         clone._filter_objects = self._filter_objects.copy()
@@ -395,10 +389,10 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def time_period(
         self: T,
-        start_date: Union[datetime.date, str],
-        end_date: Union[datetime.date, str],
+        start_date: datetime.date | str,
+        end_date: datetime.date | str,
         new_awards_only: bool = False,
-        date_type: Optional[str] = None,
+        date_type: str | None = None,
     ) -> T:
         """
         Filter by a specific date range.
@@ -502,7 +496,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         self: T,
         year: int,
         new_awards_only: bool = False,
-        date_type: Optional[str] = None,
+        date_type: str | None = None,
     ) -> T:
         """
         Convenience method to apply a `time_period` filter for a U.S. government fiscal year
@@ -780,7 +774,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         name: str,
         agency_type: str = "awarding",
         tier: str = "toptier",
-        toptier_name: str = None,
+        toptier_name: str | None = None,
     ) -> T:
         """
         Helper method: Filter awards by a single agency (wraps agencies()).
@@ -998,7 +992,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         return clone
 
     def award_amounts(
-        self, *amounts: Union[dict[str, float], tuple[Optional[float], Optional[float]]]
+        self, *amounts: dict[str, float] | tuple[float | None, float | None]
     ) -> T:
         """
         Filter awards by amount ranges.
@@ -1279,8 +1273,8 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def naics_codes(
         self,
-        require: Optional[list[str]] = None,
-        exclude: Optional[list[str]] = None,
+        require: list[str] | None = None,
+        exclude: list[str] | None = None,
     ) -> T:
         """
         Filter by North American Industry Classification System (NAICS) codes.
@@ -1373,8 +1367,8 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
     def psc_codes(
         self,
         *codes: str,
-        require: Optional[list[list[str]]] = None,
-        exclude: Optional[list[list[str]]] = None,
+        require: list[list[str]] | None = None,
+        exclude: list[list[str]] | None = None,
     ) -> T:
         """
         Filter by Product and Service Codes (PSC).
@@ -1695,8 +1689,8 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def tas_codes(
         self,
-        require: Optional[list[list[str]]] = None,
-        exclude: Optional[list[list[str]]] = None,
+        require: list[list[str]] | None = None,
+        exclude: list[list[str]] | None = None,
     ) -> T:
         """
         Filter by Treasury Account Symbols (TAS).

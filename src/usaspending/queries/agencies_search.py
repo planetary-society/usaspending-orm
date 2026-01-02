@@ -1,12 +1,14 @@
 """Agencies search query implementation for agency/office autocomplete."""
 
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING, Literal, Optional
+
+from typing import TYPE_CHECKING, Any, Literal
+
 from ..exceptions import ValidationError
+from ..logging_config import USASpendingLogger
 from ..models.agency import Agency
 from ..models.subtier_agency import SubTierAgency
 from .query_builder import QueryBuilder
-from ..logging_config import USASpendingLogger
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -38,7 +40,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
         self._search_text = ""
         self._limit = 100  # Default limit
         # Filter: None, "toptier", "subtier", "office"
-        self._result_type: Optional[str] = None
+        self._result_type: str | None = None
 
     @property
     def _endpoint(self) -> str:
@@ -51,7 +53,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
             f"Invalid agency_type: {self._agency_type}. Must be 'funding' or 'awarding'."
         )
 
-    def _build_payload(self, page: int) -> Dict[str, Any]:
+    def _build_payload(self, page: int) -> dict[str, Any]:
         """Build request payload."""
         if not self._search_text:
             raise ValidationError(
@@ -60,7 +62,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
         return {"search_text": self._search_text, "limit": self._limit}
 
-    def _execute_query(self, page: int) -> Dict[str, Any]:
+    def _execute_query(self, page: int) -> dict[str, Any]:
         """Execute the autocomplete query.
 
         This endpoint doesn't support pagination, so only return results on page 1.
@@ -111,7 +113,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
             "messages": response.get("messages", []),
         }
 
-    def _transform_result(self, result: Dict[str, Any]) -> Agency:
+    def _transform_result(self, result: dict[str, Any]) -> Agency:
         """Transform result into Agency object based on type."""
         if not result:
             return None

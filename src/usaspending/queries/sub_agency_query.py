@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Dict, Any, List, Union
+from typing import TYPE_CHECKING, Any
 
-from .query_builder import QueryBuilder
 from ..exceptions import ValidationError
-from ..models.subtier_agency import SubTierAgency
 from ..logging_config import USASpendingLogger
+from ..models.subtier_agency import SubTierAgency
 from .filters import parse_fiscal_year
+from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -36,9 +36,9 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         self._validate_toptier_code()
 
         # Default filters
-        self._fiscal_year: Optional[int] = None
+        self._fiscal_year: int | None = None
         self._agency_type: str = "awarding"
-        self._award_type_codes: List[str] = []
+        self._award_type_codes: list[str] = []
         
         # Default sort (API defaults)
         self._order_by = "total_obligations"
@@ -73,7 +73,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         clone._order_direction = self._order_direction
         return clone
 
-    def _build_payload(self, page: int) -> Dict[str, Any]:
+    def _build_payload(self, page: int) -> dict[str, Any]:
         """Build parameters for the API request."""
         params = {
             "agency_type": self._agency_type,
@@ -91,7 +91,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
 
         return params
 
-    def _execute_query(self, page: int) -> Dict[str, Any]:
+    def _execute_query(self, page: int) -> dict[str, Any]:
         """Execute the query using GET instead of POST.
         
         The QueryBuilder base class assumes POST by default, but this endpoint
@@ -114,7 +114,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
 
         return response
 
-    def _transform_result(self, result: Dict[str, Any]) -> Optional[SubTierAgency]:
+    def _transform_result(self, result: dict[str, Any]) -> SubTierAgency | None:
         """Transform API result to SubTierAgency model.
 
         Args:

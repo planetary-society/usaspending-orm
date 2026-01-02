@@ -7,11 +7,11 @@ unique to that award type.
 
 from __future__ import annotations
 
-
-from .test_award_common import AwardTestingMixin
-from usaspending.models import Contract, Grant, IDV, Loan
 from tests.mocks.mock_client import MockUSASpendingClient
 from tests.utils import assert_decimal_equal
+from usaspending.models import IDV, Contract, Grant, Loan
+
+from .test_award_common import AwardTestingMixin
 
 
 class TestContract(AwardTestingMixin):
@@ -144,7 +144,7 @@ class TestGrant(AwardTestingMixin):
         assert grant.fain == fixture_data["fain"]
         assert grant.uri == fixture_data["uri"]
         assert grant.record_type == fixture_data["record_type"]
-        if "primary_cfda_info" in fixture_data and fixture_data["primary_cfda_info"]:
+        if fixture_data.get("primary_cfda_info"):
             assert grant.cfda_number == fixture_data["primary_cfda_info"]["cfda_number"]
         else:
             assert grant.cfda_number == fixture_data["cfda_info"][0]["cfda_number"]
@@ -172,7 +172,7 @@ class TestGrant(AwardTestingMixin):
 
         # Test primary_cfda_info
         primary_cfda = grant.primary_cfda_info
-        if "primary_cfda_info" in fixture_data and fixture_data["primary_cfda_info"]:
+        if fixture_data.get("primary_cfda_info"):
             assert primary_cfda is not None
             assert primary_cfda == fixture_data["primary_cfda_info"]
             assert grant.primary_cfda_info is primary_cfda  # Check caching
@@ -291,7 +291,7 @@ class TestLoan(AwardTestingMixin):
 
         # Test primary_cfda_info
         primary_cfda = loan.primary_cfda_info
-        if "primary_cfda_info" in fixture_data and fixture_data["primary_cfda_info"]:
+        if fixture_data.get("primary_cfda_info"):
             assert primary_cfda is not None
             assert primary_cfda == fixture_data["primary_cfda_info"]
             assert loan.primary_cfda_info is primary_cfda  # Check caching

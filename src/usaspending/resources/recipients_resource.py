@@ -1,14 +1,15 @@
 """Recipient resource implementation."""
 
 from __future__ import annotations
-from typing import Optional, Union, TYPE_CHECKING
 
-from .base_resource import BaseResource
+from typing import TYPE_CHECKING
+
 from ..logging_config import USASpendingLogger
+from .base_resource import BaseResource
 
 if TYPE_CHECKING:
-    from ..queries.recipients_search import RecipientsSearch
     from ..models.recipient import Recipient
+    from ..queries.recipients_search import RecipientsSearch
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -22,8 +23,8 @@ class RecipientsResource(BaseResource):
     def find_by_recipient_id(
         self,
         recipient_id: str,
-        year: Optional[Union[int, str]] = None,
-    ) -> Optional["Recipient"]:
+        year: int | str | None = None,
+    ) -> Recipient | None:
         """Retrieve a single recipient by ID.
 
         Args:
@@ -51,7 +52,7 @@ class RecipientsResource(BaseResource):
 
         return RecipientQuery(self._client).find_by_id(recipient_id, year=year)
 
-    def search(self) -> "RecipientsSearch":
+    def search(self) -> RecipientsSearch:
         """Create a new recipient search query builder.
 
         Returns:
@@ -71,7 +72,7 @@ class RecipientsResource(BaseResource):
 
         return RecipientsSearch(self._client)
 
-    def find_by_duns(self, duns: str) -> Optional["Recipient"]:
+    def find_by_duns(self, duns: str) -> Recipient | None:
         """Retrieve a single recipient by DUNS number.
 
         Args:
@@ -94,7 +95,7 @@ class RecipientsResource(BaseResource):
         # Return first result if no parent found (avoids hanging len() call)
         return recipients.first()
 
-    def find_by_uei(self, uei: str) -> Optional["Recipient"]:
+    def find_by_uei(self, uei: str) -> Recipient | None:
         """Retrieve a single recipient by UEI number.
 
         Args:

@@ -1,8 +1,10 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional
-from .base_model import BaseModel
-from ..utils.formatter import to_date
+
 from datetime import date
+from typing import Any
+
+from ..utils.formatter import to_date
+from .base_model import BaseModel
 
 
 class PeriodOfPerformance(BaseModel):
@@ -12,7 +14,7 @@ class PeriodOfPerformance(BaseModel):
     to be performed or the funding is available for obligation.
     """
 
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: dict[str, Any]):
         """Initialize PeriodOfPerformance.
 
         Args:
@@ -31,7 +33,7 @@ class PeriodOfPerformance(BaseModel):
         )
 
     @property
-    def start_date(self) -> Optional[date]:
+    def start_date(self) -> date | None:
         """Start date of the period of performance.
 
         Returns:
@@ -40,7 +42,7 @@ class PeriodOfPerformance(BaseModel):
         return self._start_date
 
     @property
-    def end_date(self) -> Optional[date]:
+    def end_date(self) -> date | None:
         """Current end date of the period of performance.
 
         Returns:
@@ -49,7 +51,7 @@ class PeriodOfPerformance(BaseModel):
         return self._end_date
 
     @property
-    def last_modified_date(self) -> Optional[date]:
+    def last_modified_date(self) -> date | None:
         """Date when the period of performance was last modified.
 
         Returns:
@@ -58,7 +60,7 @@ class PeriodOfPerformance(BaseModel):
         return to_date(self.get_value(["last_modified_date", "Last Modified Date"]))
 
     @property
-    def potential_end_date(self) -> Optional[date]:
+    def potential_end_date(self) -> date | None:
         """Potential end date if all options are exercised.
 
         Returns:

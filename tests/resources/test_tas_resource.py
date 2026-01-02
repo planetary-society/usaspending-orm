@@ -1,8 +1,8 @@
 """Tests for TASResource."""
 
 
-from usaspending.resources.tas_resource import TASResource
 from usaspending.models.agency import Agency
+from usaspending.resources.tas_resource import TASResource
 
 
 class TestTASResourceBasics:
