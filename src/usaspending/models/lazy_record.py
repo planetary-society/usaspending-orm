@@ -1,6 +1,9 @@
 # usaspending/models/lazy_record.py
-from .base_model import ClientAwareModel
+from __future__ import annotations
+
 from typing import Dict, Any, Optional, TYPE_CHECKING
+
+from .base_model import ClientAwareModel
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient

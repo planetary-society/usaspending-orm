@@ -1,4 +1,6 @@
 # usaspending/models/base_model.py
+from __future__ import annotations
+
 from typing import Optional, Dict, Any, List, Set, TYPE_CHECKING, Union, Iterable
 from weakref import ref
 

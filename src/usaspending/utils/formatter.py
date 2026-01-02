@@ -1,8 +1,11 @@
-from typing import List, Any, Optional, Set, Union
+from __future__ import annotations
+
 from datetime import datetime, date
-import re
-import yaml
 from pathlib import Path
+from typing import List, Any, Optional, Set, Union
+import re
+
+import yaml
 import decimal
 from decimal import Decimal, ROUND_HALF_UP
 
