@@ -23,7 +23,7 @@ class _Config:
         self.retry_delay: float = 10.0
         self.retry_backoff: float = 2.0
 
-        # Global rate limit is 1000 calls per 300 seconds
+        # Global rate limit is roughly 1000 calls per 300 seconds
         self.rate_limit_calls: int = 1000
         self.rate_limit_period: int = 300
 
@@ -32,6 +32,14 @@ class _Config:
         self.session_reset_on_5xx_threshold: int = (
             1  # Reset session after N consecutive 5XX errors
         )
+
+        # Query result limits to prevent unbounded fetches
+        # Set to None to disable the default limit (not recommended for production)
+        self.default_result_limit: int | None = 10000
+        
+        # Warn when a query would return more than this many results
+        self.warn_on_large_result_set: bool = False
+        self.large_result_threshold: int = 5000
 
         # Caching via cachier
         self.cache_enabled: bool = False
@@ -112,6 +120,12 @@ class _Config:
             raise ConfigurationError(f"cache_backend must be one of: {valid_backends}")
         if self.cache_timeout <= 0:
             raise ConfigurationError("cache_timeout must be positive")
+
+        # Query limit validation
+        if self.default_result_limit is not None and self.default_result_limit <= 0:
+            raise ConfigurationError("default_result_limit must be positive or None")
+        if self.large_result_threshold <= 0:
+            raise ConfigurationError("large_result_threshold must be positive")
 
 
 # Global configuration object

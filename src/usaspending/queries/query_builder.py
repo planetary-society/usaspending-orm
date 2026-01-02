@@ -42,6 +42,7 @@ from .filters import (
     parse_award_amount,
 )
 
+from ..config import config
 from ..logging_config import USASpendingLogger, log_query_execution
 from ..utils.validations import parse_date_string, validate_non_empty_string
 
@@ -89,22 +90,37 @@ class QueryBuilder(BaseQuery[T], ABC):
         self._filter_objects: list[BaseFilter] = []
 
     def __iter__(self) -> Iterator[T]:
-        """Iterate over all results, handling pagination automatically."""
+        """Iterate over all results, handling pagination automatically.
+
+        If no explicit limit is set and config.default_result_limit is configured,
+        that default will be applied automatically. A warning is logged when
+        config.warn_on_large_result_set is enabled and the result set exceeds
+        config.large_result_threshold.
+        """
         page = 1
         pages_fetched = 0
         items_yielded = 0
+
+        # Apply default limit if no explicit limit was set
+        effective_limit = self._total_limit
+        if effective_limit is None and config.default_result_limit is not None:
+            effective_limit = config.default_result_limit
+            logger.info(
+                f"No limit set. Using default limit of {effective_limit}. "
+                "Set explicit limit() or configure default_result_limit=None to disable."
+            )
 
         query_type = self.__class__.__name__
         effective_page_size = self._get_effective_page_size()
         logger.info(
             f"Starting {query_type} iteration with page_size={effective_page_size}, "
-            f"total_limit={self._total_limit}, max_pages={self._max_pages}"
+            f"total_limit={effective_limit}, max_pages={self._max_pages}"
         )
 
         while True:
             # Check if we've reached the total limit
-            if self._total_limit is not None and items_yielded >= self._total_limit:
-                logger.debug(f"Total limit of {self._total_limit} items reached")
+            if effective_limit is not None and items_yielded >= effective_limit:
+                logger.debug(f"Total limit of {effective_limit} items reached")
                 break
 
             # Check if we've reached the max pages limit
@@ -125,7 +141,7 @@ class QueryBuilder(BaseQuery[T], ABC):
 
             for item in results:
                 # Check limit before each yield to handle mid-page limits
-                if self._total_limit is not None and items_yielded >= self._total_limit:
+                if effective_limit is not None and items_yielded >= effective_limit:
                     logger.debug(f"Stopping mid-page at item {items_yielded}")
                     return
 
