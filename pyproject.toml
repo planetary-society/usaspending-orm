@@ -36,18 +36,19 @@ Repository = "https://github.com/planetary-society/usaspending-orm"
 Issues = "https://github.com/planetary-society/usaspending-orm/issues"
 Documentation = "https://github.com/planetary-society/usaspending-orm/blob/main/README.md"
 
-[tool.poetry]
-packages = [{include = "usaspending", from = "src"}]
-
-
-[tool.poetry.group.test.dependencies]
-pytest = "^8.4.1"
-requests-mock = "^1.12.1"
-ruff = "^0.12.7"
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1,<9",
+    "requests-mock>=1.12.1,<2",
+    "ruff>=0.12.7,<1",
+]
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/usaspending"]
 
 [tool.pytest.ini_options]
 pythonpath = "src"
