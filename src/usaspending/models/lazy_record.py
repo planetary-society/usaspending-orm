@@ -78,31 +78,13 @@ class LazyRecord(ClientAwareModel):
         """
         keys_list = list(keys)
 
-        # If we've already lazy-loaded details, return whatever
-        # values are present in the data
-        if self._details_fetched:
-            return self.get_value(keys_list, default=default)
-
-        # Check if any of the keys exist in the current data
-        key_found = False
-        value = None
-
-        for key in keys_list:
-            if key in self._data:
-                value = self._data[key]
-                key_found = True
-                break
-
-        # If no key was found, or if the value is None (indicating missing data),
-        # trigger lazy loading
-        if not key_found or value is None:
-            # Load full resource data from source
+        # If we haven't fetched details yet, check whether any key
+        # exists in current data. If no key is present at all, trigger
+        # a lazy load. A key present with a None value is treated as
+        # legitimate API data (not missing), so it does NOT trigger a fetch.
+        if not self._details_fetched and not any(key in self._data for key in keys_list):
             self._ensure_details()
 
-            # Set flag
-            self._details_fetched = True
-
-            # Attempt to return the value again
-            value = self.get_value(keys_list, default=default)
-
-        return value
+        # Delegate to get_value for consistent multi-key lookup semantics:
+        # it skips None values, tries alternate keys, and returns default.
+        return self.get_value(keys_list, default=default)

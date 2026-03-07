@@ -84,6 +84,66 @@ class BaseTestAwardLazyLoading:
 
         award._fetch_details.assert_not_called()
 
+    def test_recipient_stub_no_recipient_level_fetch(self, award_from_search, search_results_data):
+        """Test that accessing pre-loaded fields on the Recipient stub does not trigger
+        a Recipient-level fetch (i.e., no call to /recipient/{id}/ endpoint).
+
+        This catches an N+1 query bug: the Award search result contains recipient data
+        in flat fields (e.g. 'Recipient Name', 'Recipient UEI'), and those should be
+        accessible on the Recipient stub without triggering a separate API call.
+        """
+        award = award_from_search
+        search_result = search_results_data[0]
+
+        # Access recipient - this constructs the stub from flat search fields
+        recipient = award.recipient
+        assert recipient is not None
+
+        # Mock _fetch_details on the Recipient stub AFTER construction
+        recipient._fetch_details = Mock(return_value=None)
+
+        # Access pre-loaded fields -- none should trigger a recipient-level fetch
+        assert recipient.name is not None
+        assert recipient.recipient_id is not None
+        assert recipient.uei == search_result.get("Recipient UEI")
+
+        # Location was directly assigned from "Recipient Location" dict
+        loc = recipient.location
+        assert isinstance(loc, Location)
+        assert loc.state_code is not None
+
+        # Verify no Recipient-level fetch was triggered
+        recipient._fetch_details.assert_not_called()
+
+        # Also verify no Award-level fetch was triggered
+        award._fetch_details.assert_not_called()
+
+    def test_recipient_stub_null_fields_no_fetch(self, award_from_search, search_results_data):
+        """Test that accessing pre-loaded fields with None values on the Recipient stub
+        does not trigger a Recipient-level fetch.
+
+        The search result may include fields with null values (e.g., DUNS number is
+        deprecated and typically null). When these null values are mapped into the
+        Recipient stub, accessing them should return None without triggering a fetch
+        to /recipient/{id}/, since the data IS present -- it is just legitimately null.
+        """
+        award = award_from_search
+        search_result = search_results_data[0]
+
+        recipient = award.recipient
+        assert recipient is not None
+
+        # Mock _fetch_details on the Recipient stub
+        recipient._fetch_details = Mock(return_value=None)
+
+        # DUNS is null in the search result fixture and mapped to recipient_unique_id
+        assert search_result.get("Recipient DUNS Number") is None
+        # Accessing duns should return None without triggering a fetch
+        assert recipient.duns is None
+
+        # Verify no fetch was triggered for a legitimately null pre-loaded field
+        recipient._fetch_details.assert_not_called()
+
     def test_lazy_load_triggers_fetch(self, award_from_search, detail_fixture_data):
         """Test that accessing a property not in search results triggers a fetch."""
         award = award_from_search

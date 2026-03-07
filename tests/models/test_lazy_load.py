@@ -176,21 +176,26 @@ class TestLazyRecord:
         with pytest.raises(NotImplementedError):
             record._fetch_details()
 
-    def test_lazy_get_only_none_values_trigger_fetch(self, test_lazy_record):
-        """Test that only None values (missing keys) trigger fetch."""
+    def test_lazy_get_none_value_does_not_trigger_fetch(self, test_lazy_record):
+        """Test that a key present with None value does NOT trigger fetch.
+
+        When a key exists in _data but its value is None, this represents a
+        legitimately null value from the API -- not missing data. The fetch
+        should only be triggered when the key itself is absent.
+        """
         # Add None value to data
         test_lazy_record._data["none_value"] = None
 
         # Mock _ensure_details to track calls
-        original_ensure = test_lazy_record._ensure_details
-        test_lazy_record._ensure_details = Mock(side_effect=original_ensure)
+        test_lazy_record._ensure_details = Mock()
 
-        # None value should trigger fetch
+        # None value should NOT trigger fetch -- the key exists
         result = test_lazy_record._lazy_get("none_value", default="fallback")
-        test_lazy_record._ensure_details.assert_called_once()
+        test_lazy_record._ensure_details.assert_not_called()
 
-        # Should return default since "none_value" not in _fetch_details response
+        # Should return default since value is None
         assert result == "fallback"
+        assert test_lazy_record._details_fetched is False
 
     def test_lazy_get_multiple_keys_first_falsy_second_truthy(self, mock_client):
         """Test multiple keys where first is falsy, second is truthy."""
@@ -202,8 +207,12 @@ class TestLazyRecord:
         assert result == ""
         assert record._details_fetched is False
 
-    def test_lazy_get_with_none_value_triggers_load(self, mock_client):
-        """Test that _lazy_get triggers loading when value is None."""
+    def test_lazy_get_with_none_value_returns_default_without_load(self, mock_client):
+        """Test that _lazy_get returns default when key exists but value is None.
+
+        A key present with None value means the API returned null for this field.
+        This should NOT trigger a fetch -- the data is present, just null.
+        """
 
         class TestModel(LazyRecord):
             def _fetch_details(self):
@@ -212,9 +221,13 @@ class TestLazyRecord:
         # Create model with None value
         model = TestModel({"test_field": None}, mock_client)
 
-        # Access field - should trigger lazy load
+        # Mock _ensure_details to verify it's not called
+        model._ensure_details = Mock()
+
+        # Access field - should return default without triggering lazy load
         result = model._lazy_get("test_field", default="default")
 
-        # Assert: details were fetched and correct value returned
-        assert model._details_fetched
-        assert result == "loaded_value"
+        # Assert: details were NOT fetched, default returned
+        model._ensure_details.assert_not_called()
+        assert model._details_fetched is False
+        assert result == "default"
