@@ -1,5 +1,6 @@
 """Tests for configuration module."""
 
+import sys
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -8,13 +9,18 @@ import pytest
 from usaspending.config import _Config
 from usaspending.exceptions import ConfigurationError
 
+# usaspending.__init__.py does ``from .config import config``, which shadows
+# the config MODULE with the _Config singleton instance. To patch module-level
+# names (like ``cachier``) on the actual module, we reference it via sys.modules.
+_config_module = sys.modules["usaspending.config"]
+
 
 class TestCacheBackendConfiguration:
     """Test cache backend configuration settings."""
 
     def test_file_backend_passes_cache_dir(self, client_config):
         """Test that file backend passes cache_dir to cachier."""
-        with patch("usaspending.config.cachier") as mock_cachier:
+        with patch.object(_config_module, "cachier") as mock_cachier:
             client_config(cache_enabled=True, cache_backend="file")
 
             # Verify set_global_params was called with cache_dir
@@ -27,7 +33,7 @@ class TestCacheBackendConfiguration:
 
     def test_memory_backend_omits_cache_dir(self, client_config):
         """Test that memory backend does not pass cache_dir to cachier."""
-        with patch("usaspending.config.cachier") as mock_cachier:
+        with patch.object(_config_module, "cachier") as mock_cachier:
             client_config(cache_enabled=True, cache_backend="memory")
 
             # Verify set_global_params was called without cache_dir
@@ -40,26 +46,24 @@ class TestCacheBackendConfiguration:
 
     def test_cache_disabled_calls_disable_caching(self, client_config):
         """Test that cache_enabled=False calls disable_caching."""
-        with patch("usaspending.config.cachier") as mock_cachier:
+        with patch.object(_config_module, "cachier") as mock_cachier:
             client_config(cache_enabled=False)
 
             assert mock_cachier.disable_caching.called
-            # enable_caching might have been called during initialization
-            # so we just verify disable was called
 
     def test_both_backends_use_stale_after(self, client_config):
         """Test that both backends use stale_after parameter."""
         test_ttl = timedelta(hours=12)
 
         # Test file backend
-        with patch("usaspending.config.cachier") as mock_cachier:
+        with patch.object(_config_module, "cachier") as mock_cachier:
             client_config(cache_enabled=True, cache_backend="file", cache_ttl=test_ttl)
 
             call_kwargs = mock_cachier.set_global_params.call_args[1]
             assert call_kwargs["stale_after"] == test_ttl
 
         # Test memory backend
-        with patch("usaspending.config.cachier") as mock_cachier:
+        with patch.object(_config_module, "cachier") as mock_cachier:
             client_config(cache_enabled=True, cache_backend="memory", cache_ttl=test_ttl)
 
             call_kwargs = mock_cachier.set_global_params.call_args[1]
