@@ -64,7 +64,10 @@ USASpending ORM is a Python ORM library for the USAspending.gov API, providing a
 ```
 src/usaspending/
 ├── client.py              # Main USASpendingClient
+├── cli/                   # CLI tools (e.g., download_award)
 ├── config.py              # Configuration settings
+├── data_reference/        # Reference data
+├── download/              # Download job management
 ├── logging_config.py      # Custom logger configuration
 ├── exceptions.py          # Custom exceptions
 ├── resources/            # Resource classes
@@ -83,7 +86,8 @@ tests/
 ├── queries/              # Query builder tests
 ├── models/               # Model tests
 ├── resources/            # Resource tests
-└── fixtures/             # Real-world POST-header and response JSON data from USASPending API
+├── utils/                # Utility tests
+└── fixtures/             # Real-world POST-header and response JSON data from USASpending API
 ```
 
 ### Testing Principles
@@ -92,6 +96,12 @@ tests/
 - Aim for >80% test coverage
 - Mock API client using the `mock_usa_client()` method and other helps in `tests/mocks/`
 - Use helper methods to load fixtures and the mock client object in `tests/conftest.py`
+
+## Quick Commands
+- Run tests: `uv run pytest`
+- Run integration tests: `uv run pytest -m integration`
+- Lint: `uv run ruff check src/ tests/`
+- Format: `uv run ruff format src/ tests/`
 
 ## Implementation Patterns
 
@@ -123,6 +133,7 @@ tests/
   - `cache_ttl`: Time-to-live in seconds (default: 604800 = 1 week)
   - `cache_dir`: Directory for file-based cache (default: "~/.cache/usaspending")
   - `cache_backend`: Backend type ('file' or 'memory', default: 'file')
+  - `cache_namespace`: Namespace for cache keys (default: 'usaspending-orm')
 
 ### Logging
 - Implemented via custom `USASpendingLogger` class using Python's `logging` module
