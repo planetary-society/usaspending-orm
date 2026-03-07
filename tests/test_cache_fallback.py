@@ -9,7 +9,9 @@ requests to maintain functionality.
 from unittest.mock import Mock
 
 import pytest
-from src.usaspending.exceptions import ValidationError
+
+from usaspending.client import USASpendingClient
+from usaspending.exceptions import APIError, HTTPError, ValidationError
 
 
 class TestCachingFallback:
@@ -17,8 +19,6 @@ class TestCachingFallback:
 
     def setup_method(self):
         """Set up test client with mocked methods."""
-        from src.usaspending.client import USASpendingClient
-
         self.client = USASpendingClient()
 
         # Mock the uncached request method
@@ -38,15 +38,13 @@ class TestCachingFallback:
         if hasattr(self, "client") and self.client:
             self.client.close()
 
-    def test_cache_returns_none_fallback(self):
+    def test_cache_returns_none_fallback(self, client_config):
         """Test fallback when cache returns None."""
-        # Setup: cache returns None
+        client_config(cache_enabled=True)
         self.client._make_cached_request.return_value = None
 
-        # Execute: make request
         result = self.client._make_request("GET", "/test/endpoint/")
 
-        # Assert: uncached request was called as fallback
         self.client._make_uncached_request.assert_called_once_with(
             "GET", "/test/endpoint/", params=None, json=None
         )
@@ -57,130 +55,72 @@ class TestCachingFallback:
             "business_types": ["nonprofit"],
         }
 
-    def test_cache_returns_invalid_type_fallback(self):
+    def test_cache_returns_invalid_type_fallback(self, client_config):
         """Test fallback when cache returns invalid type."""
-        # Setup: cache returns string instead of dict
+        client_config(cache_enabled=True)
         self.client._make_cached_request.return_value = "invalid response"
 
-        # Execute: make request
         result = self.client._make_request("GET", "/test/endpoint/")
 
-        # Assert: uncached request was called as fallback
         self.client._make_uncached_request.assert_called_once()
         assert isinstance(result, dict)
 
-    def test_cache_exception_fallback(self):
+    def test_cache_exception_fallback(self, client_config):
         """Test fallback when cache raises exception."""
-        # Setup: cache raises exception
+        client_config(cache_enabled=True)
         self.client._make_cached_request.side_effect = Exception("Cache locked")
 
-        # Execute: make request
         result = self.client._make_request("GET", "/test/endpoint/")
 
-        # Assert: uncached request was called as fallback
         self.client._make_uncached_request.assert_called_once()
         assert isinstance(result, dict)
 
     def test_cache_disabled_fallback(self):
-        """Test behavior when cache is disabled."""
-        from src.usaspending.config import config
+        """Test behavior when cache is disabled.
 
-        original_cache_enabled = config.cache_enabled
+        The default_test_config autouse fixture sets cache_enabled=False,
+        so no explicit configuration is needed here.
+        """
+        result = self.client._make_request("GET", "/test/endpoint/")
 
-        try:
-            # Disable cache
-            config.cache_enabled = False
+        self.client._make_uncached_request.assert_called_once()
+        assert isinstance(result, dict)
 
-            # Execute: make request
-            result = self.client._make_request("GET", "/test/endpoint/")
-
-            # Assert: uncached request was called directly
-            self.client._make_uncached_request.assert_called_once()
-            assert isinstance(result, dict)
-
-        finally:
-            # Restore original setting
-            config.cache_enabled = original_cache_enabled
-
-    def test_api_errors_dont_trigger_duplicate_calls(self):
+    def test_api_errors_dont_trigger_duplicate_calls(self, client_config):
         """Test that API errors don't cause duplicate calls due to fallback logic."""
-        from src.usaspending.config import config
-        from src.usaspending.exceptions import APIError
+        client_config(cache_enabled=True)
+        self.client._make_cached_request.side_effect = APIError(
+            "Invalid Recipient ID", status_code=400
+        )
 
-        original_cache_enabled = config.cache_enabled
+        with pytest.raises(APIError) as exc_info:
+            self.client._make_request("GET", "/recipient/invalid-id/")
 
-        try:
-            # Enable cache to test cache error propagation
-            config.cache_enabled = True
+        assert str(exc_info.value) == "Invalid Recipient ID"
+        self.client._make_uncached_request.assert_not_called()
 
-            # Setup: cache raises API error (simulating failed API call)
-            api_error = APIError("Invalid Recipient ID", status_code=400)
-            self.client._make_cached_request.side_effect = api_error
-
-            # Execute: make request and expect API error to propagate
-            with pytest.raises(APIError) as exc_info:
-                self.client._make_request("GET", "/recipient/invalid-id/")
-
-            # Assert: API error propagated without fallback
-            assert str(exc_info.value) == "Invalid Recipient ID"
-            # Uncached request should NOT have been called (no fallback for API errors)
-            self.client._make_uncached_request.assert_not_called()
-
-        finally:
-            # Restore original setting
-            config.cache_enabled = original_cache_enabled
-
-    def test_http_errors_dont_trigger_duplicate_calls(self):
+    def test_http_errors_dont_trigger_duplicate_calls(self, client_config):
         """Test that HTTP errors don't cause duplicate calls due to fallback logic."""
-        from src.usaspending.config import config
-        from src.usaspending.exceptions import HTTPError
+        client_config(cache_enabled=True)
+        self.client._make_cached_request.side_effect = HTTPError(
+            "Not Found", status_code=404
+        )
 
-        original_cache_enabled = config.cache_enabled
+        with pytest.raises(HTTPError) as exc_info:
+            self.client._make_request("GET", "/recipient/not-found/")
 
-        try:
-            # Enable cache to test cache error propagation
-            config.cache_enabled = True
+        assert exc_info.value.status_code == 404
+        self.client._make_uncached_request.assert_not_called()
 
-            # Setup: cache raises HTTP error (simulating HTTP failure)
-            http_error = HTTPError("Not Found", status_code=404)
-            self.client._make_cached_request.side_effect = http_error
-
-            # Execute: make request and expect HTTP error to propagate
-            with pytest.raises(HTTPError) as exc_info:
-                self.client._make_request("GET", "/recipient/not-found/")
-
-            # Assert: HTTP error propagated without fallback
-            assert exc_info.value.status_code == 404
-            # Uncached request should NOT have been called (no fallback for HTTP errors)
-            self.client._make_uncached_request.assert_not_called()
-
-        finally:
-            # Restore original setting
-            config.cache_enabled = original_cache_enabled
-
-    def test_validation_errors_dont_trigger_duplicate_calls(self):
+    def test_validation_errors_dont_trigger_duplicate_calls(self, client_config):
         """Test that ValidationError doesn't cause duplicate calls due to fallback logic."""
-        from src.usaspending.config import config
+        client_config(cache_enabled=True)
+        self.client._make_cached_request.side_effect = ValidationError(
+            "Invalid input parameters"
+        )
 
-        original_cache_enabled = config.cache_enabled
+        with pytest.raises(ValidationError) as exc_info:
+            self.client._make_request("GET", "/recipient/invalid-params/")
 
-        try:
-            # Enable cache to test cache error propagation
-            config.cache_enabled = True
-
-            # Setup: cache raises validation error (simulating input validation failure)
-            validation_error = ValidationError("Invalid input parameters")
-            self.client._make_cached_request.side_effect = validation_error
-
-            # Execute: make request and expect validation error to propagate
-            with pytest.raises(ValidationError) as exc_info:
-                self.client._make_request("GET", "/recipient/invalid-params/")
-
-            # Assert: Validation error propagated without fallback
-            assert str(exc_info.value) == "Invalid input parameters"
-            # Uncached request should NOT have been called (no fallback for validation errors)
-            self.client._make_uncached_request.assert_not_called()
-
-        finally:
-            # Restore original setting
-            config.cache_enabled = original_cache_enabled
+        assert str(exc_info.value) == "Invalid input parameters"
+        self.client._make_uncached_request.assert_not_called()

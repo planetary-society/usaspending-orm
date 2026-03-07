@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 import cachier
 import requests
 
-from .config import config
+from .config import config, register_cache_settings_observer
 from .exceptions import APIError, HTTPError, RateLimitError, ValidationError
 from .logging_config import USASpendingLogger, log_api_request, log_api_response
 
@@ -65,6 +65,11 @@ def _cache_key(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, Any]
     return (_freeze_cache_value(args), _freeze_cache_value(kwargs))
 
 
+def _cached_request_decorator_kwargs() -> dict[str, Any]:
+    """Build cachier decorator kwargs from the current configuration."""
+    return {**config.cachier_params(), "hash_func": _cache_key, "allow_none": False}
+
+
 class USASpendingClient:
     """Main client for USASpending API.
 
@@ -81,6 +86,8 @@ class USASpendingClient:
         >>> for award in awards:
         ...     print(f"{award.recipient_name}: ${award.amount:,.2f}")
     """
+
+    _make_cached_request: Any
 
     def __init__(self):
         """Initialize USASpendingClient."""
@@ -307,8 +314,7 @@ class USASpendingClient:
             )
             return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
 
-    @cachier.cachier(wait_for_calc_timeout=config.cache_timeout, hash_func=_cache_key)
-    def _make_cached_request(
+    def _make_cached_request_impl(
         self,
         cache_namespace: str,
         method: str,
@@ -320,7 +326,9 @@ class USASpendingClient:
         """Internal cached request method.
 
         Args:
-            cache_namespace: Per-client namespace for cache isolation.
+            cache_namespace: Per-client namespace for cache isolation.  Not
+                used in the method body -- it exists so cachier includes it
+                in the hash key, isolating caches across namespaces.
             method: HTTP method (GET, POST, etc.)
             endpoint: API endpoint (without base URL)
             params: Query parameters
@@ -635,3 +643,14 @@ class USASpendingClient:
                 "Consider using 'with USASpendingClient() as client:' or calling client.close()"
             )
             self.close()
+
+
+def _refresh_cached_request_method() -> None:
+    """Rebuild the cached request wrapper for the current config."""
+    USASpendingClient._make_cached_request = cachier.cachier(  # type: ignore[attr-defined]
+        **_cached_request_decorator_kwargs(),
+    )(USASpendingClient._make_cached_request_impl)
+
+
+register_cache_settings_observer(_refresh_cached_request_method)
+_refresh_cached_request_method()

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, version
+from typing import Any, Callable
 
 import cachier
 
@@ -10,6 +11,7 @@ from usaspending.exceptions import ConfigurationError
 from usaspending.logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
+_CACHE_SETTINGS_OBSERVERS: list[Callable[[], None]] = []
 
 
 def _resolve_version() -> str:
@@ -18,6 +20,18 @@ def _resolve_version() -> str:
         return version("usaspending-orm")
     except PackageNotFoundError:
         return "0.0.0"
+
+
+def register_cache_settings_observer(observer: Callable[[], None]) -> None:
+    """Register a callback to run after cache settings change."""
+    if observer not in _CACHE_SETTINGS_OBSERVERS:
+        _CACHE_SETTINGS_OBSERVERS.append(observer)
+
+
+def _notify_cache_settings_observers() -> None:
+    """Notify registered cache observers about configuration changes."""
+    for observer in list(_CACHE_SETTINGS_OBSERVERS):
+        observer()
 
 
 class _Config:
@@ -90,24 +104,33 @@ class _Config:
         self.validate()
         self._apply_cachier_settings()
 
+    def cachier_params(self) -> dict[str, Any]:
+        """Build the base cachier parameter dict from current settings.
+
+        Returns:
+            Dict of keyword arguments suitable for ``cachier.set_global_params``
+            or ``cachier.cachier``.
+        """
+        backend = "memory" if self.cache_backend == "memory" else "pickle"
+        params: dict[str, Any] = {
+            "stale_after": self.cache_ttl,
+            "wait_for_calc_timeout": self.cache_timeout,
+            "backend": backend,
+        }
+        if backend == "pickle":
+            params["cache_dir"] = self.cache_dir
+        return params
+
     def _apply_cachier_settings(self):
         """Applies the current caching settings to the cachier library."""
+        cachier.set_global_params(**self.cachier_params())
+
         if self.cache_enabled:
-            if self.cache_backend == "file":
-                cache_backend = "pickle"  # cachier uses 'pickle' for file caching
-                cachier.set_global_params(
-                    stale_after=self.cache_ttl,
-                    cache_dir=self.cache_dir,
-                    backend=cache_backend,
-                )
-            else:  # memory backend
-                cachier.set_global_params(
-                    stale_after=self.cache_ttl,
-                    backend=self.cache_backend,
-                )
             cachier.enable_caching()
         else:
             cachier.disable_caching()
+
+        _notify_cache_settings_observers()
 
     def validate(self) -> None:
         """Validate the current configuration values."""

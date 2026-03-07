@@ -243,6 +243,16 @@ with USASpendingClient() as client:
     awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
 ```
 
+Caching happens at the HTTP request layer. A cached response is reused only when the
+HTTP method, endpoint, query parameters, JSON payload, and `cache_namespace` are identical.
+
+This means:
+
+- Re-running the same query or lazy-loaded detail request can reuse a cached response, even across different `USASpendingClient` instances when they share the same cache namespace.
+- `.count()`, `.all()`, `.first()`, different filter chains, and different pagination pages are separate API calls and are cached separately.
+- Lazy-loaded associations such as `award.recipient` or `award.transactions` still make their first detail request. Caching only helps when that exact request is repeated later.
+- Download job creation and status checks intentionally bypass caching because those endpoints are time-sensitive.
+
 The library defaults to file-based caching with a 1-week TTL, but you can customize these settings as needed:
 
 ```python
@@ -268,6 +278,9 @@ separate cache pools for different environments or applications.
 - Cleared when Python process ends
 - Best for single-session data exploration
 - Enable with `cache_backend="memory"`
+
+Changing cache settings with `config.configure(...)` updates subsequent requests. For the
+most predictable behavior, configure caching before issuing API calls from a client.
 
 ### Customizable Settings
 
