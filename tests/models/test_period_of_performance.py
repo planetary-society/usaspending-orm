@@ -2,7 +2,8 @@ from datetime import date
 from unittest.mock import patch
 
 import pytest
-from src.usaspending.models.period_of_performance import PeriodOfPerformance
+
+from usaspending.models.period_of_performance import PeriodOfPerformance
 
 
 class TestPeriodOfPerformance:
@@ -203,7 +204,7 @@ class TestPeriodOfPerformance:
         assert period.end_date is None
         assert period.last_modified_date is None
 
-    @patch("src.usaspending.utils.formatter.logger")
+    @patch("usaspending.utils.formatter.logger")
     def test_date_parsing_warning(self, mock_logger):
         """Test that invalid dates log warnings"""
         invalid_data = {"start_date": "invalid-date-format"}

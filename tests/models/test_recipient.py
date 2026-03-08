@@ -597,7 +597,7 @@ class TestRecipientSpendingIntegration:
         }
 
         # Create RecipientSpending object
-        from src.usaspending.models.recipient_spending import RecipientSpending
+        from usaspending.models.recipient_spending import RecipientSpending
 
         recipient_spending = RecipientSpending(spending_data, client=mock_client)
 

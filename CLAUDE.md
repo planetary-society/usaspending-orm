@@ -102,6 +102,7 @@ tests/
 - Run integration tests: `uv run pytest -m integration`
 - Lint: `uv run ruff check src/ tests/`
 - Format: `uv run ruff format src/ tests/`
+- No Justfile in this project
 
 ## Implementation Patterns
 

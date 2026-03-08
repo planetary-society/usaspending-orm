@@ -104,7 +104,7 @@ class _Config:
         self.validate()
         self._apply_cachier_settings()
 
-    def cachier_params(self) -> dict[str, Any]:
+    def _cachier_params(self) -> dict[str, Any]:
         """Build the base cachier parameter dict from current settings.
 
         Returns:
@@ -123,7 +123,7 @@ class _Config:
 
     def _apply_cachier_settings(self):
         """Applies the current caching settings to the cachier library."""
-        cachier.set_global_params(**self.cachier_params())
+        cachier.set_global_params(**self._cachier_params())
 
         if self.cache_enabled:
             cachier.enable_caching()

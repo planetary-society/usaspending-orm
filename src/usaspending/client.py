@@ -67,7 +67,7 @@ def _cache_key(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, Any]
 
 def _cached_request_decorator_kwargs() -> dict[str, Any]:
     """Build cachier decorator kwargs from the current configuration."""
-    return {**config.cachier_params(), "hash_func": _cache_key, "allow_none": False}
+    return {**config._cachier_params(), "hash_func": _cache_key, "allow_none": False}
 
 
 class USASpendingClient:
