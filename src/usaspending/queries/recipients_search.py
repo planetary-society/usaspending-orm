@@ -36,6 +36,8 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
     Supports filtering by keyword, award type, and sorting by various fields.
     """
 
+    _MAX_PAGE_SIZE: int = 1000
+
     def __init__(self, client: USASpendingClient):
         """
         Initializes the RecipientsSearch query builder.

@@ -15,6 +15,8 @@ Q = TypeVar("Q", bound="BaseQuery[T]")
 class BaseQuery(ABC, Generic[T]):
     """Base query interface for chainable query builders."""
 
+    _MAX_PAGE_SIZE: int = 100
+
     def __init__(self) -> None:
         """Initialize base query state."""
         self._page_size = 100
@@ -68,7 +70,7 @@ class BaseQuery(ABC, Generic[T]):
         if num <= 0:
             raise ValidationError("page_size must be a positive integer")
         clone = self._clone()
-        clone._page_size = min(num, 100)
+        clone._page_size = min(num, self._MAX_PAGE_SIZE)
         return clone
 
     def max_pages(self: Q, num: int) -> Q:

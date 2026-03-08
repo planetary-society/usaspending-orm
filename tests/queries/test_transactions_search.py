@@ -1,9 +1,33 @@
 """Tests for TransactionsSearch query builder."""
 
 import pytest
+from tests.mocks.mock_client import MockUSASpendingClient
 
 from usaspending.models.transaction import Transaction
 from usaspending.queries.transactions_search import TransactionsSearch
+
+
+class TestTransactionsSearchPageSize:
+    """Test TransactionsSearch endpoint-specific page size caps."""
+
+    def test_page_size_allows_up_to_5000(self, mock_usa_client):
+        """Test TransactionsSearch allows page_size up to 5000 in API payloads."""
+        search = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").page_size(5000)
+        assert search._page_size == 5000
+
+        # Prove it flows through to the actual API request payload
+        mock_usa_client.set_paginated_response(
+            MockUSASpendingClient.Endpoints.TRANSACTIONS, [], page_size=5000
+        )
+        mock_usa_client.set_response("/awards/count/transaction/CONT_AWD_123/", {"transactions": 0})
+        list(search)
+        last_req = mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.TRANSACTIONS)
+        assert last_req["json"]["limit"] == 5000
+
+    def test_page_size_caps_at_5000(self, mock_usa_client):
+        """Test TransactionsSearch caps page_size at 5000."""
+        search = TransactionsSearch(mock_usa_client).page_size(10000)
+        assert search._page_size == 5000
 
 
 class TestTransactionsSearchIndexing:

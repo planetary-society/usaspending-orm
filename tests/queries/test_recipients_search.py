@@ -103,6 +103,30 @@ class TestRecipientsSearchPayloadBuilding:
         assert payload["limit"] == 50
 
 
+class TestRecipientsSearchPageSize:
+    """Test RecipientsSearch endpoint-specific page size caps."""
+
+    def test_page_size_allows_up_to_1000(self, mock_usa_client):
+        """Test RecipientsSearch allows page_size up to 1000 in API payloads."""
+        search = RecipientsSearch(mock_usa_client).page_size(1000)
+        assert search._page_size == 1000
+
+        # Prove it flows through to the actual API request payload
+        mock_usa_client.set_paginated_response(
+            MockUSASpendingClient.Endpoints.RECIPIENT_SEARCH, [], page_size=1000
+        )
+        list(search)
+        last_req = mock_usa_client.get_last_request(
+            MockUSASpendingClient.Endpoints.RECIPIENT_SEARCH
+        )
+        assert last_req["json"]["limit"] == 1000
+
+    def test_page_size_caps_at_1000(self, mock_usa_client):
+        """Test RecipientsSearch caps page_size at 1000."""
+        search = RecipientsSearch(mock_usa_client).page_size(2000)
+        assert search._page_size == 1000
+
+
 class TestRecipientsSearchFluentInterface:
     """Test RecipientsSearch fluent interface and immutability."""
 
