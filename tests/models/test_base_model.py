@@ -488,7 +488,7 @@ class TestReattachMethod:
 
         with pytest.raises(
             DetachedInstanceError,
-            match="Cannot reattach.*to a closed client",
+            match=r"Cannot reattach.*to a closed client",
         ):
             model.reattach(mock_client2)
 

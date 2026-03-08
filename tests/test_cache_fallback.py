@@ -102,9 +102,7 @@ class TestCachingFallback:
     def test_http_errors_dont_trigger_duplicate_calls(self, client_config):
         """Test that HTTP errors don't cause duplicate calls due to fallback logic."""
         client_config(cache_enabled=True)
-        self.client._make_cached_request.side_effect = HTTPError(
-            "Not Found", status_code=404
-        )
+        self.client._make_cached_request.side_effect = HTTPError("Not Found", status_code=404)
 
         with pytest.raises(HTTPError) as exc_info:
             self.client._make_request("GET", "/recipient/not-found/")
@@ -115,9 +113,7 @@ class TestCachingFallback:
     def test_validation_errors_dont_trigger_duplicate_calls(self, client_config):
         """Test that ValidationError doesn't cause duplicate calls due to fallback logic."""
         client_config(cache_enabled=True)
-        self.client._make_cached_request.side_effect = ValidationError(
-            "Invalid input parameters"
-        )
+        self.client._make_cached_request.side_effect = ValidationError("Invalid input parameters")
 
         with pytest.raises(ValidationError) as exc_info:
             self.client._make_request("GET", "/recipient/invalid-params/")
