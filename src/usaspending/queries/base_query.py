@@ -117,11 +117,25 @@ class BaseQuery(ABC, Generic[T]):
         return list(self)
 
     def __len__(self) -> int:
-        """Return the total number of items."""
-        return self.count()
+        """Return the effective number of items respecting limit/max_pages."""
+        return self._effective_count()
 
     def _get_effective_page_size(self) -> int:
         """Return the effective page size based on limit and page size."""
         if self._total_limit is not None:
             return min(self._page_size, self._total_limit)
         return self._page_size
+
+    def _effective_count(self) -> int:
+        """Return count capped by limit() and max_pages() constraints.
+
+        Returns:
+            The smaller of the raw API count and any user-set constraints.
+        """
+        raw = self.count()
+        caps = [raw]
+        if self._total_limit is not None:
+            caps.append(self._total_limit)
+        if self._max_pages is not None:
+            caps.append(self._max_pages * self._page_size)
+        return min(caps)
