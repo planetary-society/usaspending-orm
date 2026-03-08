@@ -15,7 +15,12 @@ AWARD_TYPE_GROUPS = {
         "C": "Delivery Order",
         "D": "Definitive Contract",
     },
-    "loans": {"07": "Direct Loan", "08": "Guaranteed/Insured Loan"},
+    "loans": {
+        "07": "Direct Loan",
+        "08": "Guaranteed/Insured Loan",
+        "F003": "Direct Loan",
+        "F004": "Loan Guarantee",
+    },
     "idvs": {
         "IDV_A": "GWAC Government Wide Acquisition Contract",
         "IDV_B": "IDC Multi-Agency Contract, Other Indefinite Delivery Contract",
@@ -31,15 +36,23 @@ AWARD_TYPE_GROUPS = {
         "03": "Formula Grant",
         "04": "Project Grant",
         "05": "Cooperative Agreement",
+        "F001": "Grant",
+        "F002": "Cooperative Agreement",
     },
     "direct_payments": {
         "06": "Direct Payment for Specified Use",
         "10": "Direct Payment with Unrestricted Use",
+        "F006": "Direct Payment for Specified Use",
+        "F007": "Direct Payment with Unrestricted Use",
     },
     "other_assistance": {
         "09": "Insurance",
         "11": "Other Financial Assistance",
         "-1": "Not Specified",
+        "F005": "Indemnity / Insurance (non-loan)",
+        "F008": "Asset Forfeiture / Equitable Sharing",
+        "F009": "Sale, Exchange, or Donation of Property and Goods",
+        "F010": "Other Financial Assistance",
     },
 }
 

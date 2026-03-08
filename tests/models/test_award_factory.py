@@ -133,7 +133,7 @@ class TestFactoryWithTypeCodeFallback:
 
     def test_factory_creates_grant_from_type_code(self, mock_usa_client):
         """Test factory creates Grant from grant type codes."""
-        grant_codes = ["02", "03", "04", "05"]
+        grant_codes = ["02", "03", "04", "05", "F001", "F002"]
 
         for code in grant_codes:
             data = {"generated_unique_award_id": f"ASST_NON_{code}", "type": code}
@@ -142,27 +142,27 @@ class TestFactoryWithTypeCodeFallback:
             assert award.type == code
 
     def test_factory_creates_award_from_direct_payment_codes(self, mock_usa_client):
-        """Test factory creates Grant from direct payment codes."""
-        dp_codes = ["06", "10"]
+        """Test factory creates Award from direct payment codes."""
+        dp_codes = ["06", "10", "F006", "F007"]
 
         for code in dp_codes:
             data = {"generated_unique_award_id": f"ASST_NON_{code}", "type": code}
             award = create_award(data, mock_usa_client)
-            assert isinstance(award, Award)  # Direct payments use Grant class
+            assert isinstance(award, Award)  # Direct payments use base Award class
             assert award.type == code
 
     def test_factory_creates_award_from_other_assistance_codes(self, mock_usa_client):
-        """Test factory creates Grant from other assistance codes."""
-        other_codes = ["09", "11", "-1"]
+        """Test factory creates Award from other assistance codes."""
+        other_codes = ["09", "11", "-1", "F005", "F008", "F009", "F010"]
 
         for code in other_codes:
             data = {"generated_unique_award_id": f"ASST_NON_{code}", "type": code}
             award = create_award(data, mock_usa_client)
-            assert isinstance(award, Award)  # Other assistance uses Grant class
+            assert isinstance(award, Award)  # Other assistance uses base Award class
 
     def test_factory_creates_loan_from_type_code(self, mock_usa_client):
         """Test factory creates Loan from loan type codes."""
-        loan_codes = ["07", "08"]
+        loan_codes = ["07", "08", "F003", "F004"]
 
         for code in loan_codes:
             data = {"generated_unique_award_id": f"ASST_NON_{code}", "type": code}

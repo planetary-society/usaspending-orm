@@ -80,25 +80,25 @@ class TestAwardTypeConstants:
 
     def test_loan_codes(self):
         """Test LOAN_CODES contains expected values."""
-        expected_codes = {"07", "08"}
+        expected_codes = {"07", "08", "F003", "F004"}
         assert LOAN_CODES == expected_codes
         assert isinstance(LOAN_CODES, frozenset)
 
     def test_grant_codes(self):
         """Test GRANT_CODES contains expected values."""
-        expected_codes = {"02", "03", "04", "05"}
+        expected_codes = {"02", "03", "04", "05", "F001", "F002"}
         assert GRANT_CODES == expected_codes
         assert isinstance(GRANT_CODES, frozenset)
 
     def test_direct_payment_codes(self):
         """Test DIRECT_PAYMENT_CODES contains expected values."""
-        expected_codes = {"06", "10"}
+        expected_codes = {"06", "10", "F006", "F007"}
         assert DIRECT_PAYMENT_CODES == expected_codes
         assert isinstance(DIRECT_PAYMENT_CODES, frozenset)
 
     def test_other_codes(self):
         """Test OTHER_CODES contains expected values."""
-        expected_codes = {"09", "11", "-1"}
+        expected_codes = {"09", "11", "-1", "F005", "F008", "F009", "F010"}
         assert OTHER_CODES == expected_codes
         assert isinstance(OTHER_CODES, frozenset)
 
@@ -292,6 +292,16 @@ class TestGetDescription:
             ("06", "Direct Payment for Specified Use"),
             ("09", "Insurance"),
             ("-1", "Not Specified"),
+            ("F001", "Grant"),
+            ("F002", "Cooperative Agreement"),
+            ("F003", "Direct Loan"),
+            ("F004", "Loan Guarantee"),
+            ("F005", "Indemnity / Insurance (non-loan)"),
+            ("F006", "Direct Payment for Specified Use"),
+            ("F007", "Direct Payment with Unrestricted Use"),
+            ("F008", "Asset Forfeiture / Equitable Sharing"),
+            ("F009", "Sale, Exchange, or Donation of Property and Goods"),
+            ("F010", "Other Financial Assistance"),
         ],
     )
     def test_specific_descriptions(self, code, expected_desc):

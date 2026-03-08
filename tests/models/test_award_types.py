@@ -178,7 +178,14 @@ class TestGrant(AwardTestingMixin):
             MockUSASpendingClient.Endpoints.AWARD_SEARCH
         )
         payload = last_request["json"]
-        assert set(payload["filters"]["award_type_codes"]) == {"02", "03", "04", "05"}
+        assert set(payload["filters"]["award_type_codes"]) == {
+            "02",
+            "03",
+            "04",
+            "05",
+            "F001",
+            "F002",
+        }
 
 
 class TestIDV(AwardTestingMixin):

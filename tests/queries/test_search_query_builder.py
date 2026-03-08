@@ -351,7 +351,7 @@ class TestAwardTypeConvenienceMethods:
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
-        assert set(filter_dict["award_type_codes"]) == {"07", "08"}
+        assert set(filter_dict["award_type_codes"]) == {"07", "08", "F003", "F004"}
 
     def test_grants(self, search_builder):
         """Test grants convenience method."""
@@ -359,7 +359,7 @@ class TestAwardTypeConvenienceMethods:
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
-        assert set(filter_dict["award_type_codes"]) == {"02", "03", "04", "05"}
+        assert set(filter_dict["award_type_codes"]) == {"02", "03", "04", "05", "F001", "F002"}
 
     def test_direct_payments(self, search_builder):
         """Test direct_payments convenience method."""
@@ -367,7 +367,7 @@ class TestAwardTypeConvenienceMethods:
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
-        assert set(filter_dict["award_type_codes"]) == {"06", "10"}
+        assert set(filter_dict["award_type_codes"]) == {"06", "10", "F006", "F007"}
 
     def test_other_assistance(self, search_builder):
         """Test other_assistance convenience method."""
@@ -375,7 +375,15 @@ class TestAwardTypeConvenienceMethods:
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
-        assert set(filter_dict["award_type_codes"]) == {"09", "11", "-1"}
+        assert set(filter_dict["award_type_codes"]) == {
+            "09",
+            "11",
+            "-1",
+            "F005",
+            "F008",
+            "F009",
+            "F010",
+        }
 
 
 class TestClassificationCodeFilters:
