@@ -221,6 +221,17 @@ class TestToDate:
         assert result.month == 8
         assert result.day == 25
 
+    def test_space_separated_datetime_format(self):
+        """Test datetime format with a space separator - returns date only."""
+        from datetime import date
+
+        result = to_date("2026-03-31 10:11:00")
+        assert result is not None
+        assert isinstance(result, date)
+        assert result.year == 2026
+        assert result.month == 3
+        assert result.day == 31
+
     @patch("usaspending.utils.formatter.logger")
     def test_logging_on_invalid_format(self, mock_logger):
         """Test that invalid formats trigger a warning log."""
