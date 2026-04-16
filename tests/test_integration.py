@@ -124,7 +124,15 @@ class TestSpendingResourceIntegration:
 
     def test_spending_by_recipient(self, client):
         """Test spending by recipient."""
-        results = list(client.spending.search().by_recipient().fiscal_year(2024).limit(3))
+        # Narrow to a single agency so the upstream aggregation returns promptly;
+        # unfiltered transaction-level recipient queries time out server-side.
+        results = list(
+            client.spending.search()
+            .by_recipient()
+            .agency("National Aeronautics and Space Administration")
+            .fiscal_year(2024)
+            .limit(3)
+        )
         assert len(results) > 0
         assert results[0].name is not None
         assert results[0].amount is not None
