@@ -46,7 +46,7 @@ class FundingSearch(QueryBuilder["Funding"]):
             client: The USASpending client instance.
         """
         super().__init__(client)
-        self._award_id: str = None
+        self._award_id: str | None = None
         self._sort_field: str = "reporting_fiscal_date"
         self._sort_order: str = "desc"
 
