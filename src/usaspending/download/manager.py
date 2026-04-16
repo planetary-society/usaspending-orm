@@ -8,7 +8,9 @@ and extracting their contents.
 
 from __future__ import annotations
 
+import ntpath
 import os
+import posixpath
 import zipfile
 from typing import TYPE_CHECKING
 
@@ -128,22 +130,29 @@ class DownloadManager:
         """
         logger.info(f"Unzipping {zip_path} to {extract_dir}")
 
-        # Resolve to absolute path for security comparison
+        # Resolve to absolute path for security comparison.
         extract_dir = os.path.realpath(extract_dir)
 
-        if not os.path.exists(extract_dir):
-            os.makedirs(extract_dir)
+        # Create with restrictive permissions so extracted CSVs are not
+        # readable/writable by other local users on shared hosts.
+        os.makedirs(extract_dir, mode=0o700, exist_ok=True)
 
         try:
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                # Validate all paths before extraction (ZipSlip protection)
+                # ZipSlip protection: reject absolute paths (POSIX or Windows,
+                # including drive letters and UNC prefixes) and any relative
+                # member that normalizes outside extract_dir. Because
+                # extract_dir was realpath'd above, normpath is sufficient
+                # and avoids per-member stat syscalls.
+                extract_prefix = extract_dir + os.sep
                 for member in zip_ref.namelist():
-                    member_path = os.path.realpath(os.path.join(extract_dir, member))
-                    # Ensure extracted path is within extract_dir
-                    if (
-                        not member_path.startswith(extract_dir + os.sep)
-                        and member_path != extract_dir
-                    ):
+                    if posixpath.isabs(member) or ntpath.isabs(member):
+                        raise DownloadError(
+                            f"Refusing absolute path in ZIP archive: {member}",
+                            file_name=os.path.basename(zip_path),
+                        )
+                    member_path = os.path.normpath(os.path.join(extract_dir, member))
+                    if member_path != extract_dir and not member_path.startswith(extract_prefix):
                         raise DownloadError(
                             f"Attempted path traversal in ZIP archive: {member}",
                             file_name=os.path.basename(zip_path),
