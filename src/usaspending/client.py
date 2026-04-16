@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
@@ -10,7 +11,7 @@ import cachier
 import requests
 
 from .config import config, register_cache_settings_observer
-from .exceptions import APIError, HTTPError, RateLimitError, ValidationError
+from .exceptions import APIError, DownloadError, HTTPError, RateLimitError, ValidationError
 from .logging_config import USASpendingLogger, log_api_request, log_api_response
 
 if TYPE_CHECKING:
@@ -527,10 +528,6 @@ class USASpendingClient:
         Raises:
             DownloadError: If download fails
         """
-        import os
-
-        from .exceptions import DownloadError
-
         # Construct full URL
         if file_url.startswith("http"):
             download_url = file_url

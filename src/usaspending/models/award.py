@@ -170,33 +170,30 @@ class Award(LazyRecord):
         if not gen_id:
             return None
 
-        try:
-            parts = gen_id.split("_")
+        parts = gen_id.split("_")
 
-            # Validate minimum parts based on format
-            if len(parts) < 3:
-                return None
-
-            prefix = "_".join(parts[:2])  # e.g., "CONT_AWD" or "ASST_NON"
-
-            # Validate expected number of parts for each format
-            if (
-                (prefix == "CONT_AWD" and len(parts) != 6)
-                or (prefix == "CONT_IDV" and len(parts) != 4)
-                or (prefix in ("ASST_NON", "ASST_AGG") and len(parts) != 4)
-                or prefix not in ("CONT_AWD", "CONT_IDV", "ASST_NON", "ASST_AGG")
-            ):
-                return None
-
-            identifier = parts[2]  # The actual ID is always the 3rd segment
-
-            # Don't return placeholder values
-            if identifier == "-NONE-" or not identifier:
-                return None
-
-            return identifier
-        except (IndexError, AttributeError):
+        # Validate minimum parts based on format
+        if len(parts) < 3:
             return None
+
+        prefix = "_".join(parts[:2])  # e.g., "CONT_AWD" or "ASST_NON"
+
+        # Validate expected number of parts for each format
+        if (
+            (prefix == "CONT_AWD" and len(parts) != 6)
+            or (prefix == "CONT_IDV" and len(parts) != 4)
+            or (prefix in ("ASST_NON", "ASST_AGG") and len(parts) != 4)
+            or prefix not in ("CONT_AWD", "CONT_IDV", "ASST_NON", "ASST_AGG")
+        ):
+            return None
+
+        identifier = parts[2]  # The actual ID is always the 3rd segment
+
+        # Don't return placeholder values
+        if identifier == "-NONE-" or not identifier:
+            return None
+
+        return identifier
 
     @property
     def award_identifier(self) -> str:
@@ -435,7 +432,7 @@ class Award(LazyRecord):
             self._lazy_get("infrastructure_outlays", "Infrastructure Outlays", default=0)
         ) or Decimal("0.00")
 
-    # Helper properties properties. These often map to field names returned by
+    # Helper properties. These often map to field names returned by
     # the spending_by_award/Award Search results, or provide general access methods
     # that are common across award types.
 
@@ -736,8 +733,6 @@ class Award(LazyRecord):
         if office_name:
             enhanced_subtier_data["office_agency_name"] = office_name
 
-        from .subtier_agency import SubTierAgency
-
         return SubTierAgency(enhanced_subtier_data, self._client)
 
     @cached_property
@@ -761,8 +756,6 @@ class Award(LazyRecord):
         office_name = data.get("office_agency_name")
         if office_name:
             enhanced_subtier_data["office_agency_name"] = office_name
-
-        from .subtier_agency import SubTierAgency
 
         return SubTierAgency(enhanced_subtier_data, self._client)
 

@@ -118,9 +118,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..client import USASpendingClient
 from ..exceptions import ValidationError
-from ..logging_config import USASpendingLogger
+from ..logging_config import USASpendingLogger, log_query_execution
 from ..models import Award
 from ..models.award_factory import create_award
 
@@ -163,19 +162,6 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
     See module docstring for detailed usage examples.
     """
 
-    def __init__(self, client: USASpendingClient):
-        """
-        Initialize the AwardsSearch query builder.
-
-        Args:
-            client: The USASpending client instance for API communication.
-
-        Example:
-            >>> client = USASpendingClient()
-            >>> search = AwardsSearch(client)
-        """
-        super().__init__(client)
-
     @property
     def _endpoint(self) -> str:
         """
@@ -185,20 +171,6 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             str: The endpoint path '/search/spending_by_award/'.
         """
         return "/search/spending_by_award/"
-
-    def _clone(self) -> AwardsSearch:
-        """
-        Create an immutable copy of the query builder.
-
-        This method ensures that all filter operations return new instances,
-        maintaining immutability of the query builder.
-
-        Returns:
-            AwardsSearch: A new instance with copied filter objects.
-        """
-        clone = super()._clone()
-        clone._filter_objects = self._filter_objects.copy()
-        return clone
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """
@@ -387,8 +359,6 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         payload = {
             "filters": final_filters,
         }
-
-        from ..logging_config import log_query_execution
 
         log_query_execution(
             logger,

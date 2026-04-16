@@ -302,11 +302,6 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         return final_filters
 
-    def _fetch_page(self, page: int) -> list[dict[str, Any]]:
-        """Fetch a single page of results."""
-        response = self._execute_query(page)
-        return response.get("results", [])
-
     def _execute_query(self, page: int) -> dict[str, Any]:
         """Execute the query and return raw response."""
         query_type = self.__class__.__name__

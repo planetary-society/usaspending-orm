@@ -108,26 +108,6 @@ def current_fiscal_year() -> int:
         return current_date.year + 1
 
 
-def get_past_fiscal_years(num_years: int = 3) -> list[int]:
-    """
-    Get the past N fiscal years.
-    In the US, the federal fiscal year starts on October 1.
-
-    Args:
-        num_years: Number of past fiscal years to return
-
-    Returns:
-        List: List of fiscal years, starting with the most recent
-    """
-    current_date = datetime.now()
-    current_year = current_date.year
-
-    # We always want the last completed fiscal year
-    current_fiscal_year = current_year - 1 if current_date.month < 10 else current_year
-
-    return [current_fiscal_year - i for i in range(num_years)]
-
-
 def to_decimal(x: Any) -> Decimal | None:
     """Convert input to a Decimal with 2 decimal places using banker's rounding.
 
@@ -182,60 +162,6 @@ def to_int(x: Any) -> int | None:
     except (TypeError, ValueError):
         return None
 
-
-# --- Configuration ---
-# Set of acronyms and initialisms to always keep uppercase.
-# This could be loaded from a config file or environment variables in a larger application.
-DEFAULT_KEEP_UPPERCASE: set[str] = {
-    # Common Business / Legal
-    "LLC",
-    "INC",
-    "LLP",
-    "LTD",
-    "L.L.C.",
-    "I.N.C.",
-    "L.L.P.",
-    "L.T.D.",
-    # Geographical / Governmental
-    "USA",
-    "US",
-    "UK",
-    # Organizations / Agencies
-    "NASA",
-    "ESA",
-    "JAXA",
-    # NASA Facilities & Major Programs (add more as needed)
-    "JPL",  # Jet Propulsion Laboratory
-    "JSC",  # Johnson Space Center
-    "KSC",  # Kennedy Space Center
-    "GSFC",  # Goddard Space Flight Center
-    "MSFC",  # Marshall Space Flight Center
-    "ARC",  # Ames Research Center
-    "GRC",  # Glenn Research Center
-    "LARC",  # Langley Research Center (or LaRC - handled by case-insensitive check)
-    "AFRC",  # Armstrong Flight Research Center
-    "SSC",  # Stennis Space Center
-    "ISS",  # International Space Station
-    "JWST",  # James Webb Space Telescope
-    # Specific examples from user input
-    "CSOS",
-    "CL",
-    "FL",
-    "FPRW",
-    "PADF",
-    "ICAT",
-    "ICATEQ",
-    "AC"  # For A.C. style
-    # Add other common contract/technical acronyms as needed
-    "RFQ",
-    "RFP",
-    "SOW",
-    "CDR",
-    "PDR",
-    "QA",
-    "PI",
-    "COTS",
-}
 
 # Maximum length for parenthesized text to be uppercased
 PAREN_UPPERCASE_MAX_LEN: int = 9  # Fewer than 10 characters
@@ -505,12 +431,6 @@ class TextFormatter:
             word = normalized_words[word.upper()]
 
         return cls._preserve_special_case(word)
-
-
-# Define a callback function for custom word handling
-def custom_titlecase_callback(word, **kwargs):
-    """Custom titlecase callback using YAML configuration."""
-    return TextFormatter.titlecase_callback(word, **kwargs)
 
 
 def contracts_titlecase(text):
