@@ -26,6 +26,7 @@ from .config import config
 from .exceptions import (
     APIError,
     ConfigurationError,
+    DetachedInstanceError,
     DownloadError,
     HTTPError,
     RateLimitError,
@@ -102,6 +103,7 @@ __all__ = [
     "AwardsSearch",
     "ConfigurationError",
     "Contract",
+    "DetachedInstanceError",
     "DistrictSpending",
     "DownloadError",
     "Funding",
