@@ -4,6 +4,7 @@ import os
 from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Callable
+from urllib.parse import urlparse
 
 import cachier
 
@@ -134,6 +135,16 @@ class _Config:
 
     def validate(self) -> None:
         """Validate the current configuration values."""
+        parsed_base = urlparse(self.base_url)
+        if parsed_base.scheme not in {"http", "https"} or not parsed_base.netloc:
+            raise ConfigurationError(
+                f"base_url must be an absolute http(s) URL, got: {self.base_url!r}"
+            )
+        if any(c in self.user_agent for c in ("\r", "\n")):
+            raise ConfigurationError("user_agent must not contain CR/LF characters")
+        if not self.cache_dir:
+            raise ConfigurationError("cache_dir must be a non-empty string")
+
         if self.timeout <= 0:
             raise ConfigurationError("timeout must be positive")
         if self.max_retries < 0:
