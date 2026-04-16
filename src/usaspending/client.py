@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import time
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import cachier
 import requests
@@ -534,6 +534,23 @@ class USASpendingClient:
             download_url = file_url
         else:
             download_url = urljoin(config.base_url, file_url.lstrip("/"))
+
+        # Restrict downloads to the configured allow-list of hosts. The API
+        # returns absolute file_url values; allow-listing prevents SSRF if
+        # the response is tampered with (e.g., redirected to metadata
+        # endpoints or attacker-controlled hosts).
+        parsed_download = urlparse(download_url)
+        if parsed_download.scheme != "https":
+            raise DownloadError(
+                f"Refusing to download over non-https scheme: {parsed_download.scheme!r}",
+                file_name=os.path.basename(destination_path),
+            )
+        if parsed_download.hostname not in config.allowed_download_hosts:
+            raise DownloadError(
+                f"Download host {parsed_download.hostname!r} is not in "
+                f"config.allowed_download_hosts.",
+                file_name=os.path.basename(destination_path),
+            )
 
         logger.info(f"Downloading binary file from {download_url}")
 

@@ -45,6 +45,12 @@ class _Config:
         # Default settings are defined here as instance attributes
         self.base_url: str = "https://api.usaspending.gov/api/v2/"
         self.user_agent: str = f"usaspending-orm-python/{_resolve_version()}"
+        # Hostnames the library will fetch binary downloads from. The API
+        # returns absolute file_url values; restricting them to a known
+        # allow-list prevents SSRF if the response is tampered with.
+        self.allowed_download_hosts: frozenset[str] = frozenset(
+            {"api.usaspending.gov", "files.usaspending.gov"}
+        )
         self.timeout: int = 30
         self.max_retries: int = 3
         self.retry_delay: float = 10.0
