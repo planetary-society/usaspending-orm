@@ -39,7 +39,8 @@ def to_date(date_string: str | date | None) -> date | None:
     if not date_string:
         return None
 
-    # If already a date object, return as-is
+    if isinstance(date_string, datetime):
+        return date_string.date()
     if isinstance(date_string, date):
         return date_string
 

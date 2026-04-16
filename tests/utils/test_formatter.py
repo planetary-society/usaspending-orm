@@ -284,3 +284,18 @@ class TestToDate:
         # Second conversion should not raise TypeError
         second_conversion = to_date(first_conversion)
         assert second_conversion == date(2024, 8, 12)
+
+    def test_datetime_object_returns_date_portion(self):
+        """datetime input is narrowed to its date() portion.
+
+        Regression: datetime is a subclass of date, so the prior
+        ``isinstance(x, date)`` check let datetimes through unchanged,
+        leaking a datetime out of a function typed ``date | None``.
+        """
+        from datetime import date, datetime
+
+        dt = datetime(2025, 8, 29, 14, 30, 45)
+        result = to_date(dt)
+
+        assert type(result) is date
+        assert result == date(2025, 8, 29)
