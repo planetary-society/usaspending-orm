@@ -390,6 +390,7 @@ class USASpendingClient:
 
         # Track request timing
         start_time = time.time()
+        response: requests.Response | None = None
 
         try:
             # Make request with retry
@@ -498,8 +499,8 @@ class USASpendingClient:
             return data
 
         except Exception as e:
-            # Log any unexpected errors
-            if "response" in locals():
+            # response is None if the exception fired before the HTTP round-trip
+            if response is not None:
                 error_msg_with_context = self._format_error_with_context(str(e))
                 log_api_response(
                     logger,
