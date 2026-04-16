@@ -31,7 +31,7 @@ class AwardResource(BaseResource):
             Award model instance
 
         Raises:
-            : If generated_award_id is invalid
+            ValidationError: If generated_award_id is invalid
             APIError: If award not found
         """
         logger.debug(f"Retrieving award by ID: {generated_award_id}")

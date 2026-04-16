@@ -4,6 +4,7 @@ import os
 from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Callable
+from urllib.parse import urlparse
 
 import cachier
 
@@ -44,6 +45,12 @@ class _Config:
         # Default settings are defined here as instance attributes
         self.base_url: str = "https://api.usaspending.gov/api/v2/"
         self.user_agent: str = f"usaspending-orm-python/{_resolve_version()}"
+        # Hostnames the library will fetch binary downloads from. The API
+        # returns absolute file_url values; restricting them to a known
+        # allow-list prevents SSRF if the response is tampered with.
+        self.allowed_download_hosts: frozenset[str] = frozenset(
+            {"api.usaspending.gov", "files.usaspending.gov"}
+        )
         self.timeout: int = 30
         self.max_retries: int = 3
         self.retry_delay: float = 10.0
@@ -75,6 +82,11 @@ class _Config:
         )
         self.cache_ttl: timedelta = timedelta(weeks=1)
         self.cache_timeout: int = 60  # Seconds to wait for processing cache entries
+
+        # Tracks the path most recently prepared by
+        # _ensure_cache_dir_permissions so the stat/chmod triple only
+        # runs when the user actually changes cache_dir.
+        self._cache_dir_prepared: str | None = None
 
         # Apply the initial default settings when the object is created
         self._apply_cachier_settings()
@@ -127,13 +139,46 @@ class _Config:
 
         if self.cache_enabled:
             cachier.enable_caching()
+            self._ensure_cache_dir_permissions()
         else:
             cachier.disable_caching()
 
         _notify_cache_settings_observers()
 
+    def _ensure_cache_dir_permissions(self) -> None:
+        """Create the cache directory with restrictive permissions.
+
+        File-based caches use pickle, so write access by another local user
+        is a code-execution risk. We create the directory with 0700 and
+        tighten permissions if it already exists with looser bits. The
+        result is memoized so repeat `configure()` calls don't re-syscall.
+        """
+        if self.cache_backend != "file":
+            return
+        if self._cache_dir_prepared == self.cache_dir:
+            return
+        try:
+            os.makedirs(self.cache_dir, mode=0o700, exist_ok=True)
+            if os.name == "posix":
+                current_mode = os.stat(self.cache_dir).st_mode & 0o777
+                if current_mode & 0o077:
+                    os.chmod(self.cache_dir, 0o700)
+            self._cache_dir_prepared = self.cache_dir
+        except OSError as e:
+            logger.warning(f"Could not enforce 0700 permissions on cache dir {self.cache_dir}: {e}")
+
     def validate(self) -> None:
         """Validate the current configuration values."""
+        parsed_base = urlparse(self.base_url)
+        if parsed_base.scheme not in {"http", "https"} or not parsed_base.netloc:
+            raise ConfigurationError(
+                f"base_url must be an absolute http(s) URL, got: {self.base_url!r}"
+            )
+        if any(c in self.user_agent for c in ("\r", "\n")):
+            raise ConfigurationError("user_agent must not contain CR/LF characters")
+        if not self.cache_dir:
+            raise ConfigurationError("cache_dir must be a non-empty string")
+
         if self.timeout <= 0:
             raise ConfigurationError("timeout must be positive")
         if self.max_retries < 0:

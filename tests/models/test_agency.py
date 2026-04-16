@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from unittest.mock import Mock
 
 from tests.utils import assert_decimal_equal
@@ -110,7 +111,7 @@ class TestAgencyObligationMethodsNewStructure:
         agency = Agency(data, mock_usa_client)
 
         assert agency.obligations == agency.total_obligations
-        assert isinstance(agency.obligations, float)
+        assert isinstance(agency.obligations, Decimal)
 
     def test_cached_obligations_from_award_summary(
         self, mock_usa_client, agency_award_summary_fixture_data
@@ -156,6 +157,15 @@ class TestAgencyObligationMethodsNewStructure:
         agency = Agency(data, mock_usa_client)
 
         assert agency.code == "080"
+
+    def test_latest_action_date_none_when_summary_missing(self, mock_usa_client):
+        """Regression: latest_action_date previously crashed with
+        ``AttributeError: 'NoneType' object has no attribute 'get'`` when
+        ``_get_award_summary()`` returned None (e.g., missing toptier_code).
+        """
+        agency = Agency({}, mock_usa_client)
+        agency._get_award_summary = Mock(return_value=None)
+        assert agency.latest_action_date is None
 
 
 class TestAgencyLazyLoadingNewStructure:

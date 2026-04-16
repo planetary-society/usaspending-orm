@@ -39,11 +39,11 @@ def test_award_search(mock_client):
             "page_metadata": {"hasNext": False}
         }
     ]
-    
+
     # Test execution
     results = list(mock_client.awards.search().award_type_codes("A"))
     assert len(results) == 3
-    
+
     # Manual assertion
     assert mock_client._make_request.call_count == 2
 ```
@@ -55,14 +55,14 @@ def test_award_search(mock_usa_client):
     # Simple mock setup
     mock_usa_client.mock_award_search([
         {"Award ID": "1"},
-        {"Award ID": "2"}, 
+        {"Award ID": "2"},
         {"Award ID": "3"}
     ])
-    
+
     # Test execution
     results = list(mock_usa_client.awards.search().award_type_codes("A"))
     assert len(results) == 3
-    
+
     # Built-in assertion
     assert mock_usa_client.get_request_count() == 1  # Auto-paginated
 ```
@@ -77,15 +77,15 @@ def test_award_search(mock_usa_client):
         {"Award ID": "123", "Recipient Name": "SpaceX", "Award Amount": 1000000},
         {"Award ID": "456", "Recipient Name": "Blue Origin", "Award Amount": 2000000}
     ])
-    
+
     results = list(
         mock_usa_client.awards.search()
         .award_type_codes("A")
         .keywords("space")
     )
-    
+
     assert len(results) == 2
-    assert results[0]._data["Recipient Name"] == "SpaceX"
+    assert results[0].raw["Recipient Name"] == "SpaceX"
 ```
 
 ### Pagination Testing
@@ -142,20 +142,20 @@ def test_with_fixture(mock_usa_client):
 ```python
 def test_request_tracking(mock_usa_client):
     mock_usa_client.mock_award_search([])
-    
+
     list(
         mock_usa_client.awards.search()
         .award_type_codes("A")
         .keywords("space")
     )
-    
+
     # Check what was sent
     last_request = mock_usa_client.get_last_request()
     payload = last_request["json"]
-    
+
     assert payload["filters"]["award_type_codes"] == ["A"]
     assert payload["filters"]["keywords"] == ["space"]
-    
+
     # Or use assertion helper
     mock_usa_client.assert_called_with(
         "/search/spending_by_award/",
@@ -211,6 +211,7 @@ def test_rate_limiting(mock_usa_client):
 ### MockUSASpendingClient
 
 #### Response Setup Methods
+
 - `set_response(endpoint, response_data, status_code=200)`: Set single response
 - `set_paginated_response(endpoint, items, page_size=100)`: Auto-paginate items
 - `set_fixture_response(endpoint, fixture_name)`: Load from fixture file
@@ -218,6 +219,7 @@ def test_rate_limiting(mock_usa_client):
 - `add_response_sequence(endpoint, responses)`: Multiple responses in sequence
 
 #### Convenience Mock Methods
+
 - `mock_award_search(awards, page_size=100)`: Convenience for award search
 - `mock_award_count(**counts)`: Convenience for award counts
 - `mock_award_detail(award_id, **data)`: Convenience for award detail
@@ -228,18 +230,22 @@ def test_rate_limiting(mock_usa_client):
 - `mock_download_status(file_name, status, custom_data)`: Mock download status response
 
 #### Request Tracking
+
 - `get_request_count(endpoint=None)`: Get number of requests made
 - `get_last_request(endpoint=None)`: Get last request data
 - `assert_called_with(endpoint, method, json, params)`: Assert specific request
 
 #### Rate Limiting Simulation
+
 - `simulate_rate_limit(delay=0.1)`: Enable rate limiting with delay between requests
 - `disable_rate_limit()`: Disable rate limiting simulation
 
 #### Utility Methods
+
 - `reset()`: Clear all mock state
 
 #### Endpoint Constants
+
 - `Endpoints` class: Contains constants for all API endpoints (e.g., `MockUSASpendingClient.Endpoints.AWARD_SEARCH`)
 
 ### ResponseBuilder
@@ -285,12 +291,14 @@ python -m pytest tests/test_mock_client_example.py -v
 ## Quick Start
 
 1. Use the `mock_usa_client` fixture in your tests:
+
    ```python
    def test_my_feature(mock_usa_client):
        # Your test here
    ```
 
 2. Set up simple responses:
+
    ```python
    mock_usa_client.mock_award_search([
        {"Award ID": "123", "Recipient Name": "Test Corp"}
@@ -298,6 +306,7 @@ python -m pytest tests/test_mock_client_example.py -v
    ```
 
 3. Execute your test logic:
+
    ```python
    results = list(mock_usa_client.awards.search().award_type_codes("A"))
    assert len(results) == 1

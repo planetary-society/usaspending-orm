@@ -336,36 +336,6 @@ def parse_location_scope(scope: str) -> LocationScope:
     return parse_enum_value(scope, LocationScope, "scope", normalize=False)
 
 
-def parse_agency_type(agency_type: str) -> AgencyType:
-    """Convert a string to an AgencyType enum value.
-
-    Args:
-        agency_type: Either "awarding" or "funding" (case-insensitive).
-
-    Returns:
-        AgencyType: The corresponding enum value.
-
-    Raises:
-        ValidationError: If agency_type is not "awarding" or "funding".
-    """
-    return parse_enum_value(agency_type, AgencyType, "agency_type", normalize=False)
-
-
-def parse_agency_tier(tier: str) -> AgencyTier:
-    """Convert a string to an AgencyTier enum value.
-
-    Args:
-        tier: Either "toptier" or "subtier" (case-insensitive).
-
-    Returns:
-        AgencyTier: The corresponding enum value.
-
-    Raises:
-        ValidationError: If tier is not "toptier" or "subtier".
-    """
-    return parse_enum_value(tier, AgencyTier, "tier", normalize=False)
-
-
 def parse_award_date_type(date_type: str) -> AwardDateType:
     """Convert a string to an AwardDateType enum value.
 
@@ -496,8 +466,6 @@ def parse_agency_spec(agency: dict[str, str]) -> AgencySpec:
     Raises:
         ValidationError: If required fields are missing or invalid.
     """
-    from ..exceptions import ValidationError
-
     # Validate required fields
     if "name" not in agency:
         raise ValidationError("Agency specification must include 'name' field")

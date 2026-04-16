@@ -24,8 +24,12 @@ class RecipientsResource(BaseResource):
         self,
         recipient_id: str,
         year: int | str | None = None,
-    ) -> Recipient | None:
+    ) -> Recipient:
         """Retrieve a single recipient by ID.
+
+        Direct-ID lookups raise on miss rather than returning None. For the
+        search-delegation convention (which returns Optional), see
+        ``find_by_duns`` and ``find_by_uei``.
 
         Args:
             recipient_id: Unique recipient identifier (hash + level suffix,

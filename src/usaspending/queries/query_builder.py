@@ -302,11 +302,6 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         return final_filters
 
-    def _fetch_page(self, page: int) -> list[dict[str, Any]]:
-        """Fetch a single page of results."""
-        response = self._execute_query(page)
-        return response.get("results", [])
-
     def _execute_query(self, page: int) -> dict[str, Any]:
         """Execute the query and return raw response."""
         query_type = self.__class__.__name__
@@ -328,15 +323,25 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         return response
 
-    def _clone(self) -> QueryBuilder[T]:
-        """Create a copy for method chaining."""
-        clone = self.__class__(self._client)
+    def _copy_base_state_into(self, clone: QueryBuilder[T]) -> None:
+        """Copy QueryBuilder-owned state into an already-constructed clone.
+
+        Subclasses whose constructors require extra arguments (e.g., a
+        required ``award_id``) cannot call ``super()._clone()``. They build
+        the clone themselves and call this to inherit base-class state, so
+        base-class changes propagate without per-subclass edits.
+        """
         clone._filter_objects = self._filter_objects.copy()
         clone._page_size = self._page_size
         clone._total_limit = self._total_limit
         clone._max_pages = self._max_pages
         clone._order_by = self._order_by
         clone._order_direction = self._order_direction
+
+    def _clone(self) -> QueryBuilder[T]:
+        """Create a copy for method chaining."""
+        clone = self.__class__(self._client)
+        self._copy_base_state_into(clone)
         return clone
 
 
@@ -464,6 +469,10 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             raise ValidationError(
                 f"end_date {end_date} is before the minimum supported date "
                 f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
+            )
+        if end_date < start_date:
+            raise ValidationError(
+                f"end_date {end_date} must be on or after start_date {start_date}."
             )
 
         # Convert string date_type to enum if needed

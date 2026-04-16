@@ -152,7 +152,7 @@ class RateLimitError(USASpendingError):
         self.retry_after = retry_after
 
 
-class ValidationError(USASpendingError):
+class ValidationError(USASpendingError, ValueError):
     """Raised when input validation fails.
 
     This exception is raised when user-provided parameters fail validation
@@ -166,6 +166,10 @@ class ValidationError(USASpendingError):
         - Invalid page_size (must be 1-100)
         - Invalid sort field for the query type
         - Invalid award type filter
+
+    Inherits from both ``USASpendingError`` and the built-in ``ValueError``,
+    so callers who previously caught ``ValueError`` for malformed inputs
+    continue to work unchanged.
 
     Example:
         Handling validation errors::

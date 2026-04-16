@@ -45,9 +45,9 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             client: The USASpending client instance.
         """
         super().__init__(client)
-        self._award_id: str = None
+        self._award_id: str | None = None
         # Client-side filters (not supported by API)
-        self._client_filters = {}
+        self._client_filters: dict[str, Any] = {}
 
     @property
     def _endpoint(self) -> str:
