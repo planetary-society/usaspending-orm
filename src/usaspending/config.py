@@ -83,6 +83,11 @@ class _Config:
         self.cache_ttl: timedelta = timedelta(weeks=1)
         self.cache_timeout: int = 60  # Seconds to wait for processing cache entries
 
+        # Tracks the path most recently prepared by
+        # _ensure_cache_dir_permissions so the stat/chmod triple only
+        # runs when the user actually changes cache_dir.
+        self._cache_dir_prepared: str | None = None
+
         # Apply the initial default settings when the object is created
         self._apply_cachier_settings()
 
@@ -134,10 +139,33 @@ class _Config:
 
         if self.cache_enabled:
             cachier.enable_caching()
+            self._ensure_cache_dir_permissions()
         else:
             cachier.disable_caching()
 
         _notify_cache_settings_observers()
+
+    def _ensure_cache_dir_permissions(self) -> None:
+        """Create the cache directory with restrictive permissions.
+
+        File-based caches use pickle, so write access by another local user
+        is a code-execution risk. We create the directory with 0700 and
+        tighten permissions if it already exists with looser bits. The
+        result is memoized so repeat `configure()` calls don't re-syscall.
+        """
+        if self.cache_backend != "file":
+            return
+        if self._cache_dir_prepared == self.cache_dir:
+            return
+        try:
+            os.makedirs(self.cache_dir, mode=0o700, exist_ok=True)
+            if os.name == "posix":
+                current_mode = os.stat(self.cache_dir).st_mode & 0o777
+                if current_mode & 0o077:
+                    os.chmod(self.cache_dir, 0o700)
+            self._cache_dir_prepared = self.cache_dir
+        except OSError as e:
+            logger.warning(f"Could not enforce 0700 permissions on cache dir {self.cache_dir}: {e}")
 
     def validate(self) -> None:
         """Validate the current configuration values."""
