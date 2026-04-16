@@ -85,7 +85,7 @@ def round_to_millions(amount: int | float | Decimal) -> str:
         return "$0.00"
     elif amount >= 1_000_000_000:
         return f"${amount / 1_000_000_000:,.1f} billion"
-    elif amount >= 10_000_000 or amount >= 1_000_000:
+    elif amount >= 1_000_000:
         return f"${amount / 1_000_000:,.1f} million"
     else:
         return f"${amount:,.2f}"
