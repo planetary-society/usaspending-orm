@@ -217,7 +217,7 @@ class Agency(LazyRecord):
         return self._lazy_get("abbreviation")
 
     @property
-    def id(self):
+    def id(self) -> int | None:
         """Internal identifier from USASpending.gov.
 
         Returns:
@@ -400,8 +400,8 @@ class Agency(LazyRecord):
         obligations = self.get_value(["total_obligations", "obligations"])
         if not obligations:
             # If not present, fetch from award summary
-            obligations = self.get_obligations()
-        return obligations
+            return self.get_obligations()
+        return to_decimal(obligations)
 
     @cached_property
     def latest_action_date(self) -> date | None:
@@ -418,7 +418,8 @@ class Agency(LazyRecord):
         # If not, fetch from agency award summary endpoint
         if not latest_action_date_string:
             summary = self._get_award_summary()
-            latest_action_date_string = summary.get("latest_action_date")
+            if summary:
+                latest_action_date_string = summary.get("latest_action_date")
 
         return to_date(latest_action_date_string)
 
@@ -521,7 +522,7 @@ class Agency(LazyRecord):
         fiscal_year: int | None = None,
         agency_type: str = "awarding",
         award_type_codes: list[str] | None = None,
-    ) -> float | None:
+    ) -> Decimal | None:
         """Get obligations for this agency, optionally filtered.
 
         Args:
@@ -533,7 +534,7 @@ class Agency(LazyRecord):
                 If None, includes all award types.
 
         Returns:
-            Optional[float]: Total obligations amount as a float,
+            Optional[Decimal]: Total obligations amount as a Decimal,
             or None if unavailable due to missing data or API error.
         """
 
