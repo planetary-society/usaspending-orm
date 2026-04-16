@@ -58,7 +58,6 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         self._award_id: str | None = None
         self._sort_field: str = "federal_account"
         self._sort_order: str = "desc"
-        self._cached_count: int | None = None
 
     @property
     def _endpoint(self) -> str:
@@ -71,7 +70,6 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         clone._award_id = self._award_id
         clone._sort_field = self._sort_field
         clone._sort_order = self._sort_order
-        clone._cached_count = self._cached_count
         return clone
 
     def _build_payload(self, page: int) -> dict[str, Any]:

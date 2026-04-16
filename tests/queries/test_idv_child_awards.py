@@ -225,6 +225,27 @@ class TestClone:
         assert clone._total_limit == 50
         assert clone is not search
 
+    def test_clone_preserves_base_query_state(self, mock_usa_client):
+        """_clone must copy base-class fields too.
+
+        Regression: an earlier version copied only class-specific fields
+        and silently dropped ``_max_pages``, ``_order_by``,
+        ``_order_direction``, and ``_page_size`` set on the parent.
+        """
+        search = (
+            IDVChildAwardsSearch(mock_usa_client, "CONT_IDV_123")
+            .page_size(25)
+            .max_pages(3)
+            .order_by("piid", "asc")
+        )
+
+        clone = search._clone()
+
+        assert clone._page_size == search._page_size
+        assert clone._max_pages == search._max_pages
+        assert clone._order_by == search._order_by
+        assert clone._order_direction == search._order_direction
+
 
 class TestTransformResult:
     """Test result transformation."""
