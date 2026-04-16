@@ -127,6 +127,19 @@ class TestTimePeriodFilter:
         )
         assert len(result._filter_objects) == 1
 
+    def test_time_period_rejects_end_before_start(self, search_builder):
+        """Invalid ranges (end < start) are rejected.
+
+        Regression: previously only the FY2008 floor was checked; nonsensical
+        ranges such as ``time_period("2024-06-01", "2024-01-01")`` passed
+        validation and were silently sent to the API.
+        """
+        with pytest.raises(ValidationError, match="must be on or after start_date"):
+            search_builder.time_period(
+                start_date="2024-06-01",
+                end_date="2024-01-01",
+            )
+
 
 class TestFiscalYearFilter:
     """Test fiscal_year convenience method."""

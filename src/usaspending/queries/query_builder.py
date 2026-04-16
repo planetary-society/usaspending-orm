@@ -470,6 +470,10 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                 f"end_date {end_date} is before the minimum supported date "
                 f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
             )
+        if end_date < start_date:
+            raise ValidationError(
+                f"end_date {end_date} must be on or after start_date {start_date}."
+            )
 
         # Convert string date_type to enum if needed
         date_type_enum = None
