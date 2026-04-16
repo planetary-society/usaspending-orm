@@ -6,6 +6,7 @@ import threading
 import time
 from collections import deque
 
+from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -30,9 +31,9 @@ class RateLimiter:
             period: Time period in seconds
         """
         if max_calls <= 0:
-            raise ValueError("max_calls must be positive")
+            raise ValidationError("max_calls must be positive")
         if period <= 0:
-            raise ValueError("period must be positive")
+            raise ValidationError("period must be positive")
 
         self.max_calls = max_calls
         self.period = period
