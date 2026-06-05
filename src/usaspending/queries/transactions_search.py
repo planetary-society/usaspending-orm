@@ -24,6 +24,8 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     on transaction data. This class follows a fluent interface pattern.
     """
 
+    _MAX_PAGE_SIZE: int = 5000
+
     # Valid sort fields per API documentation
     VALID_SORT_FIELDS = frozenset(
         {

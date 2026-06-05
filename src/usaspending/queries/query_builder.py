@@ -155,12 +155,13 @@ class QueryBuilder(BaseQuery[T], ABC):
         return results
 
     def _get_cached_count(self) -> int:
-        """Get the count, using cached value if available.
+        """Get the effective count, using cached value if available.
 
+        Returns the count capped by limit() and max_pages() constraints.
         This avoids redundant count API calls during indexing/slicing operations.
         """
         if self._cached_count is None:
-            self._cached_count = self.count()
+            self._cached_count = self._effective_count()
         return self._cached_count
 
     def __getitem__(self, key: int | slice) -> T | list[T]:

@@ -12,7 +12,7 @@ The platform has a [comprehensive API](https://api.usaspending.gov) for querying
 
 **🔗 ORM-Style Chained Interface** - Access related data through object associations (e.g., `award.recipient.location.city`) inspired by ActiveRecord and SQLAlchemy. Navigate related data without manual API calls.
 
-**🔎 Comprehensive Award Queries** - Build complex searches with chainable filters for agencies, award types, fiscal years, and more. 
+**🔎 Comprehensive Award Queries** - Build complex searches with chainable filters for agencies, award types, fiscal years, and more.
 
 **⚡️ Smart Caching & Rate Limiting** - Optional file-based caching to dramatically improve performance for repeated queries. Automatic rate limiting and retry logic handles API throttle limits during bulk operations.
 
@@ -34,17 +34,20 @@ The library provides a `USASpendingClient` class that manages the connection to 
 or can be instantiated directly.
 
 #### Load the client
+
 ```python
 from usaspending import USASpendingClient
 ```
 
 #### Then load a specific award by its Award ID
+
 ```python
 with USASpendingClient() as client:
     award = client.awards.find_by_award_id("80GSFC18C0008")
 ```
 
 #### Access related Award properties via chained object associations
+
 ```python
 with USASpendingClient() as client:
     award = client.awards.find_by_award_id("80GSFC18C0008")
@@ -63,11 +66,11 @@ with USASpendingClient() as client:
     awards_query = client.awards.search()
 ```
 
-Search parameters are outlined in the [spending_by_award](https://github.com/fedspendingtransparency/usaspending-api/raw/refs/heads/master/usaspending_api/api_contracts/contracts/v2/search/spending_by_award.md) endpoint of the USASpending API. Every search parameter is applied via a matching "snake_case" method name. These methods can be chained together to build complex queries.
+Search parameters are outlined in the [spending_by_award](https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/search/spending_by_award.md) endpoint of the USASpending API. Every search parameter is applied via a matching "snake_case" method name. These methods can be chained together to build complex queries.
 
-``` python
+```python
 awards_query = client.awards.search() \
-    .agencies({"name":"National Aeronautics and Space Administration", "type":"awarding", "tier":"toptier"}) \  
+    .agencies({"name":"National Aeronautics and Space Administration", "type":"awarding", "tier":"toptier"}) \
     .grants() \
     .keywords("Perseverance","Mars")
 ```
@@ -80,7 +83,7 @@ The methods `.all()`, `.first()`, `.count()` will trigger a query to the API, as
 ```python
 
 with USASpendingClient() as client:
-    
+
     # Create query object with chained filters
     awards_query = client.awards.search() \
         .agency("National Aeronautics and Space Administration") \
@@ -88,21 +91,21 @@ with USASpendingClient() as client:
         .contracts() \
         .fiscal_year(2023) \
         .order_by("Award Amount", "desc")
-    
+
     # -> <AwardQuery ...> object, no API call made yet
-    
+
     # Return results count without fetching all records
     count = awards_query.count() # -> 8
 
     # Fetch first result (query executes here)
     top_spacex_award = awards_query.first()
-    
+
     # Returned value is an Award object with all properties mapped
-    # and properly typed. 
+    # and properly typed.
     top_spacex_award.total_obligation  # -> Decimal('3029850123.69')
     top_spacex_award.category  # -> "contract"
     top_spacex_award.description  # -> "The Commercial Crew Program (CCP) contract ...."
-    
+
     # Helper methods provide easy access to common fields without having to account for
     # inconsistent naming or nested structures in the raw API response
     top_spacex_award.award_identifier  # -> "80GSFC18C0008"
@@ -111,7 +114,7 @@ with USASpendingClient() as client:
 
     # The resulting object provides a normalized interface to the full Award record,
     # and provides access to related data via chained associations
-    
+
     # Recipient information
     top_spacex_award.recipient.name  # -> "Space Exploration Technologies Corp."
     top_spacex_award.recipient.location.city  # -> "Hawthorne"
@@ -194,6 +197,7 @@ This is a fundamental limitation of the USASpending API, which does not provide 
 **Recommended patterns to minimize API calls:**
 
 1. **Access only search result properties** - Properties returned by the search endpoint don't trigger additional API calls:
+
    ```python
    for award in client.awards.search().contracts().limit(100):
        # These properties are included in search results - no extra API calls
@@ -201,6 +205,7 @@ This is a fundamental limitation of the USASpending API, which does not provide 
    ```
 
 2. **Enable caching** - Cache responses to avoid repeated fetches for the same data:
+
    ```python
    from usaspending import config as usaspending_config
    usaspending_config.configure(cache_enabled=True)
@@ -264,6 +269,7 @@ usaspending_config.configure(
 ```
 
 **File-based caching** (default):
+
 - Persists between Python sessions
 - Stored in `~/.cache/usaspending` directory
 - Uses pickle for serialization
@@ -274,6 +280,7 @@ applications. The default namespace is `usaspending-orm`. Override this if you n
 separate cache pools for different environments or applications.
 
 **Memory-based caching**:
+
 - Faster access, no disk I/O
 - Cleared when Python process ends
 - Best for single-session data exploration
@@ -396,7 +403,7 @@ We welcome contributions to improve and expand the implementation and functional
 
 This library was initially developed to serve the needs of The Planetary Society's Space Policy and Advocacy team in tracking and analyzing National Aeronautics and Space Administration contract data, and is in-use in our internal and external data tools.
 
-We have open-sourced the project to enable others to better use USASpending data. 
+We have open-sourced the project to enable others to better use USASpending data.
 
 [The Planetary Society](https://planetary.org) is an independent nonprofit organization that empowers the world's citizens to advance space science and exploration. The organization is supported by individuals across the world, and does not accept government grants nor does it have major aerospace donations.
 
