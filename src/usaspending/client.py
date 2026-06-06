@@ -399,8 +399,9 @@ class USASpendingClient:
             # Calculate duration
             duration = time.time() - start_time
 
-            # Handle specific 400 Bad Request responses first
-            if response.status_code == 400:
+            # Handle 400 Bad Request and 422 Unprocessable Entity (validation) responses
+            # first. Both carry a descriptive body (e.g. {"detail": ...}) worth surfacing.
+            if response.status_code in (400, 422):
                 try:
                     data = response.json()
                     # Use "detail" property if available, otherwise fall back to generic message
@@ -408,7 +409,7 @@ class USASpendingClient:
                         data.get("detail")
                         or data.get("error")
                         or data.get("message")
-                        or "Bad Request"
+                        or f"HTTP {response.status_code} error"
                     )
                     error_msg_with_context = self._format_error_with_context(error_msg)
                     log_api_response(
@@ -418,10 +419,10 @@ class USASpendingClient:
                         duration,
                         error_msg_with_context,
                     )
-                    raise APIError(error_msg, status_code=400, response_body=data)
+                    raise APIError(error_msg, status_code=response.status_code, response_body=data)
                 except ValueError:
-                    # If JSON parsing fails, use generic 400 error
-                    error_msg = "Bad Request - Invalid JSON response"
+                    # If JSON parsing fails, use a generic status-aware error
+                    error_msg = f"HTTP {response.status_code} error - Invalid JSON response"
                     error_msg_with_context = self._format_error_with_context(error_msg)
                     log_api_response(
                         logger,
@@ -430,7 +431,7 @@ class USASpendingClient:
                         duration,
                         error_msg_with_context,
                     )
-                    raise APIError(error_msg, status_code=400) from None
+                    raise APIError(error_msg, status_code=response.status_code) from None
 
             # Handle other HTTP errors
             try:

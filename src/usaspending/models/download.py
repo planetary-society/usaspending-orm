@@ -10,6 +10,8 @@ from .base_model import BaseModel
 
 AwardType = Literal["contract", "assistance", "idv"]
 FileFormat = Literal["csv", "tsv", "pstxt"]
+# Datasets that the search download endpoint can include in a single download.
+SpendingLevel = Literal["awards", "transactions", "subawards"]
 
 
 class DownloadState(Enum):

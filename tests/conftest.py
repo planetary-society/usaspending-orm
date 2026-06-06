@@ -140,6 +140,12 @@ def top_recipients_response():
 
 
 @pytest.fixture
+def download_search_fixture_data():
+    """Load the search download queue response fixture."""
+    return load_json_fixture("download_search.json")
+
+
+@pytest.fixture
 def search_results_contracts_data():
     """Load the search results fixture data for contracts."""
     return load_json_fixture("awards/search_results_contracts.json")["results"]

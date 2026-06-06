@@ -12,11 +12,11 @@ import ntpath
 import os
 import posixpath
 import zipfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..exceptions import APIError, DownloadError
 from ..logging_config import USASpendingLogger
-from ..models.download import AwardType, DownloadStatus, FileFormat
+from ..models.download import AwardType, DownloadStatus, FileFormat, SpendingLevel
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -45,16 +45,85 @@ class DownloadManager:
         """
 
         endpoint = f"{self.BASE_ENDPOINT}{download_type}/"
-        payload = {"award_id": award_id, "file_format": file_format}
+        payload: dict[str, Any] = {"award_id": award_id, "file_format": file_format}
 
         logger.info(
             f"Queueing {download_type} download for award {award_id} (Format: {file_format})"
         )
 
+        return self._post_and_build_job(endpoint, payload, destination_dir)
+
+    def queue_search_download(
+        self,
+        filters: dict[str, Any],
+        *,
+        file_format: FileFormat = "csv",
+        spending_level: list[SpendingLevel] | None = None,
+        columns: list[str] | None = None,
+        limit: int | None = None,
+        destination_dir: str | None = None,
+    ) -> DownloadJob:
+        """
+        Queues a download combining award, transaction, and subaward data.
+
+        Sends a request to the ``/download/search/`` endpoint, which generates a single
+        zip file of records matching the supplied search filters.
+
+        Args:
+            filters: The standard search ``filters`` object, as built by an
+                ``AwardsSearch`` query (see ``QueryBuilder.to_filters_payload``).
+            file_format: Format of the file(s) in the zip (csv, tsv, pstxt).
+            spending_level: Which datasets to include. When None, the API includes all
+                of awards, transactions, and subawards.
+            columns: Specific columns to include. When None, the API returns its default
+                column set.
+            limit: Maximum number of records to include. When None, the API default applies.
+            destination_dir: Directory where the file will be saved (defaults to CWD).
+
+        Returns:
+            A DownloadJob object. Use job.wait_for_completion() to block until finished.
+        """
+        endpoint = f"{self.BASE_ENDPOINT}search/"
+        payload: dict[str, Any] = {"filters": filters, "file_format": file_format}
+        if spending_level is not None:
+            payload["spending_level"] = spending_level
+        if columns is not None:
+            payload["columns"] = columns
+        if limit is not None:
+            payload["limit"] = limit
+
+        logger.info(
+            f"Queueing search download (Format: {file_format}, Levels: {spending_level or 'all'})"
+        )
+
+        return self._post_and_build_job(endpoint, payload, destination_dir)
+
+    def _post_and_build_job(
+        self,
+        endpoint: str,
+        payload: dict[str, Any],
+        destination_dir: str | None,
+    ) -> DownloadJob:
+        """
+        POSTs a download request and builds a DownloadJob from the response.
+
+        Shared by the single-award and search download paths.
+
+        Args:
+            endpoint: The download endpoint to POST to.
+            payload: The JSON request body.
+            destination_dir: Directory where the file will be saved (defaults to CWD).
+
+        Returns:
+            A DownloadJob tracking the queued download.
+
+        Raises:
+            DownloadError: If the request fails or the response omits 'file_name'.
+        """
         try:
             response_data = self._client._make_uncached_request("POST", endpoint, json=payload)
         except APIError as e:
-            logger.error(f"Failed to queue download for award {award_id}: {e}")
+            logger.error(f"Failed to queue download via {endpoint}: {e}")
             raise DownloadError(f"Failed to queue download: {e}") from e
 
         # Import DownloadJob here to avoid circular dependency
@@ -64,15 +133,13 @@ class DownloadManager:
         if not file_name:
             raise DownloadError("API response missing required field 'file_name'.")
 
-        job = DownloadJob(
+        return DownloadJob(
             manager=self,
             file_name=file_name,
             initial_file_url=response_data.get("file_url"),
             request_details=response_data.get("download_request"),
             destination_dir=destination_dir,
         )
-
-        return job
 
     def check_status(self, file_name: str) -> DownloadStatus:
         """

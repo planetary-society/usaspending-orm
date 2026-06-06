@@ -126,6 +126,33 @@ with USASpendingClient() as client:
 
 ```
 
+### Downloading Bulk Data
+
+The `client.downloads` resource queues server-side download jobs and returns a `DownloadJob`
+you can poll. Single awards are downloaded by their generated award ID:
+
+```python
+job = client.downloads.contract("CONT_AWD_...")   # also .assistance(...) and .idv(...)
+status = job.wait_for_completion()
+```
+
+To download many awards at once, build an awards search and pass it to `client.downloads.search()`.
+The same fluent filters used for searching drive the download, which can combine award,
+transaction, and subaward data into a single zip archive:
+
+```python
+query = (
+    client.awards.search()
+    .contracts()
+    .agency("National Aeronautics and Space Administration")
+    .fiscal_year(2024)
+)
+
+# spending_level defaults to awards, transactions, and subawards when omitted.
+job = client.downloads.search(query, spending_level=["awards"], file_format="csv")
+status = job.wait_for_completion()
+```
+
 ## Configuration
 
 ### Session Management and Lazy-Loading

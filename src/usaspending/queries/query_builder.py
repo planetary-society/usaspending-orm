@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from typing import (
@@ -302,6 +303,20 @@ class QueryBuilder(BaseQuery[T], ABC):
         logger.debug(f"Applied {len(self._filter_objects)} filters to query")
 
         return final_filters
+
+    def to_filters_payload(self) -> dict[str, Any]:
+        """Return the assembled API ``filters`` object for this query.
+
+        Exposes the filter block that paginated search payloads embed, so callers
+        (such as the download resource) can obtain the filters without executing a
+        search. The returned dictionary is the same one used under the ``filters``
+        key of the request payload.
+
+        Returns:
+            dict[str, Any]: The aggregated filter payload built from this query's
+            filter methods.
+        """
+        return self._aggregate_filters()
 
     def _execute_query(self, page: int) -> dict[str, Any]:
         """Execute the query and return raw response."""
@@ -1771,7 +1786,14 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def program_activity(self: T, *activity_codes: int) -> T:
         """
-        Filter by program activity codes.
+        Filter by program activity codes (deprecated).
+
+        .. deprecated::
+            Use :meth:`program_activities` instead. The USASpending API removed the
+            ``program_activity`` filter in favor of ``program_activities``. This method
+            now forwards to ``program_activities`` (sending each code as a string) and
+            will be removed in a future release. Note that the forwarded codes are not
+            zero-padded; use :meth:`program_activities` directly for full control.
 
         Program activity codes are numeric identifiers that categorize
         federal programs for budgeting and reporting purposes.
@@ -1780,10 +1802,13 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             *activity_codes: One or more program activity codes as integers.
 
         Returns:
-            T: A new instance with the program activity filter applied.
+            T: A new instance with the program activities filter applied.
+
+        Raises:
+            ValidationError: If no codes are provided or any code is not an integer.
 
         Example:
-            >>> # Find awards for specific program activities
+            >>> # Prefer program_activities(); this still works but emits a warning:
             >>> programs = client.awards.search().grants().program_activity(1, 2, 3)
         """
         if not activity_codes:
@@ -1796,11 +1821,14 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                     f"Program activity codes must be integers, got {type(code).__name__}"
                 )
 
-        clone = self._clone()
-        clone._filter_objects.append(
-            SimpleListFilter(key="program_activity", values=list(activity_codes))
+        warnings.warn(
+            "program_activity is deprecated. Use program_activities() instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
-        return clone
+
+        # The API now expects program_activities objects with string codes.
+        return self.program_activities(*[{"code": str(code)} for code in activity_codes])
 
     def program_activities(
         self: T,

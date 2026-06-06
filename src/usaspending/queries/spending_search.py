@@ -8,6 +8,7 @@ from ..client import USASpendingClient
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.district_spending import DistrictSpending
+from ..models.download import SpendingLevel
 from ..models.recipient_spending import RecipientSpending
 from ..models.spending import Spending
 from ..models.state_spending import StateSpending
@@ -22,7 +23,6 @@ from .query_builder import SearchQueryBuilder
 
 logger = USASpendingLogger.get_logger(__name__)
 
-SpendingLevel = Literal["transactions", "awards", "subawards"]
 SpendingCategory = Literal["recipient", "district", "state"]
 
 

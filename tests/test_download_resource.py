@@ -3,7 +3,7 @@
 import pytest
 
 from tests.mocks.mock_client import MockUSASpendingClient
-from usaspending.exceptions import DownloadError
+from usaspending.exceptions import DownloadError, ValidationError
 from usaspending.models.download import DownloadState
 
 
@@ -57,6 +57,101 @@ def test_queue_idv_download(mock_usa_client):
         method="POST",
         json={"award_id": "IDV_456", "file_format": "csv"},
     )
+
+
+def test_queue_search_download(mock_usa_client, download_search_fixture_data):
+    """Test queuing a search download built from an awards query."""
+    mock_usa_client.mock_search_download(download_search_fixture_data)
+
+    query = (
+        mock_usa_client.awards.search()
+        .contracts()
+        .agency("National Aeronautics and Space Administration")
+        .fiscal_year(2024)
+    )
+    # Derive the expected filters from the query rather than re-typing them.
+    expected_filters = query.to_filters_payload()
+
+    job = mock_usa_client.downloads.search(query, spending_level=["awards"])
+
+    # File name comes from the fixture, not a hard-coded literal.
+    assert job.file_name == download_search_fixture_data["file_name"]
+    assert job.state == DownloadState.PENDING
+
+    mock_usa_client.assert_called_with(
+        MockUSASpendingClient.Endpoints.DOWNLOAD_SEARCH,
+        method="POST",
+        json={
+            "filters": expected_filters,
+            "file_format": "csv",
+            "spending_level": ["awards"],
+        },
+    )
+
+
+def test_queue_search_download_omits_unset_options(mock_usa_client, download_search_fixture_data):
+    """Optional params left as None are omitted from the request payload."""
+    mock_usa_client.mock_search_download(download_search_fixture_data)
+
+    query = mock_usa_client.awards.search().contracts().fiscal_year(2024)
+    expected_filters = query.to_filters_payload()
+
+    mock_usa_client.downloads.search(query)
+
+    # No spending_level / columns / limit keys when not provided.
+    mock_usa_client.assert_called_with(
+        MockUSASpendingClient.Endpoints.DOWNLOAD_SEARCH,
+        method="POST",
+        json={"filters": expected_filters, "file_format": "csv"},
+    )
+
+
+def test_search_download_passes_all_options(mock_usa_client, download_search_fixture_data):
+    """columns, limit, and file_format flow into the payload."""
+    mock_usa_client.mock_search_download(download_search_fixture_data)
+
+    query = mock_usa_client.awards.search().contracts().fiscal_year(2024)
+    expected_filters = query.to_filters_payload()
+
+    mock_usa_client.downloads.search(
+        query,
+        file_format="tsv",
+        spending_level=["awards", "subawards"],
+        columns=["award_id_piid", "total_obligated_amount"],
+        limit=1000,
+    )
+
+    mock_usa_client.assert_called_with(
+        MockUSASpendingClient.Endpoints.DOWNLOAD_SEARCH,
+        method="POST",
+        json={
+            "filters": expected_filters,
+            "file_format": "tsv",
+            "spending_level": ["awards", "subawards"],
+            "columns": ["award_id_piid", "total_obligated_amount"],
+            "limit": 1000,
+        },
+    )
+
+
+def test_search_download_rejects_non_query(mock_usa_client):
+    """A non-query argument raises ValidationError."""
+    with pytest.raises(ValidationError):
+        mock_usa_client.downloads.search({"filters": {}})
+
+
+def test_search_download_wraps_api_error(mock_usa_client):
+    """A rejected queue request (APIError) surfaces as DownloadError."""
+    mock_usa_client.set_error_response(
+        MockUSASpendingClient.Endpoints.DOWNLOAD_SEARCH,
+        error_code=400,
+        detail="Invalid download request",
+    )
+
+    query = mock_usa_client.awards.search().contracts().fiscal_year(2024)
+
+    with pytest.raises(DownloadError):
+        mock_usa_client.downloads.search(query)
 
 
 def test_download_status_finished(mock_usa_client):

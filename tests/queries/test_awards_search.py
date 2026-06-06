@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from unittest.mock import Mock
 
 import pytest
@@ -825,3 +826,37 @@ class TestIntegrationScenarios:
         assert payload["filters"]["recipient_type_names"] == ["small_business"]
         assert payload["filters"]["recipient_locations"] == [{"country": "USA", "state": "CA"}]
         assert len(payload["filters"]["award_amounts"]) == 1
+
+
+class TestProgramActivityDeprecation:
+    """Tests for the deprecated program_activity() filter."""
+
+    def test_program_activity_redirects_to_program_activities(self, awards_search):
+        """Deprecated program_activity() forwards to program_activities with string codes."""
+        with pytest.warns(DeprecationWarning):
+            search = awards_search.grants().program_activity(1, 2)
+
+        payload = search._build_payload(page=1)
+
+        # The API replaced program_activity with program_activities (string codes).
+        assert payload["filters"]["program_activities"] == [{"code": "1"}, {"code": "2"}]
+        assert "program_activity" not in payload["filters"]
+
+    def test_program_activity_emits_deprecation_warning(self, awards_search):
+        """program_activity() warns and points to program_activities()."""
+        with pytest.warns(DeprecationWarning, match="program_activity is deprecated"):
+            awards_search.grants().program_activity(1)
+
+    def test_program_activity_rejects_non_integer(self, awards_search):
+        """Non-integer codes raise ValidationError before any warning is emitted."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            with pytest.raises(ValidationError):
+                awards_search.grants().program_activity("not-an-int")
+
+    def test_program_activity_requires_at_least_one_code(self, awards_search):
+        """Calling program_activity() with no codes raises ValidationError."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            with pytest.raises(ValidationError):
+                awards_search.grants().program_activity()

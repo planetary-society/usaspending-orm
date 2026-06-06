@@ -39,6 +39,7 @@ class MockUSASpendingClient(USASpendingClient):
         DOWNLOAD_ASSISTANCE = "/download/assistance/"
         DOWNLOAD_CONTRACT = "/download/contract/"
         DOWNLOAD_IDV = "/download/idv/"
+        DOWNLOAD_SEARCH = "/download/search/"
         DOWNLOAD_STATUS = "/download/status"
 
         SPENDING_BY_RECIPIENT = "/search/spending_by_category/recipient/"
@@ -141,9 +142,9 @@ class MockUSASpendingClient(USASpendingClient):
             error_data = self._error_responses[endpoint]
             status_code = error_data["status_code"]
 
-            if status_code == 400:
+            if status_code in (400, 422):
                 raise APIError(
-                    error_data.get("detail", error_data.get("error", "Bad Request")),
+                    error_data.get("detail", error_data.get("error", f"HTTP {status_code} error")),
                     status_code=status_code,
                     response_body=error_data,
                 )
@@ -576,6 +577,20 @@ class MockUSASpendingClient(USASpendingClient):
 
         endpoint = f"/download/{download_type}/"
         self.set_response(endpoint, response_data)
+
+    def mock_search_download(
+        self,
+        response_data: dict[str, Any] | None = None,
+    ) -> None:
+        """Mock the search download queue response.
+
+        Args:
+            response_data: Custom response data, or None to use the fixture default.
+        """
+        if response_data is None:
+            self.set_fixture_response(self.Endpoints.DOWNLOAD_SEARCH, "download_search")
+        else:
+            self.set_response(self.Endpoints.DOWNLOAD_SEARCH, response_data)
 
     def mock_download_status(
         self,

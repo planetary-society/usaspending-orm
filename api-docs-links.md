@@ -189,6 +189,21 @@ These documentation links provide detailed information about request parameters,
   - `file_url` (required, string): URL for the generated file
   - `download_request` (required, object): Request payload used to generate the download
 
+### Search Download
+
+- **Endpoint**: `/api/v2/download/search/`
+- **Method**: POST
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/download/search.md
+- **Purpose**: Create a download job combining award, transaction, and subaward data matching a set of search filters into a single zip archive.
+- **Corresponding Resource**: `src/usaspending/resources/download_resource.py`
+- **Key Parameters**:
+  - `filters`: (required, object) The standard search filters object (the same one used by `/api/v2/search/spending_by_award/`)
+  - `file_format`: (optional, enum[string]) The format of the file(s) in the zip archive (`csv`, `tsv`, `pstxt`)
+  - `spending_level`: (optional, array[enum[string]]) Datasets to include: `awards`, `transactions`, `subawards`; defaults to all three
+  - `columns`: (optional, array[string]) Specific columns to include; defaults to the full column set
+  - `limit`: (optional, number) Maximum number of records to include
+- **Response**: JSON object with the same shape as the other download endpoints (`status_url`, `file_name`, `file_url`, `download_request`)
+
 ### Download Status
 
 - **Endpoint**: `/api/v2/download/status`

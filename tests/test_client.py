@@ -317,6 +317,24 @@ class TestClientSessionManagement:
         ]
         assert any("Request #51 in session" in msg for msg in error_messages)
 
+    def test_422_validation_error_surfaces_detail(self):
+        """A 422 (Pydantic validation) response is raised as APIError with its detail."""
+        client = USASpendingClient()
+
+        mock_response = unittest.mock.Mock()
+        mock_response.status_code = 422
+        mock_response.content = b'{"detail": "spending_level must be valid"}'
+        mock_response.json.return_value = {"detail": "spending_level must be valid"}
+
+        with (
+            unittest.mock.patch.object(client._session, "request", return_value=mock_response),
+            pytest.raises(APIError) as exc_info,
+        ):
+            client._make_uncached_request("POST", "/test")
+
+        assert exc_info.value.status_code == 422
+        assert "spending_level must be valid" in str(exc_info.value)
+
     def test_error_logging_with_session_limit_warning(self, caplog):
         """Test that errors near session limit include warning context."""
         import requests
