@@ -250,3 +250,18 @@ class SubAwardsSearch(AwardsSearch):
             new_awards_only=False,
             date_type=date_type,
         )
+
+    def object_classes(self, *object_classes: str) -> SubAwardsSearch:
+        """
+        Object class filtering is not supported for subaward searches.
+
+        The USASpending API accepts the ``object_classes`` filter for award searches
+        only, and returns HTTP 422 when it is combined with ``spending_level=subawards``.
+
+        Raises:
+            ValidationError: Always, because subaward searches do not support this filter.
+        """
+        raise ValidationError(
+            "object_classes is not supported for subaward searches. "
+            "This filter is only available for award searches."
+        )

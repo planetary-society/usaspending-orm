@@ -4,6 +4,23 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.3] - 2026-07-05
+
+### Added
+
+- `AwardsSearch.object_classes(*codes)`: filter awards by federal object class codes (per Office of Management and Budget Circular A-11) on the `/search/spending_by_award/` and `/search/spending_by_award_count/` endpoints. Pass codes such as `"10"` or `"252"`, not names; multiple codes use OR logic.
+- `SubAwardsSearch.object_classes()` raises `ValidationError`. The USASpending API accepts the `object_classes` filter for award searches only and returns HTTP 422 when it is combined with `spending_level=subawards`.
+- `client.downloads.search()` emits a `UserWarning` when the query contains an `object_classes` filter, because the `/api/v2/download/search/` endpoint drops the key. The filter is still forwarded unmodified.
+- Known upstream limitation as of 2026-07-05: the production API accepts `object_classes` but the rollout is incomplete. The search endpoint returns zero results for any object class, the count endpoint does not narrow, and the subawards rejection is not yet enforced server side. The filter should begin returning data once USAspending finishes deploying the feature and populating its award index.
+- `tests/test_readme_examples.py`: integration tests that extract the README's Python code blocks and execute the runnable ones verbatim against the live API, so broken or rotted examples fail mechanically. A network-free guard in the default suite catches extraction drift. The live `client` fixture moved to `tests/conftest.py` and is now shared with `tests/test_integration.py`.
+
+### Documentation
+
+- Corrected the `api-docs-links.md` subawards entry: `SubAwardsSearch` POSTs `/api/v2/search/spending_by_award/` with `subawards=true` and `spending_level=subawards` (inheriting `AwardsSearch`) rather than calling `/api/v2/subawards/`.
+- Added missing `api-docs-links.md` entries for `/api/v2/idvs/awards/` (IDV child awards) and the TAS filter-tree endpoints (`/api/v2/references/filter_tree/tas/` and its `{toptier_code}/` and `{toptier_code}/{federal_account}/` variants).
+- An upstream API compatibility review of USASpending API releases from April through June 2026 found no breaking changes for this library. The 0.7.2 release already handles the `spending_by_award` Pydantic migration (HTTP 422 validation errors), the `program_activities` filter rename, and the new F001 through F010 assistance type codes.
+- Revalidated all README examples against live USAspending data. Fixed two broken chains (`location.full_address` is actually `location.formatted_address`; a subaward's place of performance is on the subaward, not its recipient), refreshed stale sample outputs, and added examples for the `client.spending` category rollups and the list-style `len(query)` interface.
+
 ## [0.7.2] - 2026-06-05
 
 ### Added

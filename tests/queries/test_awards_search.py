@@ -860,3 +860,30 @@ class TestProgramActivityDeprecation:
             warnings.simplefilter("error", DeprecationWarning)
             with pytest.raises(ValidationError):
                 awards_search.grants().program_activity()
+
+
+class TestObjectClassesFilter:
+    """Test the object_classes filter on AwardsSearch."""
+
+    def test_object_classes_immutability(self, awards_search):
+        """object_classes returns a new instance and leaves the original unchanged."""
+        result = awards_search.object_classes("10", "252")
+
+        # A new instance is returned; the original keeps no filters.
+        assert result is not awards_search
+        assert awards_search._filter_objects == []
+
+        # The single appended filter serializes to the expected dict.
+        assert len(result._filter_objects) == 1
+        assert result._filter_objects[0].to_dict() == {"object_classes": ["10", "252"]}
+
+    def test_object_classes_in_payload(self, awards_search):
+        """The filter lands in the request payload under filters.object_classes."""
+        payload = awards_search.contracts().object_classes("10")._build_payload(1)
+
+        assert payload["filters"]["object_classes"] == ["10"]
+
+    def test_object_classes_requires_at_least_one_code(self, awards_search):
+        """Calling object_classes() with no codes raises ValidationError."""
+        with pytest.raises(ValidationError, match="At least one object class"):
+            awards_search.object_classes()

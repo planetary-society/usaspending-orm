@@ -89,6 +89,31 @@ def test_queue_search_download(mock_usa_client, download_search_fixture_data):
     )
 
 
+def test_queue_search_download_object_classes_warns_but_forwards(
+    mock_usa_client, download_search_fixture_data
+):
+    """object_classes triggers a UserWarning yet is still forwarded unmodified."""
+    mock_usa_client.mock_search_download(download_search_fixture_data)
+
+    query = mock_usa_client.awards.search().contracts().object_classes("10")
+    # Derive the expected filters from the query rather than re-typing them.
+    expected_filters = query.to_filters_payload()
+
+    with pytest.warns(UserWarning, match="object_classes"):
+        mock_usa_client.downloads.search(query, spending_level=["awards"])
+
+    # The unsupported filter is still sent to the API untouched.
+    mock_usa_client.assert_called_with(
+        MockUSASpendingClient.Endpoints.DOWNLOAD_SEARCH,
+        method="POST",
+        json={
+            "filters": expected_filters,
+            "file_format": "csv",
+            "spending_level": ["awards"],
+        },
+    )
+
+
 def test_queue_search_download_omits_unset_options(mock_usa_client, download_search_fixture_data):
     """Optional params left as None are omitted from the request payload."""
     mock_usa_client.mock_search_download(download_search_fixture_data)

@@ -584,3 +584,52 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             SimpleListFilter(key="award_type_codes", values=list(award_codes))
         )
         return clone
+
+    def object_classes(self, *object_classes: str) -> AwardsSearch:
+        """
+        Filter by federal object class codes.
+
+        Object classes categorize spending by the nature of the goods or services
+        purchased (for example personnel compensation, travel, or supplies), as
+        defined in Office of Management and Budget Circular A-11. Pass object class
+        codes, not names: two-digit major group codes such as "10" (Personnel
+        compensation and benefits) or "25" (Contractual services and supplies), or
+        more specific codes such as "252".
+
+        Args:
+            *object_classes: One or more object class codes as strings.
+
+        Returns:
+            AwardsSearch: A new instance with the object class filter applied.
+
+        Raises:
+            ValidationError: If no object class code is provided.
+
+        Note:
+            Multiple codes use OR logic (matches any specified code). This filter is
+            supported only by the award search endpoints and is not valid for subaward
+            searches, so ``SubAwardsSearch`` raises ``ValidationError`` if it is used.
+            The bulk download endpoint (``/download/search/``) ignores this filter, so
+            a download built from a query using it will not be narrowed by object class.
+
+        Example:
+            >>> # Find National Aeronautics and Space Administration contracts for
+            >>> # contractual services and supplies (major group "25")
+            >>> awards = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .agency("National Aeronautics and Space Administration")
+            ...     .object_classes("25")
+            ... )
+
+            >>> # Combine multiple object class codes (OR logic)
+            >>> awards = client.awards.search().contracts().object_classes("10", "252")
+        """
+        if not object_classes:
+            raise ValidationError("At least one object class code is required")
+
+        clone = self._clone()
+        clone._filter_objects.append(
+            SimpleListFilter(key="object_classes", values=list(object_classes))
+        )
+        return clone

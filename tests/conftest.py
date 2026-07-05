@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from tests.mocks import MockUSASpendingClient
+from usaspending import USASpendingClient
 from usaspending.config import config
 
 
@@ -63,6 +64,14 @@ def client_config():
     # 3. Teardown: Restore the original state using the public `configure()` method
     # Unpacking the saved dictionary as keyword arguments is the key.
     config.configure(**original_config_vars)
+
+
+@pytest.fixture(scope="module")
+def client():
+    """Real USASpending client for integration tests (marked with @pytest.mark.integration)."""
+    usa_client = USASpendingClient()
+    yield usa_client
+    usa_client.close()
 
 
 @pytest.fixture

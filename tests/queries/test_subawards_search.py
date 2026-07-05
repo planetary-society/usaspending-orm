@@ -182,6 +182,11 @@ class TestSubAwardsSearch:
         assert hasattr(search, "recipient_locations")
         assert hasattr(search, "award_amounts")
 
+    def test_object_classes_not_supported(self, mock_usa_client):
+        """Test that object_classes raises ValidationError for subaward searches."""
+        with pytest.raises(ValidationError, match="not supported for subaward"):
+            SubAwardsSearch(mock_usa_client).object_classes("10")
+
     def test_immutability(self, mock_usa_client):
         """Test that SubAwardsSearch maintains immutability."""
         search1 = SubAwardsSearch(mock_usa_client).award_type_codes("A", "B")

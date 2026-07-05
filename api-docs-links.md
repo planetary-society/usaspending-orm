@@ -17,6 +17,7 @@ These documentation links provide detailed information about request parameters,
 - **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/search/spending_by_award.md
 - **Purpose**: Search for awards by various criteria including agency, geography, time period
 - **Corresponding Query Builder**: `src/usaspending/queries/awards_search.py`
+- **Note**: The endpoint accepts an optional `object_classes` filter (array of object class code strings, e.g. `["10", "252"]`), valid for awards only. The API returns HTTP 422 when `object_classes` is combined with `spending_level=subawards`.
 
 ### Award Search Count
 
@@ -26,6 +27,7 @@ These documentation links provide detailed information about request parameters,
 - **Purpose**: Return award counts by category for advanced search filters, including subaward counts when `spending_level` is `subawards`
 - **Corresponding Query Builders**: `src/usaspending/queries/awards_search.py`, `src/usaspending/queries/subawards_search.py`
 - **Note**: For `spending_level=subawards`, the live API returns subaward totals under `results.subgrants` and `results.subcontracts`.
+- **Note**: The endpoint accepts an optional `object_classes` filter (array of object class code strings, e.g. `["10", "252"]`), valid for awards only. The API returns HTTP 422 when `object_classes` is combined with `spending_level=subawards`.
 
 ### Spending by State/Territory
 
@@ -109,12 +111,12 @@ These documentation links provide detailed information about request parameters,
 
 ### Subawards
 
-- **Endpoint**: `/api/v2/subawards/`
+- **Endpoint**: `/api/v2/search/spending_by_award/`
 - **Method**: POST
-- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/subawards.md
-- **Purpose**: List subawards for a given award
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/search/spending_by_award.md
+- **Purpose**: List subawards matching a set of search filters
 - **Corresponding Query Builder**: `src/usaspending/queries/subawards_search.py`
-- **Note**: Award-scoped subaward requests use a top-level `award_id` in the live `/api/v2/subawards/` contract.
+- **Note**: `SubAwardsSearch` inherits `AwardsSearch` and POSTs the same `/api/v2/search/spending_by_award/` endpoint, adding `subawards=true` and `spending_level=subawards` to the payload. It does not call `/api/v2/subawards/`. Award-scoped requests set `filters.award_unique_id` to the generated award ID, and `count()` for a specific award uses the `/api/v2/awards/count/subaward/{award_id}/` endpoint.
 
 ### Award Subaward Count
 
@@ -123,6 +125,14 @@ These documentation links provide detailed information about request parameters,
 - **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/awards/count/subaward/award_id.md
 - **Purpose**: Return the number of subawards associated with a given award
 - **Corresponding Query Builder**: `src/usaspending/queries/subawards_search.py`
+
+### IDV Child Awards
+
+- **Endpoint**: `/api/v2/idvs/awards/`
+- **Method**: POST
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/idvs/awards.md
+- **Purpose**: List child awards (delivery orders and task orders) placed against a parent Indefinite Delivery Vehicle (IDV)
+- **Corresponding Query Builder**: `src/usaspending/queries/idv_child_awards.py`
 
 ### Agency Overview
 
@@ -167,6 +177,30 @@ These documentation links provide detailed information about request parameters,
 - **Corresponding Query Builder**: `src/usaspending/queries/agencies_search.py`
 - **Note**: The live API returns `results` as an object with `toptier_agency`, `subtier_agency`, and `office` arrays.
 
+### TAS Filter Tree - Agencies
+
+- **Endpoint**: `/api/v2/references/filter_tree/tas/`
+- **Method**: GET
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/references/filter_tree/tas.md
+- **Purpose**: List agencies that have at least one Treasury Account Symbol (TAS)
+- **Corresponding Resource**: `src/usaspending/resources/tas_resource.py`
+
+### TAS Filter Tree - Federal Accounts
+
+- **Endpoint**: `/api/v2/references/filter_tree/tas/{toptier_code}/`
+- **Method**: GET
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/references/filter_tree/tas/agency.md
+- **Purpose**: List federal accounts under a given top-tier agency that have Treasury Account Symbols
+- **Corresponding Query Builder**: `src/usaspending/queries/federal_accounts_query.py`
+
+### TAS Filter Tree - TAS Codes
+
+- **Endpoint**: `/api/v2/references/filter_tree/tas/{toptier_code}/{federal_account}/`
+- **Method**: GET
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/references/filter_tree/tas/agency/federal_account.md
+- **Purpose**: List Treasury Account Symbols (TAS) under a given federal account
+- **Corresponding Query Builder**: `src/usaspending/queries/tas_codes_query.py`
+
 ### Download Award Data
 
 - **Endpoints**:
@@ -203,6 +237,7 @@ These documentation links provide detailed information about request parameters,
   - `columns`: (optional, array[string]) Specific columns to include; defaults to the full column set
   - `limit`: (optional, number) Maximum number of records to include
 - **Response**: JSON object with the same shape as the other download endpoints (`status_url`, `file_name`, `file_url`, `download_request`)
+- **Note**: This endpoint's filter validator does not include `object_classes` and silently drops the key. `client.downloads.search()` still forwards the filter unmodified but emits a `UserWarning` when the query carries it.
 
 ### Download Status
 
