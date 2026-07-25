@@ -121,22 +121,15 @@ from typing import Any
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger, log_query_execution
 from ..models import Award
-from ..models.award_factory import create_award
+from ..models.award_factory import create_award, model_for_name
 
 # Import award type codes from models
 # These are defined by USASpending.gov and represent different categories of awards
 from ..models.award_types import (
     ALL_AWARD_CODES,
-    AWARD_TYPE_GROUPS,
-    CONTRACT_CODES,
-    GRANT_CODES,
-    IDV_CODES,
-    LOAN_CODES,
+    categories_for_codes,
+    category_for_exclusive_codes,
 )
-from ..models.contract import Contract
-from ..models.grant import Grant
-from ..models.idv import IDV
-from ..models.loan import Loan
 from .filters import (
     SimpleListFilter,
 )
@@ -222,21 +215,12 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         Returns:
             Award: An appropriate Award subclass instance (Contract, Grant, etc.).
         """
-        # Get award type codes from current filters
-        award_type_codes = self._get_award_type_codes()
-
         # If we're filtering for a single award type category, add it to the result
         # This ensures the correct Award subclass is created even when the API
         # response doesn't include explicit type information
-        if award_type_codes:
-            if award_type_codes.issubset(CONTRACT_CODES):
-                result["category"] = "contract"
-            elif award_type_codes.issubset(IDV_CODES):
-                result["category"] = "idv"
-            elif award_type_codes.issubset(GRANT_CODES):
-                result["category"] = "grant"
-            elif award_type_codes.issubset(LOAN_CODES):
-                result["category"] = "loan"
+        category = category_for_exclusive_codes(self._get_award_type_codes())
+        if category:
+            result["category"] = category.singular
 
         return create_award(result, self._client)
 
@@ -271,22 +255,11 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             >>> # This would raise ValidationError:
             >>> search.award_type_codes("A", "02")  # Contract + Grant
         """
-        existing_codes = self._get_award_type_codes()
-        all_codes = existing_codes | new_codes
+        all_codes = self._get_award_type_codes() | new_codes
+        categories = categories_for_codes(all_codes)
 
-        if not all_codes:
-            return
-
-        # Check how many categories are represented using the config mapping
-        categories_present = 0
-        category_names = []
-
-        for category_name, codes in AWARD_TYPE_GROUPS.items():
-            if all_codes & frozenset(codes.keys()):
-                categories_present += 1
-                category_names.append(category_name)
-
-        if categories_present > 1:
+        if len(categories) > 1:
+            category_names = [category.group for category in categories]
             raise ValidationError(
                 f"Cannot mix different award type categories: {', '.join(category_names)}. "
                 "Use separate queries for each award type category."
@@ -387,19 +360,8 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         Raises:
             ValidationError: If no valid award type category is found.
         """
-        # Map config category names to API response names
-        category_mapping = {
-            "contracts": "contracts",
-            "idvs": "idvs",
-            "loans": "loans",
-            "grants": "grants",
-            "direct_payments": "direct_payments",
-            "other_assistance": "other",
-        }
-
-        for category_name, codes in AWARD_TYPE_GROUPS.items():
-            if award_type_codes & frozenset(codes.keys()):
-                return category_mapping[category_name]
+        for category in categories_for_codes(award_type_codes):
+            return category.api_count_key
 
         # Fail hard if no valid award type category is found
         raise ValidationError("No valid award type category found. ")
@@ -421,31 +383,13 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         # Start with base fields from Award model
         base_fields = Award.SEARCH_FIELDS.copy()
 
-        # Get award type codes from filters
-        award_types = self._get_award_type_codes()
+        # Each matching category names the model that owns its extra fields.
         additional_fields = []
-
-        # Check each category and add appropriate fields based on model
-        for category_name, codes in AWARD_TYPE_GROUPS.items():
-            if award_types & frozenset(codes.keys()):
-                if category_name == "contracts":
-                    # Use Contract.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend(
-                        [f for f in Contract.SEARCH_FIELDS if f not in base_fields]
-                    )
-                elif category_name == "idvs":
-                    # Use IDV.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend([f for f in IDV.SEARCH_FIELDS if f not in base_fields])
-                elif category_name == "loans":
-                    # Use Loan.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend(
-                        [f for f in Loan.SEARCH_FIELDS if f not in base_fields]
-                    )
-                elif category_name in ["grants", "direct_payments", "other_assistance"]:
-                    # Use Grant.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend(
-                        [f for f in Grant.SEARCH_FIELDS if f not in base_fields]
-                    )
+        for category in categories_for_codes(self._get_award_type_codes()):
+            model = model_for_name(category.search_fields_model)
+            additional_fields.extend(
+                field for field in model.SEARCH_FIELDS if field not in base_fields
+            )
 
         # Combine base fields with additional fields, removing duplicates
         all_fields = base_fields + additional_fields
@@ -509,11 +453,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             # Build a helpful error message
             award_types = self._get_award_type_codes()
             if award_types:
-                # Determine which category we're searching
-                category_names = []
-                for category_name, codes in AWARD_TYPE_GROUPS.items():
-                    if award_types & frozenset(codes.keys()):
-                        category_names.append(category_name)
+                category_names = [category.group for category in categories_for_codes(award_types)]
                 category_str = (
                     ", ".join(category_names) if category_names else "selected award types"
                 )

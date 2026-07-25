@@ -11,6 +11,7 @@ from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..utils.formatter import smart_sentence_case, to_date, to_decimal
 from .agency import Agency
+from .award_types import DOWNLOAD_TYPES
 from .download import AwardType, FileFormat
 from .lazy_record import LazyRecord
 from .location import Location
@@ -838,6 +839,13 @@ class Award(LazyRecord):
                 f"Download not supported for {self.__class__.__name__}. "
                 "Only Contract, Grant, and IDV awards support bulk downloads."
             )
+        if self._download_type not in DOWNLOAD_TYPES:
+            # Guards the name-based dispatch in download(): DownloadResource has
+            # other public methods, so an unrecognized type must not reach it.
+            raise NotImplementedError(
+                f"{self.__class__.__name__} declares unknown download type "
+                f"{self._download_type!r}. Expected one of {sorted(DOWNLOAD_TYPES)}."
+            )
         return self._download_type
 
     def download(
@@ -875,19 +883,13 @@ class Award(LazyRecord):
                 "Cannot download award data without a 'generated_unique_award_id'. Ensure the award object is fully loaded."
             )
 
-        # Get download type (raises NotImplementedError if not supported)
+        # Each download type names the DownloadResource method that queues it, so
+        # no dispatch table is needed. download_type validates against
+        # DOWNLOAD_TYPES first, so the attribute is guaranteed to exist.
         download_type = self.download_type
+        queue_download = getattr(self._client.downloads, download_type)
 
-        # Access the DownloadManager via the client's download resource.
-        # We route the call through the appropriate method on the resource.
-        if download_type == "contract":
-            return self._client.downloads.contract(award_id, file_format, destination_dir)
-        elif download_type == "assistance":
-            return self._client.downloads.assistance(award_id, file_format, destination_dir)
-        elif download_type == "idv":
-            return self._client.downloads.idv(award_id, file_format, destination_dir)
-        else:
-            raise NotImplementedError
+        return queue_download(award_id, file_format, destination_dir)
 
     def __repr__(self) -> str:
         """String representation of Award.
