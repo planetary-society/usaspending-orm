@@ -46,7 +46,7 @@ class SubAward(ClientAwareModel):
         ...     .for_prime_award_piid("80NSSC21C0123")
         ...     .limit(10)
         >>> for subaward in subawards:
-        ...     print(f"{subaward.sub_awardee_name}: ${subaward.sub_award_amount:,.2f}")
+        ...     print(f"{subaward.sub_awardee_name}: ${subaward.sub_award_amount or 0:,.2f}")
     """
 
     def __init__(self, data: dict[str, Any], client: USASpendingClient):

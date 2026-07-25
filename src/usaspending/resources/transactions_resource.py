@@ -32,7 +32,7 @@ class TransactionsResource(BaseResource):
             >>> transactions = client.transactions.award_id("CONT_AWD_123")
             ...     .limit(50)
             >>> for txn in transactions:
-            ...     print(f"{txn.action_date}: ${txn.federal_action_obligation:,.2f}")
+            ...     print(f"{txn.action_date}: ${txn.federal_action_obligation or 0:,.2f}")
         """
         logger.debug(f"Creating transactions search for award: {award_id}")
         from ..queries.transactions_search import TransactionsSearch

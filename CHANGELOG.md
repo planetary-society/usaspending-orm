@@ -30,6 +30,10 @@ Affected properties:
   returned `None` for the same property name.
 - `Location.zip5` and `Location.district`, which already declared
   `Optional[str]` while returning `""`
+- `Award.type`, its alias `Award.award_type_code`, and `Award.type_description`,
+  which also declared `Optional[str]` while returning `""`. `Contract.contract_award_type`
+  follows, since it delegates to `type_description`. Award-type dispatch is
+  unaffected: `create_award` reads the raw payload, not these properties.
 
 **Migrating.** Any f-string or arithmetic on these needs a fallback:
 
@@ -50,9 +54,17 @@ previously reported `Decimal("0.00")` for each, plus
 `total_obligation`, `award_amount`, `zip5` and `district` were unchanged on that
 data, because the API does report them.
 
-Nine docstring examples that formatted these values with `:,.2f` were given the
-same `or 0` fallback, since copying them unchanged would now raise `TypeError`
-on an award with no reported figure.
+Fourteen documentation examples that formatted money with `:,.2f` were given the
+same `or 0` fallback, since copying them unchanged would raise `TypeError` on a
+record with no reported figure. Four of those were already broken before this
+release, formatting properties that were already `Optional`.
+
+Three documentation examples referenced properties that do not exist and were
+corrected while sweeping: `client.py` used `award.amount` and
+`award.recipient_name` (neither is defined on `Award`; they are now
+`award.total_obligation` and `award.recipient.name`), and the IDV child-award
+examples in `idv.py` and `idv_child_awards.py` used `child.obligated_amount`,
+which no `Award` subclass defines, now `child.award_amount`.
 
 `Award.award_identifier` deliberately still returns `""` rather than `None`. It
 is annotated `-> str`, so unlike `Location.zip5` there was no `Optional`

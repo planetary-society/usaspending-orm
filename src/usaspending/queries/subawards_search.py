@@ -159,7 +159,7 @@ class SubAwardsSearch(AwardsSearch):
         Example:
             >>> subawards = client.subawards.award_id("CONT_AWD_123...")
             >>> for sub in subawards:
-            ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount:,.2f}")
+            ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount or 0:,.2f}")
         """
         validated_id = validate_non_empty_string(award_id, "award_id")
 

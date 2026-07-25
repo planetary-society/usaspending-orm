@@ -41,7 +41,7 @@ class SubAwardsResource(BaseResource):
             ...     .time_period("2024-01-01", "2024-12-31")
             ...     .limit(50)
             >>> for sub in subawards:
-            ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount:,.2f}")
+            ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount or 0:,.2f}")
         """
         logger.debug("Creating subawards search query builder")
         from ..queries.subawards_search import SubAwardsSearch

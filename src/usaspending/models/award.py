@@ -204,9 +204,10 @@ class Award(LazyRecord):
         See `award_types.py` for all valid codes.
 
         Returns:
-            Optional[str]: The award subtype code.
+            Optional[str]: The award subtype code, or None when the award
+            reports none.
         """
-        return self._lazy_get("type", default="")
+        return self._lazy_get("type")
 
     @property
     def award_type_code(self) -> str | None:
@@ -222,9 +223,10 @@ class Award(LazyRecord):
         """Plain text description of the award type.
 
         Returns:
-            Optional[str]: The description of the award type, or empty string if not available.
+            Optional[str]: The description of the award type, or None when the
+            award reports none.
         """
-        return self._lazy_get("type_description", "Contract Award Type", "Award Type", default="")
+        return self._lazy_get("type_description", "Contract Award Type", "Award Type")
 
     @property
     def description(self) -> str:
