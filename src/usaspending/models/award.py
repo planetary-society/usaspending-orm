@@ -687,7 +687,7 @@ class Award(LazyRecord):
             **data.get("toptier_agency", {}),
         }
 
-        return Agency(agency_data, self._client, data.get("subtier_agency"))
+        return Agency(agency_data, self._client)
 
     def _build_subtier_agency(self, agency_type: str) -> SubTierAgency | None:
         """Build the SubTierAgency for one side of the award.

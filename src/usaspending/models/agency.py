@@ -59,19 +59,13 @@ class Agency(LazyRecord):
     For subtier agency information, use the SubTierAgency model separately.
     """
 
-    def __init__(
-        self,
-        data: dict[str, Any],
-        client: USASpendingClient,
-        subtier_data: dict[str, Any] | None = None,
-    ):
+    def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize Agency instance.
 
         Args:
             data: Toptier agency data merged with top-level agency fields.
                 Can be flat structure or nested with toptier_agency dict.
             client: USASpendingClient client instance.
-            subtier_data: Optional subtier agency data for subtier_agency property.
         """
         # Use the base validation method (dict-only)
         raw = self.validate_init_data(data, "Agency", allow_string_id=False)
@@ -87,9 +81,6 @@ class Agency(LazyRecord):
                     raw[key] = value
 
         super().__init__(raw, client)
-
-        # Store subtier data separately
-        self._subtier_data = subtier_data
 
     def _fetch_details(self) -> dict[str, Any] | None:
         """Fetch full agency details if we have a toptier_code and client.

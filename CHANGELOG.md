@@ -4,6 +4,20 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Internal simplification pass. Except where listed below, every change is
+behavior preserving and the public API is unchanged.
+
+### Removed
+
+- `Agency.__init__`'s third parameter, `subtier_data`. It was stored on the
+  instance and never read: `Agency` exposes no subtier property, and subtier
+  data has its own model, `SubTierAgency`. Only one caller passed it, and the
+  value was discarded. Callers who passed a third argument should drop it; the
+  resulting `Agency` is identical either way. Use `Award.funding_subtier_agency`
+  or `Award.awarding_subtier_agency` to reach subtier data.
+
 ## [0.7.3] - 2026-07-05
 
 ### Added
