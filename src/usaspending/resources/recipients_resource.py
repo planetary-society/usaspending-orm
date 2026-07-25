@@ -74,6 +74,34 @@ class RecipientsResource(BaseResource):
 
         return RecipientsSearch(self._client)
 
+    def _find_by_keyword(self, keyword: str, label: str) -> Recipient | None:
+        """Find one recipient by a keyword that identifies it, such as a DUNS or UEI.
+
+        Prefers a parent-level result. A single entity can appear at several
+        recipient levels, and the parent record is the one that aggregates its
+        children, which is what a caller looking an entity up by its identifier
+        expects.
+
+        Args:
+            keyword: The identifier to search for.
+            label: What the keyword is, for the debug log.
+
+        Returns:
+            Optional[Recipient]: The parent-level match if there is one, else the
+            first result, else None.
+        """
+        logger.debug(f"Searching recipient by {label}: {keyword}")
+        from ..queries.recipients_search import RecipientsSearch
+
+        recipients = RecipientsSearch(self._client).keyword(keyword).limit(4)
+        for recipient in recipients:
+            if recipient.recipient_id and "-P" in recipient.recipient_id:
+                return recipient
+
+        # first() rather than indexing, which would force a count of a query
+        # whose total the API does not report cheaply.
+        return recipients.first()
+
     def find_by_duns(self, duns: str) -> Recipient | None:
         """Retrieve a single recipient by DUNS number.
 
@@ -86,16 +114,7 @@ class RecipientsResource(BaseResource):
         Raises:
             ValidationError: If duns is invalid
         """
-        logger.debug(f"Searching recipient by DUNS: {duns}")
-        from ..queries.recipients_search import RecipientsSearch
-
-        recipients = RecipientsSearch(self._client).keyword(duns).limit(4)
-        # Return the parent recipient if available, otherwise first result
-        for r in recipients:
-            if r.recipient_id and "-P" in r.recipient_id:
-                return r
-        # Return first result if no parent found (avoids hanging len() call)
-        return recipients.first()
+        return self._find_by_keyword(duns, "DUNS")
 
     def find_by_uei(self, uei: str) -> Recipient | None:
         """Retrieve a single recipient by UEI number.
@@ -109,13 +128,4 @@ class RecipientsResource(BaseResource):
         Raises:
             ValidationError: If uei is invalid
         """
-        logger.debug(f"Searching recipient by UEI: {uei}")
-        from ..queries.recipients_search import RecipientsSearch
-
-        recipients = RecipientsSearch(self._client).keyword(uei).limit(4)
-        # Return the parent recipient if available, otherwise first result
-        for r in recipients:
-            if r.recipient_id and "-P" in r.recipient_id:
-                return r
-        # Return first result if no parent found (avoids hanging len() call)
-        return recipients.first()
+        return self._find_by_keyword(uei, "UEI")

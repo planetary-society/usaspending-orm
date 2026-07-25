@@ -185,7 +185,8 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
 
         Coerces each scope value, because ``_fetch`` tolerates any falsy scope
         and a repr that raises is worse than useless in a log line or debugger.
+        The scope is omitted entirely when there is none, as at the root level.
         """
         scope = "/".join(str(value) for value in self._scope().values())
         state = f"{len(self._results)} results" if self._results is not None else "not fetched"
-        return f"<{type(self).__name__} {scope} [{state}]>"
+        return f"<{type(self).__name__}{' ' + scope if scope else ''} [{state}]>"
