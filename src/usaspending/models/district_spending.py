@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from .spending import Spending
 
 if TYPE_CHECKING:
-    from ..client import USASpendingClient
+    pass
 
 
 class DistrictSpending(Spending):
@@ -16,15 +16,6 @@ class DistrictSpending(Spending):
     Represents spending data grouped by congressional district with
     district-specific parsing and display logic.
     """
-
-    def __init__(self, data: dict, client: USASpendingClient | None = None):
-        """Initialize DistrictSpending model.
-
-        Args:
-            data: Raw district spending data from API.
-            client: USASpendingClient client instance.
-        """
-        super().__init__(data, client)
 
     @property
     def district_code(self) -> str | None:

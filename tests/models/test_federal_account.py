@@ -157,3 +157,38 @@ class TestFederalAccountFromFixture:
         assert len(accounts) == 16
         assert all(a.toptier_code == "080" for a in accounts)
         assert all(a.id.startswith("080-") for a in accounts)
+
+
+class TestFederalAccountCount:
+    """count must not pay for a fallback it does not use."""
+
+    def test_count_from_data_makes_no_request(self, mock_usa_client):
+        """A count present in the filter tree is returned without any API call.
+
+        The fallback used to be passed as a default argument, which Python
+        evaluates eagerly, so every access fired a TAS-code count request whose
+        result was then discarded.
+        """
+        account = FederalAccount(
+            {"id": "080-0120", "ancestors": ["080"], "count": 7},
+            mock_usa_client,
+            toptier_code="080",
+        )
+
+        before = mock_usa_client.get_request_count()
+        assert account.count == 7
+        assert mock_usa_client.get_request_count() == before
+
+    def test_count_falls_back_to_tas_codes_when_absent(self, mock_usa_client):
+        """With no count key, the TAS codes are counted instead."""
+        mock_usa_client.set_response(
+            "/references/filter_tree/tas/080/080-0120/",
+            {"results": [{"id": "080-2011/2012-0120-000"}, {"id": "080-2012/2013-0120-000"}]},
+        )
+        account = FederalAccount(
+            {"id": "080-0120", "ancestors": ["080"]},
+            mock_usa_client,
+            toptier_code="080",
+        )
+
+        assert account.count == 2

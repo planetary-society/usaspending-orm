@@ -17,6 +17,12 @@ class SubTierAgency(BaseModel):
 
     This model represents a subtier agency with its essential properties,
     including nested office information.
+
+    Note:
+        The client is held as a plain attribute rather than through
+        ``ClientAwareModel``. No property here issues a request, and ``offices``
+        reshapes local data only, so the weakref indirection would make it fail
+        once the client is collected.
     """
 
     def __init__(self, data: dict[str, Any], client: USASpendingClient | None = None):

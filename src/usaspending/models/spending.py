@@ -17,6 +17,12 @@ class Spending(BaseModel):
 
     Represents common fields across spending by recipient and district categories.
     This model provides access to spending data with amounts, names, codes, and outlays.
+
+    Note:
+        The client is held as a plain attribute rather than through
+        ``ClientAwareModel``. No property on this model or its subclasses issues
+        a request, so the weakref indirection would add a
+        ``DetachedInstanceError`` path with nothing to protect.
     """
 
     def __init__(self, data: dict, client: USASpendingClient | None = None):
@@ -36,7 +42,7 @@ class Spending(BaseModel):
         Returns:
             Optional[int]: The database ID, or None.
         """
-        return self.get_value(["id"])
+        return self.get_value("id")
 
     @property
     def name(self) -> str | None:
@@ -45,7 +51,7 @@ class Spending(BaseModel):
         Returns:
             Optional[str]: The name, or None.
         """
-        return self.get_value(["name"])
+        return self.get_value("name")
 
     @property
     def code(self) -> str | None:
@@ -54,7 +60,7 @@ class Spending(BaseModel):
         Returns:
             Optional[str]: The code, or None.
         """
-        return self.get_value(["code"])
+        return self.get_value("code")
 
     @property
     def amount(self) -> Decimal | None:
@@ -63,7 +69,7 @@ class Spending(BaseModel):
         Returns:
             Optional[Decimal]: The total amount, or None.
         """
-        return to_decimal(self.get_value(["amount"]))
+        return to_decimal(self.get_value("amount"))
 
     @property
     def total_outlays(self) -> Decimal | None:
@@ -72,7 +78,7 @@ class Spending(BaseModel):
         Returns:
             Optional[Decimal]: The total outlays, or None.
         """
-        return to_decimal(self.get_value(["total_outlays"]))
+        return to_decimal(self.get_value("total_outlays"))
 
     @property
     def spending_level(self) -> str | None:
@@ -81,7 +87,7 @@ class Spending(BaseModel):
         Returns:
             Optional[str]: The spending level, or None.
         """
-        return self.get_value(["spending_level"])
+        return self.get_value("spending_level")
 
     @property
     def category(self) -> str | None:
@@ -90,7 +96,7 @@ class Spending(BaseModel):
         Returns:
             Optional[str]: The category type, or None.
         """
-        return self.get_value(["category"])
+        return self.get_value("category")
 
     def __repr__(self) -> str:
         """String representation of Spending.

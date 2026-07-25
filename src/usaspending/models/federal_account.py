@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from .base_model import ClientAwareModel
@@ -75,10 +76,18 @@ class FederalAccount(ClientAwareModel):
         """Alias for description property."""
         return self.description
 
-    @property
+    @cached_property
     def count(self) -> int:
-        """Number of TAS codes under this federal account."""
-        return self.get_value("count", default=self.tas_codes.count())
+        """Number of TAS codes under this federal account.
+
+        Counting the TAS codes costs an API request, so it is only used when
+        the filter tree omits the key. Passing it as a default argument would
+        evaluate it on every access, since Python evaluates arguments eagerly.
+        Caching keeps the fallback to one request per instance, because
+        ``tas_codes`` returns a fresh query whose own result cache is discarded.
+        """
+        count = self.get_value("count")
+        return self.tas_codes.count() if count is None else count
 
     @property
     def ancestors(self) -> list[str]:

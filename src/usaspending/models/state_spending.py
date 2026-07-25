@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from .spending import Spending
 
 if TYPE_CHECKING:
-    from ..client import USASpendingClient
+    pass
 
 
 class StateSpending(Spending):
@@ -16,15 +16,6 @@ class StateSpending(Spending):
     Represents spending data grouped by state/territory with
     state-specific properties.
     """
-
-    def __init__(self, data: dict, client: USASpendingClient | None = None):
-        """Initialize StateSpending model.
-
-        Args:
-            data: Raw state spending data from API.
-            client: USASpendingClient client instance.
-        """
-        super().__init__(data, client)
 
     @property
     def state_code(self) -> str | None:

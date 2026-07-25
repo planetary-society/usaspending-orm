@@ -9,6 +9,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 Internal simplification pass. Except where listed below, every change is
 behavior preserving and the public API is unchanged.
 
+### Fixed
+
+- `Transaction` instances no longer compare equal to one another regardless of their data. The class was declared `@dataclass` with no fields, which generated an `__eq__` comparing empty tuples, so any two transactions were equal and `__hash__` was `None`, making them unhashable. They now compare by identity, like every other model, and can be used in sets and as dict keys.
+- `FederalAccount.count` no longer fires an API request when the count is already present in the response, and repeated access now costs at most one request rather than one per access. The fallback that counts TAS codes was passed as a default argument, which Python evaluates eagerly, so every access paid for a request whose result was then discarded.
+
 ### Removed
 
 - `Agency.__init__`'s third parameter, `subtier_data`. It was stored on the
