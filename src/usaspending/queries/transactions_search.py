@@ -91,15 +91,13 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         """Transforms a single API result item into a Transaction model."""
         return Transaction(result)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """Counts the number of transactions per a given award id."""
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
         # The count endpoint cannot know about client-side filters, so when any
         # are set the only correct count comes from iterating filtered results.
         if self._client_filters:
             logger.debug("Client-side filters present, counting by iterating all results")
-            return self._count_by_iteration()
+            return self._count_via_paging()
 
         return self._count_via_endpoint(
             f"/awards/count/transaction/{self._award_id}/", "transactions"

@@ -93,7 +93,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
 
         return AwardAccount(result, self._client)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """Count the number of accounts for the award.
 
         Uses page_metadata.count from the API response for efficiency
@@ -105,8 +105,6 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         Raises:
             ValidationError: If award_id is not set.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
         if not self._award_id:
             raise ValidationError("An award_id is required. Use the .award_id() method.")
 

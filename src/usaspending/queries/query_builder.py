@@ -77,12 +77,10 @@ class QueryBuilder(BaseQuery[T], ABC):
         super().__init__()
         self._client = client
         self._filter_objects: list[BaseFilter] = []
-        # Two distinct caches. _cached_count holds the *effective* count, after
-        # limit() and max_pages() capping, and is used by indexing and __len__.
-        # _cached_raw_count holds what the API reported, which is what count()
-        # returns. Conflating them made a capped value leak back out of count().
+        # The count *after* limit()/max_pages() capping, memoized for indexing so
+        # that walking pages does not re-count. count() deliberately does not
+        # read it: doing so let a capped figure leak out as the total.
         self._cached_count: int | None = None
-        self._cached_raw_count: int | None = None
 
     def __iter__(self) -> Iterator[T]:
         """Iterate over all results, handling pagination automatically.
@@ -268,11 +266,6 @@ class QueryBuilder(BaseQuery[T], ABC):
         else:
             raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
 
-    @abstractmethod
-    def count(self) -> int:
-        """Get total count without fetching all results."""
-        pass
-
     @property
     @abstractmethod
     def _endpoint(self) -> str:
@@ -350,45 +343,68 @@ class QueryBuilder(BaseQuery[T], ABC):
         return response
 
     # ==========================================================================
-    # Counting strategies
+    # Counting
     #
-    # Endpoints differ in what they offer, so count() cannot be shared outright.
-    # These cover the three mechanisms available; a concrete builder picks one
-    # and supplies the endpoint or metadata key, rather than reimplementing the
-    # request, the caching and the logging each time.
+    # count() is shared and not overridden: it owns the caching and the logging.
+    # Subclasses implement _compute_raw_count() and pick one of the mechanisms
+    # below, which cover everything these endpoints actually offer. Keeping the
+    # cache here is what stops some counts from caching and others not.
     # ==========================================================================
 
-    def _cache_raw_count(self, count: int) -> int:
-        """Record and log a freshly retrieved count.
+    def count(self) -> int:
+        """Return the total number of matching results.
 
-        Args:
-            count: The count reported by the API, or produced by iteration.
+        This always asks the API, so repeated calls observe fresh data. The only
+        count cache is :meth:`_get_cached_count`, which indexing uses to avoid
+        re-counting while walking pages; it holds the count *after* ``limit()``
+        and ``max_pages()`` capping, which is why it must not be read from here.
 
         Returns:
-            int: The same count, for use as a return value.
+            int: Total matching results, before any client-side capping.
         """
-        self._cached_raw_count = count
+        logger.debug(f"{self.__class__.__name__}.count() called")
+        count = self._compute_raw_count()
         logger.info(f"{self.__class__.__name__}.count() = {count}")
         return count
 
-    def _count_via_endpoint(self, endpoint: str, key: str) -> int:
+    @abstractmethod
+    def _compute_raw_count(self) -> int:
+        """Retrieve the count from the API, ignoring any caching.
+
+        Implement using one of the ``_count_*`` mechanisms below where possible.
+
+        Returns:
+            int: Total matching results.
+        """
+
+    def _count_via_endpoint(
+        self,
+        endpoint: str,
+        key: str,
+        method: str = "GET",
+        json: dict[str, Any] | None = None,
+    ) -> int:
         """Count using a dedicated count endpoint.
 
         Args:
             endpoint: Count endpoint path.
             key: Key in the response holding the count.
+            method: HTTP method the endpoint expects.
+            json: Request body, for endpoints that take one.
 
         Returns:
             int: The reported count.
         """
-        if self._cached_raw_count is not None:
-            return self._cached_raw_count
-
+        # These endpoints derive their scope from the URL or the supplied body,
+        # so log the filters only when they are actually part of the request.
         log_query_execution(
-            logger, f"{self.__class__.__name__}.count", self._filter_objects, endpoint
+            logger,
+            f"{self.__class__.__name__}.count",
+            self._filter_objects if json else [],
+            endpoint,
         )
-        response = self._client._make_request("GET", endpoint)
-        return self._cache_raw_count(response.get(key, 0))
+        response = self._client._make_request(method, endpoint, json=json)
+        return response.get(key, 0)
 
     def _count_via_page_metadata(self, key: str) -> int:
         """Count from the page metadata of the first page of results.
@@ -399,41 +415,73 @@ class QueryBuilder(BaseQuery[T], ABC):
         Returns:
             int: The reported count.
         """
-        if self._cached_raw_count is not None:
-            return self._cached_raw_count
-
         response = self._execute_query(1)
-        return self._cache_raw_count(response.get("page_metadata", {}).get(key, 0))
+        return response.get("page_metadata", {}).get(key, 0)
 
-    def _count_by_iteration(self) -> int:
-        """Count by walking every result.
+    def _count_via_paging(self) -> int:
+        """Count by walking pages and summing result lengths.
 
-        This is not a fallback to be optimized away: several endpoints report no
-        count at all, and for those, iterating is the only correct mechanism.
+        The only correct mechanism for endpoints that report no count at all.
+        Unlike iterating the query, this counts raw response rows, so it does
+        not build a model per row only to discard it, and it deliberately does
+        not apply ``config.default_result_limit`` -- that default exists to stop
+        unbounded *fetches*, and letting it cap a count would silently report
+        10,000 for any larger result set.
+
+        Explicit ``limit()`` and ``max_pages()`` are still honored, so a bounded
+        query reports the bounded figure.
 
         Returns:
-            int: Number of items yielded by iteration.
+            int: Number of matching rows.
         """
-        if self._cached_raw_count is not None:
-            return self._cached_raw_count
+        if self._total_limit is not None and self._total_limit <= 0:
+            return 0
 
-        return self._cache_raw_count(sum(1 for _ in self))
+        total = 0
+        page = 1
+        pages_fetched = 0
+
+        while True:
+            if self._max_pages is not None and pages_fetched >= self._max_pages:
+                logger.debug(f"Max pages limit ({self._max_pages}) reached while counting")
+                break
+
+            response = self._execute_query(page)
+            results = response.get("results", [])
+
+            countable = len(results)
+            if self._total_limit is not None:
+                countable = min(countable, self._total_limit - total)
+            total += countable
+
+            if self._total_limit is not None and total >= self._total_limit:
+                logger.debug(f"Total limit of {self._total_limit} reached while counting")
+                break
+
+            if not results or not response.get("page_metadata", {}).get("hasNext", False):
+                break
+
+            page += 1
+            pages_fetched += 1
+
+        return total
 
     def _new_instance(self) -> QueryBuilder[T]:
         """Construct an empty instance bound to the same client."""
         return self.__class__(self._client)
 
-    def _copy_base_state_into(self, clone: QueryBuilder[T]) -> None:
-        """Copy QueryBuilder-owned state, plus the base pagination state.
+    def _clone(self) -> QueryBuilder[T]:
+        """Copy the query, including its filters.
 
-        ``_cached_count`` is deliberately not copied: a fresh instance starts
-        with no cached count, and the clone's filters may differ.
+        ``_cached_count`` is deliberately not carried over: the clone starts
+        fresh, and its filters may differ from this one's.
 
-        Args:
-            clone: The instance to copy state into.
+        Returns:
+            QueryBuilder: A copy carrying the same filters and pagination state.
         """
-        super()._copy_base_state_into(clone)
+        clone = super()._clone()
         clone._filter_objects = self._filter_objects.copy()
+        return clone
 
 
 # ==============================================================================

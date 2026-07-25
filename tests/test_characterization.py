@@ -199,25 +199,48 @@ class TestDeprecatedAgencySearchCloning:
         assert clone._agency_type == expected_agency_type
 
 
-class TestSpendingSearchCountIgnoresDefaultLimit:
-    """SpendingSearch.count() applies explicit limits only.
+class TestCountIgnoresDefaultResultLimit:
+    """count() reports the true total, never the default fetch limit.
 
-    It counts with its own loop rather than going through
-    QueryBuilder.__iter__, so config.default_result_limit does not cap it.
-    Phase 2 replaces that loop, and routing it through plain iteration would
-    silently start applying the default.
+    config.default_result_limit exists to stop unbounded *fetches*. Letting it
+    reach a count would silently report 10,000 (the default) for any larger
+    result set, and callers have no way to tell a real total from a capped one.
+
+    SpendingSearch always had its own counting loop and so was unaffected. The
+    builders that count by walking pages are the ones at risk, because walking
+    via iteration would pick the default up.
     """
 
-    def test_count_ignores_default_result_limit(self, mock_usa_client, client_config):
-        items = [{"id": i, "name": f"Recipient {i}", "amount": 1.0} for i in range(30)]
+    def _paginate(self, mock_usa_client, endpoint, total):
         mock_usa_client.set_paginated_response(
-            MockUSASpendingClient.Endpoints.SPENDING_BY_RECIPIENT, items
+            endpoint, [{"id": i, "name": f"Item {i}", "amount": 1.0} for i in range(total)]
         )
+
+    def test_spending_count_ignores_default_result_limit(self, mock_usa_client, client_config):
+        self._paginate(mock_usa_client, MockUSASpendingClient.Endpoints.SPENDING_BY_RECIPIENT, 30)
         client_config(default_result_limit=5)
 
         query = mock_usa_client.spending.search().by_recipient().fiscal_year(2024)
 
         assert query.count() == 30
+
+    def test_page_walking_count_ignores_default_result_limit(self, mock_usa_client, client_config):
+        """FundingSearch has no count endpoint, so it counts by walking pages."""
+        self._paginate(mock_usa_client, "/awards/funding/", 25)
+        client_config(default_result_limit=10)
+
+        query = mock_usa_client.funding.award_id("CONT_AWD_1")
+
+        assert query.count() == 25
+
+    def test_explicit_limit_still_caps_the_count(self, mock_usa_client, client_config):
+        """An explicit limit() is the caller's own bound, so it does apply."""
+        self._paginate(mock_usa_client, "/awards/funding/", 25)
+        client_config(default_result_limit=None)
+
+        query = mock_usa_client.funding.award_id("CONT_AWD_1").limit(7)
+
+        assert query.count() == 7
 
 
 class TestRecipientIdNormalizationDiverges:

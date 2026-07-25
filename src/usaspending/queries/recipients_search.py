@@ -89,7 +89,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
             result["recipient_id"] = result["id"]
         return Recipient(result, self._client)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """
         Get the total count of results using the dedicated count endpoint.
 
@@ -99,8 +99,6 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
         Returns:
             The total number of matching recipients.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
         # Build payload for count endpoint (no pagination params needed)
         payload = {
             "award_type": self._award_type,
@@ -115,7 +113,6 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
         response = self._client._make_request("POST", count_endpoint, json=payload)
 
         total_count = response.get("count", 0)
-        logger.info(f"{self.__class__.__name__}.count() = {total_count}")
         return total_count
 
     # ==========================================================================

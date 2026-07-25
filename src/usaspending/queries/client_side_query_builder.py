@@ -253,15 +253,17 @@ class ClientSideQueryBuilder(BaseQuery[T]):
             keyword_fields=self._keyword_fields,
         )
 
-    def _copy_base_state_into(self, clone: ClientSideQueryBuilder[T]) -> None:
-        """Copy the in-memory filter state, plus the base pagination state.
+    def _clone(self: Q) -> Q:
+        """Copy the query, including both kinds of in-memory filter.
 
-        Args:
-            clone: The instance to copy state into.
+        Returns:
+            ClientSideQueryBuilder: A copy carrying the same filters and
+            pagination state.
         """
-        super()._copy_base_state_into(clone)
+        clone = super()._clone()
         clone._filter_objects = self._filter_objects.copy()
         clone._predicate_filters = self._predicate_filters.copy()
+        return clone
 
     def _materialize(self) -> list[T]:
         """Convert raw items into model instances."""

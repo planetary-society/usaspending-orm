@@ -45,32 +45,22 @@ class BaseQuery(ABC, Generic[T]):
         """
         raise NotImplementedError
 
-    def _copy_base_state_into(self, clone: BaseQuery[T]) -> None:
-        """Copy pagination and ordering state into an already-built clone.
-
-        Subclasses that add their own state extend this rather than copying
-        these fields again, so a new base-class field reaches every subclass.
-
-        Args:
-            clone: The instance to copy state into.
-        """
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
-
     def _clone(self: Q) -> Q:
         """Return an immutable clone of the query.
 
-        Args:
-            None.
+        Subclasses that add state override this, call ``super()._clone()``, and
+        copy their own fields onto the result. Subclasses whose ``__init__``
+        needs arguments override :meth:`_new_instance` instead.
 
         Returns:
             BaseQuery: A copy carrying the same query state.
         """
         clone = self._new_instance()
-        self._copy_base_state_into(clone)
+        clone._page_size = self._page_size
+        clone._total_limit = self._total_limit
+        clone._max_pages = self._max_pages
+        clone._order_by = self._order_by
+        clone._order_direction = self._order_direction
         return clone
 
     def limit(self: Q, num: int) -> Q:

@@ -99,15 +99,13 @@ class SubAwardsSearch(AwardsSearch):
             fields.update(SubAward.GRANT_SUBAWARD_FIELDS)
             return list(fields)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """
         Get the total count of subawards.
 
         If filtering by a specific award, uses the efficient count endpoint.
         Otherwise falls back to parent implementation.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
         # Scoped to one award there is a dedicated count endpoint; a general
         # subaward search has none, so iteration is the only option.
         if self._award_id:
@@ -115,7 +113,7 @@ class SubAwardsSearch(AwardsSearch):
                 f"/awards/count/subaward/{self._award_id}/", "subawards"
             )
 
-        return self._count_by_iteration()
+        return self._count_via_paging()
 
     def count_awards_by_type(self) -> dict[str, int]:
         """

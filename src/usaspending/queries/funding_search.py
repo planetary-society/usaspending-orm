@@ -82,19 +82,17 @@ class FundingSearch(QueryBuilder["Funding"]):
         """Transforms a single API result item into a Funding model."""
         return Funding(result, client=self._client)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """
         Counts the number of funding records for the award.
 
         Since the funding endpoint doesn't provide a count API,
         we need to iterate through all pages to get the count.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
         if not self._award_id:
             raise ValidationError("An award_id is required. Use the .award_id() method.")
 
-        return self._count_by_iteration()
+        return self._count_via_paging()
 
     # ==========================================================================
     # Filter Methods

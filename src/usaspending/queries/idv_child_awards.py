@@ -71,7 +71,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
 
     def _new_instance(self) -> IDVChildAwardsSearch:
         """Reconstruct with the required award ID."""
-        return IDVChildAwardsSearch(self._client, self._award_id)
+        return self.__class__(self._client, self._award_id)
 
     def _clone(self) -> IDVChildAwardsSearch:
         """Creates an immutable copy of the query builder."""
@@ -103,7 +103,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
 
         return create_award(result, self._client)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """Count the number of child awards for the IDV.
 
         Since the IDV awards endpoint doesn't provide a dedicated count API,
@@ -112,9 +112,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         Returns:
             int: The total number of child awards.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called for {self._award_id}")
-
-        return self._count_by_iteration()
+        return self._count_via_paging()
 
     # ==========================================================================
     # Filter Methods

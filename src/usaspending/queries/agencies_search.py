@@ -138,14 +138,12 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
         return None
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """Get total count of matching agencies/offices.
 
         Returns:
             Total number of matching results
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
         if not self._search_text:
             raise ValidationError("search_text is required. Use name() or search_text() method.")
 
@@ -155,10 +153,6 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
         count = len(results)
 
-        logger.info(
-            f"{self.__class__.__name__}.count() = {count} results "
-            f"for search text '{self._search_text}'"
-        )
         return count
 
     def search_text(self, search_text: str) -> AgenciesSearch:

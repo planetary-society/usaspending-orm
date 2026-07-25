@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ..exceptions import ValidationError
-from ..logging_config import USASpendingLogger
+from ..logging_config import USASpendingLogger, log_query_execution
 from ..models.subtier_agency import SubTierAgency
 from .filters import parse_fiscal_year
 from .query_builder import QueryBuilder
@@ -61,7 +61,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
 
     def _new_instance(self) -> SubAgencyQuery:
         """Reconstruct with the required toptier code."""
-        return SubAgencyQuery(self._client, self._toptier_code)
+        return self.__class__(self._client, self._toptier_code)
 
     def _clone(self) -> SubAgencyQuery:
         """Create an immutable copy of the query builder."""
@@ -97,9 +97,9 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         """
         params = self._build_payload(page)
 
-        from ..logging_config import log_query_execution
-
-        log_query_execution(logger, "SubAgencyQuery", [], self._endpoint, page)
+        log_query_execution(
+            logger, self.__class__.__name__, self._filter_objects, self._endpoint, page
+        )
         logger.debug(f"Query params: {params}")
 
         response = self._client._make_request("GET", self._endpoint, params=params)
@@ -126,7 +126,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
             return None
         return SubTierAgency(result, self._client)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """Get total count of sub-agencies.
 
         This endpoint provides total count in page_metadata.

@@ -239,8 +239,14 @@ class TestAwardAccountsQueryCount:
 
         assert count == 2  # From page_metadata.count in fixture
 
-    def test_count_caches_result(self, mock_usa_client, load_fixture):
-        """Test count caches the result, so repeat calls issue no new request."""
+    def test_count_always_asks_the_api(self, mock_usa_client, load_fixture):
+        """count() reports fresh data on every call.
+
+        This matches the contract documented for every builder in
+        tests/queries/test_query_builder.py::TestCountCaching: the public count()
+        always calls the API, and the only count cache is the internal one
+        indexing uses.
+        """
         fixture = load_fixture("awards/accounts.json")
         mock_usa_client.set_response("/awards/accounts/", fixture)
 
@@ -248,11 +254,8 @@ class TestAwardAccountsQueryCount:
         count1 = query.count()
         count2 = query.count()
 
-        assert count1 == count2
-        assert mock_usa_client.get_request_count() == 1
-        # The API figure is cached as the raw count. _cached_count is a separate
-        # cache for the count after limit()/max_pages() capping.
-        assert query._cached_raw_count == 2
+        assert count1 == count2 == 2
+        assert mock_usa_client.get_request_count() == 2
 
     def test_indexing_does_not_corrupt_a_later_count(self, mock_usa_client, load_fixture):
         """A capped count must not leak back out of count().

@@ -165,6 +165,28 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         """
         return "/search/spending_by_award/"
 
+    def _require_award_type_filters(self) -> dict[str, Any]:
+        """Aggregate the filters, requiring the award type the API mandates.
+
+        Both the search payload and the count request need the same aggregate
+        and enforce the same requirement, so they share this.
+
+        Returns:
+            dict[str, Any]: The aggregated filter payload.
+
+        Raises:
+            ValidationError: If no ``award_type_codes`` filter is set.
+        """
+        final_filters = self._aggregate_filters()
+
+        if "award_type_codes" not in final_filters:
+            raise ValidationError(
+                "A filter for 'award_type_codes' is required. "
+                "Use the .award_type_codes() method or a convenience method like .contracts()."
+            )
+
+        return final_filters
+
     def _build_payload(self, page: int) -> dict[str, Any]:
         """
         Construct the API request payload from filter objects.
@@ -179,14 +201,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             ValidationError: If required 'award_type_codes' filter is missing.
         """
 
-        final_filters = self._aggregate_filters()
-
-        # The 'award_type_codes' filter is required by the API.
-        if "award_type_codes" not in final_filters:
-            raise ValidationError(
-                "A filter for 'award_type_codes' is required. "
-                "Use the .award_type_codes() method or a convenience method like .contracts()."
-            )
+        final_filters = self._require_award_type_filters()
 
         payload = {
             "filters": final_filters,
@@ -265,7 +280,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
                 "Use separate queries for each award type category."
             )
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """
         Get the total count of results without fetching all items.
 
@@ -283,39 +298,24 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             >>> total = contracts.count()
             >>> print(f"Found {total} contracts in FY2024")
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
+        # Validate and aggregate once, then reuse for the count request.
+        final_filters = self._require_award_type_filters()
 
-        # Aggregate filters to prepare for the count request
-        final_filters = self._aggregate_filters()
+        results = self.count_awards_by_type(filters=final_filters)
+        category = self._get_award_type_category(self._get_award_type_codes())
 
-        # The 'award_type_codes' filter is required by the API.
-        if "award_type_codes" not in final_filters:
-            raise ValidationError(
-                "A filter for 'award_type_codes' is required. "
-                "Use the .award_type_codes() method or a convenience method like .contracts()."
-            )
+        return results.get(category, 0)
 
-        # Make the API call to count awards by type
-        results = self.count_awards_by_type()
-
-        # Get the award type codes to determine which category to count
-        award_type_codes = self._get_award_type_codes()
-
-        # Determine the category based on award type codes
-        category = self._get_award_type_category(award_type_codes)
-
-        # Extract the count for the specific category
-        total = results.get(category, 0)
-
-        logger.info(f"{self.__class__.__name__}.count() = {total} ({category})")
-        return total
-
-    def count_awards_by_type(self) -> dict[str, int]:
+    def count_awards_by_type(self, filters: dict[str, Any] | None = None) -> dict[str, int]:
         """
         Get counts of awards grouped by type category.
 
         This method calls the /search/spending_by_award_count/ endpoint to get
         counts for all award type categories matching the current filters.
+
+        Args:
+            filters: Pre-aggregated filter payload. Callers that already built
+                one pass it here rather than aggregating a second time.
 
         Returns:
             dict[str, int]: Dictionary mapping award type categories
@@ -327,7 +327,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             >>> print(counts)  # {'contracts': 1234, 'grants': 567, ...}
         """
         endpoint = "/search/spending_by_award_count/"
-        final_filters = self._aggregate_filters()
+        final_filters = self._aggregate_filters() if filters is None else filters
 
         payload = {
             "filters": final_filters,
@@ -519,11 +519,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
 
         self._validate_single_award_type_category(new_codes)
 
-        clone = self._clone()
-        clone._filter_objects.append(
-            SimpleListFilter(key="award_type_codes", values=list(award_codes))
-        )
-        return clone
+        return self._with_filter(SimpleListFilter(key="award_type_codes", values=list(award_codes)))
 
     def object_classes(self, *object_classes: str) -> AwardsSearch:
         """
@@ -568,8 +564,6 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         if not object_classes:
             raise ValidationError("At least one object class code is required")
 
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             SimpleListFilter(key="object_classes", values=list(object_classes))
         )
-        return clone
