@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..utils.validations import validate_non_empty_string
+from .mixins import SortableQuery
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class IDVChildAwardsSearch(QueryBuilder["Award"]):
+class IDVChildAwardsSearch(SortableQuery, QueryBuilder["Award"]):
     """Query builder for child awards (delivery/task orders) under an IDV.
 
     This class provides access to child awards associated with an Indefinite
@@ -35,6 +36,8 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         >>> # Count child awards
         >>> idv.child_awards.count()
     """
+
+    _sort_field: str = "obligated_amount"
 
     # Map user-friendly sort field names to API field names
     SORT_FIELD_MAP: ClassVar[dict[str, str]] = {
@@ -59,8 +62,6 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         """
         super().__init__(client)
         self._award_id: str = validate_non_empty_string(award_id, "award_id")
-        self._sort_field: str = "obligated_amount"
-        self._sort_order: str = "desc"
         # IDV awards endpoint type filter for child award types
         self._idv_award_type: str = "child_awards"
 
@@ -76,22 +77,18 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
     def _clone(self) -> IDVChildAwardsSearch:
         """Creates an immutable copy of the query builder."""
         clone = super()._clone()
-        clone._sort_field = self._sort_field
-        clone._sort_order = self._sort_order
         clone._idv_award_type = self._idv_award_type
         return clone
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload."""
-        payload = {
+        return {
             "award_id": self._award_id,
             "limit": self._get_effective_page_size(),
             "page": page,
-            "sort": self._sort_field,
-            "order": self._sort_order,
             "type": self._idv_award_type,
+            **self._sort_payload(),
         }
-        return payload
 
     def _transform_result(self, result: dict[str, Any]) -> Award:
         """Transforms a single API result item into an Award model.
@@ -117,43 +114,6 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
     # ==========================================================================
     # Filter Methods
     # ==========================================================================
-
-    def order_by(self, field: str, direction: str = "desc") -> IDVChildAwardsSearch:
-        """Set the sort order for results.
-
-        Args:
-            field: The field to sort by. Can be a user-friendly name or API field name.
-                   User-friendly names include:
-                   - 'award_type', 'description', 'funding_agency', 'awarding_agency'
-                   - 'obligated_amount', 'obligation', 'start_date', 'end_date'
-                   - 'piid', 'last_date_to_order'
-            direction: Sort direction - 'asc' or 'desc' (default: 'desc')
-
-        Returns:
-            A new IDVChildAwardsSearch instance with the sort configuration applied.
-
-        Raises:
-            ValidationError: If the sort direction or field is invalid.
-        """
-        if direction not in ["asc", "desc"]:
-            raise ValidationError(f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'.")
-
-        # Map user-friendly field names to API field names
-        api_field = self.SORT_FIELD_MAP.get(field.lower(), field)
-
-        # Validate that the field is supported by the API
-        valid_api_fields = list(self.SORT_FIELD_MAP.values())
-
-        if api_field not in valid_api_fields:
-            raise ValidationError(
-                f"Invalid sort field: {field}. "
-                f"Valid fields are: {', '.join(self.SORT_FIELD_MAP.keys())}"
-            )
-
-        clone = self._clone()
-        clone._sort_field = api_field
-        clone._sort_order = direction
-        return clone
 
     def award_type(self, type_filter: str) -> IDVChildAwardsSearch:
         """Filter by award type.

@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING, Any
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.transaction import Transaction
-from ..utils.validations import parse_date_string, validate_non_empty_string
+from ..utils.validations import parse_date_string
+from .mixins import AwardScopedQuery
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class TransactionsSearch(QueryBuilder["Transaction"]):
+class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
     """
     Builds and executes a transactions search query, allowing for filtering
     on transaction data. This class follows a fluent interface pattern.
@@ -47,7 +48,6 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             client: The USASpending client instance.
         """
         super().__init__(client)
-        self._award_id: str | None = None
         # Client-side filters (not supported by API)
         self._client_filters: dict[str, Any] = {}
 
@@ -59,18 +59,13 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     def _clone(self) -> TransactionsSearch:
         """Creates an immutable copy of the query builder."""
         clone = super()._clone()
-        clone._award_id = self._award_id
         clone._client_filters = self._client_filters.copy()
         return clone
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload from the filter objects."""
-
-        if not self._award_id:
-            raise ValidationError("An award_id is required. Use the .award_id() method.")
-
         payload = {
-            "award_id": self._award_id,
+            "award_id": self._require_award_id(),
             "limit": self._get_effective_page_size(),
             "page": page,
         }
@@ -100,7 +95,7 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
             return self._count_via_paging()
 
         return self._count_via_endpoint(
-            f"/awards/count/transaction/{self._award_id}/", "transactions"
+            f"/awards/count/transaction/{self._require_award_id()}/", "transactions"
         )
 
     def __getitem__(self, key: int | slice) -> Transaction | list[Transaction]:
@@ -142,22 +137,6 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     # ==========================================================================
     # Filter Methods
     # ==========================================================================
-
-    def award_id(self, award_id: str) -> TransactionsSearch:
-        """
-        Filter transactions for a specific award.
-
-        Args:
-            award_id: The unique award identifier.
-
-        Returns:
-            A new `TransactionsSearch` instance with the award filter applied.
-        """
-        validated_id = validate_non_empty_string(award_id, "award_id")
-
-        clone = self._clone()
-        clone._award_id = validated_id
-        return clone
 
     def since(self, date: str) -> TransactionsSearch:
         """

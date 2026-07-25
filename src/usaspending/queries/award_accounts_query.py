@@ -4,19 +4,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
-from ..utils.validations import validate_non_empty_string
+from .mixins import AwardScopedQuery, SortableQuery
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
-    from ..client import USASpendingClient
     from ..models.award_account import AwardAccount
 
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
+class AwardAccountsQuery(AwardScopedQuery, SortableQuery, QueryBuilder["AwardAccount"]):
     """Builds and executes an award accounts query.
 
     Retrieves federal accounts associated with a specific award,
@@ -35,6 +33,8 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         >>> sorted_accounts = accounts.order_by("amount", "desc").all()
     """
 
+    _sort_field: str = "federal_account"
+
     # Map user-friendly sort field names to API field names
     SORT_FIELD_MAP: ClassVar[dict[str, str]] = {
         "account_title": "account_title",
@@ -48,44 +48,19 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         "total_transaction_obligated_amount": "total_transaction_obligated_amount",
     }
 
-    def __init__(self, client: USASpendingClient):
-        """Initialize the AwardAccountsQuery.
-
-        Args:
-            client: The USASpending client instance.
-        """
-        super().__init__(client)
-        self._award_id: str | None = None
-        self._sort_field: str = "federal_account"
-        self._sort_order: str = "desc"
-
     @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
         return "/awards/accounts/"
 
-    def _clone(self) -> AwardAccountsQuery:
-        """Creates an immutable copy of the query builder."""
-        clone = super()._clone()
-        clone._award_id = self._award_id
-        clone._sort_field = self._sort_field
-        clone._sort_order = self._sort_order
-        return clone
-
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload."""
-        if not self._award_id:
-            raise ValidationError("An award_id is required. Use the .award_id() method.")
-
-        payload = {
-            "award_id": self._award_id,
+        return {
+            "award_id": self._require_award_id(),
             "limit": self._get_effective_page_size(),
             "page": page,
-            "sort": self._sort_field,
-            "order": self._sort_order,
+            **self._sort_payload(),
         }
-
-        return payload
 
     def _transform_result(self, result: dict[str, Any]) -> AwardAccount:
         """Transforms a single API result item into an AwardAccount model."""
@@ -105,70 +80,6 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         Raises:
             ValidationError: If award_id is not set.
         """
-        if not self._award_id:
-            raise ValidationError("An award_id is required. Use the .award_id() method.")
+        self._require_award_id()
 
         return self._count_via_page_metadata("count")
-
-    # ==========================================================================
-    # Filter Methods
-    # ==========================================================================
-
-    def award_id(self, award_id: str) -> AwardAccountsQuery:
-        """Filter accounts for a specific award.
-
-        Args:
-            award_id: The unique award identifier (generated_unique_award_id).
-
-        Returns:
-            A new AwardAccountsQuery instance with the award filter applied.
-        """
-        validated_id = validate_non_empty_string(award_id, "award_id")
-
-        clone = self._clone()
-        clone._award_id = validated_id
-        return clone
-
-    def order_by(self, field: str, direction: str = "desc") -> AwardAccountsQuery:
-        """Set the sort order for results.
-
-        Args:
-            field: The field to sort by. Can be a user-friendly name or API field name.
-                   User-friendly names include:
-                   - 'account_title', 'title' - Sort by account title
-                   - 'agency' - Sort by agency
-                   - 'federal_account', 'account', 'code' - Sort by federal account code
-                   - 'amount', 'obligated_amount' - Sort by obligated amount
-            direction: Sort direction - 'asc' or 'desc' (default: 'desc')
-
-        Returns:
-            A new AwardAccountsQuery instance with the sort configuration applied.
-
-        Raises:
-            ValidationError: If direction or field is invalid.
-        """
-        # Validate direction
-        if direction not in ["asc", "desc"]:
-            raise ValidationError(f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'.")
-
-        # Map user-friendly field names to API field names
-        api_field = self.SORT_FIELD_MAP.get(field.lower(), field)
-
-        # Validate that the field is supported by the API
-        valid_api_fields = [
-            "account_title",
-            "agency",
-            "federal_account",
-            "total_transaction_obligated_amount",
-        ]
-
-        if api_field not in valid_api_fields:
-            raise ValidationError(
-                f"Invalid sort field: {field}. "
-                f"Valid fields are: {', '.join(self.SORT_FIELD_MAP.keys())}"
-            )
-
-        clone = self._clone()
-        clone._sort_field = api_field
-        clone._sort_order = direction
-        return clone
