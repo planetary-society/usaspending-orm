@@ -311,3 +311,33 @@ class TestTextFormatterTitlecaseCallback:
         """Test callback with punctuation."""
         result = TextFormatter.titlecase_callback("nasa,")
         assert result == "NASA,"
+
+
+class TestSpecialCaseIndexInvalidation:
+    """The derived lookup must not outlive the list it was built from.
+
+    Casing resolves through an index built once from special_cases.yaml, rather
+    than by scanning the list per word. That index is a second piece of cached
+    state, and twelve places in the suite invalidate casing by setting
+    ``_special_cases_cache = None``, so the index has to follow from that alone.
+    """
+
+    def test_index_rebuilds_when_the_cache_is_replaced(self):
+        original = TextFormatter._special_cases_cache
+        try:
+            assert TextFormatter._preserve_special_case("llc") == "LLC"
+
+            TextFormatter._special_cases_cache = None
+            with patch("builtins.open", mock_open(read_data=yaml.dump(["ZZZ"]))):
+                # The real list is gone, so its entries must stop resolving...
+                assert TextFormatter._preserve_special_case("llc") is None
+                # ...and the replacement must take effect.
+                assert TextFormatter._preserve_special_case("zzz") == "ZZZ"
+
+            TextFormatter._special_cases_cache = None
+            assert TextFormatter._preserve_special_case("llc") == "LLC"
+            assert TextFormatter._preserve_special_case("zzz") is None
+        finally:
+            TextFormatter._special_cases_cache = original
+            TextFormatter._special_cases_index = None
+            TextFormatter._special_cases_index_source = None

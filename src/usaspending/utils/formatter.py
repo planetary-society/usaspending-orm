@@ -181,6 +181,13 @@ class TextFormatter:
 
     _special_cases_cache = None
 
+    #: Lookup derived from ``_special_cases_cache``, alongside the list object it
+    #: was built from. Storing the source lets the index rebuild itself when the
+    #: cache is replaced, so resetting ``_special_cases_cache`` remains the single
+    #: way to invalidate casing state.
+    _special_cases_index: dict[str, str] | None = None
+    _special_cases_index_source: list | None = None
+
     @classmethod
     def _load_special_cases(cls):
         """Load and cache special cases from YAML file."""
@@ -214,7 +221,7 @@ class TextFormatter:
 
         # Handle contractions separately
         if "'" in word:
-            # For a possessive like "ACME's", split at the apostrophe
+            # For a possessive like "NASA's", split at the apostrophe
             parts = word.split("'", 1)
             if len(parts) == 2:
                 clean_word = parts[0]
@@ -238,6 +245,35 @@ class TextFormatter:
         return clean_word, trailing_punct
 
     @classmethod
+    def _get_special_cases_index(cls) -> dict[str, str]:
+        """Map every lowercase form of a special case to its canonical spelling.
+
+        Built once and cached. This used to be a linear scan of the whole list
+        per word, with up to three ``.lower()`` comparisons per entry, which made
+        casing a single name cost tens of microseconds and dominated the cost of
+        reading a page of recipients.
+
+        Entries are keyed both as written and, for a form ending in a period,
+        without it, so that "inc" finds "Inc.". Earlier entries win, matching the
+        scan order this replaces.
+        """
+        special_cases = cls._load_special_cases()
+
+        # Rebuild when the underlying list is a different object, so that
+        # clearing _special_cases_cache invalidates this too.
+        if cls._special_cases_index is None or cls._special_cases_index_source is not special_cases:
+            index: dict[str, str] = {}
+            for special_word in special_cases:
+                if not isinstance(special_word, str):
+                    continue
+                index.setdefault(special_word.lower(), special_word)
+                if special_word.endswith("."):
+                    index.setdefault(special_word[:-1].lower(), special_word)
+            cls._special_cases_index = index
+            cls._special_cases_index_source = special_cases
+        return cls._special_cases_index
+
+    @classmethod
     def _preserve_special_case(cls, word):
         """Check if word should be preserved as special case, return preserved version or None."""
         if not isinstance(word, str):
@@ -247,28 +283,18 @@ class TextFormatter:
         if word.startswith("(") and word.endswith(")"):
             return word
 
-        # Load special cases YAML file
-        special_cases = cls._load_special_cases()
+        index = cls._get_special_cases_index()
+
+        # The whole word, punctuation included, so that "u.s." matches as written.
+        special_word = index.get(word.lower())
+        if special_word is not None:
+            return special_word
+
+        # Then the word without its trailing punctuation, which is restored.
         clean_word, trailing_punct = cls._split_word_punctuation(word)
-
-        # Check for case-insensitive match
-        for special_word in special_cases:
-            # Ensure special_word is a string
-            if not isinstance(special_word, str):
-                continue
-
-            # First try exact match with full word (including punctuation)
-            if word.lower() == special_word.lower():
-                return special_word
-
-            # Then try match with clean word
-            if clean_word.lower() == special_word.lower():
-                return special_word + trailing_punct
-
-            # Also try if special_word has punctuation that matches
-            if special_word.endswith(".") and clean_word.lower() == special_word[:-1].lower():
-                # Word like "inc" matching "Inc."
-                return special_word + trailing_punct
+        special_word = index.get(clean_word.lower())
+        if special_word is not None:
+            return special_word + trailing_punct
 
         return None
 
@@ -416,8 +442,16 @@ def titlecase_name(text: str | None) -> str | None:
     Recipient, agency and place names arrive uppercased. Plain title casing
     mangles the acronyms, mixed-case marks and suffixes they contain, so casing
     goes through ``special_cases.yaml``, which lists the forms to leave alone.
-    The list is data rather than code precisely so that it can grow without
-    touching this function, and so that it stays agency-agnostic.
+
+    Note:
+        That list is deliberately NASA-centric. Alongside generic business and
+        address forms such as ``LLC`` and ``NE``, it carries National Aeronautics
+        and Space Administration centers and programs -- ``GSFC``, ``JPL``,
+        ``EPSCoR``, ``OSIRIS-REx`` and the rest -- because that is the data this
+        library was built to read. Keeping the list as data means it can grow
+        without touching this function. Lifting the whole special-case mechanism
+        into a plugin, so another agency's vocabulary could be supplied instead,
+        is deferred rather than attempted here.
 
     Args:
         text: The text to title-case, or None.
