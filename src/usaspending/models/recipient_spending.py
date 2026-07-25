@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 from ..utils.formatter import round_to_millions
 from .recipient import Recipient
-from .spending import SpendingMixin
+from .spending import SpendingFields
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
 
 
-class RecipientSpending(SpendingMixin, Recipient):
+class RecipientSpending(SpendingFields, Recipient):
     """Model for spending by recipient data.
 
     Represents spending data grouped by recipient with recipient-specific

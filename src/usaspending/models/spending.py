@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..client import USASpendingClient
 
 
-class SpendingMixin:
+class SpendingFields:
     """Fields shared by every spending-by-category result.
 
     ``RecipientSpending`` subclasses :class:`Recipient` rather than
@@ -31,12 +31,12 @@ class SpendingMixin:
       it.
 
     Warning:
-        Because this mixin precedes the model base in the MRO, anything added
+        Because these fields precede the model base in the MRO, anything added
         here outranks the *entire* host hierarchy, ``BaseModel`` included.
         Declaring the ``get_value`` dependency as a stub method, for instance,
         would shadow the real implementation and break every accessor. The
-        dependency is documented in prose instead, matching
-        ``queries/mixins.py``.
+        dependency is documented in prose instead, matching the query-layer
+        mixins in ``queries/mixins.py``.
     """
 
     @property
@@ -76,7 +76,7 @@ class SpendingMixin:
         return self.get_value("spending_level")
 
 
-class Spending(SpendingMixin, BaseModel):
+class Spending(SpendingFields, BaseModel):
     """Base model for spending by category data.
 
     Represents common fields across spending by recipient and district categories.
