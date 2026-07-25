@@ -11,6 +11,7 @@ from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..utils.formatter import smart_sentence_case, to_date, to_decimal, to_int
 from .agency import Agency
+from .award_identifier import parse_award_identifier
 from .award_types import DOWNLOAD_TYPES
 from .download import AwardType, FileFormat
 from .lazy_record import LazyRecord
@@ -175,47 +176,6 @@ class Award(LazyRecord):
         # This cannot be lazy-loaded since it's required to fetch details
         return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
-    def _derived_award_identifier(self) -> str | None:
-        """Extract the award identifier (PIID, FAIN, or URI) from generated_unique_award_id.
-
-        Parses the generated ID format to extract the original identifier:
-        - CONT_AWD_<piid>_<agency>_<parent>_<ref> -> returns piid
-        - CONT_IDV_<piid>_<agency> -> returns piid
-        - ASST_NON_<fain>_<agency> -> returns fain
-        - ASST_AGG_<uri>_<agency> -> returns uri
-
-        Returns:
-            Optional[str]: The extracted identifier or None if not found or is "-NONE-".
-        """
-        gen_id = self.generated_unique_award_id
-        if not gen_id:
-            return None
-
-        parts = gen_id.split("_")
-
-        # Validate minimum parts based on format
-        if len(parts) < 3:
-            return None
-
-        prefix = "_".join(parts[:2])  # e.g., "CONT_AWD" or "ASST_NON"
-
-        # Validate expected number of parts for each format
-        if (
-            (prefix == "CONT_AWD" and len(parts) != 6)
-            or (prefix == "CONT_IDV" and len(parts) != 4)
-            or (prefix in ("ASST_NON", "ASST_AGG") and len(parts) != 4)
-            or prefix not in ("CONT_AWD", "CONT_IDV", "ASST_NON", "ASST_AGG")
-        ):
-            return None
-
-        identifier = parts[2]  # The actual ID is always the 3rd segment
-
-        # Don't return placeholder values
-        if identifier == "-NONE-" or not identifier:
-            return None
-
-        return identifier
-
     @property
     def award_identifier(self) -> str:
         """General-purpose award identifier, type-agnostic.
@@ -226,9 +186,7 @@ class Award(LazyRecord):
         Returns:
             str: The award identifier (PIID, FAIN, or URI), or empty string if not found.
         """
-        # Derive from generated_unique_award_id
-        derived_award_id = self._derived_award_identifier()
-        return derived_award_id if derived_award_id else ""
+        return parse_award_identifier(self.generated_unique_award_id) or ""
 
     @property
     def category(self) -> str:
@@ -629,34 +587,19 @@ class Award(LazyRecord):
         if agency_type not in ["funding", "awarding"]:
             raise ValueError(f"Invalid agency_type: {agency_type}")
 
-        # Define field mappings based on agency type
-        if agency_type == "funding":
-            nested_key = "funding_agency"
-            flat_keys = [
-                "Funding Agency",
-                "Funding Agency Code",
-                "Funding Sub Agency",
-                "Funding Sub Agency Code",
-            ]
-            name_key = "Funding Agency"
-            code_key = "Funding Agency Code"
-            sub_name_key = "Funding Sub Agency"
-            sub_code_key = "Funding Sub Agency Code"
-            # No funding_agency_id available in search results
-            id_key = None
-        else:  # awarding
-            nested_key = "awarding_agency"
-            flat_keys = [
-                "Awarding Agency",
-                "Awarding Agency Code",
-                "Awarding Sub Agency",
-                "Awarding Sub Agency Code",
-            ]
-            name_key = "Awarding Agency"
-            code_key = "Awarding Agency Code"
-            sub_name_key = "Awarding Sub Agency"
-            sub_code_key = "Awarding Sub Agency Code"
-            id_key = "awarding_agency_id"
+        # Detail responses nest the agency under a snake_case key, while search
+        # results flatten it into Title Case columns that differ only by this
+        # prefix, so both key sets derive from agency_type.
+        prefix = agency_type.capitalize()
+        nested_key = f"{agency_type}_agency"
+        name_key = f"{prefix} Agency"
+        code_key = f"{prefix} Agency Code"
+        sub_name_key = f"{prefix} Sub Agency"
+        sub_code_key = f"{prefix} Sub Agency Code"
+        flat_keys = [name_key, code_key, sub_name_key, sub_code_key]
+
+        # Search results carry an awarding_agency_id but no funding equivalent.
+        id_key = "awarding_agency_id" if agency_type == "awarding" else None
 
         # First check if we have nested agency data (from full award details)
         if self.raw.get(nested_key):
