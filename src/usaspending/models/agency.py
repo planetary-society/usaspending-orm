@@ -554,8 +554,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of contract obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(CONTRACT_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(CONTRACT_CODES))
 
     @cached_property
     def grant_obligations(self) -> Decimal | None:
@@ -565,8 +564,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of grant obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(GRANT_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(GRANT_CODES))
 
     @cached_property
     def idv_obligations(self) -> Decimal | None:
@@ -576,8 +574,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of IDV obligations
             for this agency in the current fiscal year, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(IDV_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(IDV_CODES))
 
     @cached_property
     def loan_obligations(self) -> Decimal | None:
@@ -587,8 +584,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of loan obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(LOAN_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(LOAN_CODES))
 
     @cached_property
     def direct_payment_obligations(self) -> Decimal | None:
@@ -598,8 +594,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of direct payment obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(DIRECT_PAYMENT_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(DIRECT_PAYMENT_CODES))
 
     @cached_property
     def other_obligations(self) -> Decimal | None:
@@ -609,8 +604,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of other assistance obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(OTHER_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(OTHER_CODES))
 
     def get_transaction_count(
         self,
