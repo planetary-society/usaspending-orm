@@ -4,34 +4,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from ..logging_config import USASpendingLogger
-from ..utils.validations import validate_non_empty_string
-from .client_side_query_builder import ClientSideQueryBuilder
-from .filters import KeywordsFilter, SimpleListFilter, SimpleStringFilter
+from .filter_tree_query import FilterTreeQuery
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
     from ..models.federal_account import FederalAccount
 
-logger = USASpendingLogger.get_logger(__name__)
 
-
-class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
+class FederalAccountsQuery(FilterTreeQuery["FederalAccount"]):
     """Lazy query for Federal Accounts with TAS codes.
 
     Provides a query-like interface for fetching federal accounts under
     an agency. Supports iteration, indexing, count operations, and
     client-side filtering.
 
-    The query is lazily evaluated - the API is only called when results
-    are actually accessed (iteration, indexing, count, etc.).
-
     Filters:
         - code(): Filter by federal account code.
         - codes(): Filter by multiple federal account codes.
-        - description(): Filter by description text (case-insensitive substring).
+        - description(): Filter by description text (substring, case-insensitive).
         - account_name(): Alias for description().
-        - fiscal_year(): Filter by fiscal year coverage.
+        - fiscal_year(): Filter to accounts with TAS codes active in a year.
 
     Example:
         >>> accounts = agency.federal_accounts
@@ -46,97 +38,31 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
     """
 
     ENDPOINT = "/references/filter_tree/tas/{toptier_code}/"
+    KEYWORD_FIELDS = ("description", "name", "title")
 
-    def __init__(
-        self,
-        client: USASpendingClient,
-        toptier_code: str,
-    ):
+    def __init__(self, client: USASpendingClient, toptier_code: str):
         """Initialize FederalAccountsQuery.
 
         Args:
             client: USASpendingClient instance.
             toptier_code: Agency toptier code (e.g., "080").
         """
-        self._client = client
         self._toptier_code = toptier_code
-        self._results: list[FederalAccount] | None = None
-        super().__init__(
-            items=[],
-            keyword_fields=["description", "name", "title"],
-        )
+        super().__init__(client)
 
-    def _fetch(self) -> list[FederalAccount]:
-        """Fetch federal accounts from the API.
+    def _scope(self) -> dict[str, str]:
+        """Return the agency this query is scoped to."""
+        return {"toptier_code": self._toptier_code}
 
-        Returns:
-            List of FederalAccount model instances.
-        """
-        if self._results is not None:
-            return self._results
-
-        # Handle empty toptier_code
-        if not self._toptier_code:
-            self._results = []
-            return self._results
-
-        endpoint = self.ENDPOINT.format(toptier_code=self._toptier_code)
-
-        logger.debug("Fetching federal accounts for agency %s", self._toptier_code)
-
-        response = self._client._make_request("GET", endpoint)
-        results = response.get("results", [])
-
+    def _build_model(self, data: dict[str, Any]) -> FederalAccount:
+        """Build a FederalAccount, carrying the agency down to it."""
         from ..models.federal_account import FederalAccount
 
-        self._results = [
-            FederalAccount(data, self._client, toptier_code=self._toptier_code)
-            for data in results
-            if isinstance(data, dict)
-        ]
+        return FederalAccount(data, self._client, toptier_code=self._toptier_code)
 
-        logger.debug("Fetched %d federal accounts", len(self._results))
-
-        return self._results
-
-    def _materialize(self) -> list[FederalAccount]:
-        """Return fetched federal accounts for client-side filtering."""
-        return list(self._fetch())
-
-    def code(self, code: str) -> FederalAccountsQuery:
-        """Filter by federal account code.
-
-        Args:
-            code: Federal account code (e.g., "080-0120").
-
-        Returns:
-            FederalAccountsQuery: Filtered query.
-        """
-        validated = validate_non_empty_string(code, "code")
-        return self._add_filter_object(SimpleStringFilter(key="id", value=validated))
-
-    def codes(self, *codes: str) -> FederalAccountsQuery:
-        """Filter by multiple federal account codes.
-
-        Args:
-            *codes: One or more federal account codes.
-
-        Returns:
-            FederalAccountsQuery: Filtered query.
-        """
-        return self._add_filter_object(SimpleListFilter(key="id", values=list(codes)))
-
-    def description(self, text: str) -> FederalAccountsQuery:
-        """Filter by description text (case-insensitive substring).
-
-        Args:
-            text: Description text to search for.
-
-        Returns:
-            FederalAccountsQuery: Filtered query.
-        """
-        validated = validate_non_empty_string(text, "description")
-        return self._add_filter_object(KeywordsFilter(values=[validated]))
+    def _new_instance(self) -> FederalAccountsQuery:
+        """Reconstruct with the required toptier code."""
+        return self.__class__(self._client, self._toptier_code)
 
     def account_name(self, text: str) -> FederalAccountsQuery:
         """Alias for description().
@@ -184,19 +110,3 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
             return any(tas_matches(tas) for tas in account.tas_codes)
 
         return self._add_filter(predicate)
-
-    def _new_instance(self) -> FederalAccountsQuery:
-        """Reconstruct with the required toptier code."""
-        return self.__class__(self._client, self._toptier_code)
-
-    def _clone(self) -> FederalAccountsQuery:
-        """Create a copy for method chaining, sharing any fetched results."""
-        clone = super()._clone()
-        clone._results = self._results
-        return clone
-
-    def __repr__(self) -> str:
-        """String representation of FederalAccountsQuery."""
-        if self._results is not None:
-            return f"<FederalAccountsQuery {self._toptier_code} [{len(self._results)} results]>"
-        return f"<FederalAccountsQuery {self._toptier_code} [not fetched]>"

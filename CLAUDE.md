@@ -132,15 +132,25 @@ tests/
 
 ### Query Builders
 
-- Hierarchy: `BaseQuery[T]` -> `QueryBuilder[T]` -> `SearchQueryBuilder[T]`; also `ClientSideQueryBuilder[T]` (extends `BaseQuery`)
-- `QueryBuilder[T]` handles paginated API queries; `ClientSideQueryBuilder[T]` handles client-side filtering
-- Implement abstract methods:
-  - `_endpoint()`: API endpoint
+- Hierarchy: `BaseQuery[T]` -> `QueryBuilder[T]` -> `SearchQueryBuilder[T]`; also
+  `ClientSideQueryBuilder[T]` (extends `BaseQuery`) -> `FilterTreeQuery[T]`
+- `QueryBuilder[T]` handles paginated API queries; `ClientSideQueryBuilder[T]` handles
+  client-side filtering; `FilterTreeQuery[T]` fetches one unpaginated filter-tree level
+  once and filters it in memory
+- A paginated builder implements:
+  - `_endpoint`: API endpoint (property)
   - `_build_payload()`: Request payload
   - `_transform_result()`: Result transformation
-  - `_clone()`: Return cloned instance
-  - `__iter__()`: Iterable interface
-- All filter methods return cloned instances
+  - `_compute_raw_count()`: How this endpoint reports its count. Use one of
+    `_count_via_endpoint`, `_count_via_page_metadata` or `_count_via_paging`
+  - `_new_instance()`: Only when `__init__` takes more than a client
+  - `_http_method`: Only for GET endpoints (payload is sent as query parameters)
+- A filter-tree query implements `_scope()`, `_build_model()` and `_new_instance()`
+- `_clone()` is inherited; override it only to carry subclass state, always via
+  `super()._clone()`. `count()` is inherited and should not be overridden
+- Shared slices of behavior live in `queries/mixins.py` (`AwardScopedQuery`,
+  `SortableQuery`); compose them ahead of the builder base
+- All filter methods return cloned instances, via `_with_filter()` where possible
 
 ### Caching
 
