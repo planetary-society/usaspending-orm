@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
-from functools import cached_property
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from ..utils.formatter import to_decimal
 from .award import Award
-from .location import Location
+from .procurement_award import ProcurementAward
 
 if TYPE_CHECKING:
     from ..queries.idv_child_awards import IDVChildAwardsSearch
 
 
-class IDV(Award):
+class IDV(ProcurementAward):
     """Indefinite Delivery Vehicle (IDV) award type.
 
     IDVs are contract vehicles that provide for an indefinite quantity of supplies
@@ -32,6 +29,15 @@ class IDV(Award):
     IDVs serve as parent contracts that streamline procurement by pre-negotiating
     terms, conditions, and pricing for future orders. They reduce administrative
     costs and enable faster acquisition of recurring needs.
+
+    Note:
+        ``place_of_performance`` is typically null or all-null for an IDV, since
+        the vehicle itself is not performed anywhere; the orders placed against it
+        are. ``None`` is the expected result rather than missing data.
+
+        ``naics_description`` and ``psc_description`` here read only the flat
+        classification dictionary, where the Contract equivalents also fall back
+        to the classification hierarchy. See :class:`ProcurementAward`.
 
     Example:
         >>> # Find all IDVs for an agency
@@ -73,43 +79,6 @@ class IDV(Award):
     ]
 
     @property
-    def piid(self) -> str | None:
-        """Procurement Instrument Identifier (PIID).
-
-        A unique identifier assigned to a federal contract, purchase order, basic
-        ordering agreement, basic agreement, and blanket purchase agreement. It is
-        used to track the contract, and any modifications or transactions related
-        to it. After October 2017, it is between 13 and 17 digits, both letters
-        and numbers.
-
-        Returns:
-            Optional[str]: The PIID, or None.
-        """
-        return self._lazy_get("piid")
-
-    @property
-    def base_and_all_options(self) -> Decimal | None:
-        """Total contract value including options and potential orders.
-
-        For IDVs, this is the mutually agreed upon total contract value including
-        all options (if any) AND the estimated value of all potential orders. For
-        modifications, this reflects the change, positive or negative, of these values.
-
-        Returns:
-            Optional[Decimal]: The total contract value including options, or None.
-        """
-        return to_decimal(self._lazy_get("base_and_all_options", default=None))
-
-    @property
-    def base_exercised_options(self) -> Decimal | None:
-        """Value for the base contract and any exercised options.
-
-        Returns:
-            Optional[Decimal]: The base and exercised options value, or None.
-        """
-        return to_decimal(self._lazy_get("base_exercised_options", default=None))
-
-    @property
     def contract_award_type(self) -> str | None:
         """Contract award type description.
 
@@ -145,20 +114,6 @@ class IDV(Award):
         return None
 
     @property
-    def psc_code(self) -> str | None:
-        """Product/Service Code (PSC) for contracts.
-
-        Returns:
-            Optional[str]: The PSC code, or None.
-        """
-        psc_data = self._lazy_get("psc", "PSC")
-        if isinstance(psc_data, dict):
-            return psc_data.get("code")
-        if self.psc_hierarchy and isinstance(self.psc_hierarchy.get("base_code"), dict):
-            return self.psc_hierarchy["base_code"].get("code")
-        return None
-
-    @property
     def psc_description(self) -> str | None:
         """Product/Service Code (PSC) description.
 
@@ -169,52 +124,6 @@ class IDV(Award):
         if isinstance(psc_data, dict):
             return psc_data.get("description")
         return None
-
-    @cached_property
-    def psc_hierarchy(self) -> dict[str, Any] | None:
-        """Product/Service Code (PSC) hierarchy information.
-
-        Returns:
-            Optional[Dict[str, Any]]: Dictionary containing PSC hierarchy data, or None.
-        """
-        return self._lazy_get("psc_hierarchy")
-
-    @cached_property
-    def naics_hierarchy(self) -> dict[str, Any] | None:
-        """North American Industry Classification System (NAICS) hierarchy.
-
-        Returns:
-            Optional[Dict[str, Any]]: Dictionary containing NAICS hierarchy data, or None.
-        """
-        return self._lazy_get("naics_hierarchy")
-
-    @cached_property
-    def latest_transaction_contract_data(self) -> dict[str, Any] | None:
-        """Latest contract transaction data with procurement-specific details.
-
-        Returns:
-            Optional[Dict[str, Any]]: Dictionary containing latest transaction data, or None.
-        """
-        return self._lazy_get("latest_transaction_contract_data")
-
-    @cached_property
-    def place_of_performance(self) -> Location | None:
-        """Award place of performance location.
-
-        Note: IDVs typically have null or empty place_of_performance data.
-
-        Returns:
-            Optional[Location]: The location object, or None if data is missing/empty.
-        """
-        data = self._lazy_get("place_of_performance", "Primary Place of Performance", default=None)
-        if not isinstance(data, dict) or not data:
-            return None
-
-        # Check if all values in the dict are None/null (common for IDV awards)
-        if all(v is None for v in data.values()):
-            return None
-
-        return Location(data)
 
     @property
     def child_awards(self) -> IDVChildAwardsSearch:

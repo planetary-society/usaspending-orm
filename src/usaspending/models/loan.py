@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from ..utils.formatter import to_decimal
 from .award import Award
@@ -11,7 +11,14 @@ from .grant import Grant
 
 
 class Loan(Grant):
-    """Loan award type."""
+    """Loan award type.
+
+    A loan is a form of financial assistance, so most of its fields come from
+    Grant unchanged. Three properties are its own: ``total_loan_value``, which
+    only loans have, plus ``total_subsidy_cost`` and ``cfda_number``, which read
+    the flat keys award search returns. ``TYPE_FIELDS`` below still enumerates
+    the full loan field set, inherited members included.
+    """
 
     TYPE_FIELDS: ClassVar[list[str]] = [
         "fain",
@@ -36,33 +43,10 @@ class Loan(Grant):
     ]
 
     @property
-    def fain(self) -> str | None:
-        """Federal Award Identification Number (FAIN).
-
-        An identification code assigned to each financial assistance award tracking
-        purposes. The FAIN is tied to that award (and all future modifications to that
-        award) throughout the award's life. Each FAIN is assigned by an agency. Within
-        an agency, FAIN are unique: each new award must be issued a new FAIN. FAIN
-        stands for Federal Award Identification Number, though the digits are letters,
-        not numbers.
-
-        Returns:
-            Optional[str]: The FAIN, or None.
-        """
-        return self._lazy_get("fain")
-
-    @property
-    def uri(self) -> str | None:
-        """The Unique Record Identifier (URI) of the award.
-
-        Returns:
-            Optional[str]: The URI, or None.
-        """
-        return self._lazy_get("uri")
-
-    @property
     def total_subsidy_cost(self) -> Decimal | None:
         """Total of the original loan subsidy cost from associated transactions.
+
+        Prefers the flat "Subsidy Cost" key that award search returns.
 
         Returns:
             Optional[Decimal]: The total subsidy cost, or None.
@@ -78,38 +62,22 @@ class Loan(Grant):
         """
         return to_decimal(self._lazy_get("Loan Value", "total_loan_value", default=None))
 
-    @property
-    def cfda_info(self) -> list[dict[str, Any]]:
-        """Catalog of Federal Domestic Assistance (CFDA) information for loans.
-
-        Returns:
-            List[Dict[str, Any]]: List of CFDA dictionaries, or empty list.
-        """
-        return self._lazy_get("cfda_info", "Assistance Listings", default=[])
-
+    # Narrows Grant's resolution to the flat key only. Grant tries
+    # primary_cfda_info, then cfda_info[0], then this same flat key, so it is a
+    # strict superset -- this override can only find less. On a detail response,
+    # which reports CFDA data nested under cfda_info and leaves the flat key
+    # null, it returns None where the inherited version returns the number;
+    # tests/fixtures/golden/award_loan.json records exactly that. Kept only to
+    # preserve current behavior. Removing it is a behavior change, tracked
+    # separately, not an oversight.
     @property
     def cfda_number(self) -> str | None:
-        """Primary CFDA number for loans.
+        """Primary CFDA number for loans, read from the flat search field.
+
+        Returns None on detail responses, which nest CFDA data under
+        ``cfda_info``. Use :attr:`cfda_info` to read those.
 
         Returns:
             Optional[str]: The primary CFDA number, or None.
         """
         return self._lazy_get("cfda_number", "CFDA Number")
-
-    @property
-    def primary_cfda_info(self) -> dict[str, Any] | None:
-        """Primary CFDA program information.
-
-        Returns:
-            Optional[Dict[str, Any]]: Dictionary containing primary CFDA details, or None.
-        """
-        return self._lazy_get("primary_cfda_info", "primary_assistance_listing")
-
-    @property
-    def sai_number(self) -> str | None:
-        """System for Award Identification (SAI) number for loans.
-
-        Returns:
-            Optional[str]: The SAI number, or None.
-        """
-        return self._lazy_get("sai_number", "SAI Number")

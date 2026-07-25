@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
-from functools import cached_property
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from ..utils.formatter import to_decimal
 from .award import Award
+from .procurement_award import ProcurementAward
 
 if TYPE_CHECKING:
     from ..queries.subawards_search import SubAwardsSearch
 
 
-class Contract(Award):
+class Contract(ProcurementAward):
     """Contract award type including definitive contracts and purchase orders."""
 
     # Download type for bulk download API
@@ -45,39 +43,6 @@ class Contract(Award):
     ]
 
     @property
-    def piid(self) -> str | None:
-        """Procurement Instrument Identifier (PIID).
-
-        A unique identifier assigned to a federal contract, purchase order, basic
-        ordering agreement, basic agreement, and blanket purchase agreement. It is
-        used to track the contract, and any modifications or transactions related
-        to it. After October 2017, it is between 13 and 17 digits, both letters
-        and numbers.
-
-        Returns:
-            Optional[str]: The PIID, or None.
-        """
-        return self._lazy_get("piid")
-
-    @property
-    def base_exercised_options(self) -> Decimal | None:
-        """Sum of base exercised options value from associated transactions.
-
-        Returns:
-            Optional[Decimal]: The total base exercised options amount, or None.
-        """
-        return to_decimal(self._lazy_get("base_exercised_options", default=None))
-
-    @property
-    def base_and_all_options(self) -> Decimal | None:
-        """Sum of base and all options value from associated transactions.
-
-        Returns:
-            Optional[Decimal]: The total base and all options amount, or None.
-        """
-        return to_decimal(self._lazy_get("base_and_all_options", default=None))
-
-    @property
     def contract_award_type(self) -> str | None:
         """Contract award type description.
 
@@ -89,6 +54,9 @@ class Contract(Award):
     @property
     def naics_code(self) -> str | None:
         """NAICS industry classification code.
+
+        Falls back to the classification hierarchy, and then to the latest
+        contract transaction, where the IDV equivalent stops sooner.
 
         Returns:
             Optional[str]: The NAICS code, or None.
@@ -106,6 +74,9 @@ class Contract(Award):
     def naics_description(self) -> str | None:
         """NAICS industry classification description.
 
+        Falls back to the classification hierarchy, and then to the latest
+        contract transaction, where the IDV equivalent stops sooner.
+
         Returns:
             Optional[str]: The NAICS description, or None.
         """
@@ -119,22 +90,11 @@ class Contract(Award):
         return None
 
     @property
-    def psc_code(self) -> str | None:
-        """Product/Service Code (PSC) for contracts.
-
-        Returns:
-            Optional[str]: The PSC code, or None.
-        """
-        psc_data = self._lazy_get("psc", "PSC")
-        if isinstance(psc_data, dict):
-            return psc_data.get("code")
-        if self.psc_hierarchy and isinstance(self.psc_hierarchy.get("base_code"), dict):
-            return self.psc_hierarchy["base_code"].get("code")
-        return None
-
-    @property
     def psc_description(self) -> str | None:
         """Product/Service Code (PSC) description.
+
+        Falls back to the classification hierarchy, where the IDV equivalent
+        reads only the flat dictionary.
 
         Returns:
             Optional[str]: The PSC description, or None.
@@ -145,33 +105,6 @@ class Contract(Award):
         if self.psc_hierarchy and isinstance(self.psc_hierarchy.get("base_code"), dict):
             return self.psc_hierarchy["base_code"].get("description")
         return None
-
-    @cached_property
-    def psc_hierarchy(self) -> dict[str, Any] | None:
-        """Product/Service Code (PSC) hierarchy information.
-
-        Returns:
-            Optional[Dict[str, Any]]: Dictionary containing PSC hierarchy data, or None.
-        """
-        return self._lazy_get("psc_hierarchy")
-
-    @cached_property
-    def naics_hierarchy(self) -> dict[str, Any] | None:
-        """North American Industry Classification System (NAICS) hierarchy.
-
-        Returns:
-            Optional[Dict[str, Any]]: Dictionary containing NAICS hierarchy data, or None.
-        """
-        return self._lazy_get("naics_hierarchy")
-
-    @cached_property
-    def latest_transaction_contract_data(self) -> dict[str, Any] | None:
-        """Latest contract transaction data with procurement-specific details.
-
-        Returns:
-            Optional[Dict[str, Any]]: Dictionary containing latest transaction data, or None.
-        """
-        return self._lazy_get("latest_transaction_contract_data")
 
     @property
     def subawards(self) -> SubAwardsSearch:
