@@ -262,3 +262,66 @@ class TestAwardAgencyIntegration:
 
         # Verify no lazy-loading API calls were made since we have complete nested agency data
         assert mock_usa_client.get_request_count() == 0
+
+
+class TestAwardAgencyWithNonDictNestedValue:
+    """A bare agency-name string under the nested key must not reach the builders.
+
+    The IDV child-awards endpoint (/idvs/awards/) reuses ``funding_agency`` and
+    ``awarding_agency`` for a plain agency name rather than an agency record.
+    _load_agency_data accepted any truthy value there, so all four agency
+    accessors raised ``AttributeError: 'str' object has no attribute 'get'`` when
+    iterating ``idv.child_awards``, a path its own docstring demonstrates. Present
+    in 0.7.3.
+    """
+
+    def _child_award(self, mock_usa_client, load_fixture):
+        from usaspending.queries.idv_child_awards import IDVChildAwardsSearch
+
+        fixture = load_fixture("awards/idv_awards.json")
+        query = IDVChildAwardsSearch(mock_usa_client, "CONT_IDV_NNK14MA75C_8000")
+        return query._transform_result(fixture["results"][0])
+
+    def test_string_agency_yields_none_not_attribute_error(self, mock_usa_client, load_fixture):
+        """All four accessors return None rather than raising."""
+        child = self._child_award(mock_usa_client, load_fixture)
+
+        assert child.funding_agency is None
+        assert child.awarding_agency is None
+        assert child.funding_subtier_agency is None
+        assert child.awarding_subtier_agency is None
+
+    def test_the_string_is_still_reachable_in_raw(self, mock_usa_client, load_fixture):
+        """Nothing is discarded: the name stays available on the raw payload."""
+        child = self._child_award(mock_usa_client, load_fixture)
+
+        assert child.raw["awarding_agency"] == "National Aeronautics and Space Administration"
+
+    def test_no_request_is_fired_chasing_the_string(self, mock_usa_client, load_fixture):
+        """_lazy_get cannot fetch past a present key, so the type is re-checked."""
+        child = self._child_award(mock_usa_client, load_fixture)
+        before = mock_usa_client.get_request_count()
+
+        assert child.funding_agency is None
+
+        assert mock_usa_client.get_request_count() == before
+
+    def test_load_agency_data_never_returns_a_non_dict(self, mock_usa_client, load_fixture):
+        """The declared dict-or-None return type holds for every tier."""
+        child = self._child_award(mock_usa_client, load_fixture)
+
+        for agency_type in ("funding", "awarding"):
+            assert child._load_agency_data(agency_type) is None
+
+    def test_invalid_agency_type_raises_validation_error(self, mock_usa_client):
+        """Invalid parameters raise ValidationError, matching the query layer."""
+        import pytest
+
+        from usaspending.exceptions import ValidationError
+
+        award = Award(
+            {"generated_unique_award_id": "CONT_AWD_X_8000_-NONE-_-NONE-"}, mock_usa_client
+        )
+
+        with pytest.raises(ValidationError, match="Invalid agency_type"):
+            award._load_agency_data("bogus")

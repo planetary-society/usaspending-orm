@@ -582,10 +582,18 @@ class Award(LazyRecord):
             agency_type: Either "funding" or "awarding".
 
         Returns:
-            Optional[Dict[str, Any]]: Processed agency data dict or None if not available.
+            Optional[Dict[str, Any]]: Processed agency data dict, or None when
+            the award reports no agency record. Never returns a non-dict: the
+            IDV child-awards endpoint reuses the nested key for a bare agency
+            name string, which cannot be built into an agency.
+
+        Raises:
+            ValidationError: If agency_type is not "funding" or "awarding".
         """
         if agency_type not in ["funding", "awarding"]:
-            raise ValueError(f"Invalid agency_type: {agency_type}")
+            raise ValidationError(
+                f"Invalid agency_type: {agency_type}. Must be 'funding' or 'awarding'."
+            )
 
         # Detail responses nest the agency under a snake_case key, while search
         # results flatten it into Title Case columns that differ only by this
@@ -598,16 +606,16 @@ class Award(LazyRecord):
         sub_code_key = f"{prefix} Sub Agency Code"
         flat_keys = [name_key, code_key, sub_name_key, sub_code_key]
 
-        # Search results carry an awarding_agency_id but no funding equivalent.
-        id_key = "awarding_agency_id" if agency_type == "awarding" else None
-
-        # First check if we have nested agency data (from full award details)
-        if self.raw.get(nested_key):
-            return self.raw.get(nested_key)
+        # Nested agency data, from full award details. Only a dict is an agency
+        # record; /idvs/awards/ puts a plain agency-name string under this same
+        # key, so accepting anything truthy would hand a str to the builders.
+        nested = self.raw.get(nested_key)
+        if isinstance(nested, dict) and nested:
+            return nested
 
         # Then check for flat agency fields (from search results)
         if any(key in self.raw for key in flat_keys):
-            data = {
+            return {
                 "toptier_agency": {
                     "name": self.raw.get(name_key),
                     "code": self.raw.get(code_key),  # Agency code
@@ -618,14 +626,17 @@ class Award(LazyRecord):
                     "code": self.raw.get(sub_code_key),  # Subtier code
                     "abbreviation": self.raw.get(sub_code_key),
                 },
-                "id": self.raw.get(id_key) if id_key else None,
+                # spending_by_award results carry an awarding_agency_id but no
+                # funding equivalent.
+                "id": self.raw.get(f"{agency_type}_agency_id"),
                 "has_agency_page": False,  # Not available in search results
                 "office_agency_name": None,  # Not available in search results
             }
-            return data
 
-        # Finally try lazy loading
-        return self._lazy_get(nested_key)
+        # Finally try lazy loading. This cannot fetch past a key that is already
+        # present, so re-check the type rather than trusting the fetch.
+        fetched = self._lazy_get(nested_key)
+        return fetched if isinstance(fetched, dict) else None
 
     def _build_agency(self, agency_type: str) -> Agency | None:
         """Build the toptier Agency for one side of the award.
