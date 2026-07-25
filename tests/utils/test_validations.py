@@ -10,6 +10,7 @@ import pytest
 
 from usaspending.exceptions import ValidationError
 from usaspending.utils.validations import (
+    normalize_recipient_id,
     parse_date_string,
     parse_enum_value,
     validate_non_empty_string,
@@ -224,3 +225,48 @@ class TestValidatorsIntegration:
 
         result = parse_enum_value("NEW_AWARDS_ONLY", AwardDateType, "date_type", normalize=True)
         assert result == AwardDateType.NEW_AWARDS_ONLY
+
+
+class TestNormalizeRecipientId:
+    """Edge cases for recipient-ID normalization.
+
+    This was implemented twice with divergent algorithms until 0.8.0, so the
+    contract is pinned in one place now. See
+    tests/test_characterization.py::TestRecipientIdNormalizationIsSingleSourced
+    for the cross-path agreement it guarantees.
+    """
+
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            # Already-normal forms
+            ("abc123-C", "abc123-C"),
+            ("xyz789-P", "xyz789-P"),
+            ("abc123", "abc123"),
+            # The first level listed wins: measured live, it is the one
+            # carrying the recipient's spending
+            ("abc123-['C','R']", "abc123-C"),
+            ("abc123-['R','C']", "abc123-R"),
+            ("abc123-['P','R']", "abc123-P"),
+            ("abc123-['C']", "abc123-C"),
+            ("xyz789-['P']", "xyz789-P"),
+            ("xyz789-['P','C']", "xyz789-P"),
+            # Levels are case-insensitive
+            ("abc123-['c','r']", "abc123-C"),
+            # Whitespace inside and around the list
+            ("xyz789-[ 'P' , 'C' ]", "xyz789-P"),
+            ("  abc123-C  ", "abc123-C"),
+            # An accidental trailing slash is dropped
+            ("abc123-C/", "abc123-C"),
+            ("xyz789-['P']/", "xyz789-P"),
+            # Empty brackets do not match the pattern and pass through
+            ("abc123-[]", "abc123-[]"),
+        ],
+    )
+    def test_normalization(self, raw, expected):
+        assert normalize_recipient_id(raw) == expected
+
+    @pytest.mark.parametrize("value", [None, 123, [], {}])
+    def test_non_string_passes_through(self, value):
+        """Defensive: this runs during model construction on raw API data."""
+        assert normalize_recipient_id(value) == value

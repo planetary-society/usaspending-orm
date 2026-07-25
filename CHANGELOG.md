@@ -73,6 +73,22 @@ consistency argument behind it.
 
 ### Fixed
 
+- `client.recipients.find_by_id()` no longer addresses the wrong record for a
+  recipient ID carrying several levels, such as `"<hash>-['C', 'R']"`.
+  Normalization was implemented twice with algorithms that disagreed:
+  `Recipient` kept the first level in the list while the recipient query
+  preferred `R`, so the same raw ID addressed `<hash>-C` through a model and
+  `<hash>-R` through the finder. Six such IDs appear in the captured API
+  fixtures, so this reached real data.
+
+  Both paths now keep the first level. Measured against the live endpoint for
+  all six of those IDs, the first level is the one carrying the recipient's
+  spending, and the trailing `R` record reports zero in four of the six. One
+  example reports $24.6M over 109 transactions at `-C` and $0 over 0
+  transactions at `-R`, so the finder could previously report a recipient as
+  having no spending at all. Nothing is lost by choosing the first level: a
+  `-C` record still carries `parent_name`, and `Recipient.parent` reads it.
+
 - Iterating `idv.child_awards` no longer raises `AttributeError: 'str' object has no attribute 'get'` when reading `funding_agency`, `awarding_agency`, `funding_subtier_agency` or `awarding_subtier_agency`. The `/idvs/awards/` endpoint reuses those keys for a plain agency-name string rather than an agency record, and the model accepted any truthy value there. All four now return `None` for such records, and the name remains available via `raw()`. Present in 0.7.3.
 - `Award._load_agency_data` raises `ValidationError` rather than a bare `ValueError` for an invalid `agency_type`, matching every other agency-type check in the library. `ValidationError` subclasses `ValueError`, so existing `except ValueError` handlers are unaffected.
 - `Transaction` instances no longer compare equal to one another regardless of their data. The class was declared `@dataclass` with no fields, which generated an `__eq__` comparing empty tuples, so any two transactions were equal and `__hash__` was `None`, making them unhashable. They now compare by identity, like every other model, and can be used in sets and as dict keys.

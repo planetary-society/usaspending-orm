@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import re
 from decimal import Decimal
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from ..logging_config import USASpendingLogger
 from ..utils.formatter import contracts_titlecase, to_decimal
+from ..utils.validations import normalize_recipient_id
 from .lazy_record import LazyRecord
 from .location import Location
 
@@ -27,16 +27,6 @@ class Recipient(LazyRecord):
     location, and business categories.
     """
 
-    # compiled once at import time
-    _LIST_SUFFIX_RE = re.compile(
-        r"""
-        ^(?P<base>.+?)          # everything before the dash (non-greedy)
-        -\[\s*(?P<body>[^\]]+)\]  #  -[  ... ]
-        $                       # end of string
-        """,
-        re.VERBOSE,
-    )
-
     def __init__(
         self,
         data_or_id: dict[str, Any] | str,
@@ -56,7 +46,7 @@ class Recipient(LazyRecord):
         # Apply recipient-specific ID cleaning
         rid = raw.get("recipient_id") or raw.get("recipient_hash")
         if rid:
-            raw["recipient_id"] = self._clean_recipient_id(rid)
+            raw["recipient_id"] = normalize_recipient_id(rid)
 
         super().__init__(raw, client)
 
@@ -81,37 +71,6 @@ class Recipient(LazyRecord):
             # If fetch fails, return None to avoid breaking the application
             logger.error(f"Failed to fetch recipient details for {recipient_id}: {e}")
             return None
-
-    @staticmethod
-    def _clean_recipient_id(rid: str) -> str:
-        """Normalise list-annotated recipient IDs.
-
-        Sometimes these look like "abc123-['C','R']". This will select the
-        first letter after the dash.
-
-        Args:
-            rid: The raw recipient ID string.
-
-        Returns:
-            str: The normalized recipient ID.
-        """
-        if not isinstance(rid, str):
-            return rid  # defensive; shouldn't happen
-
-        rid = rid.strip().rstrip("/")  # drop accidental trailing slash
-
-        m = Recipient._LIST_SUFFIX_RE.match(rid)
-        if not m:
-            return rid  # already in normal form
-
-        base = m.group("base")
-        body = m.group("body")
-
-        # turn  "'C','R'"  or  "'R'"  etc.  into a list of clean tokens
-        tokens = [tok.strip().strip("'\"").upper() for tok in body.split(",") if tok.strip()]
-
-        letter = tokens[0]
-        return f"{base}-{letter}" if letter else base
 
     @property
     def recipient_id(self) -> str | None:

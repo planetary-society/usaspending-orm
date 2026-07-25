@@ -58,6 +58,32 @@ class LazyRecord(ClientAwareModel):
         Override this method in subclasses to implement the specific
         fetching logic.
 
+        The contract is narrow: return a plain dict of raw API fields, obtained
+        **without constructing another model of this same type**. ``_ensure_details``
+        merges the result into ``self._data``, so building a sibling model just to
+        read its ``raw()`` wastes a construction and, for types whose own
+        properties lazy-load, risks recursing back into this method.
+
+        Note:
+            The three implementations differ in shape and error policy, and that
+            divergence is known rather than intended:
+
+            * :meth:`Agency._fetch_details` asks a query object for a dict and
+              swallows failures, returning None. This is the shape to copy.
+            * :meth:`Recipient._fetch_details` issues a direct request and also
+              swallows failures. It deliberately bypasses the resource layer to
+              avoid a circular dependency, per commit 9033115; routing it back
+              through ``client.recipients`` would both reintroduce that and build
+              a throwaway ``Recipient`` only to read its ``raw()``.
+            * :meth:`Award._fetch_details` goes through the public resource, then
+              reads ``.raw`` off the returned model, and re-raises rather than
+              swallowing. It is the outlier on both counts, and it is entangled
+              with the deliberate ``__class__`` reassignment documented there, so
+              it is left as-is.
+
+            A caller therefore cannot assume that a failed lazy load surfaces as
+            an exception: two of the three report it as absent data.
+
         Returns:
             Optional[Dict[str, Any]]: The fetched data dictionary, or None.
 

@@ -89,7 +89,7 @@ class TestRecipientInitialization:
         fixture_data = load_json_fixture("recipient_university.json")
         base_id = fixture_data["recipient_id"].split("-")[0]  # Get base part before dash
 
-        # Test with list-annotated ID
+        # Test with list-annotated ID: the first level listed wins
         data = {"recipient_id": f"{base_id}-['C','R']"}
         recipient = Recipient(data, mock_usa_client)
         assert recipient._data["recipient_id"] == f"{base_id}-C"
@@ -104,43 +104,33 @@ class TestRecipientInitialization:
 
 
 class TestRecipientIdCleaning:
-    """Test recipient ID cleaning functionality."""
+    """Construction normalizes the recipient ID.
 
-    def test_clean_recipient_id_normal(self):
-        """Test cleaning normal recipient IDs."""
-        assert Recipient._clean_recipient_id("abc123-C") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-P") == "xyz789-P"
+    The normalizer's own edge cases live in tests/utils/test_validations.py; what
+    matters here is that Recipient applies it, so a model and a query built from
+    the same raw ID address the same entity.
+    """
 
-    def test_clean_recipient_id_with_list_annotation(self):
-        """Test cleaning IDs with list annotations like abc123-['C','R']."""
-        assert Recipient._clean_recipient_id("abc123-['C','R']") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-['P','C']") == "xyz789-P"
+    def test_construction_normalizes_a_level_list(self, mock_usa_client):
+        """A level list collapses to the single level the API will be asked for."""
+        recipient = Recipient({"recipient_id": "abc123-['C','R']"}, mock_usa_client)
 
-    def test_clean_recipient_id_with_single_annotation(self):
-        """Test cleaning IDs with single annotations like abc123-['C']."""
-        assert Recipient._clean_recipient_id("abc123-['C']") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-['P']") == "xyz789-P"
+        assert recipient.recipient_id == "abc123-C"
 
-    def test_clean_recipient_id_with_trailing_slash(self):
-        """Test cleaning IDs with trailing slashes."""
-        assert Recipient._clean_recipient_id("abc123-C/") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-['P']/") == "xyz789-P"
+    def test_construction_leaves_a_normal_id_alone(self, mock_usa_client):
+        """An already-normal ID passes through untouched."""
+        recipient = Recipient({"recipient_id": "abc123-C"}, mock_usa_client)
 
-    def test_clean_recipient_id_with_whitespace(self):
-        """Test cleaning IDs with extra whitespace."""
-        assert Recipient._clean_recipient_id("  abc123-C  ") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-[ 'P' , 'C' ]") == "xyz789-P"
+        assert recipient.recipient_id == "abc123-C"
 
-    def test_clean_recipient_id_empty_list(self):
-        """Test handling of empty annotation lists."""
-        # Empty brackets don't match the regex pattern, so they're returned as-is
-        assert Recipient._clean_recipient_id("abc123-[]") == "abc123-[]"
+    def test_construction_agrees_with_the_query_path(self, mock_usa_client):
+        """The two paths that used to disagree now resolve identically."""
+        from usaspending.queries.recipient_query import RecipientQuery
 
-    def test_clean_recipient_id_non_string(self):
-        """Test defensive handling of non-string IDs."""
-        # Should return input unchanged if not a string
-        assert Recipient._clean_recipient_id(None) is None
-        assert Recipient._clean_recipient_id(123) == 123
+        raw = "abc123-['C','R']"
+        recipient = Recipient({"recipient_id": raw}, mock_usa_client)
+
+        assert recipient.recipient_id == RecipientQuery(mock_usa_client)._clean_resource_id(raw)
 
 
 class TestRecipientProperties:

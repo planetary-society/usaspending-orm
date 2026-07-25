@@ -9,6 +9,7 @@ can import them without pulling in the query layer.
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, TypeVar
@@ -154,6 +155,73 @@ def validate_toptier_code(toptier_code: str | int | None) -> str:
         )
 
     return normalized
+
+
+#: Matches the list-annotated recipient-ID form, ``<hash>-['C', 'R']``.
+_RECIPIENT_LEVEL_LIST_RE = re.compile(
+    r"""
+    ^(?P<base>.+?)              # the recipient hash, non-greedy
+    -\[\s*(?P<body>[^\]]+)\]    #  -[ 'C', 'R' ]
+    $
+    """,
+    re.VERBOSE,
+)
+
+
+def normalize_recipient_id(recipient_id: Any) -> Any:
+    """Normalize a recipient ID to a single ``<hash>-<level>`` form.
+
+    USASpending sometimes reports a recipient ID carrying every level the
+    recipient exists at, as ``"<hash>-['C', 'R']"``. The ``/recipient/{id}/``
+    endpoint takes one level and returns a different record for each, so one
+    has to be chosen.
+
+    The first level listed wins. That is not arbitrary: measured against the
+    live endpoint for all six multi-level IDs in the captured fixtures, the
+    first level is the one carrying the recipient's spending, and the trailing
+    ``R`` record reports zero in four of the six. For example
+    ``26e104c4-1307-f677-c014-ac7fe7ab9e6d`` reports $24.6M over 109
+    transactions at ``-C`` and $0 over 0 transactions at ``-R``. Preferring
+    ``R`` would silently zero out a recipient's totals.
+
+    A ``-C`` record also carries ``parent_name`` and friends, so choosing it
+    loses nothing: the parent relationship stays visible, and
+    ``Recipient.parent`` reads it.
+
+    Args:
+        recipient_id: The raw recipient ID. Non-string input is returned
+            unchanged, defensively, since this runs during model construction.
+
+    Returns:
+        The normalized ID, or the input unchanged if it is not a string or
+        carries no level list.
+
+    Example:
+        >>> normalize_recipient_id("abc123-['C', 'R']")
+        'abc123-C'
+        >>> normalize_recipient_id("abc123-['P','C']")
+        'abc123-P'
+        >>> normalize_recipient_id("abc123-C/")
+        'abc123-C'
+    """
+    if not isinstance(recipient_id, str):
+        return recipient_id
+
+    normalized = recipient_id.strip().rstrip("/")
+
+    match = _RECIPIENT_LEVEL_LIST_RE.match(normalized)
+    if not match:
+        return normalized
+
+    levels = [
+        token.strip().strip("'\"").upper()
+        for token in match.group("body").split(",")
+        if token.strip()
+    ]
+    if not levels:
+        return match.group("base")
+
+    return f"{match.group('base')}-{levels[0]}"
 
 
 def validate_sort_field(

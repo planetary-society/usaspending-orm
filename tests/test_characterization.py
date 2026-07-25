@@ -231,33 +231,50 @@ class TestCountIgnoresDefaultResultLimit:
         assert query.count() == 7
 
 
-class TestRecipientIdNormalizationDiverges:
-    """Recipient-ID normalization is implemented twice, and the two DISAGREE.
+class TestRecipientIdNormalizationIsSingleSourced:
+    """Recipient-ID normalization resolves one raw ID to exactly one entity.
 
-    Recipient._clean_recipient_id takes the *first* token of a "-['C','R']"
-    suffix, while RecipientQuery._clean_recipient_id *prefers 'R'*. Because the
-    suffix denotes recipient level (R=recipient, P=parent, C=child), the same
-    raw ID resolves to two different entities depending on the path taken.
+    It used to be implemented twice and the two DISAGREED: the model took the
+    *first* token of a "-['C','R']" suffix while the query *preferred 'R'*.
+    Because the suffix denotes recipient level, the same raw ID resolved to two
+    different entities depending on the path taken. Six such IDs appear in the
+    captured fixtures, so the defect reached real data.
 
-    This is a live defect, not merely duplication. Phase 5 consolidates the two
-    onto one algorithm and must update this table, which makes the chosen
-    semantics explicit. The model-side cleaner in isolation is already covered
-    by tests/models/test_recipient.py::TestRecipientIdCleaning.
+    Phase 5 consolidated both onto utils.validations.normalize_recipient_id,
+    which keeps the FIRST level. Measured against the live endpoint for all six
+    multi-level IDs in the fixtures, the first level carries the recipient's
+    spending and the trailing 'R' record reports zero in four of six, so
+    preferring 'R' would have zeroed out real totals. The query path, which did
+    prefer 'R', changed to match the model.
+
+    This table now pins that both paths agree, which is the property that was
+    broken. The normalizer's own edge cases live in
+    tests/utils/test_validations.py.
     """
 
     @pytest.mark.parametrize(
-        "raw,model_result,query_result",
+        "raw,expected",
         [
-            # Agreement: a single token, or 'R' already first.
-            ("abc123-['R','C']", "abc123-R", "abc123-R"),
-            ("abc123-['C']", "abc123-C", "abc123-C"),
-            ("abc123-R", "abc123-R", "abc123-R"),
-            ("abc123", "abc123", "abc123"),
-            # Divergence: 'R' present but not first.
-            ("abc123-['C','R']", "abc123-C", "abc123-R"),
-            ("abc123-['P','R']", "abc123-P", "abc123-R"),
+            # The first level listed wins, whatever it is.
+            ("abc123-['C','R']", "abc123-C"),
+            ("abc123-['R','C']", "abc123-R"),
+            ("abc123-['P','R']", "abc123-P"),
+            ("abc123-['C']", "abc123-C"),
+            ("abc123-['P','C']", "abc123-P"),
+            # Already-normal forms pass through.
+            ("abc123-R", "abc123-R"),
+            ("abc123", "abc123"),
         ],
     )
-    def test_normalization_results(self, mock_usa_client, raw, model_result, query_result):
-        assert Recipient._clean_recipient_id(raw) == model_result
-        assert RecipientQuery(mock_usa_client)._clean_recipient_id(raw) == query_result
+    def test_both_paths_agree(self, mock_usa_client, raw, expected):
+        """The model and the query resolve a raw ID identically."""
+        from usaspending.utils.validations import normalize_recipient_id
+
+        assert normalize_recipient_id(raw) == expected
+
+        # The model normalizes on construction...
+        recipient = Recipient({"recipient_id": raw}, mock_usa_client)
+        assert recipient.recipient_id == expected
+
+        # ...and the query normalizes the ID it will fetch by.
+        assert RecipientQuery(mock_usa_client)._clean_resource_id(raw) == expected
