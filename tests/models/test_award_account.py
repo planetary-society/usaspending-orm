@@ -272,11 +272,25 @@ class TestAwardAccountEdgeCases:
         result = AwardAccount._extract_toptier_code("0800131")
         assert result == "0800131"
 
-    def test_missing_obligated_amount_returns_zero(self, mock_usa_client):
-        """Test missing total_transaction_obligated_amount returns zero."""
+    def test_missing_obligated_amount_returns_none(self, mock_usa_client):
+        """An absent amount is None, so callers can tell it from a reported zero."""
         account_data = {
             "federal_account": "080-0131",
             "account_title": "Test Account",
         }
         account = AwardAccount(account_data, mock_usa_client)
+        assert account.total_transaction_obligated_amount is None
+        assert account.obligated_amount is None
+
+    def test_reported_zero_obligated_amount_is_decimal_zero(self, mock_usa_client):
+        """A zero the API actually reports stays Decimal("0.00")."""
+        account = AwardAccount(
+            {"federal_account": "080-0131", "total_transaction_obligated_amount": 0},
+            mock_usa_client,
+        )
         assert account.total_transaction_obligated_amount == Decimal("0.00")
+
+    def test_repr_renders_a_missing_amount_as_zero(self, mock_usa_client):
+        """__repr__ guards the format, so an absent amount renders rather than raising."""
+        account = AwardAccount({"federal_account": "080-0131"}, mock_usa_client)
+        assert "$0.00" in repr(account)

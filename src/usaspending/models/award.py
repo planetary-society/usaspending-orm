@@ -239,16 +239,17 @@ class Award(LazyRecord):
         return ""
 
     @property
-    def total_obligation(self) -> Decimal:
+    def total_obligation(self) -> Decimal | None:
         """The amount of money the government is obligated to pay for the award.
 
         This is a system generated element providing the sum of all the amounts
         entered in the "Action Obligation" field.
 
         Returns:
-            Decimal: The total obligated amount for the award or 0.00.
+            Optional[Decimal]: The total obligated amount, or None when the
+            award reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(self._lazy_get("total_obligation", "Award Amount")) or Decimal("0.00")
+        return to_decimal(self._lazy_get("total_obligation", "Award Amount"))
 
     @property
     def subaward_count(self) -> int:
@@ -368,63 +369,63 @@ class Award(LazyRecord):
         return uei
 
     @property
-    def covid19_obligations(self) -> Decimal:
+    def covid19_obligations(self) -> Decimal | None:
         """COVID-19 related obligations amount.
 
         Returns:
-            Decimal: The COVID-19 obligations amount, or 0.00 if not available.
+            Optional[Decimal]: The COVID-19 obligations amount, or None when the
+            award reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(
-            self._lazy_get("covid19_obligations", "COVID-19 Obligations", default=0)
-        ) or Decimal("0.00")
+        return to_decimal(self._lazy_get("covid19_obligations", "COVID-19 Obligations"))
 
     @property
-    def covid19_outlays(self) -> Decimal:
+    def covid19_outlays(self) -> Decimal | None:
         """COVID-19 related outlays amount.
 
         Returns:
-            Decimal: The COVID-19 outlays amount, or 0.00 if not available.
+            Optional[Decimal]: The COVID-19 outlays amount, or None when the
+            award reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(
-            self._lazy_get("covid19_outlays", "COVID-19 Outlays", default=0)
-        ) or Decimal("0.00")
+        return to_decimal(self._lazy_get("covid19_outlays", "COVID-19 Outlays"))
 
     @property
-    def infrastructure_obligations(self) -> Decimal:
+    def infrastructure_obligations(self) -> Decimal | None:
         """Infrastructure related obligations amount.
 
         Returns:
-            Decimal: The infrastructure obligations amount, or 0.00 if not available.
+            Optional[Decimal]: The infrastructure obligations amount, or None
+            when the award reports none. A reported zero returns
+            ``Decimal("0.00")``.
         """
         return to_decimal(
-            self._lazy_get("infrastructure_obligations", "Infrastructure Obligations", default=0)
-        ) or Decimal("0.00")
+            self._lazy_get("infrastructure_obligations", "Infrastructure Obligations")
+        )
 
     @property
-    def infrastructure_outlays(self) -> Decimal:
+    def infrastructure_outlays(self) -> Decimal | None:
         """Infrastructure related outlays amount.
 
         Returns:
-            Decimal: The infrastructure outlays amount, or 0.00 if not available.
+            Optional[Decimal]: The infrastructure outlays amount, or None when
+            the award reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(
-            self._lazy_get("infrastructure_outlays", "Infrastructure Outlays", default=0)
-        ) or Decimal("0.00")
+        return to_decimal(self._lazy_get("infrastructure_outlays", "Infrastructure Outlays"))
 
     # Helper properties. These often map to field names returned by
     # the spending_by_award/Award Search results, or provide general access methods
     # that are common across award types.
 
     @property
-    def award_amount(self) -> Decimal:
+    def award_amount(self) -> Decimal | None:
         """General helper for total obligated or loaned amount.
 
         Returns:
-            Decimal: The total award amount, or 0.00 if not available.
+            Optional[Decimal]: The total award amount, or None when the award
+            reports none. A reported zero returns ``Decimal("0.00")``.
         """
         return to_decimal(
             self._lazy_get("Award Amount", "Loan Amount", "total_obligation", "total_funding")
-        ) or Decimal("0.00")
+        )
 
     @property
     def start_date(self) -> date | None:

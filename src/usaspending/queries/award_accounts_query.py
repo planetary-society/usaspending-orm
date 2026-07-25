@@ -24,7 +24,7 @@ class AwardAccountsQuery(AwardScopedQuery, SortableQuery, QueryBuilder["AwardAcc
         >>> # Get accounts for an award
         >>> accounts = client.award_accounts.award_id("CONT_AWD_123...")
         >>> for account in accounts:
-        ...     print(f"{account.code}: ${account.obligated_amount:,.2f}")
+        ...     print(f"{account.code}: ${account.obligated_amount or 0:,.2f}")
         >>>
         >>> # Get count
         >>> count = accounts.count()

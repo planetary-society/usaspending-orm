@@ -82,12 +82,12 @@
     },
     "cfda_number": null,
     "covid19_obligations": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "covid19_outlays": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "date_signed": "2014-04-16",
     "description": "2014-2015 dl base record",
@@ -117,12 +117,12 @@
     "generated_unique_award_id": "ASST_NON_P268K151065_091",
     "id": 269890907,
     "infrastructure_obligations": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "infrastructure_outlays": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "non_federal_funding": "Decimal(0.00)",
     "parent_award": null,

@@ -212,7 +212,8 @@ with USASpendingClient() as client:
     awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
     for award in awards:
         # Access lazy-loaded properties inside the context
-        print(f"{award.recipient.name}: ${award.total_obligation:,.2f}")
+        # Money getters return None when the award reports no figure
+        print(f"{award.recipient.name}: ${award.total_obligation or 0:,.2f}")
         print(f"Subawards: {award.subaward_count}")
 # Session automatically closed here
 

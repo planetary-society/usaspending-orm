@@ -30,6 +30,6 @@
     "reporting_fiscal_month": 8,
     "reporting_fiscal_quarter": 3,
     "reporting_fiscal_year": 2026,
-    "transaction_obligated_amount": "Decimal(0.00)"
+    "transaction_obligated_amount": null
   }
 }

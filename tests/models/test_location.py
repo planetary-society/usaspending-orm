@@ -144,11 +144,10 @@ class TestLocationDualSourceFields:
         location = Location(data)
         assert location.zip5 == "12345"
 
-    def test_zip5_none_returns_empty_string(self):
-        """Test zip5 returns empty string when None."""
-        data = {}
-        location = Location(data)
-        assert location.zip5 == ""
+    def test_zip5_absent_returns_none(self):
+        """An absent ZIP is None, matching the declared Optional[str]."""
+        location = Location({})
+        assert location.zip5 is None
 
 
 class TestLocationConvenienceMethods:
@@ -171,10 +170,9 @@ class TestLocationConvenienceMethods:
         assert location.district == "10"
 
     def test_district_empty(self):
-        """Test district with no codes returns empty string."""
-        data = {}
-        location = Location(data)
-        assert location.district == ""
+        """With neither state nor district code, district is None."""
+        location = Location({})
+        assert location.district is None
 
     def test_formatted_address_full(self, recipient_location):
         """Test formatted address with all components."""
@@ -272,7 +270,7 @@ class TestLocationEdgeCases:
         assert location.address_line1 is None
         assert location.city is None
         assert location.state_code is None
-        assert location.zip5 == ""
+        assert location.zip5 is None
 
     def test_none_data_handled_gracefully(self):
         """Test Location with None data is handled gracefully."""
@@ -281,4 +279,4 @@ class TestLocationEdgeCases:
         assert location.city is None
         assert location.address_line1 is None
         assert location.state_code is None
-        assert location.zip5 == ""  # zip5 returns empty string when None
+        assert location.zip5 is None

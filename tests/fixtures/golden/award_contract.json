@@ -87,12 +87,12 @@
     "category": "contract",
     "contract_award_type": "DEFINITIVE CONTRACT",
     "covid19_obligations": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "covid19_outlays": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "date_signed": "1993-11-15",
     "description": "International space station",
@@ -117,12 +117,12 @@
     "generated_unique_award_id": "CONT_AWD_NAS1510000_8000_-NONE-_-NONE-",
     "id": 311267295,
     "infrastructure_obligations": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "infrastructure_outlays": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "latest_transaction_contract_data": {
       "__type__": "dict",

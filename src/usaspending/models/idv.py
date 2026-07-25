@@ -48,7 +48,7 @@ class IDV(ProcurementAward):
         ...     .all()
         ... )
         >>> for idv in idvs:
-        ...     print(f"{idv.award_identifier}: ${idv.total_obligation:,.2f}")
+        ...     print(f"{idv.award_identifier}: ${idv.total_obligation or 0:,.2f}")
     """
 
     # Download type for bulk download API
@@ -136,7 +136,7 @@ class IDV(ProcurementAward):
             >>> idv = client.awards.find_by_generated_id("CONT_IDV_...")
             >>> # Get all child awards
             >>> for child in idv.child_awards:
-            ...     print(f"{child.piid}: ${child.obligated_amount:,.2f}")
+            ...     print(f"{child.piid}: ${child.obligated_amount or 0:,.2f}")
             >>>
             >>> # Paginated access
             >>> idv.child_awards.limit(10).all()

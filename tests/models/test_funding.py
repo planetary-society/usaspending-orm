@@ -88,8 +88,8 @@ class TestFundingModel:
 
         funding = Funding(data, client=mock_usa_client)
 
-        assert funding.transaction_obligated_amount == 0.0
-        assert funding.gross_outlay_amount == 0.0
+        assert funding.transaction_obligated_amount is None
+        assert funding.gross_outlay_amount is None
         assert funding.disaster_emergency_fund_code is None
         assert funding.funding_agency_id is None
         assert funding.reporting_fiscal_year is None
@@ -206,13 +206,9 @@ class TestFundingModel:
         funding = Funding(first_result, client=mock_usa_client)
 
         expected_transaction_obligated = first_result.get("transaction_obligated_amount")
-        assert funding.transaction_obligated_amount == (
-            expected_transaction_obligated if expected_transaction_obligated is not None else 0.0
-        )
+        assert funding.transaction_obligated_amount == expected_transaction_obligated
         expected_gross_outlay = first_result.get("gross_outlay_amount")
-        assert funding.gross_outlay_amount == (
-            expected_gross_outlay if expected_gross_outlay is not None else 0.0
-        )
+        assert funding.gross_outlay_amount == expected_gross_outlay
         assert funding.disaster_emergency_fund_code == first_result.get(
             "disaster_emergency_fund_code"
         )

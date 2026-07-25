@@ -64,18 +64,45 @@ class TestAwardDecimalPrecision:
         expected = Decimal("5541691439.26")
         assert doubled == expected
 
-    def test_zero_default_values(self, mock_usa_client):
-        """Test that zero default values are proper Decimal objects."""
-        data = {"generated_unique_award_id": "TEST_AWARD_ZERO"}
-        award = Award(data, mock_usa_client)
+    MONEY_PROPERTIES = (
+        "covid19_obligations",
+        "covid19_outlays",
+        "infrastructure_obligations",
+        "infrastructure_outlays",
+        "total_obligation",
+        "award_amount",
+    )
 
-        # These properties should return Decimal('0.00') for missing values
-        assert award.covid19_obligations == Decimal("0.00")
-        assert award.covid19_outlays == Decimal("0.00")
-        assert award.infrastructure_obligations == Decimal("0.00")
-        assert award.infrastructure_outlays == Decimal("0.00")
-        assert award.total_obligation == Decimal("0.00")
-        assert award.award_amount == Decimal("0.00")
+    def test_absent_money_fields_are_none(self, mock_usa_client):
+        """An absent field is None, so it is distinguishable from a reported zero.
+
+        These returned Decimal("0.00") for both cases until 0.8.0, which made
+        "the award has no such figure" and "the figure is zero" identical.
+        """
+        award = Award({"generated_unique_award_id": "TEST_AWARD_ZERO"}, mock_usa_client)
+        award._details_fetched = True  # absent, not merely unfetched
+
+        for prop in self.MONEY_PROPERTIES:
+            assert getattr(award, prop) is None, prop
+
+    def test_reported_zero_money_fields_are_decimal_zero(self, mock_usa_client):
+        """A zero the API actually reports still returns Decimal("0.00")."""
+        award = Award(
+            {
+                "generated_unique_award_id": "TEST_AWARD_ZERO",
+                "covid19_obligations": 0,
+                "covid19_outlays": 0,
+                "infrastructure_obligations": 0,
+                "infrastructure_outlays": 0,
+                "total_obligation": 0,
+                "Award Amount": 0,
+            },
+            mock_usa_client,
+        )
+        award._details_fetched = True
+
+        for prop in self.MONEY_PROPERTIES:
+            assert getattr(award, prop) == Decimal("0.00"), prop
 
     def test_none_values_remain_none(self, mock_usa_client):
         """Test that optional monetary properties remain None when not provided."""

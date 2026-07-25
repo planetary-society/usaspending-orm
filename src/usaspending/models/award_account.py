@@ -35,7 +35,7 @@ class AwardAccount(FederalAccount):
 
     Example:
         >>> for account in award.accounts:
-        ...     print(f"{account.code}: ${account.total_transaction_obligated_amount:,.2f}")
+        ...     print(f"{account.code}: ${account.total_transaction_obligated_amount or 0:,.2f}")
         ...     print(f"  Funded by: {account.funding_agency.name}")
     """
 
@@ -103,21 +103,22 @@ class AwardAccount(FederalAccount):
         return self.id
 
     @property
-    def total_transaction_obligated_amount(self) -> Decimal:
+    def total_transaction_obligated_amount(self) -> Decimal | None:
         """Total obligated amount for this account on this award.
 
         Returns:
-            Decimal: The obligated amount, or 0.00 if not available.
+            Optional[Decimal]: The obligated amount, or None when the award
+            reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        value = self.get_value("total_transaction_obligated_amount")
-        return to_decimal(value) or Decimal("0.00")
+        return to_decimal(self.get_value("total_transaction_obligated_amount"))
 
     @property
-    def obligated_amount(self) -> Decimal:
+    def obligated_amount(self) -> Decimal | None:
         """Alias for total_transaction_obligated_amount.
 
         Returns:
-            Decimal: The obligated amount, or 0.00 if not available.
+            Optional[Decimal]: The obligated amount, or None when the award
+            reports none.
         """
         return self.total_transaction_obligated_amount
 
@@ -198,6 +199,6 @@ class AwardAccount(FederalAccount):
     def __repr__(self) -> str:
         """String representation of AwardAccount."""
         code = self.federal_account_code or "?"
-        amount = self.total_transaction_obligated_amount
+        amount = self.total_transaction_obligated_amount or 0
         agency = self.funding_agency_abbreviation or "?"
         return f"<AwardAccount {code}: ${amount:,.2f} ({agency})>"

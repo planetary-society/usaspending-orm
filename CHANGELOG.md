@@ -9,6 +9,56 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 Internal simplification pass. Except where listed below, every change is
 behavior preserving and the public API is unchanged.
 
+### Changed
+
+Optional money and string getters now return `None` when the API reports no
+value, instead of a fabricated `Decimal("0.00")` or `""`. A value the API
+actually reports as zero still returns `Decimal("0.00")`, so callers can finally
+tell "this award has no such figure" from "this figure is zero" -- previously
+both produced `Decimal("0.00")` and the distinction was unrecoverable.
+
+Affected properties:
+
+- `Award.total_obligation`, `Award.award_amount`
+- `Award.covid19_obligations`, `Award.covid19_outlays`
+- `Award.infrastructure_obligations`, `Award.infrastructure_outlays`
+- `AwardAccount.total_transaction_obligated_amount` and its alias
+  `AwardAccount.obligated_amount`
+- `Funding.transaction_obligated_amount` and `Funding.gross_outlay_amount`,
+  which returned `Decimal("0.00")` while declaring `Optional[Decimal]`. This
+  also resolves a contradiction: `Grant.transaction_obligated_amount` already
+  returned `None` for the same property name.
+- `Location.zip5` and `Location.district`, which already declared
+  `Optional[str]` while returning `""`
+
+**Migrating.** Any f-string or arithmetic on these needs a fallback:
+
+```python
+# Before
+print(f"${award.total_obligation:,.2f}")
+# After
+print(f"${award.total_obligation or 0:,.2f}")
+```
+
+Comparisons against zero change meaning deliberately: `award.covid19_obligations
+== 0` was true for every award without COVID-19 funding and is now false, while
+`is None` identifies exactly those awards. Measured against live data, the four
+COVID-19 and infrastructure properties are the ones that move in practice: they
+are absent for all six awards in the golden-master suite, where the library
+previously reported `Decimal("0.00")` for each, plus
+`Funding.transaction_obligated_amount` on the live funding record.
+`total_obligation`, `award_amount`, `zip5` and `district` were unchanged on that
+data, because the API does report them.
+
+Nine docstring examples that formatted these values with `:,.2f` were given the
+same `or 0` fallback, since copying them unchanged would now raise `TypeError`
+on an award with no reported figure.
+
+`Award.award_identifier` deliberately still returns `""` rather than `None`. It
+is annotated `-> str`, so unlike `Location.zip5` there was no `Optional`
+annotation to reconcile it with, and changing it would be a break with no
+consistency argument behind it.
+
 ### Fixed
 
 - Iterating `idv.child_awards` no longer raises `AttributeError: 'str' object has no attribute 'get'` when reading `funding_agency`, `awarding_agency`, `funding_subtier_agency` or `awarding_subtier_agency`. The `/idvs/awards/` endpoint reuses those keys for a plain agency-name string rather than an agency record, and the model accepted any truthy value there. All four now return `None` for such records, and the name remains available via `raw()`. Present in 0.7.3.

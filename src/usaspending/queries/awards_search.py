@@ -55,7 +55,7 @@ contracts = (
 
 for contract in contracts:
     print(
-        f"{contract.recipient.name}: ${contract.award_amount:,.2f} ${contract.period_of_performance.last_modified_date}"
+        f"{contract.recipient.name}: ${contract.award_amount or 0:,.2f} ${contract.period_of_performance.last_modified_date}"
     )
 ```
 

@@ -33,7 +33,7 @@ Example:
     ...     .limit(50)
     ... )
     >>> for award in awards:
-    ...     print(f"{award.award_identifier}: ${award.total_obligation:,.2f}")
+    ...     print(f"{award.award_identifier}: ${award.total_obligation or 0:,.2f}")
 """
 
 from __future__ import annotations

@@ -7,13 +7,15 @@ can be changed in one and contradicted in the other.
 
 Already covered elsewhere, deliberately not repeated here:
 
-* Absent-key money defaults of ``Decimal("0.00")`` --
-  ``tests/models/test_award_decimal_precision.py::test_zero_default_values``
-  (the same six Award properties) and
-  ``tests/models/test_award_account.py::test_missing_obligated_amount_returns_zero``.
-  **Phase 4 must update those two files**, plus the repr guard below.
-* ``Location.zip5`` returning ``""`` --
-  ``tests/models/test_location.py::test_zip5_none_returns_empty_string``.
+* Absent-key money values, **changed in 0.8.0** from ``Decimal("0.00")`` to
+  ``None`` so that an absent figure is distinguishable from a reported zero --
+  ``tests/models/test_award_decimal_precision.py`` (the six Award properties,
+  both the absent and reported-zero cases) and
+  ``tests/models/test_award_account.py`` (the same, plus the ``__repr__`` guard
+  that keeps a missing amount rendering as ``$0.00``).
+* ``Location.zip5`` and ``Location.district``, **changed in 0.8.0** from ``""``
+  to ``None`` to match their declared ``Optional[str]`` --
+  ``tests/models/test_location.py``.
 * Direct-GET finders raising ``HTTPError`` on 404 --
   ``tests/resources/test_award_resource.py::test_get_award_api_error_propagates``
   and ``tests/resources/test_agency_resource.py::test_get_agency_api_error_propagates``.
@@ -35,7 +37,6 @@ import pytest
 
 from tests.mocks import MockUSASpendingClient
 from usaspending.models.award import Award
-from usaspending.models.award_account import AwardAccount
 from usaspending.models.contract import Contract
 from usaspending.models.grant import Grant
 from usaspending.models.loan import Loan
@@ -135,26 +136,13 @@ class TestAwardSubtypeUpgradeOnLazyLoad:
         assert parent.piid == contract_fixture_data["piid"]
 
 
-class TestUnguardedMoneyFormatting:
-    """AwardAccount.__repr__ formats its amount with no None guard.
-
-    Every sibling repr uses ``or 0``, so this is the one place where Phase 4's
-    absent-value change would raise TypeError instead of rendering. Phase 4 must
-    add the guard before making the amount optional.
-    """
-
-    def test_repr_renders_a_missing_amount_as_zero(self, mock_usa_client):
-        account = AwardAccount({"federal_account": "080-0131"}, mock_usa_client)
-
-        assert "$0.00" in repr(account)
-
-
 class TestAwardIdentifierEmptyString:
     """Award.award_identifier returns "" rather than None when unknown.
 
-    Only the private _derived_award_identifier is covered elsewhere, so the
-    public property's empty-string contract is pinned here. Phase 4 normalizes
-    it to None.
+    The parsing itself lives in tests/models/test_award_identifier.py, so what
+    is pinned here is the public property's empty-string contract. Phase 4 left
+    it alone deliberately: the property is annotated ``-> str``, so unlike
+    ``Location.zip5`` there was no Optional annotation to reconcile it with.
     """
 
     def test_award_identifier_is_empty_string_when_unknown(self, mock_usa_client):

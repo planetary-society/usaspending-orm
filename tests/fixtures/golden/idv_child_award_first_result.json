@@ -87,12 +87,12 @@
     "category": "contract",
     "contract_award_type": "DELIVERY ORDER",
     "covid19_obligations": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "covid19_outlays": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "date_signed": "2015-05-22",
     "description": "Igf::ot::igf  the Commercial Crew Program (CCP) Commercial Crew Transportation capability (CCTCAP) contract will provide completion of the Design, development, test, evaluation, and Certification of an integrated Crew Transportation System (CTS) capable of transporting NASA Crew to and from the ISS, in accordance with the Design reference Missions and NASA'S Certification standards and requirements.  Certification of the cts will be determined by NASA.  NASA plans to issue task orders for Post Certification Missions (PCM) to and from ISS that include ground, launch, lifeboat, on-orbit, return and recovery operations. The minimum quantity of Missions to be ordered is two (2) and the maximum potential quantity of Missions which may be ordered is six (6).  In addition, NASA may issue task orders for special studies used for risk reduction and other purposes related to the cts.      NASA Certification under clin 001 is complete when the contractor'S Crew Transportation System (CTS) has met NASA S requirements for safely transporting Crew to and from the International Space Station (ISS) in accordance with documents identified in section c.1, specifications/statement of work. Subclins 001a and 001b, identified in table b.3, ddte/Certification subclins, are delivery milestones that represent completion of required work necessary to achieve NASA Certification. Delivery payment for the ISS Design Certification Review (DCR) for the crewed flight to the ISS includes all work under this clin that occurs from the contract effective date through the ISS dcr completion. The delivery payment for the Certification Review (CR) will include all work that occurs fromthe ISS dcr delivery date through the end of the ddte/Certification clin 001.  In accordance with clause c.1, specification/statement of work, the task ordering procedures and other terms and conditions in the contract, the contracting officer may issue Post Certification Mission (PCM) task orders. The contractor shall use the Mission pricing rates shown in table b.4.1, Post Certification Mission prices. The per Mission prices are for a single order at the price stated per the Calendar Year (CY) based on the number of Missions ordered. Cts full Mission capability prices shall be based on (1) fulfillment of the Design reference Mission to the ISS found in cct-drm-1110, Crew Transportation System Design reference Missions, attachment j-03, contract performance work statement, and other terms and conditions in the contract and (2) all inherent cts capabilities that are within the proposed Mission prices.  In accordance with attachment j-03, contract performance work statement, the task ordering procedures and other terms and conditions in the contract, the contractor shall perform special studies, test and analyses, as initiated by written direction from the contracting officer.  Boeing cctcap Post Certification Mission 1 (PCM-1) task order against nnk14ma75c clin 002, as described in clause b.4 Post Certification Missions (IDIQ)(CLIN 002) and all other applicable terms and conditions.",
@@ -117,12 +117,12 @@
     "generated_unique_award_id": "CONT_AWD_NNK15MA50T_8000_NNK14MA75C_8000",
     "id": 311404922,
     "infrastructure_obligations": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "infrastructure_outlays": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "latest_transaction_contract_data": {
       "__type__": "dict",

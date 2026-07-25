@@ -31,18 +31,20 @@ class Funding(ClientAwareModel):
         """Amount obligated for this funding record.
 
         Returns:
-            Optional[Decimal]: The transaction obligated amount, or 0.0.
+            Optional[Decimal]: The transaction obligated amount, or None when the record reports
+            none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(self.get_value("transaction_obligated_amount", default=0.0))
+        return to_decimal(self.get_value("transaction_obligated_amount"))
 
     @property
     def gross_outlay_amount(self) -> Decimal | None:
         """Gross outlay amount for this funding record.
 
         Returns:
-            Optional[Decimal]: The gross outlay amount, or 0.0.
+            Optional[Decimal]: The gross outlay amount, or None when the record reports
+            none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(self.get_value("gross_outlay_amount", default=0.0))
+        return to_decimal(self.get_value("gross_outlay_amount"))
 
     @property
     def disaster_emergency_fund_code(self) -> str | None:

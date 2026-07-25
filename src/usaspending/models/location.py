@@ -173,10 +173,10 @@ class Location(BaseModel):
         """5-digit ZIP code.
 
         Returns:
-            Optional[str]: The 5-digit ZIP code, or empty string.
+            Optional[str]: The 5-digit ZIP code, or None when the record has none.
         """
         val = self.get_value(["zip5", "Place of Performance Zip5"])
-        return str(val) if val is not None else ""
+        return str(val) if val is not None else None
 
     # convenience -----------------------------------------------------------
     @property
@@ -184,10 +184,11 @@ class Location(BaseModel):
         """Formatted district string (State-District).
 
         Returns:
-            Optional[str]: String formatted as 'State-District' (e.g., 'CA-12'), or empty string.
+            Optional[str]: String formatted as 'State-District' (e.g., 'CA-12'),
+            or None when the record has neither part.
         """
         pieces = [p for p in (self.state_code, self.congressional_code) if p]
-        return "-".join(pieces) or ""
+        return "-".join(pieces) or None
 
     @property
     def formatted_address(self) -> str | None:

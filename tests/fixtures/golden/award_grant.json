@@ -93,12 +93,12 @@
     },
     "cfda_number": "43.001",
     "covid19_obligations": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "covid19_outlays": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "date_signed": "2011-05-31",
     "description": "The \"Goddard Earth Sciences Technology And Research\" (GESTAR) studies And investigations will carry out observational, experimental, And theoretical",
@@ -128,12 +128,12 @@
     "generated_unique_award_id": "ASST_NON_NNG11HP16A_080",
     "id": 268985572,
     "infrastructure_obligations": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "infrastructure_outlays": {
-      "__type__": "Decimal",
-      "empty": false
+      "__type__": "NoneType",
+      "empty": true
     },
     "non_federal_funding": "Decimal(0.00)",
     "parent_award": null,
