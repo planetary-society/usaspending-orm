@@ -6,8 +6,8 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..utils.formatter import (
-    contracts_titlecase,
-    smart_sentence_case,
+    TextFormatter,
+    titlecase_name,
     to_date,
     to_decimal,
     to_int,
@@ -196,7 +196,7 @@ class SubAward(ClientAwareModel):
             Optional[str]: The recipient name, or None.
         """
         name = self.get_value("Sub-Awardee Name")
-        return contracts_titlecase(name) if name else None
+        return titlecase_name(name) if name else None
 
     @property
     def sub_award_date(self) -> date | None:
@@ -251,7 +251,7 @@ class SubAward(ClientAwareModel):
             Optional[str]: The prime recipient name, or None.
         """
         name = self.get_value("Prime Recipient Name")
-        return contracts_titlecase(name) if name else None
+        return titlecase_name(name) if name else None
 
     @property
     def prime_award_recipient_id(self) -> str | None:
@@ -270,7 +270,7 @@ class SubAward(ClientAwareModel):
             Optional[str]: The description, or None.
         """
         desc = self.get_value("Sub-Award Description")
-        return smart_sentence_case(desc) if desc else None
+        return TextFormatter.to_sentence_case(desc) if desc else None
 
     @property
     def subaward_description_sorted(self) -> str | None:

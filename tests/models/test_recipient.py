@@ -11,7 +11,7 @@ from tests.utils import assert_decimal_equal
 from usaspending.exceptions import ValidationError
 from usaspending.models.location import Location
 from usaspending.models.recipient import Recipient
-from usaspending.utils.formatter import contracts_titlecase
+from usaspending.utils.formatter import titlecase_name
 
 
 class TestRecipientInitialization:
@@ -198,7 +198,7 @@ class TestRecipientProperties:
         """Test name property with titlecase formatting."""
         # Use actual fixture data
         recipient = Recipient(recipient_data, mock_usa_client)
-        assert recipient.name == contracts_titlecase(recipient_data["name"])
+        assert recipient.name == titlecase_name(recipient_data["name"])
 
     def test_name_property_with_none(self, mock_usa_client):
         """Test name property when value is None."""
@@ -217,7 +217,7 @@ class TestRecipientProperties:
         """Test alternate_names property returns list with titlecase."""
         recipient = Recipient(recipient_data, mock_usa_client)
         expected_names = [
-            contracts_titlecase(name) for name in recipient_data.get("alternate_names", [])
+            titlecase_name(name) for name in recipient_data.get("alternate_names", [])
         ]
         assert recipient.alternate_names == expected_names
 
@@ -241,7 +241,7 @@ class TestRecipientProperties:
         recipient = Recipient(recipient_data, mock_usa_client)
         repr_str = repr(recipient)
         assert "Recipient" in repr_str
-        assert contracts_titlecase(recipient_data["name"]) in repr_str
+        assert titlecase_name(recipient_data["name"]) in repr_str
         assert recipient_data["recipient_id"] in repr_str
 
     def test_repr_with_no_name(self, mock_usa_client):
@@ -431,7 +431,7 @@ class TestRecipientLazyLoading:
         name = recipient.name
 
         # Verify the value from fixture
-        assert name == contracts_titlecase(recipient_data["name"])
+        assert name == titlecase_name(recipient_data["name"])
 
         # Verify the endpoint was called
         assert mock_usa_client.get_request_count(f"/recipient/{recipient_id}/") == 1
@@ -480,7 +480,7 @@ class TestRecipientLazyLoading:
         name = recipient.name
 
         # Check that new data was loaded
-        assert name == contracts_titlecase(recipient_data["name"])
+        assert name == titlecase_name(recipient_data["name"])
 
         # Check that original field is preserved
         assert recipient._data["existing_field"] == "original_value"

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from ..utils.formatter import smart_sentence_case, to_date, to_decimal
+from ..utils.formatter import TextFormatter, to_date, to_decimal
 from .base_model import BaseModel
 
 
@@ -101,7 +101,7 @@ class Transaction(BaseModel):
         Returns:
             str: The award description in sentence case, or an empty string.
         """
-        return smart_sentence_case(self.get_value("description"))
+        return TextFormatter.to_sentence_case(self.get_value("description"))
 
     @property
     def federal_action_obligation(self) -> Decimal | None:

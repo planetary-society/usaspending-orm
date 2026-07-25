@@ -48,13 +48,15 @@ class TestSubAwardModel:
 
     def test_subaward_type_and_description(self, subaward_data, mock_usa_client):
         """Test SubAward type and description properties."""
-        from usaspending.utils.formatter import smart_sentence_case
+        from usaspending.utils.formatter import TextFormatter
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
         assert subaward.sub_award_type == subaward_data["Sub-Award Type"]
-        # Test that smart_sentence_case is applied to the fixture data
-        expected_description = smart_sentence_case(subaward_data["Sub-Award Description"])
+        # Test that sentence casing is applied to the fixture data
+        expected_description = TextFormatter.to_sentence_case(
+            subaward_data["Sub-Award Description"]
+        )
         assert subaward.sub_award_description == expected_description
 
     def test_subaward_amount_and_date(self, subaward_data, mock_usa_client):
@@ -70,13 +72,13 @@ class TestSubAwardModel:
 
     def test_subaward_recipient_properties(self, subaward_data, mock_usa_client):
         """Test SubAward recipient-related properties."""
-        from usaspending.utils.formatter import contracts_titlecase
+        from usaspending.utils.formatter import titlecase_name
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
-        # Test that contracts_titlecase is applied to fixture data
-        expected_sub_awardee = contracts_titlecase(subaward_data["Sub-Awardee Name"])
-        expected_prime_recipient = contracts_titlecase(subaward_data["Prime Recipient Name"])
+        # Test that titlecase_name is applied to fixture data
+        expected_sub_awardee = titlecase_name(subaward_data["Sub-Awardee Name"])
+        expected_prime_recipient = titlecase_name(subaward_data["Prime Recipient Name"])
 
         assert subaward.sub_awardee_name == expected_sub_awardee
         assert subaward.prime_recipient_name == expected_prime_recipient
@@ -146,7 +148,7 @@ class TestSubAwardModel:
         """Test SubAward place_of_performance property."""
         from titlecase import titlecase
 
-        from usaspending.utils.formatter import contracts_titlecase
+        from usaspending.utils.formatter import titlecase_name
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
@@ -159,8 +161,8 @@ class TestSubAwardModel:
         # Location applies titlecase formatting to city_name
         assert pop.city_name == titlecase(pop_data["city_name"])
         assert pop.state_code == pop_data["state_code"]
-        # Location applies contracts_titlecase to country_name
-        assert pop.country_name == contracts_titlecase(pop_data["country_name"])
+        # Location applies titlecase_name to country_name
+        assert pop.country_name == titlecase_name(pop_data["country_name"])
 
     def test_subaward_recipient(self, subaward_data, mock_usa_client):
         """Test SubAward recipient property."""
@@ -197,8 +199,8 @@ class TestSubAwardModel:
     def test_subaward_helper_properties(self, subaward_data, mock_usa_client):
         """Test SubAward helper properties (name, amount, description, award_date)."""
         from usaspending.utils.formatter import (
-            contracts_titlecase,
-            smart_sentence_case,
+            TextFormatter,
+            titlecase_name,
             to_date,
         )
 
@@ -206,7 +208,7 @@ class TestSubAwardModel:
 
         # Test helper properties map to main properties correctly
         expected_name = (
-            contracts_titlecase(subaward_data["Sub-Awardee Name"])
+            titlecase_name(subaward_data["Sub-Awardee Name"])
             if subaward_data.get("Sub-Awardee Name")
             else None
         )
@@ -217,7 +219,7 @@ class TestSubAwardModel:
         assert subaward.amount == subaward.sub_award_amount
 
         expected_desc = (
-            smart_sentence_case(subaward_data["Sub-Award Description"])
+            TextFormatter.to_sentence_case(subaward_data["Sub-Award Description"])
             if subaward_data.get("Sub-Award Description")
             else None
         )
@@ -234,14 +236,14 @@ class TestSubAwardModel:
 
     def test_subaward_repr(self, subaward_data, mock_usa_client):
         """Test SubAward string representation."""
-        from usaspending.utils.formatter import contracts_titlecase
+        from usaspending.utils.formatter import titlecase_name
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
         repr_str = repr(subaward)
         assert "<SubAward" in repr_str
         assert subaward_data["Sub-Award ID"] in repr_str
-        expected_name = contracts_titlecase(subaward_data["Sub-Awardee Name"])
+        expected_name = titlecase_name(subaward_data["Sub-Awardee Name"])
         assert expected_name in repr_str
         # Format the amount as it would appear in repr
         amount_str = f"{subaward_data['Sub-Award Amount']:,.2f}"
@@ -326,9 +328,9 @@ class TestSubAwardModel:
         assert subaward.sub_award_id == data_with_null_id["Sub-Award ID"]
 
         # repr should use sub_award_id when internal_id is None
-        from usaspending.utils.formatter import contracts_titlecase
+        from usaspending.utils.formatter import titlecase_name
 
-        expected_name = contracts_titlecase(data_with_null_id["Sub-Awardee Name"])
+        expected_name = titlecase_name(data_with_null_id["Sub-Awardee Name"])
         repr_str = repr(subaward)
         assert data_with_null_id["Sub-Award ID"] in repr_str
         assert expected_name in repr_str

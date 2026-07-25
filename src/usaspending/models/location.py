@@ -4,7 +4,7 @@ from typing import Any
 
 from titlecase import titlecase
 
-from ..utils.formatter import contracts_titlecase
+from ..utils.formatter import titlecase_name
 from .base_model import BaseModel
 
 
@@ -218,7 +218,7 @@ class Location(BaseModel):
         """
         if not isinstance(text, str):
             return None
-        return contracts_titlecase(text.strip())
+        return titlecase_name(text.strip())
 
     def __repr__(self) -> str:
         """String representation of Location.

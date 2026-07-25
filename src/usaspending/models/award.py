@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
-from ..utils.formatter import smart_sentence_case, to_date, to_decimal, to_int
+from ..utils.formatter import TextFormatter, to_date, to_decimal, to_int
 from .agency import Agency
 from .award_identifier import parse_award_identifier
 from .award_types import DOWNLOAD_TYPES
@@ -237,7 +237,7 @@ class Award(LazyRecord):
         """
         desc = self._lazy_get("description", "Description")
         if isinstance(desc, str):
-            return smart_sentence_case(desc)
+            return TextFormatter.to_sentence_case(desc)
         return ""
 
     @property

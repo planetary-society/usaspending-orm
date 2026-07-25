@@ -8,7 +8,7 @@ import yaml
 
 from usaspending.utils.formatter import (
     TextFormatter,
-    contracts_titlecase,
+    titlecase_name,
     to_date,
     to_float,
     to_int,
@@ -16,7 +16,7 @@ from usaspending.utils.formatter import (
 
 
 class TestContractsTitlecase:
-    """Test the contracts_titlecase function."""
+    """Test the titlecase_name function."""
 
     @pytest.fixture(autouse=True)
     def setup_yaml(self):
@@ -52,58 +52,58 @@ class TestContractsTitlecase:
 
     def test_none_input(self):
         """Test handling of None input."""
-        assert contracts_titlecase(None) is None
+        assert titlecase_name(None) is None
 
     def test_basic_titlecase(self):
         """Test basic title casing."""
-        assert contracts_titlecase("hello world") == "Hello World"
-        assert contracts_titlecase("HELLO WORLD") == "Hello World"
+        assert titlecase_name("hello world") == "Hello World"
+        assert titlecase_name("HELLO WORLD") == "Hello World"
 
     def test_acronyms_preserved(self):
         """Test that acronyms are preserved."""
-        assert contracts_titlecase("nasa research") == "NASA Research"
-        assert contracts_titlecase("working with nasa") == "Working With NASA"
-        assert contracts_titlecase("sbir program") == "SBIR Program"
+        assert titlecase_name("nasa research") == "NASA Research"
+        assert titlecase_name("working with nasa") == "Working With NASA"
+        assert titlecase_name("sbir program") == "SBIR Program"
 
     def test_business_suffixes(self):
         """Test business suffixes."""
-        assert contracts_titlecase("acme inc.") == "Acme Inc."
-        assert contracts_titlecase("technology llc") == "Technology LLC"
-        assert contracts_titlecase("services ltd.") == "Services Ltd."
+        assert titlecase_name("acme inc.") == "Acme Inc."
+        assert titlecase_name("technology llc") == "Technology LLC"
+        assert titlecase_name("services ltd.") == "Services Ltd."
 
     def test_small_words(self):
         """Test that small words are lowercase in middle."""
-        assert contracts_titlecase("bread and butter") == "Bread and Butter"
-        assert contracts_titlecase("the quick fox") == "The Quick Fox"
-        assert contracts_titlecase("of the people") == "Of the People"
+        assert titlecase_name("bread and butter") == "Bread and Butter"
+        assert titlecase_name("the quick fox") == "The Quick Fox"
+        assert titlecase_name("of the people") == "Of the People"
 
     def test_directional_abbreviations(self):
         """Test directional abbreviations."""
-        assert contracts_titlecase("123 main st. ne") == "123 Main St. NE"
-        assert contracts_titlecase("456 oak ave. sw") == "456 Oak Ave. SW"
+        assert titlecase_name("123 main st. ne") == "123 Main St. NE"
+        assert titlecase_name("456 oak ave. sw") == "456 Oak Ave. SW"
 
     def test_directional_with_punctuation(self):
         """Test directional abbreviations with punctuation."""
 
-        assert contracts_titlecase("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
+        assert titlecase_name("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
 
     def test_special_casing(self):
         """Test special casing rules."""
-        assert contracts_titlecase("osiris-rex mission") == "OSIRIS-REx Mission"
-        assert contracts_titlecase("scan network") == "SCaN Network"
-        assert contracts_titlecase("epscor funding") == "EPSCoR Funding"
+        assert titlecase_name("osiris-rex mission") == "OSIRIS-REx Mission"
+        assert titlecase_name("scan network") == "SCaN Network"
+        assert titlecase_name("epscor funding") == "EPSCoR Funding"
 
     def test_complex_examples(self):
         """Test complex real-world examples."""
         assert (
-            contracts_titlecase("nasa sbir program for small business llc")
+            titlecase_name("nasa sbir program for small business llc")
             == "NASA SBIR Program for Small Business LLC"
         )
 
-        assert contracts_titlecase("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
+        assert titlecase_name("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
 
         assert (
-            contracts_titlecase("the university of maryland and nasa")
+            titlecase_name("the university of maryland and nasa")
             == "The University of Maryland and NASA"
         )
 

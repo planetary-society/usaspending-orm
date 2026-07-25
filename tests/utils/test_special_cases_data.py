@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from usaspending.utils.formatter import TextFormatter, contracts_titlecase
+from usaspending.utils.formatter import TextFormatter, titlecase_name
 
 EXPECTED_ACRONYMS = frozenset({"NASA", "JPL", "EPSCoR", "STEM"})
 
@@ -66,7 +66,7 @@ def test_real_special_cases_load_with_expected_acronyms():
 
 def test_mixed_case_acronym_is_preserved_through_titlecase():
     """EPSCoR is the canary: naive casing would render it "Epscor"."""
-    assert contracts_titlecase("epscor research program") == "EPSCoR Research Program"
+    assert titlecase_name("epscor research program") == "EPSCoR Research Program"
 
 
 def test_acronym_is_preserved_through_sentence_case():

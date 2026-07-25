@@ -5,7 +5,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from ..logging_config import USASpendingLogger
-from ..utils.formatter import contracts_titlecase, to_decimal
+from ..utils.formatter import titlecase_name, to_decimal
 from ..utils.validations import normalize_recipient_id
 from .lazy_record import LazyRecord
 from .location import Location
@@ -106,7 +106,7 @@ class Recipient(LazyRecord):
         Returns:
             Optional[str]: The recipient name in title case, or None.
         """
-        return contracts_titlecase(
+        return titlecase_name(
             self._lazy_get("name", "recipient_name", "Recipient Name", default=None)
         )
 
@@ -119,7 +119,7 @@ class Recipient(LazyRecord):
         """
         names = self._lazy_get("alternate_names", default=[])
         if isinstance(names, list):
-            return [contracts_titlecase(name) for name in names if isinstance(name, str)]
+            return [titlecase_name(name) for name in names if isinstance(name, str)]
         else:
             return []
 

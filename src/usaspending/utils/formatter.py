@@ -176,36 +176,6 @@ PAREN_UPPERCASE_MAX_LEN: int = 9  # Fewer than 10 characters
 # --- Helper Function ---
 
 
-def smart_sentence_case(
-    text: str | None,
-    paren_max_len: int = PAREN_UPPERCASE_MAX_LEN,
-) -> str:
-    """
-    Converts an uppercase string to sentence case, preserving specified acronyms
-    and short parenthesized text in uppercase.
-
-    Rules:
-    1. Converts the text to lowercase as a base.
-    2. Capitalizes the first letter of the resulting string.
-    3. Keeps special cases from YAML configuration in proper case.
-    4. Keeps text within parentheses uppercase if its length is less than
-       paren_max_len + 1 characters.
-    5. Handles standard punctuation like apostrophes correctly.
-
-    Args:
-        text: The input string, expected to be mostly uppercase.
-              Can be None or empty.
-        paren_max_len: The maximum character length of text inside parentheses
-                       to be kept uppercase. Defaults to PAREN_UPPERCASE_MAX_LEN.
-
-    Returns:
-        The processed string in smart sentence case, or an empty string if
-        the input was None or empty.
-    """
-    # Use the new TextFormatter class
-    return TextFormatter.to_sentence_case(text, paren_max_len)
-
-
 class TextFormatter:
     """Unified text formatting utility class for sentence and title case conversions."""
 
@@ -244,7 +214,7 @@ class TextFormatter:
 
         # Handle contractions separately
         if "'" in word:
-            # For words like "NASA's", split at apostrophe
+            # For a possessive like "ACME's", split at the apostrophe
             parts = word.split("'", 1)
             if len(parts) == 2:
                 clean_word = parts[0]
@@ -440,15 +410,24 @@ class TextFormatter:
         return cls._preserve_special_case(word)
 
 
-def contracts_titlecase(text):
-    """
-    Applies NASA-relevant title casing rules to the given text.
+def titlecase_name(text: str | None) -> str | None:
+    """Title-case a name reported by the API, preserving known special cases.
+
+    Recipient, agency and place names arrive uppercased. Plain title casing
+    mangles the acronyms, mixed-case marks and suffixes they contain, so casing
+    goes through ``special_cases.yaml``, which lists the forms to leave alone.
+    The list is data rather than code precisely so that it can grow without
+    touching this function, and so that it stays agency-agnostic.
 
     Args:
-        text (str or None): The input text to be title-cased. If None, returns None.
+        text: The text to title-case, or None.
 
     Returns:
-        str or None: The title-cased text according to NASA-specific rules, or None if input is None.
+        Optional[str]: The title-cased text, or None if the input was None.
+
+    Example:
+        >>> titlecase_name("THE UNIVERSITY OF IOWA")
+        'The University of Iowa'
     """
     if text is None:
         return None

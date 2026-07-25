@@ -6,7 +6,7 @@ from tests.conftest import load_json_fixture
 from tests.utils import assert_decimal_equal
 from usaspending.models import Recipient, RecipientSpending
 from usaspending.queries.spending_search import SpendingSearch
-from usaspending.utils.formatter import contracts_titlecase, round_to_millions
+from usaspending.utils.formatter import round_to_millions, titlecase_name
 
 
 class TestRecipientSpendingInitialization:
@@ -48,7 +48,7 @@ class TestRecipientSpendingProperties:
         # Test properties using fixture values
         assert recipient_spending.uei == first_result["uei"]
         assert recipient_spending.duns == first_result["code"]  # Should return code field
-        assert recipient_spending.name == contracts_titlecase(first_result["name"])
+        assert recipient_spending.name == titlecase_name(first_result["name"])
         assert recipient_spending.amount == first_result["amount"]
         assert_decimal_equal(recipient_spending.total_outlays, first_result["total_outlays"])
 
@@ -71,7 +71,7 @@ class TestRecipientSpendingProperties:
 
         repr_str = repr(recipient_spending)
         # Test using dynamic fixture values
-        assert contracts_titlecase(first_result["name"]) in repr_str
+        assert titlecase_name(first_result["name"]) in repr_str
         # Format the amount as it would appear in repr (with commas)
         expected_amount = round_to_millions(first_result["amount"])
         assert expected_amount in repr_str
@@ -178,7 +178,7 @@ class TestRecipientSpendingCount:
             fixture_result = fixture_data["results"][i]
 
             assert isinstance(recipient_spending, RecipientSpending)
-            assert recipient_spending.name == contracts_titlecase(fixture_result["name"])
+            assert recipient_spending.name == titlecase_name(fixture_result["name"])
             assert_decimal_equal(recipient_spending.amount, fixture_result["amount"])
             assert recipient_spending.uei == fixture_result["uei"]
             assert recipient_spending.duns == fixture_result["code"]

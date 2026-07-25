@@ -58,7 +58,7 @@ class TestSubAwardsSearch:
 
     def test_transform_result_returns_subaward(self, mock_usa_client, subawards_response):
         """Test that transform_result returns SubAward instances."""
-        from usaspending.utils.formatter import contracts_titlecase
+        from usaspending.utils.formatter import titlecase_name
 
         search = SubAwardsSearch(mock_usa_client)
 
@@ -67,7 +67,7 @@ class TestSubAwardsSearch:
 
         assert isinstance(result, SubAward)
         assert result.id == subaward_data["internal_id"]
-        expected_name = contracts_titlecase(subaward_data["Sub-Awardee Name"])
+        expected_name = titlecase_name(subaward_data["Sub-Awardee Name"])
         assert result.sub_awardee_name == expected_name
 
     def test_get_fields_for_contract_subawards(self, mock_usa_client):

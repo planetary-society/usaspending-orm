@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from ..utils.formatter import contracts_titlecase, to_decimal, to_int
+from ..utils.formatter import titlecase_name, to_decimal, to_int
 from .base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ class SubTierAgency(BaseModel):
         office_agency_name = data.get("office_agency_name")
         if office_agency_name and "children" not in data:
             # Create a synthetic child office from office_agency_name
-            office_child = {"name": contracts_titlecase(office_agency_name)}
+            office_child = {"name": titlecase_name(office_agency_name)}
             # Create a copy of data with the office child
             data = data.copy()
             data["children"] = [office_child]
@@ -51,7 +51,7 @@ class SubTierAgency(BaseModel):
         Returns:
             Optional[str]: The name of the subtier agency, or None.
         """
-        return contracts_titlecase(self.get_value("name"))
+        return titlecase_name(self.get_value("name"))
 
     @property
     def code(self) -> str | None:
