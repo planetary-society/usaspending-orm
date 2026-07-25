@@ -1,0 +1,198 @@
+{
+  "class": "Grant",
+  "properties": {
+    "SEARCH_FIELDS": [
+      "Award ID",
+      "recipient_id",
+      "Recipient Name",
+      "Recipient DUNS Number",
+      "Recipient UEI",
+      "Recipient Location",
+      "Awarding Agency",
+      "Awarding Agency Code",
+      "Awarding Sub Agency",
+      "Awarding Sub Agency Code",
+      "Funding Agency",
+      "Funding Agency Code",
+      "Funding Sub Agency",
+      "Funding Sub Agency Code",
+      "Place of Performance City Code",
+      "Place of Performance State Code",
+      "Place of Performance Country Code",
+      "Place of Performance Zip5",
+      "Description",
+      "Last Modified Date",
+      "Base Obligation Date",
+      "prime_award_recipient_id",
+      "generated_internal_id",
+      "def_codes",
+      "COVID-19 Obligations",
+      "COVID-19 Outlays",
+      "Infrastructure Obligations",
+      "Infrastructure Outlays",
+      "Primary Place of Performance",
+      "Start Date",
+      "End Date",
+      "Award Amount",
+      "Total Outlays",
+      "Award Type",
+      "SAI Number",
+      "CFDA Number",
+      "Assistance Listings",
+      "primary_assistance_listing"
+    ],
+    "TYPE_FIELDS": [
+      "fain",
+      "uri",
+      "record_type",
+      "cfda_info",
+      "cfda_number",
+      "primary_cfda_info",
+      "sai_number",
+      "funding_opportunity",
+      "non_federal_funding",
+      "total_funding",
+      "transaction_obligated_amount"
+    ],
+    "account_obligations_by_defc": {
+      "__type__": "list",
+      "empty": false
+    },
+    "account_outlays_by_defc": {
+      "__type__": "list",
+      "empty": false
+    },
+    "accounts": {
+      "__type__": "AwardAccountsQuery"
+    },
+    "award_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "award_identifier": "NNG11HP16A",
+    "award_type_code": "05",
+    "awarding_agency": {
+      "__type__": "Agency"
+    },
+    "awarding_subtier_agency": {
+      "__type__": "SubTierAgency"
+    },
+    "base_and_all_options": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "base_exercised_options": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "base_obligation_date": "2011-05-31",
+    "category": "grant",
+    "cfda_info": {
+      "__type__": "list",
+      "empty": false
+    },
+    "cfda_number": "43.001",
+    "covid19_obligations": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "covid19_outlays": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "date_signed": "2011-05-31",
+    "description": "The \"Goddard Earth Sciences Technology And Research\" (GESTAR) studies And investigations will carry out observational, experimental, And theoretical",
+    "download_type": "assistance",
+    "end_date": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "executive_details": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "fain": "NNG11HP16A",
+    "funding": {
+      "__type__": "FundingSearch"
+    },
+    "funding_agency": {
+      "__type__": "Agency"
+    },
+    "funding_opportunity": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "funding_subtier_agency": {
+      "__type__": "SubTierAgency"
+    },
+    "generated_unique_award_id": "ASST_NON_NNG11HP16A_080",
+    "id": 268985572,
+    "infrastructure_obligations": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "infrastructure_outlays": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "non_federal_funding": "Decimal(0.00)",
+    "parent_award": null,
+    "period_of_performance": {
+      "__type__": "PeriodOfPerformance"
+    },
+    "place_of_performance": {
+      "__type__": "Location"
+    },
+    "primary_cfda_info": null,
+    "recipient": {
+      "__type__": "Recipient"
+    },
+    "recipient_uei": "VPWMMPGGPJ74",
+    "record_type": 2,
+    "sai_number": null,
+    "start_date": "2011-05-11",
+    "subaward_count": {
+      "__type__": "int",
+      "empty": false
+    },
+    "subawards": {
+      "__type__": "SubAwardsSearch"
+    },
+    "total_account_obligation": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_account_outlay": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_funding": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_obligation": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_outlay": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_subaward_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_subsidy_cost": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "transaction_obligated_amount": "Decimal(104696575.47)",
+    "transactions": {
+      "__type__": "TransactionsSearch"
+    },
+    "type": "05",
+    "type_description": "COOPERATIVE AGREEMENT (B)",
+    "uri": null,
+    "usa_spending_url": "https://www.usaspending.gov/award/ASST_NON_NNG11HP16A_080/"
+  }
+}

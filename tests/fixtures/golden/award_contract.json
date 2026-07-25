@@ -1,0 +1,190 @@
+{
+  "class": "Contract",
+  "properties": {
+    "SEARCH_FIELDS": [
+      "Award ID",
+      "recipient_id",
+      "Recipient Name",
+      "Recipient DUNS Number",
+      "Recipient UEI",
+      "Recipient Location",
+      "Awarding Agency",
+      "Awarding Agency Code",
+      "Awarding Sub Agency",
+      "Awarding Sub Agency Code",
+      "Funding Agency",
+      "Funding Agency Code",
+      "Funding Sub Agency",
+      "Funding Sub Agency Code",
+      "Place of Performance City Code",
+      "Place of Performance State Code",
+      "Place of Performance Country Code",
+      "Place of Performance Zip5",
+      "Description",
+      "Last Modified Date",
+      "Base Obligation Date",
+      "prime_award_recipient_id",
+      "generated_internal_id",
+      "def_codes",
+      "COVID-19 Obligations",
+      "COVID-19 Outlays",
+      "Infrastructure Obligations",
+      "Infrastructure Outlays",
+      "Primary Place of Performance",
+      "Start Date",
+      "End Date",
+      "Award Amount",
+      "Total Outlays",
+      "Contract Award Type",
+      "NAICS",
+      "PSC"
+    ],
+    "TYPE_FIELDS": [
+      "piid",
+      "base_exercised_options",
+      "base_and_all_options",
+      "contract_award_type",
+      "naics_code",
+      "naics_description",
+      "naics_hierarchy",
+      "psc_code",
+      "psc_description",
+      "psc_hierarchy",
+      "latest_transaction_contract_data"
+    ],
+    "account_obligations_by_defc": {
+      "__type__": "list",
+      "empty": false
+    },
+    "account_outlays_by_defc": {
+      "__type__": "list",
+      "empty": false
+    },
+    "accounts": {
+      "__type__": "AwardAccountsQuery"
+    },
+    "award_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "award_identifier": "NAS1510000",
+    "award_type_code": "D",
+    "awarding_agency": {
+      "__type__": "Agency"
+    },
+    "awarding_subtier_agency": {
+      "__type__": "SubTierAgency"
+    },
+    "base_and_all_options": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "base_exercised_options": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "base_obligation_date": "1993-11-15",
+    "category": "contract",
+    "contract_award_type": "DEFINITIVE CONTRACT",
+    "covid19_obligations": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "covid19_outlays": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "date_signed": "1993-11-15",
+    "description": "International space station",
+    "download_type": "contract",
+    "end_date": {
+      "__type__": "date",
+      "empty": false
+    },
+    "executive_details": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "funding": {
+      "__type__": "FundingSearch"
+    },
+    "funding_agency": {
+      "__type__": "Agency"
+    },
+    "funding_subtier_agency": {
+      "__type__": "SubTierAgency"
+    },
+    "generated_unique_award_id": "CONT_AWD_NAS1510000_8000_-NONE-_-NONE-",
+    "id": 311267295,
+    "infrastructure_obligations": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "infrastructure_outlays": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "latest_transaction_contract_data": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "naics_code": "336414",
+    "naics_description": "Guided Missile and Space Vehicle Manufacturing",
+    "naics_hierarchy": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "parent_award": null,
+    "period_of_performance": {
+      "__type__": "PeriodOfPerformance"
+    },
+    "piid": "NAS1510000",
+    "place_of_performance": {
+      "__type__": "Location"
+    },
+    "psc_code": "AR62",
+    "psc_description": "R&D- SPACE: STATION (APPLIED RESEARCH/EXPLORATORY DEVELOPMENT)",
+    "psc_hierarchy": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "recipient": {
+      "__type__": "Recipient"
+    },
+    "recipient_uei": "HLWWEH2CCXW5",
+    "start_date": "1993-11-15",
+    "subaward_count": {
+      "__type__": "int",
+      "empty": false
+    },
+    "subawards": {
+      "__type__": "SubAwardsSearch"
+    },
+    "total_account_obligation": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_account_outlay": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_obligation": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_outlay": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_subaward_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "transactions": {
+      "__type__": "TransactionsSearch"
+    },
+    "type": "D",
+    "type_description": "DEFINITIVE CONTRACT",
+    "usa_spending_url": "https://www.usaspending.gov/award/CONT_AWD_NAS1510000_8000_-NONE-_-NONE-/"
+  }
+}

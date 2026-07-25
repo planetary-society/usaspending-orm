@@ -1,0 +1,15 @@
+{
+  "class": "PeriodOfPerformance",
+  "properties": {
+    "end_date": {
+      "__type__": "date",
+      "empty": false
+    },
+    "last_modified_date": {
+      "__type__": "date",
+      "empty": false
+    },
+    "potential_end_date": "2026-09-30",
+    "start_date": "1993-11-15"
+  }
+}
