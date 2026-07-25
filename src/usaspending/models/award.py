@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
-from ..utils.formatter import smart_sentence_case, to_date, to_decimal
+from ..utils.formatter import smart_sentence_case, to_date, to_decimal, to_int
 from .agency import Agency
 from .award_types import DOWNLOAD_TYPES
 from .download import AwardType, FileFormat
@@ -279,7 +279,7 @@ class Award(LazyRecord):
         Returns:
             int: The count of subawards.
         """
-        return int(self._lazy_get("subaward_count", default=0))
+        return to_int(self._lazy_get("subaward_count", default=0)) or 0
 
     @property
     def total_subaward_amount(self) -> Decimal | None:

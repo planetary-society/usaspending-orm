@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from ..utils.formatter import round_to_millions, to_decimal
+from ..utils.formatter import round_to_millions, to_decimal, to_int
 from .base_model import ClientAwareModel
 
 if TYPE_CHECKING:
@@ -116,8 +116,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The funding agency ID, or None.
         """
-        value = self.get_value("funding_agency_id")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("funding_agency_id"))
 
     @property
     def funding_toptier_agency_id(self) -> str | None:
@@ -179,8 +178,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The awarding agency ID, or None.
         """
-        value = self.get_value("awarding_agency_id")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("awarding_agency_id"))
 
     @property
     def awarding_toptier_agency_id(self) -> str | None:
@@ -269,8 +267,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The reporting fiscal year, or None.
         """
-        value = self.get_value("reporting_fiscal_year")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("reporting_fiscal_year"))
 
     @property
     def reporting_fiscal_quarter(self) -> int | None:
@@ -279,8 +276,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The reporting fiscal quarter, or None.
         """
-        value = self.get_value("reporting_fiscal_quarter")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("reporting_fiscal_quarter"))
 
     @property
     def reporting_fiscal_month(self) -> int | None:
@@ -289,8 +285,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The reporting fiscal month, or None.
         """
-        value = self.get_value("reporting_fiscal_month")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("reporting_fiscal_month"))
 
     @property
     def is_quarterly_submission(self) -> bool | None:

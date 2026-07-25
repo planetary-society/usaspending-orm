@@ -10,6 +10,7 @@ from ..utils.formatter import (
     smart_sentence_case,
     to_date,
     to_decimal,
+    to_int,
 )
 from .award import Award
 from .base_model import ClientAwareModel
@@ -314,8 +315,7 @@ class SubAward(ClientAwareModel):
         Returns:
             Optional[int]: The internal ID, or None.
         """
-        val = self.get_value("prime_award_internal_id")
-        return int(val) if val is not None else None
+        return to_int(self.get_value("prime_award_internal_id"))
 
     @property
     def naics(self) -> str | None:

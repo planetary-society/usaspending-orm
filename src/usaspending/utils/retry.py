@@ -11,6 +11,7 @@ import requests
 from ..config import config
 from ..exceptions import HTTPError, RateLimitError
 from ..logging_config import USASpendingLogger
+from .formatter import to_int
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -239,12 +240,6 @@ class RetryHandler:
         Returns:
             Number of seconds to wait, or None if header not present
         """
-        retry_after = response.headers.get("Retry-After")
-        if retry_after:
-            try:
-                return int(retry_after)
-            except ValueError:
-                # Header might be in HTTP-date format, but we'll just ignore it
-                # and use exponential backoff instead
-                pass
-        return None
+        # A Retry-After in HTTP-date format does not parse as an integer and
+        # yields None, leaving the caller on exponential backoff.
+        return to_int(response.headers.get("Retry-After"))

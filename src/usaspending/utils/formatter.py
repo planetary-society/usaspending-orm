@@ -139,6 +139,8 @@ def to_float(x: Any) -> float | None:
         Optional[float]: The converted float value, or None if conversion is not possible.
     """
 
+    if x is None:
+        return None
     try:
         return float(x)
     except (TypeError, ValueError):
@@ -158,6 +160,10 @@ def to_int(x: Any) -> int | None:
         Optional[int]: The integer representation of `x` if conversion is successful; otherwise, None.
     """
 
+    # A missing value is the common case for optional API fields, and reaching
+    # int(None) just to catch the TypeError costs roughly 7x this early return.
+    if x is None:
+        return None
     try:
         return int(x)
     except (TypeError, ValueError):

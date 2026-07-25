@@ -57,6 +57,24 @@ class TestFundingModel:
         assert funding.reporting_fiscal_quarter == 2
         assert funding.reporting_fiscal_month == 6
 
+    def test_integer_fields_return_none_for_unparseable_values(self, mock_usa_client):
+        """Every integer getter routes through to_int, so bad data yields None."""
+        data = {
+            "funding_agency_id": "not-a-number",
+            "awarding_agency_id": "",
+            "reporting_fiscal_year": "FY2020",
+            "reporting_fiscal_quarter": "Q2",
+            "reporting_fiscal_month": "June",
+        }
+
+        funding = Funding(data, client=mock_usa_client)
+
+        assert funding.funding_agency_id is None
+        assert funding.awarding_agency_id is None
+        assert funding.reporting_fiscal_year is None
+        assert funding.reporting_fiscal_quarter is None
+        assert funding.reporting_fiscal_month is None
+
     def test_funding_null_handling(self, mock_usa_client):
         """Test that null/None values are handled properly."""
         data = {
