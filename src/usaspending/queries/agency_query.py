@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from ..client import USASpendingClient
-from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
+from ..utils.validations import validate_toptier_code
 from .single_resource_base import SingleResourceBase
 
 if TYPE_CHECKING:
+    from ..client import USASpendingClient
     from ..models.agency import Agency
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -50,15 +50,7 @@ class AgencyQuery(SingleResourceBase):
             ValidationError: If toptier_code is invalid
             APIError: If agency not found
         """
-        if not toptier_code:
-            raise ValidationError("toptier_code is required")
-
-        # Validate toptier_code format (3-4 digit numeric string)
-        toptier_code = str(toptier_code).strip()
-        if not toptier_code.isdigit() or len(toptier_code) not in [3, 4]:
-            raise ValidationError(
-                f"Invalid toptier_code: {toptier_code}. Must be a 3-4 digit numeric string"
-            )
+        toptier_code = validate_toptier_code(toptier_code)
 
         logger.debug(
             "Fetching agency with toptier_code: %s, fiscal_year: %s",

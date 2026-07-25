@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from ..client import USASpendingClient
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
+
+if TYPE_CHECKING:
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 

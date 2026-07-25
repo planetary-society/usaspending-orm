@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
 
-from ..client import USASpendingClient
 from ..logging_config import USASpendingLogger
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
+    from ..client import USASpendingClient
     from ..models.recipient import Recipient
 
 logger = USASpendingLogger.get_logger(__name__)

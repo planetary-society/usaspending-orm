@@ -7,6 +7,8 @@ from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
+    Literal,
     TypeVar,
 )
 
@@ -72,6 +74,10 @@ class QueryBuilder(BaseQuery[T], ABC):
     - Use page_size() to control how many items are fetched per API request
     - Use max_pages() to limit the number of API requests made
     """
+
+    #: HTTP method this endpoint expects. GET endpoints send their payload as
+    #: query parameters; POST sends a JSON body.
+    _http_method: ClassVar[Literal["GET", "POST"]] = "POST"
 
     def __init__(self, client: USASpendingClient) -> None:
         super().__init__()
@@ -322,7 +328,12 @@ class QueryBuilder(BaseQuery[T], ABC):
         return self._aggregate_filters()
 
     def _execute_query(self, page: int) -> dict[str, Any]:
-        """Execute the query and return raw response."""
+        """Execute the query and return raw response.
+
+        Most of these endpoints take a POST body. A GET endpoint sets
+        ``_http_method`` and its payload is sent as query parameters instead,
+        which is the only thing that differed between them.
+        """
         query_type = self.__class__.__name__
         endpoint = self._endpoint
 
@@ -331,7 +342,9 @@ class QueryBuilder(BaseQuery[T], ABC):
         payload = self._build_payload(page)
         logger.debug(f"Query payload: {payload}")
 
-        response = self._client._make_request("POST", endpoint, json=payload)
+        # A GET carries its payload as query parameters; everything else as a body.
+        channel = {"params": payload} if self._http_method == "GET" else {"json": payload}
+        response = self._client._make_request(self._http_method, endpoint, **channel)
 
         if "page_metadata" in response:
             metadata = response["page_metadata"]

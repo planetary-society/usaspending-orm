@@ -4,23 +4,30 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from ..client import USASpendingClient
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
-from .single_resource_base import SingleResourceBase
+from ..utils.validations import validate_toptier_code
 
 if TYPE_CHECKING:
-    pass
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class AgencyAwardSummary(SingleResourceBase):
+class AgencyAwardSummary:
     """Retrieve agency award summary data from the USAspending API.
 
     This query class handles fetching aggregated award information including
     transaction counts and obligations filtered by fiscal year, agency type,
     and award type codes.
+
+    Note:
+        Deliberately not a ``SingleResourceBase``. That base exists for
+        "fetch one model by id" endpoints, and this one returns an aggregate
+        dictionary rather than a resource, so it satisfied the base's
+        ``find_by_id`` contract only by raising ``NotImplementedError``. It uses
+        nothing else from the base, so composing a client directly is both
+        simpler and honest about what this is.
     """
 
     def __init__(self, client: USASpendingClient):
@@ -29,32 +36,8 @@ class AgencyAwardSummary(SingleResourceBase):
         Args:
             client: USASpendingClient client instance
         """
-        super().__init__(client)
+        self._client = client
         logger.debug("AgencyAwardSummary initialized with client: %s", client)
-
-    @property
-    def _endpoint(self) -> str:
-        """Base endpoint for agency award summary retrieval."""
-        return "/agency/"
-
-    def _construct_endpoint(self, resource_id: str) -> str:
-        """Construct the full endpoint URL for agency award summary.
-
-        Args:
-            resource_id: The toptier_code for the agency
-
-        Returns:
-            Full endpoint path including /awards/
-        """
-        return f"{self._endpoint}{resource_id}/awards/"
-
-    def find_by_id(self, toptier_code: str) -> dict[str, Any]:
-        """Not used for award summary - use get_awards_summary instead.
-
-        Raises:
-            NotImplementedError: This method should not be used directly
-        """
-        raise NotImplementedError("Use get_awards_summary() method instead for award summary data")
 
     def get_awards_summary(
         self,
@@ -84,15 +67,7 @@ class AgencyAwardSummary(SingleResourceBase):
             ValidationError: If toptier_code is invalid or agency_type is invalid
             APIError: If API request fails
         """
-        # Validate toptier_code
-        if not toptier_code:
-            raise ValidationError("toptier_code is required")
-
-        toptier_code = str(toptier_code).strip()
-        if not toptier_code.isdigit() or len(toptier_code) not in [3, 4]:
-            raise ValidationError(
-                f"Invalid toptier_code: {toptier_code}. Must be a 3-4 digit numeric string"
-            )
+        toptier_code = validate_toptier_code(toptier_code)
 
         # Validate agency_type
         if agency_type not in ["awarding", "funding"]:
@@ -125,10 +100,6 @@ class AgencyAwardSummary(SingleResourceBase):
                 # API expects award_type_codes as array parameter
                 params["award_type_codes"] = award_type_codes
 
-        # Construct endpoint
-        endpoint = self._construct_endpoint(toptier_code)
+        endpoint = f"/agency/{toptier_code}/awards/"
 
-        # Make API request with params
-        response = self._client._make_request("GET", endpoint, params=params)
-
-        return response
+        return self._client._make_request("GET", endpoint, params=params)

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..client import USASpendingClient
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from .single_resource_base import SingleResourceBase
 
 if TYPE_CHECKING:
+    from ..client import USASpendingClient
     from ..models.award import Award
 
 logger = USASpendingLogger.get_logger(__name__)

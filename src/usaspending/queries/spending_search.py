@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-from ..client import USASpendingClient
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.district_spending import DistrictSpending
@@ -15,11 +14,8 @@ from ..models.state_spending import StateSpending
 from ..utils.validations import validate_non_empty_string
 from .query_builder import SearchQueryBuilder
 
-# Note: We don't use SimpleListFilter for recipient_id as the API expects a string, not an array
-
-# Import award type codes from models
-# These are defined by USASpending.gov and represent different categories of awards
-
+if TYPE_CHECKING:
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -81,7 +77,8 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
 
         final_filters = self._aggregate_filters()
 
-        # Add recipient_id as a string (not an array) per API requirements
+        # Sent as a bare string rather than through SimpleListFilter, because
+        # this endpoint expects a scalar here and not an array.
         if self._recipient_id:
             final_filters["recipient_id"] = self._recipient_id
 

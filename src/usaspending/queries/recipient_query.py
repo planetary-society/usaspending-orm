@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..client import USASpendingClient
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from .filters import parse_fiscal_year
 from .single_resource_base import SingleResourceBase
 
 if TYPE_CHECKING:
+    from ..client import USASpendingClient
     from ..models.recipient import Recipient
 
 logger = USASpendingLogger.get_logger(__name__)

@@ -1,7 +1,10 @@
-"""Generic validation utilities for USASpending API client.
+"""Validation utilities for the USASpending API client.
 
-This module provides reusable validation functions that are used across
-query builders and filters to reduce code duplication.
+Reusable checks shared across query builders, models and filters. Most are
+generic and parameterized by field name; a few encode a specific USASpending
+convention, such as the shape of an agency toptier code. Domain validators live
+here rather than in ``queries/filters.py`` so that ``models/`` and ``resources/``
+can import them without pulling in the query layer.
 """
 
 from __future__ import annotations
@@ -119,6 +122,38 @@ def parse_enum_value(
 
     valid_options = ", ".join(f"'{m.value}'" for m in enum_class)
     raise ValidationError(f"Invalid {field_name}: '{value}'. Valid options: {valid_options}")
+
+
+def validate_toptier_code(toptier_code: str | int | None) -> str:
+    """Validate and normalize an agency toptier code.
+
+    Args:
+        toptier_code: The code to validate. Coerced to a stripped string.
+
+    Returns:
+        str: The normalized code.
+
+    Raises:
+        ValidationError: If the code is missing, or is not a 3-4 digit numeric
+            string.
+
+    Example:
+        >>> validate_toptier_code("080")
+        '080'
+        >>> validate_toptier_code(" 012 ")
+        '012'
+    """
+    if not toptier_code:
+        raise ValidationError("toptier_code is required")
+
+    normalized = str(toptier_code).strip()
+
+    if not normalized.isdigit() or len(normalized) not in (3, 4):
+        raise ValidationError(
+            f"Invalid toptier_code: {normalized}. Must be a 3-4 digit numeric string"
+        )
+
+    return normalized
 
 
 def validate_sort_field(

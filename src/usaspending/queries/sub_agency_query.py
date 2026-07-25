@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ..exceptions import ValidationError
-from ..logging_config import USASpendingLogger, log_query_execution
+from ..logging_config import USASpendingLogger
 from ..models.subtier_agency import SubTierAgency
+from ..utils.validations import validate_toptier_code
 from .filters import parse_fiscal_year
 from .query_builder import QueryBuilder
 
@@ -24,6 +25,8 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
     and award type codes.
     """
 
+    _http_method = "GET"
+
     def __init__(self, client: USASpendingClient, toptier_code: str):
         """Initialize SubAgencyQuery.
 
@@ -32,8 +35,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
             toptier_code: The toptier code of the agency (3-4 digit string)
         """
         super().__init__(client)
-        self._toptier_code = str(toptier_code).strip()
-        self._validate_toptier_code()
+        self._toptier_code = validate_toptier_code(toptier_code)
 
         # Default filters
         self._fiscal_year: int | None = None
@@ -43,16 +45,6 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         # Default sort (API defaults)
         self._order_by = "total_obligations"
         self._order_direction = "desc"
-
-    def _validate_toptier_code(self) -> None:
-        """Validate the toptier code format."""
-        if not self._toptier_code:
-            raise ValidationError("toptier_code is required")
-
-        if not self._toptier_code.isdigit() or len(self._toptier_code) not in [3, 4]:
-            raise ValidationError(
-                f"Invalid toptier_code: {self._toptier_code}. Must be a 3-4 digit numeric string"
-            )
 
     @property
     def _endpoint(self) -> str:
@@ -88,30 +80,6 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
             params["award_type_codes"] = self._award_type_codes
 
         return params
-
-    def _execute_query(self, page: int) -> dict[str, Any]:
-        """Execute the query using GET instead of POST.
-
-        The QueryBuilder base class assumes POST by default, but this endpoint
-        uses GET with query parameters.
-        """
-        params = self._build_payload(page)
-
-        log_query_execution(
-            logger, self.__class__.__name__, self._filter_objects, self._endpoint, page
-        )
-        logger.debug(f"Query params: {params}")
-
-        response = self._client._make_request("GET", self._endpoint, params=params)
-
-        if "page_metadata" in response:
-            metadata = response["page_metadata"]
-            logger.debug(
-                f"Page metadata: page={metadata.get('page')}, "
-                f"total={metadata.get('total')}, hasNext={metadata.get('hasNext')}"
-            )
-
-        return response
 
     def _transform_result(self, result: dict[str, Any]) -> SubTierAgency | None:
         """Transform API result to SubTierAgency model.
