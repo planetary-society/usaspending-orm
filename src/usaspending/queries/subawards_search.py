@@ -108,32 +108,14 @@ class SubAwardsSearch(AwardsSearch):
         """
         logger.debug(f"{self.__class__.__name__}.count() called")
 
-        # If we have an award_id filter, use the efficient count endpoint
+        # Scoped to one award there is a dedicated count endpoint; a general
+        # subaward search has none, so iteration is the only option.
         if self._award_id:
-            endpoint = f"/awards/count/subaward/{self._award_id}/"
-
-            from ..logging_config import log_query_execution
-
-            log_query_execution(logger, "SubAwardsSearch.count", [], endpoint)
-
-            # Send the request to the count endpoint
-            response = self._client._make_request("GET", endpoint)
-
-            # Extract count from response
-            total = response.get("subawards", 0)
-
-            logger.info(
-                f"{self.__class__.__name__}.count() = {total} subawards for award {self._award_id}"
+            return self._count_via_endpoint(
+                f"/awards/count/subaward/{self._award_id}/", "subawards"
             )
-            return total
 
-        # Fall back to parent implementation for general subaward counting
-        # This is inefficient, but it's the only way to get the count
-        # without a dedicated endpoint for subaward searches.
-        count = 0
-        for _ in self:
-            count += 1
-        return count
+        return self._count_by_iteration()
 
     def count_awards_by_type(self) -> dict[str, int]:
         """

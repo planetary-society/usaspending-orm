@@ -95,31 +95,15 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
         """Counts the number of transactions per a given award id."""
         logger.debug(f"{self.__class__.__name__}.count() called")
 
-        # If we have client-side filters, we need to fetch all results and count
+        # The count endpoint cannot know about client-side filters, so when any
+        # are set the only correct count comes from iterating filtered results.
         if self._client_filters:
             logger.debug("Client-side filters present, counting by iterating all results")
-            count = 0
-            for _ in self:
-                count += 1
-            return count
+            return self._count_by_iteration()
 
-        # No client-side filters, use the efficient API count endpoint
-        endpoint = f"/awards/count/transaction/{self._award_id}/"
-
-        from ..logging_config import log_query_execution
-
-        log_query_execution(logger, "TransactionsSearch.count", [], endpoint)
-
-        # Send the request to the count endpoint
-        response = self._client._make_request("GET", endpoint)
-
-        # Extract count from the appropriate category
-        total = response.get("transactions", 0)
-
-        logger.info(
-            f"{self.__class__.__name__}.count() = {total} transactions for award {self._award_id}"
+        return self._count_via_endpoint(
+            f"/awards/count/transaction/{self._award_id}/", "transactions"
         )
-        return total
 
     def __getitem__(self, key: int | slice) -> Transaction | list[Transaction]:
         """

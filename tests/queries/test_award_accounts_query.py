@@ -240,7 +240,7 @@ class TestAwardAccountsQueryCount:
         assert count == 2  # From page_metadata.count in fixture
 
     def test_count_caches_result(self, mock_usa_client, load_fixture):
-        """Test count caches the result."""
+        """Test count caches the result, so repeat calls issue no new request."""
         fixture = load_fixture("awards/accounts.json")
         mock_usa_client.set_response("/awards/accounts/", fixture)
 
@@ -249,7 +249,26 @@ class TestAwardAccountsQueryCount:
         count2 = query.count()
 
         assert count1 == count2
-        assert query._cached_count == 2
+        assert mock_usa_client.get_request_count() == 1
+        # The API figure is cached as the raw count. _cached_count is a separate
+        # cache for the count after limit()/max_pages() capping.
+        assert query._cached_raw_count == 2
+
+    def test_indexing_does_not_corrupt_a_later_count(self, mock_usa_client, load_fixture):
+        """A capped count must not leak back out of count().
+
+        Indexing caches the count after limit() capping, while count() reports
+        what the API said. These used to share one field, so indexing first made
+        the next count() return the capped figure instead.
+        """
+        fixture = load_fixture("awards/accounts.json")
+        mock_usa_client.set_response("/awards/accounts/", fixture)
+
+        query = AwardAccountsQuery(mock_usa_client).award_id("CONT_AWD_123").limit(1)
+
+        query[0]  # populates the effective-count cache with the capped value
+
+        assert query.count() == 2  # what the API reports, not the capped 1
 
     def test_count_requires_award_id(self, mock_usa_client):
         """Test count raises error without award_id."""

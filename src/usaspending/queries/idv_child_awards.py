@@ -114,15 +114,7 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         """
         logger.debug(f"{self.__class__.__name__}.count() called for {self._award_id}")
 
-        # Iterate through all results to count
-        count = 0
-        for _ in self:
-            count += 1
-
-        logger.info(
-            f"{self.__class__.__name__}.count() = {count} child awards for IDV {self._award_id}"
-        )
-        return count
+        return self._count_by_iteration()
 
     # ==========================================================================
     # Filter Methods

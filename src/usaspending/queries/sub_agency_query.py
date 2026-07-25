@@ -131,9 +131,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
 
         This endpoint provides total count in page_metadata.
         """
-        # Fetch first page to get metadata
-        response = self._execute_query(1)
-        return response.get("page_metadata", {}).get("total", 0)
+        return self._count_via_page_metadata("total")
 
     # ==========================================================================
     # Filter Methods

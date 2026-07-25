@@ -77,7 +77,12 @@ class QueryBuilder(BaseQuery[T], ABC):
         super().__init__()
         self._client = client
         self._filter_objects: list[BaseFilter] = []
+        # Two distinct caches. _cached_count holds the *effective* count, after
+        # limit() and max_pages() capping, and is used by indexing and __len__.
+        # _cached_raw_count holds what the API reported, which is what count()
+        # returns. Conflating them made a capped value leak back out of count().
         self._cached_count: int | None = None
+        self._cached_raw_count: int | None = None
 
     def __iter__(self) -> Iterator[T]:
         """Iterate over all results, handling pagination automatically.
@@ -343,6 +348,76 @@ class QueryBuilder(BaseQuery[T], ABC):
             )
 
         return response
+
+    # ==========================================================================
+    # Counting strategies
+    #
+    # Endpoints differ in what they offer, so count() cannot be shared outright.
+    # These cover the three mechanisms available; a concrete builder picks one
+    # and supplies the endpoint or metadata key, rather than reimplementing the
+    # request, the caching and the logging each time.
+    # ==========================================================================
+
+    def _cache_raw_count(self, count: int) -> int:
+        """Record and log a freshly retrieved count.
+
+        Args:
+            count: The count reported by the API, or produced by iteration.
+
+        Returns:
+            int: The same count, for use as a return value.
+        """
+        self._cached_raw_count = count
+        logger.info(f"{self.__class__.__name__}.count() = {count}")
+        return count
+
+    def _count_via_endpoint(self, endpoint: str, key: str) -> int:
+        """Count using a dedicated count endpoint.
+
+        Args:
+            endpoint: Count endpoint path.
+            key: Key in the response holding the count.
+
+        Returns:
+            int: The reported count.
+        """
+        if self._cached_raw_count is not None:
+            return self._cached_raw_count
+
+        log_query_execution(
+            logger, f"{self.__class__.__name__}.count", self._filter_objects, endpoint
+        )
+        response = self._client._make_request("GET", endpoint)
+        return self._cache_raw_count(response.get(key, 0))
+
+    def _count_via_page_metadata(self, key: str) -> int:
+        """Count from the page metadata of the first page of results.
+
+        Args:
+            key: Key within ``page_metadata`` holding the total.
+
+        Returns:
+            int: The reported count.
+        """
+        if self._cached_raw_count is not None:
+            return self._cached_raw_count
+
+        response = self._execute_query(1)
+        return self._cache_raw_count(response.get("page_metadata", {}).get(key, 0))
+
+    def _count_by_iteration(self) -> int:
+        """Count by walking every result.
+
+        This is not a fallback to be optimized away: several endpoints report no
+        count at all, and for those, iterating is the only correct mechanism.
+
+        Returns:
+            int: Number of items yielded by iteration.
+        """
+        if self._cached_raw_count is not None:
+            return self._cached_raw_count
+
+        return self._cache_raw_count(sum(1 for _ in self))
 
     def _new_instance(self) -> QueryBuilder[T]:
         """Construct an empty instance bound to the same client."""

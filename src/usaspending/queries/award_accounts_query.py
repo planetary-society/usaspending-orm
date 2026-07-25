@@ -110,24 +110,7 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
         if not self._award_id:
             raise ValidationError("An award_id is required. Use the .award_id() method.")
 
-        # Return cached count if available
-        if self._cached_count is not None:
-            return self._cached_count
-
-        # Fetch first page to get count from page_metadata
-        payload = self._build_payload(page=1)
-        response = self._client._make_request("POST", self._endpoint, json=payload)
-
-        page_metadata = response.get("page_metadata", {})
-        count = page_metadata.get("count", 0)
-
-        # Cache the count
-        self._cached_count = count
-
-        logger.info(
-            f"{self.__class__.__name__}.count() = {count} accounts for award {self._award_id}"
-        )
-        return count
+        return self._count_via_page_metadata("count")
 
     # ==========================================================================
     # Filter Methods
@@ -146,7 +129,6 @@ class AwardAccountsQuery(QueryBuilder["AwardAccount"]):
 
         clone = self._clone()
         clone._award_id = validated_id
-        clone._cached_count = None  # Clear cache for new award
         return clone
 
     def order_by(self, field: str, direction: str = "desc") -> AwardAccountsQuery:
