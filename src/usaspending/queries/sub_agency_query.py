@@ -59,17 +59,16 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         """Endpoint for sub-agency retrieval."""
         return f"/agency/{self._toptier_code}/sub_agency/"
 
+    def _new_instance(self) -> SubAgencyQuery:
+        """Reconstruct with the required toptier code."""
+        return SubAgencyQuery(self._client, self._toptier_code)
+
     def _clone(self) -> SubAgencyQuery:
         """Create an immutable copy of the query builder."""
-        clone = SubAgencyQuery(self._client, self._toptier_code)
+        clone = super()._clone()
         clone._fiscal_year = self._fiscal_year
         clone._agency_type = self._agency_type
         clone._award_type_codes = self._award_type_codes.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
         return clone
 
     def _build_payload(self, page: int) -> dict[str, Any]:

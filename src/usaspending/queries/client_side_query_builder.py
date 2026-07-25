@@ -245,21 +245,23 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         """Return the total number of matching results."""
         return len(self._apply_filters(self._materialize()))
 
-    def _clone(self: Q) -> Q:
-        """Return a copy for method chaining."""
-        clone = self.__class__(
+    def _new_instance(self: Q) -> Q:
+        """Construct an empty instance over the same source items."""
+        return self.__class__(
             self._items,
             transform=self._transform,
             keyword_fields=self._keyword_fields,
         )
+
+    def _copy_base_state_into(self, clone: ClientSideQueryBuilder[T]) -> None:
+        """Copy the in-memory filter state, plus the base pagination state.
+
+        Args:
+            clone: The instance to copy state into.
+        """
+        super()._copy_base_state_into(clone)
         clone._filter_objects = self._filter_objects.copy()
         clone._predicate_filters = self._predicate_filters.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
-        return clone
 
     def _materialize(self) -> list[T]:
         """Convert raw items into model instances."""

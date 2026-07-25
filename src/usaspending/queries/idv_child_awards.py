@@ -69,10 +69,13 @@ class IDVChildAwardsSearch(QueryBuilder["Award"]):
         """The API endpoint for this query."""
         return "/idvs/awards/"
 
+    def _new_instance(self) -> IDVChildAwardsSearch:
+        """Reconstruct with the required award ID."""
+        return IDVChildAwardsSearch(self._client, self._award_id)
+
     def _clone(self) -> IDVChildAwardsSearch:
         """Creates an immutable copy of the query builder."""
-        clone = IDVChildAwardsSearch(self._client, self._award_id)
-        self._copy_base_state_into(clone)
+        clone = super()._clone()
         clone._sort_field = self._sort_field
         clone._sort_order = self._sort_order
         clone._idv_award_type = self._idv_award_type

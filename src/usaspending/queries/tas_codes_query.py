@@ -193,17 +193,14 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
 
         return self._add_filter(predicate)
 
+    def _new_instance(self) -> TASCodesQuery:
+        """Reconstruct with the required toptier code and federal account."""
+        return self.__class__(self._client, self._toptier_code, self._federal_account)
+
     def _clone(self) -> TASCodesQuery:
-        """Create a copy for method chaining."""
-        clone = self.__class__(self._client, self._toptier_code, self._federal_account)
+        """Create a copy for method chaining, sharing any fetched results."""
+        clone = super()._clone()
         clone._results = self._results
-        clone._filter_objects = self._filter_objects.copy()
-        clone._predicate_filters = self._predicate_filters.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
         return clone
 
     def __repr__(self) -> str:

@@ -185,17 +185,14 @@ class FederalAccountsQuery(ClientSideQueryBuilder["FederalAccount"]):
 
         return self._add_filter(predicate)
 
+    def _new_instance(self) -> FederalAccountsQuery:
+        """Reconstruct with the required toptier code."""
+        return self.__class__(self._client, self._toptier_code)
+
     def _clone(self) -> FederalAccountsQuery:
-        """Create a copy for method chaining."""
-        clone = self.__class__(self._client, self._toptier_code)
+        """Create a copy for method chaining, sharing any fetched results."""
+        clone = super()._clone()
         clone._results = self._results
-        clone._filter_objects = self._filter_objects.copy()
-        clone._predicate_filters = self._predicate_filters.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
         return clone
 
     def __repr__(self) -> str:

@@ -344,26 +344,21 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         return response
 
+    def _new_instance(self) -> QueryBuilder[T]:
+        """Construct an empty instance bound to the same client."""
+        return self.__class__(self._client)
+
     def _copy_base_state_into(self, clone: QueryBuilder[T]) -> None:
-        """Copy QueryBuilder-owned state into an already-constructed clone.
+        """Copy QueryBuilder-owned state, plus the base pagination state.
 
-        Subclasses whose constructors require extra arguments (e.g., a
-        required ``award_id``) cannot call ``super()._clone()``. They build
-        the clone themselves and call this to inherit base-class state, so
-        base-class changes propagate without per-subclass edits.
+        ``_cached_count`` is deliberately not copied: a fresh instance starts
+        with no cached count, and the clone's filters may differ.
+
+        Args:
+            clone: The instance to copy state into.
         """
+        super()._copy_base_state_into(clone)
         clone._filter_objects = self._filter_objects.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
-
-    def _clone(self) -> QueryBuilder[T]:
-        """Create a copy for method chaining."""
-        clone = self.__class__(self._client)
-        self._copy_base_state_into(clone)
-        return clone
 
 
 # ==============================================================================

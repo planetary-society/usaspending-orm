@@ -59,7 +59,6 @@ class TransactionsSearch(QueryBuilder["Transaction"]):
     def _clone(self) -> TransactionsSearch:
         """Creates an immutable copy of the query builder."""
         clone = super()._clone()
-        clone._filter_objects = self._filter_objects.copy()
         clone._award_id = self._award_id
         clone._client_filters = self._client_filters.copy()
         return clone

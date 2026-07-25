@@ -33,9 +33,45 @@ class BaseQuery(ABC, Generic[T]):
     def count(self) -> int:
         """Return the total number of matching results."""
 
-    @abstractmethod
+    def _new_instance(self: Q) -> Q:
+        """Construct a fresh instance of this class, carrying no query state.
+
+        This is the seam for subclasses whose ``__init__`` takes more than the
+        defaults: override this rather than reimplementing :meth:`_clone`, so
+        base-class state is still copied by one shared implementation.
+
+        Returns:
+            BaseQuery: A new, empty instance of the same class.
+        """
+        raise NotImplementedError
+
+    def _copy_base_state_into(self, clone: BaseQuery[T]) -> None:
+        """Copy pagination and ordering state into an already-built clone.
+
+        Subclasses that add their own state extend this rather than copying
+        these fields again, so a new base-class field reaches every subclass.
+
+        Args:
+            clone: The instance to copy state into.
+        """
+        clone._page_size = self._page_size
+        clone._total_limit = self._total_limit
+        clone._max_pages = self._max_pages
+        clone._order_by = self._order_by
+        clone._order_direction = self._order_direction
+
     def _clone(self: Q) -> Q:
-        """Return an immutable clone of the query."""
+        """Return an immutable clone of the query.
+
+        Args:
+            None.
+
+        Returns:
+            BaseQuery: A copy carrying the same query state.
+        """
+        clone = self._new_instance()
+        self._copy_base_state_into(clone)
+        return clone
 
     def limit(self: Q, num: int) -> Q:
         """Set the total number of items to return across all pages.
