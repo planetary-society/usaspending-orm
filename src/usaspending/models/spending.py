@@ -1,9 +1,9 @@
-"""Base model for USASpending spending by category data."""
+"""Shared fields and base model for USASpending spending by category data."""
 
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from ..utils.formatter import to_decimal
 from .base_model import BaseModel
@@ -12,46 +12,16 @@ if TYPE_CHECKING:
     from ..client import USASpendingClient
 
 
-class Spending(BaseModel):
-    """Base model for spending by category data.
+class SpendingMixin:
+    """Fields shared by every spending-by-category result.
 
-    Represents common fields across spending by recipient and district categories.
-    This model provides access to spending data with amounts, names, codes, and outlays.
+    ``RecipientSpending`` must subclass :class:`Recipient` rather than
+    :class:`Spending`, so these four accessors would otherwise be duplicated
+    verbatim across the two hierarchies. Compose this ahead of the model base.
 
-    Note:
-        The client is held as a plain attribute rather than through
-        ``ClientAwareModel``. No property on this model or its subclasses issues
-        a request, so the weakref indirection would add a
-        ``DetachedInstanceError`` path with nothing to protect.
+    Deliberately excludes ``name``, ``id`` and ``category``: ``Recipient.name``
+    applies title casing, and a mixin ahead of it in the MRO would shadow that.
     """
-
-    def __init__(self, data: dict, client: USASpendingClient | None = None):
-        """Initialize Spending model.
-
-        Args:
-            data: Raw spending data from API.
-            client: USASpendingClient client instance.
-        """
-        super().__init__(data)
-        self._client = client
-
-    @property
-    def id(self) -> int | None:
-        """Database ID for the spending record.
-
-        Returns:
-            Optional[int]: The database ID, or None.
-        """
-        return self.get_value("id")
-
-    @property
-    def name(self) -> str | None:
-        """Display name for the spending category (recipient name or district name).
-
-        Returns:
-            Optional[str]: The name, or None.
-        """
-        return self.get_value("name")
 
     @property
     def code(self) -> str | None:
@@ -89,6 +59,51 @@ class Spending(BaseModel):
         """
         return self.get_value("spending_level")
 
+
+class Spending(SpendingMixin, BaseModel):
+    """Base model for spending by category data.
+
+    Represents common fields across spending by recipient and district categories.
+    This model provides access to spending data with amounts, names, codes, and outlays.
+
+    Note:
+        The client is held as a plain attribute rather than through
+        ``ClientAwareModel``. No property on this model or its subclasses issues
+        a request, so the weakref indirection would add a
+        ``DetachedInstanceError`` path with nothing to protect.
+    """
+
+    #: Name shown by ``__repr__`` when the record carries none.
+    _UNKNOWN_NAME: ClassVar[str] = "Unknown"
+
+    def __init__(self, data: dict, client: USASpendingClient | None = None):
+        """Initialize Spending model.
+
+        Args:
+            data: Raw spending data from API.
+            client: USASpendingClient client instance.
+        """
+        super().__init__(data)
+        self._client = client
+
+    @property
+    def id(self) -> int | None:
+        """Database ID for the spending record.
+
+        Returns:
+            Optional[int]: The database ID, or None.
+        """
+        return self.get_value("id")
+
+    @property
+    def name(self) -> str | None:
+        """Display name for the spending category (recipient name or district name).
+
+        Returns:
+            Optional[str]: The name, or None.
+        """
+        return self.get_value("name")
+
     @property
     def category(self) -> str | None:
         """The category type (recipient or district).
@@ -99,11 +114,14 @@ class Spending(BaseModel):
         return self.get_value("category")
 
     def __repr__(self) -> str:
-        """String representation of Spending.
+        """String representation of the spending record.
+
+        Subclasses override :attr:`_UNKNOWN_NAME` rather than this method, since
+        the class name is read from the instance.
 
         Returns:
             str: String containing name and amount.
         """
-        name = self.name or "Unknown"
-        amount = self.amount or 0
-        return f"<Spending {name}: ${amount:,.2f}>"
+        return (
+            f"<{type(self).__name__} {self.name or self._UNKNOWN_NAME}: ${self.amount or 0:,.2f}>"
+        )

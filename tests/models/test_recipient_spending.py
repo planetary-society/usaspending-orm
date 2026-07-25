@@ -50,6 +50,7 @@ class TestRecipientSpendingProperties:
         assert recipient_spending.duns == first_result["code"]  # Should return code field
         assert recipient_spending.name == contracts_titlecase(first_result["name"])
         assert recipient_spending.amount == first_result["amount"]
+        assert_decimal_equal(recipient_spending.total_outlays, first_result["total_outlays"])
 
     def test_properties_with_none_values(self, mock_usa_client):
         """Test properties when values are None."""
