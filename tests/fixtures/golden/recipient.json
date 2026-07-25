@@ -38,6 +38,7 @@
     "parent": null,
     "parents": [],
     "recipient_id": "74bac010-0a24-8f82-8021-0fa16ab4bc6d-R",
+    "recipient_level": "R",
     "total_face_value_loan_amount": "Decimal(0.00)",
     "total_face_value_loan_transactions": 4,
     "total_transaction_amount": "Decimal(210492828.10)",

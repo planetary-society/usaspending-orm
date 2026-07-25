@@ -9,6 +9,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 Internal simplification pass. Except where listed below, every change is
 behavior preserving and the public API is unchanged.
 
+### Added
+
+- `Recipient.recipient_level`: which level of the recipient hierarchy a record
+  describes, as `"C"` (child), `"P"` (parent) or `"R"` (no parent). The API
+  reports it on every recipient payload and the library previously dropped it.
+  Since the same entity can exist at several levels, each a separate record with
+  its own totals, and since a multi-level ID is reduced to one level on
+  construction, this reports which record is in hand without parsing the ID.
+
+  To fetch a specific level, pass an ID that already carries the suffix:
+  `client.recipients.find_by_recipient_id("<hash>-R")` is used as-is. Only the
+  multi-level `"<hash>-['C', 'R']"` form is reduced, so an explicit suffix is
+  the supported way to opt into a level other than the default.
+
 ### Changed
 
 Optional money and string getters now return `None` when the API reports no

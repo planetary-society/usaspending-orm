@@ -74,12 +74,30 @@ class Recipient(LazyRecord):
 
     @property
     def recipient_id(self) -> str | None:
-        """Recipient identifier (hash).
+        """Recipient identifier (hash plus level suffix).
+
+        A raw ID reporting several levels, as ``"<hash>-['C', 'R']"``, is reduced
+        to one on construction. See :attr:`recipient_level` for which one, and
+        :func:`~usaspending.utils.validations.normalize_recipient_id` for why.
 
         Returns:
             Optional[str]: The recipient ID/hash, or None.
         """
         return self.get_value(["recipient_id", "recipient_hash"], default=None)
+
+    @property
+    def recipient_level(self) -> str | None:
+        """Which level of the recipient hierarchy this record describes.
+
+        ``"C"`` for a child, ``"P"`` for a parent, ``"R"`` for a recipient with
+        no parent. The same entity can exist at several levels, each a separate
+        record with its own totals, so this says which one is in hand. Reported
+        by the API rather than parsed from :attr:`recipient_id`.
+
+        Returns:
+            Optional[str]: The recipient level, or None when not reported.
+        """
+        return self._lazy_get("recipient_level")
 
     @property
     def name(self) -> str | None:

@@ -41,6 +41,7 @@
       "empty": false
     },
     "recipient_id": "6e76fa33-2d96-c636-941c-bca1997db076-C",
+    "recipient_level": "C",
     "spending_level": "transactions",
     "total_face_value_loan_amount": "Decimal(0.00)",
     "total_face_value_loan_transactions": 0,

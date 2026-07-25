@@ -31,6 +31,15 @@ class RecipientsResource(BaseResource):
         search-delegation convention (which returns Optional), see
         ``find_by_duns`` and ``find_by_uei``.
 
+        Choosing a level: the same entity can exist at several levels, each a
+        separate record with its own totals. An ID given with an explicit
+        suffix is used as-is, so pass ``"<hash>-R"`` to fetch that level
+        specifically. Only a multi-level ID, of the ``"<hash>-['C', 'R']"``
+        form that ``raw()`` and the website report, is reduced to one level,
+        and it avoids ``-R`` because that record frequently reports zero
+        spending. :attr:`Recipient.recipient_level` reports which level came
+        back.
+
         Args:
             recipient_id: Unique recipient identifier (hash + level suffix,
                 e.g., "abc123def-R" for regular or "abc123def-P" for parent)

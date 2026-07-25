@@ -133,6 +133,49 @@ class TestRecipientIdCleaning:
         assert recipient.recipient_id == RecipientQuery(mock_usa_client)._clean_resource_id(raw)
 
 
+class TestRecipientLevel:
+    """recipient_level says which level of the hierarchy a record describes.
+
+    Normalization picks one level from a multi-level ID, so without this the
+    caller would have to parse the ID string to learn which record they hold.
+    """
+
+    def test_level_from_a_detail_payload(self, mock_usa_client):
+        """The API reports the level; it is not parsed from the ID."""
+        recipient = Recipient({"recipient_id": "abc123-C", "recipient_level": "C"}, mock_usa_client)
+
+        assert recipient.recipient_level == "C"
+
+    def test_level_reflects_the_record_actually_fetched(self, mock_usa_client):
+        """A multi-level ID collapses, and the level matches what came back."""
+        mock_usa_client.set_response(
+            "/recipient/abc123-C/",
+            {"recipient_id": "abc123-C", "recipient_level": "C", "name": "ACME"},
+        )
+        recipient = Recipient({"recipient_id": "abc123-['C','R']"}, mock_usa_client)
+
+        assert recipient.recipient_id == "abc123-C"
+        assert recipient.recipient_level == "C"
+
+    def test_an_explicit_suffix_selects_that_level(self, mock_usa_client):
+        """An ID given with a suffix is used as-is, which is how a caller opts in to -R."""
+        mock_usa_client.set_response(
+            "/recipient/abc123-R/",
+            {"recipient_id": "abc123-R", "recipient_level": "R", "name": "ACME"},
+        )
+        recipient = Recipient({"recipient_id": "abc123-R"}, mock_usa_client)
+
+        assert recipient.recipient_id == "abc123-R"
+        assert recipient.recipient_level == "R"
+
+    def test_absent_level_is_none(self, mock_usa_client):
+        """Not every payload reports it."""
+        recipient = Recipient({"recipient_id": "abc123-C"}, mock_usa_client)
+        recipient._details_fetched = True
+
+        assert recipient.recipient_level is None
+
+
 class TestRecipientProperties:
     """Test recipient property accessors."""
 
