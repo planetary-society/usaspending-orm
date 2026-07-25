@@ -98,6 +98,28 @@ class Award(LazyRecord):
     def _fetch_details(self) -> dict[str, Any] | None:
         """Fetch full award details from the awards resource.
 
+        Note:
+            When this instance is a base ``Award``, the fetched data reveals the
+            award type for the first time and the instance rebinds its own
+            ``__class__`` to the matching subclass. That reassignment is
+            deliberate late binding, not a workaround.
+
+            An award can be constructed before its type is knowable: from an ID
+            alone, or from ``SubAward.parent_award`` and ``Award.parent_award``,
+            which build a bare ``Award`` from an identifier carried on the child
+            record. There is no type code in either case. The alternatives are
+            worse. Returning the base class permanently would silently deny
+            callers ``Contract.piid``, ``Grant.cfda_number`` and every other
+            subtype member, and returning a fresh object instead would leave the
+            caller holding a stale instance, since lazy loading is triggered
+            through attribute access on an award the caller already has.
+
+            The type decision itself is not duplicated here: it is delegated to
+            :func:`~usaspending.models.award_factory.create_award`, the same
+            factory the resource layer uses. This code only adopts the class the
+            factory chose. ``tests/test_characterization.py`` pins the upgrade
+            for both the ID-only and ``parent_award`` paths.
+
         Returns:
             Optional[Dict[str, Any]]: Award data dictionary or None if fetch fails.
         """
@@ -111,16 +133,14 @@ class Award(LazyRecord):
             full_award = self._client.awards.find_by_generated_id(award_id)
             full_data = full_award.raw
 
-            # If we're a base Award class and now have type information,
-            # convert to appropriate subclass
+            # The type code arrives only with the detail response, so adopt the
+            # subclass the factory picks. See the note in this method's docstring.
             if full_data and self.__class__ == Award:
                 from .award_factory import create_award
 
                 new_instance = create_award(full_data, self._client)
                 if new_instance.__class__ != Award:
-                    # Copy state from new instance to self
                     self.__class__ = new_instance.__class__
-                    # Merge the data
                     self._data.update(full_data)
                     return full_data
 

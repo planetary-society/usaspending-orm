@@ -15,12 +15,28 @@ if TYPE_CHECKING:
 class SpendingMixin:
     """Fields shared by every spending-by-category result.
 
-    ``RecipientSpending`` must subclass :class:`Recipient` rather than
+    ``RecipientSpending`` subclasses :class:`Recipient` rather than
     :class:`Spending`, so these four accessors would otherwise be duplicated
     verbatim across the two hierarchies. Compose this ahead of the model base.
 
-    Deliberately excludes ``name``, ``id`` and ``category``: ``Recipient.name``
-    applies title casing, and a mixin ahead of it in the MRO would shadow that.
+    Three fields are excluded, for three different reasons:
+
+    - ``name``: the only genuine shadowing risk. ``Recipient.name`` applies
+      title casing, and a mixin accessor ahead of it in the MRO would silently
+      replace it with the raw API value.
+    - ``id``: recipient rows carry no ``id`` key, only state and district rows
+      do, so it belongs on :class:`Spending` rather than here.
+    - ``category``: only :class:`Spending` exposes it today. Nothing in
+      ``Recipient`` collides, so it could move here if recipient rows ever need
+      it.
+
+    Warning:
+        Because this mixin precedes the model base in the MRO, anything added
+        here outranks the *entire* host hierarchy, ``BaseModel`` included.
+        Declaring the ``get_value`` dependency as a stub method, for instance,
+        would shadow the real implementation and break every accessor. The
+        dependency is documented in prose instead, matching
+        ``queries/mixins.py``.
     """
 
     @property
