@@ -243,11 +243,13 @@ class TestNormalizeRecipientId:
             ("abc123-C", "abc123-C"),
             ("xyz789-P", "xyz789-P"),
             ("abc123", "abc123"),
-            # The first level listed wins: measured live, it is the one
-            # carrying the recipient's spending
+            # 'R' is avoided whenever another level is available: measured
+            # live, it is the record that can report zero spending
             ("abc123-['C','R']", "abc123-C"),
-            ("abc123-['R','C']", "abc123-R"),
+            ("abc123-['R','C']", "abc123-C"),
             ("abc123-['P','R']", "abc123-P"),
+            # ...but kept when it is the only level offered
+            ("abc123-['R']", "abc123-R"),
             ("abc123-['C']", "abc123-C"),
             ("xyz789-['P']", "xyz789-P"),
             ("xyz789-['P','C']", "xyz789-P"),
@@ -261,6 +263,11 @@ class TestNormalizeRecipientId:
             ("xyz789-['P']/", "xyz789-P"),
             # Empty brackets do not match the pattern and pass through
             ("abc123-[]", "abc123-[]"),
+            # A list of empty tokens yields the bare hash, not a trailing dash
+            ("abc123-['']", "abc123"),
+            ("abc123-['','']", "abc123"),
+            ("abc123-[ ]", "abc123"),
+            ("abc123-[,]", "abc123"),
         ],
     )
     def test_normalization(self, raw, expected):

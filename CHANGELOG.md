@@ -81,13 +81,18 @@ consistency argument behind it.
   `<hash>-R` through the finder. Six such IDs appear in the captured API
   fixtures, so this reached real data.
 
-  Both paths now keep the first level. Measured against the live endpoint for
-  all six of those IDs, the first level is the one carrying the recipient's
-  spending, and the trailing `R` record reports zero in four of the six. One
-  example reports $24.6M over 109 transactions at `-C` and $0 over 0
-  transactions at `-R`, so the finder could previously report a recipient as
-  having no spending at all. Nothing is lost by choosing the first level: a
-  `-C` record still carries `parent_name`, and `Recipient.parent` reads it.
+  Both paths now avoid the `R` level whenever another is available. Measured
+  against the live endpoint for all six of those IDs, the `R` record reports
+  less spending than its sibling and reports flat zero in four of the six, with
+  `parent_id`, `parent_name` and `parents` all null. One example reports $24.6M
+  over 109 transactions at `-C` and $0 over 0 transactions at `-R`, so the
+  finder could previously report a $1.3B recipient as having no spending and no
+  parent at all.
+
+- `client.spending.search().recipient_id()` also normalizes its argument. It
+  validated the ID but passed it through unchanged, so a multi-level ID copied
+  out of `raw()` or off the USAspending website produced a filter the API could
+  not match.
 
 - Iterating `idv.child_awards` no longer raises `AttributeError: 'str' object has no attribute 'get'` when reading `funding_agency`, `awarding_agency`, `funding_subtier_agency` or `awarding_subtier_agency`. The `/idvs/awards/` endpoint reuses those keys for a plain agency-name string rather than an agency record, and the model accepted any truthy value there. All four now return `None` for such records, and the name remains available via `raw()`. Present in 0.7.3.
 - `Award._load_agency_data` raises `ValidationError` rather than a bare `ValueError` for an invalid `agency_type`, matching every other agency-type check in the library. `ValidationError` subclasses `ValueError`, so existing `except ValueError` handlers are unaffected.

@@ -95,7 +95,9 @@ class RecipientsResource(BaseResource):
 
         recipients = RecipientsSearch(self._client).keyword(keyword).limit(4)
         for recipient in recipients:
-            if recipient.recipient_id and "-P" in recipient.recipient_id:
+            # A suffix check, not a substring one: the level is the tail of the
+            # ID, and the search results are already normalized to one level.
+            if recipient.recipient_id and recipient.recipient_id.endswith("-P"):
                 return recipient
 
         # first() rather than indexing, which would force a count of a query

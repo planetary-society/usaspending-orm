@@ -131,6 +131,18 @@ class TestFilterMethods:
         assert payload["filters"]["recipient_id"] == "test-recipient-id"
         assert not isinstance(payload["filters"]["recipient_id"], list)
 
+    def test_recipient_id_is_normalized(self, mock_usa_client):
+        """A multi-level ID is reduced to one level the API can match.
+
+        raw() and the USAspending website both report IDs in the
+        "<hash>-['C', 'R']" form, so a user copying one would otherwise get a
+        filter that matches nothing.
+        """
+        search = SpendingSearch(mock_usa_client).by_recipient().recipient_id("abc123-['C', 'R']")
+
+        assert search._recipient_id == "abc123-C"
+        assert search._build_payload(1)["filters"]["recipient_id"] == "abc123-C"
+
     def test_recipient_id_validation(self, mock_usa_client):
         """Test recipient_id validation for empty values."""
         search = SpendingSearch(mock_usa_client)

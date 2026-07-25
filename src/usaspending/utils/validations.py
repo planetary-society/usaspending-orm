@@ -176,17 +176,22 @@ def normalize_recipient_id(recipient_id: Any) -> Any:
     endpoint takes one level and returns a different record for each, so one
     has to be chosen.
 
-    The first level listed wins. That is not arbitrary: measured against the
-    live endpoint for all six multi-level IDs in the captured fixtures, the
-    first level is the one carrying the recipient's spending, and the trailing
-    ``R`` record reports zero in four of the six. For example
-    ``26e104c4-1307-f677-c014-ac7fe7ab9e6d`` reports $24.6M over 109
-    transactions at ``-C`` and $0 over 0 transactions at ``-R``. Preferring
-    ``R`` would silently zero out a recipient's totals.
+    ``R`` is avoided whenever another level is available, and otherwise the
+    first level listed wins. That is measured rather than assumed: against the
+    live endpoint, for all six multi-level IDs in the captured fixtures, the
+    ``R`` record reports *less* spending than its sibling and reports flat zero
+    in four of the six, with ``parent_id``, ``parent_name`` and ``parents`` all
+    null. ``26e104c4-1307-f677-c014-ac7fe7ab9e6d`` reports $24.6M over 109
+    transactions at ``-C`` and $0 over 0 transactions at ``-R``. Since a lazy
+    load merges whatever that record holds, choosing ``R`` would report a
+    recipient as having no spending and no parent.
 
-    A ``-C`` record also carries ``parent_name`` and friends, so choosing it
-    loses nothing: the parent relationship stays visible, and
-    ``Recipient.parent`` reads it.
+    The rule deliberately does not encode an order among the non-``R`` levels.
+    Every observed level list is ``['C']`` or ``['C', 'R']``, which is also
+    consistent with the API simply emitting them alphabetically, so there is no
+    evidence about ``P`` versus ``C``. Skipping ``R`` is what the data supports,
+    and doing it by membership rather than by position means a list arriving as
+    ``['R', 'C']`` cannot reintroduce the zeroing.
 
     Args:
         recipient_id: The raw recipient ID. Non-string input is returned
@@ -199,8 +204,10 @@ def normalize_recipient_id(recipient_id: Any) -> Any:
     Example:
         >>> normalize_recipient_id("abc123-['C', 'R']")
         'abc123-C'
-        >>> normalize_recipient_id("abc123-['P','C']")
-        'abc123-P'
+        >>> normalize_recipient_id("abc123-['R', 'C']")
+        'abc123-C'
+        >>> normalize_recipient_id("abc123-['R']")
+        'abc123-R'
         >>> normalize_recipient_id("abc123-C/")
         'abc123-C'
     """
@@ -216,12 +223,16 @@ def normalize_recipient_id(recipient_id: Any) -> Any:
     levels = [
         token.strip().strip("'\"").upper()
         for token in match.group("body").split(",")
-        if token.strip()
+        if token.strip().strip("'\"")
     ]
-    if not levels:
+
+    # Guard the chosen level rather than the list: a list of empty tokens would
+    # otherwise produce a bare trailing dash.
+    level = next((lvl for lvl in levels if lvl != "R"), levels[0] if levels else "")
+    if not level:
         return match.group("base")
 
-    return f"{match.group('base')}-{levels[0]}"
+    return f"{match.group('base')}-{level}"
 
 
 def validate_sort_field(

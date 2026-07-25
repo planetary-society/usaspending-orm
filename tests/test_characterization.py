@@ -241,11 +241,13 @@ class TestRecipientIdNormalizationIsSingleSourced:
     captured fixtures, so the defect reached real data.
 
     Phase 5 consolidated both onto utils.validations.normalize_recipient_id,
-    which keeps the FIRST level. Measured against the live endpoint for all six
-    multi-level IDs in the fixtures, the first level carries the recipient's
-    spending and the trailing 'R' record reports zero in four of six, so
-    preferring 'R' would have zeroed out real totals. The query path, which did
-    prefer 'R', changed to match the model.
+    which avoids 'R' whenever another level is available. Measured against the
+    live endpoint for all six multi-level IDs in the fixtures, the 'R' record
+    reports less spending than its sibling and reports flat zero in four of six,
+    so preferring 'R' would have zeroed out real totals. The query path, which
+    did prefer 'R', changed to match the model. Avoiding 'R' by membership rather
+    than by list position means a list arriving as ['R','C'] cannot reintroduce
+    the defect.
 
     This table now pins that both paths agree, which is the property that was
     broken. The normalizer's own edge cases live in
@@ -255,9 +257,9 @@ class TestRecipientIdNormalizationIsSingleSourced:
     @pytest.mark.parametrize(
         "raw,expected",
         [
-            # The first level listed wins, whatever it is.
+            # 'R' is avoided whenever another level is available.
             ("abc123-['C','R']", "abc123-C"),
-            ("abc123-['R','C']", "abc123-R"),
+            ("abc123-['R','C']", "abc123-C"),
             ("abc123-['P','R']", "abc123-P"),
             ("abc123-['C']", "abc123-C"),
             ("abc123-['P','C']", "abc123-P"),

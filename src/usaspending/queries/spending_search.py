@@ -11,7 +11,7 @@ from ..models.download import SpendingLevel
 from ..models.recipient_spending import RecipientSpending
 from ..models.spending import Spending
 from ..models.state_spending import StateSpending
-from ..utils.validations import validate_non_empty_string
+from ..utils.validations import normalize_recipient_id, validate_non_empty_string
 from .query_builder import SearchQueryBuilder
 
 if TYPE_CHECKING:
@@ -287,7 +287,9 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         Filter by specific recipient ID.
 
         The recipient ID is a unique identifier that includes the recipient hash
-        and level suffix (e.g., "abc123-P" for parent, "abc123-C" for child).
+        and level suffix (e.g., "abc123-P" for parent, "abc123-C" for child). An
+        ID carrying several levels, as ``raw()`` and the website sometimes report
+        it, is normalized to one level the API can match.
 
         Note: This filter is not supported when using subawards mode.
 
@@ -303,5 +305,5 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         validated_id = validate_non_empty_string(recipient_id, "recipient_id")
 
         clone = self._clone()
-        clone._recipient_id = validated_id
+        clone._recipient_id = normalize_recipient_id(validated_id)
         return clone
