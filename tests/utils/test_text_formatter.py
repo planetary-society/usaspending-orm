@@ -5,6 +5,7 @@ from unittest.mock import mock_open, patch
 import pytest
 import yaml
 
+from usaspending.exceptions import ConfigurationError
 from usaspending.utils.formatter import TextFormatter
 
 
@@ -34,13 +35,18 @@ class TestTextFormatter:
             assert cases == []
 
     def test_load_special_cases_yaml_error(self):
-        """Test graceful handling of YAML parsing errors."""
+        """Unparseable YAML raises rather than silently disabling special casing.
+
+        See TestSpecialCasesLoadFailures for the full contract; this pins that the
+        error is not swallowed, which it was until 0.8.0.
+        """
+        TextFormatter._special_cases_cache = None
         with (
             patch("builtins.open", mock_open(read_data="invalid: yaml: content:")),
             patch("yaml.safe_load", side_effect=yaml.YAMLError),
+            pytest.raises(ConfigurationError, match="Could not parse"),
         ):
-            cases = TextFormatter._load_special_cases()
-            assert cases == []
+            TextFormatter._load_special_cases()
 
     def test_get_special_cases_set(self):
         """Test conversion of special cases to uppercase set."""
@@ -341,3 +347,41 @@ class TestSpecialCaseIndexInvalidation:
             TextFormatter._special_cases_cache = original
             TextFormatter._special_cases_index = None
             TextFormatter._special_cases_index_source = None
+
+
+class TestSpecialCasesLoadFailures:
+    """A missing list degrades; a corrupt one does not.
+
+    Casing failures are quiet by nature: a mis-cased name is still a name, so a
+    logged warning gets scrolled past. A file that exists but cannot be read as a
+    list is a packaging or editing mistake, and it fails loudly.
+    """
+
+    def _load(self, **patch_kwargs):
+        original = TextFormatter._special_cases_cache
+        try:
+            TextFormatter._special_cases_cache = None
+            with patch("builtins.open", **patch_kwargs):
+                return TextFormatter._load_special_cases()
+        finally:
+            TextFormatter._special_cases_cache = original
+            TextFormatter._special_cases_index = None
+            TextFormatter._special_cases_index_source = None
+
+    def test_missing_file_degrades_to_no_special_casing(self):
+        """An installation may legitimately lack the file."""
+        assert self._load(side_effect=FileNotFoundError) == []
+
+    def test_empty_file_is_not_an_error(self):
+        """An empty list is a valid, if useless, configuration."""
+        assert self._load(new=mock_open(read_data="")) == []
+
+    def test_corrupt_yaml_raises(self):
+        """Unparseable YAML is a mistake, not a configuration."""
+        with pytest.raises(ConfigurationError, match="Could not parse"):
+            self._load(new=mock_open(read_data="[unclosed: {"))
+
+    def test_wrong_shape_raises(self):
+        """A mapping where a list belongs would silently case nothing."""
+        with pytest.raises(ConfigurationError, match="must contain a list"):
+            self._load(new=mock_open(read_data="a: 1\nb: 2\n"))

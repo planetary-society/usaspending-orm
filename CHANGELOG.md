@@ -25,6 +25,13 @@ behavior preserving and the public API is unchanged.
 
 ### Changed
 
+Title casing now raises `ConfigurationError` when `special_cases.yaml` exists but
+cannot be read as a list, instead of logging and silently disabling special
+casing. A missing file still degrades quietly, since an installation can
+legitimately lack it, but a corrupt or wrongly shaped one is a packaging or
+editing mistake. The failure it replaces was invisible in practice: names were
+still returned, just mis-cased.
+
 Optional money and string getters now return `None` when the API reports no
 value, instead of a fabricated `Decimal("0.00")` or `""`. A value the API
 actually reports as zero still returns `Decimal("0.00")`, so callers can finally
@@ -86,6 +93,10 @@ annotation to reconcile it with, and changing it would be a break with no
 consistency argument behind it.
 
 ### Fixed
+
+- `current_fiscal_year()` reads the clock once instead of twice. Two separate
+  `datetime.now()` calls could straddle the October boundary between them and
+  report a fiscal year the calendar never had.
 
 - `client.recipients.find_by_id()` no longer addresses the wrong record for a
   recipient ID carrying several levels, such as `"<hash>-['C', 'R']"`.

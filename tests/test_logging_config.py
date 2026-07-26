@@ -8,7 +8,6 @@ from unittest.mock import MagicMock
 
 from usaspending.logging_config import (
     USASpendingLogger,
-    get_logger,
     log_api_request,
     log_api_response,
     log_query_execution,
@@ -88,25 +87,6 @@ class TestUSASpendingLogger:
             assert USASpendingLogger.is_debug_enabled() is True
         finally:
             usaspending_logger.setLevel(original_level)
-
-
-class TestGetLoggerFunction:
-    """Tests for the convenience get_logger function."""
-
-    def setup_method(self):
-        """Clear logger cache before each test."""
-        USASpendingLogger._loggers.clear()
-
-    def test_get_logger_function_returns_logger(self):
-        """get_logger function should return a logger instance."""
-        logger = get_logger("test.convenience")
-        assert isinstance(logger, logging.Logger)
-
-    def test_get_logger_function_delegates_to_class(self):
-        """get_logger function should use USASpendingLogger.get_logger()."""
-        logger1 = get_logger("usaspending.test.delegate")
-        logger2 = USASpendingLogger.get_logger("usaspending.test.delegate")
-        assert logger1 is logger2
 
 
 class TestLogApiRequest:

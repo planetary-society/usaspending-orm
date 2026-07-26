@@ -10,6 +10,7 @@ from typing import Any
 import yaml
 from titlecase import titlecase
 
+from ..exceptions import ConfigurationError
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -101,12 +102,10 @@ def current_fiscal_year() -> int:
     Returns:
         int: The current fiscal year.
     """
-    current_date = datetime.now()
-    current_month = datetime.now().month
-    if current_month < 10:
-        return current_date.year
-    else:
-        return current_date.year + 1
+    # One reading of the clock, not two: separate calls could straddle the
+    # October boundary and report a year the calendar never had.
+    today = datetime.now()
+    return today.year + 1 if today.month >= 10 else today.year
 
 
 def to_decimal(x: Any) -> Decimal | None:
@@ -190,18 +189,36 @@ class TextFormatter:
 
     @classmethod
     def _load_special_cases(cls):
-        """Load and cache special cases from YAML file."""
+        """Load and cache the special-case list from YAML.
+
+        A missing file degrades to no special casing, since an installation can
+        legitimately lack it. Corrupt or wrongly shaped YAML does not: that is a
+        packaging or editing mistake, and silently casing every name wrongly
+        hides it. Note that names would still be *returned*, just mis-cased,
+        which is exactly the kind of failure a warning gets scrolled past.
+
+        Raises:
+            ConfigurationError: If the file exists but cannot be parsed, or does
+                not contain a list.
+        """
         if cls._special_cases_cache is None:
             yaml_path = Path(__file__).parent / "special_cases.yaml"
             try:
                 with open(yaml_path) as f:
-                    cls._special_cases_cache = yaml.safe_load(f) or []
+                    loaded = yaml.safe_load(f) or []
             except FileNotFoundError:
                 logger.warning(f"Special cases file not found: {yaml_path}")
                 cls._special_cases_cache = []
-            except Exception as e:
-                logger.error(f"Error loading special cases: {e}")
-                cls._special_cases_cache = []
+                return cls._special_cases_cache
+            except yaml.YAMLError as e:
+                raise ConfigurationError(f"Could not parse {yaml_path}: {e}") from e
+
+            if not isinstance(loaded, list):
+                raise ConfigurationError(
+                    f"{yaml_path} must contain a list of special cases, got {type(loaded).__name__}"
+                )
+
+            cls._special_cases_cache = loaded
         return cls._special_cases_cache
 
     @classmethod
