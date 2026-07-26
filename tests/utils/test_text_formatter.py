@@ -5,7 +5,6 @@ from unittest.mock import mock_open, patch
 import pytest
 import yaml
 
-from usaspending.exceptions import ConfigurationError
 from usaspending.utils.formatter import TextFormatter
 
 
@@ -35,18 +34,18 @@ class TestTextFormatter:
             assert cases == []
 
     def test_load_special_cases_yaml_error(self):
-        """Unparseable YAML raises rather than silently disabling special casing.
+        """Unparseable YAML warns rather than failing silently.
 
         See TestSpecialCasesLoadFailures for the full contract; this pins that the
-        error is not swallowed, which it was until 0.8.0.
+        problem is announced, where before it went only to the log.
         """
         TextFormatter._special_cases_cache = None
         with (
             patch("builtins.open", mock_open(read_data="invalid: yaml: content:")),
             patch("yaml.safe_load", side_effect=yaml.YAMLError),
-            pytest.raises(ConfigurationError, match="Could not parse"),
+            pytest.warns(UserWarning, match="Could not parse"),
         ):
-            TextFormatter._load_special_cases()
+            assert TextFormatter._load_special_cases() == []
 
     def test_get_special_cases_set(self):
         """Test conversion of special cases to uppercase set."""
@@ -376,12 +375,38 @@ class TestSpecialCasesLoadFailures:
         """An empty list is a valid, if useless, configuration."""
         assert self._load(new=mock_open(read_data="")) == []
 
-    def test_corrupt_yaml_raises(self):
-        """Unparseable YAML is a mistake, not a configuration."""
-        with pytest.raises(ConfigurationError, match="Could not parse"):
-            self._load(new=mock_open(read_data="[unclosed: {"))
+    def test_corrupt_yaml_warns_and_degrades(self):
+        """Unparseable YAML is a mistake, and says so, without raising."""
+        with pytest.warns(UserWarning, match="Could not parse"):
+            assert self._load(new=mock_open(read_data="[unclosed: {")) == []
 
-    def test_wrong_shape_raises(self):
+    def test_wrong_shape_warns_and_degrades(self):
         """A mapping where a list belongs would silently case nothing."""
-        with pytest.raises(ConfigurationError, match="must contain a list"):
-            self._load(new=mock_open(read_data="a: 1\nb: 2\n"))
+        with pytest.warns(UserWarning, match="must contain a list"):
+            assert self._load(new=mock_open(read_data="a: 1\nb: 2\n")) == []
+
+    def test_casing_never_raises_from_repr(self):
+        """A cosmetic problem must not break __repr__, logging or a debugger.
+
+        Casing runs inside __repr__ on several models, so raising here would turn
+        a mis-cased name into a crash at the least convenient site.
+        """
+        from tests.mocks import MockUSASpendingClient
+        from usaspending.models.recipient_spending import RecipientSpending
+
+        spending = RecipientSpending(
+            {"name": "ACME CORP", "amount": 5, "recipient_id": "a-C"},
+            MockUSASpendingClient(),
+        )
+        original = TextFormatter._special_cases_cache
+        try:
+            TextFormatter._special_cases_cache = None
+            with (
+                patch("builtins.open", mock_open(read_data="[unclosed: {")),
+                pytest.warns(UserWarning),
+            ):
+                assert "Acme Corp" in repr(spending)
+        finally:
+            TextFormatter._special_cases_cache = original
+            TextFormatter._special_cases_index = None
+            TextFormatter._special_cases_index_source = None

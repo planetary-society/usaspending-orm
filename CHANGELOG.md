@@ -25,12 +25,14 @@ behavior preserving and the public API is unchanged.
 
 ### Changed
 
-Title casing now raises `ConfigurationError` when `special_cases.yaml` exists but
-cannot be read as a list, instead of logging and silently disabling special
-casing. A missing file still degrades quietly, since an installation can
-legitimately lack it, but a corrupt or wrongly shaped one is a packaging or
-editing mistake. The failure it replaces was invisible in practice: names were
-still returned, just mis-cased.
+Title casing now emits a `UserWarning` when `special_cases.yaml` exists but
+cannot be read as a list, where before the problem went only to the log and was
+invisible in practice: names were still returned, just mis-cased. It still
+degrades to no special casing rather than raising, because casing runs inside
+`__repr__` on several models and a cosmetic problem must not break debuggers,
+logging or error messages. Anyone wanting it fatal can escalate with
+`-W error::UserWarning`. A merely absent file warns only in the log, since an
+installation can legitimately lack it.
 
 Optional money and string getters now return `None` when the API reports no
 value, instead of a fabricated `Decimal("0.00")` or `""`. A value the API

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import decimal
 import re
+import warnings
 from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
@@ -10,7 +11,6 @@ from typing import Any
 import yaml
 from titlecase import titlecase
 
-from ..exceptions import ConfigurationError
 from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -191,32 +191,42 @@ class TextFormatter:
     def _load_special_cases(cls):
         """Load and cache the special-case list from YAML.
 
-        A missing file degrades to no special casing, since an installation can
-        legitimately lack it. Corrupt or wrongly shaped YAML does not: that is a
-        packaging or editing mistake, and silently casing every name wrongly
-        hides it. Note that names would still be *returned*, just mis-cased,
-        which is exactly the kind of failure a warning gets scrolled past.
+        Failures degrade to no special casing rather than raising. Casing runs
+        inside ``__repr__`` on several models, so an exception here would break
+        debuggers, logging and error messages over what is a cosmetic problem: a
+        mis-cased name is still the right name.
 
-        Raises:
-            ConfigurationError: If the file exists but cannot be parsed, or does
-                not contain a list.
+        A corrupt or wrongly shaped file is still a packaging or editing mistake
+        rather than a configuration, so it also emits a ``UserWarning``. That is
+        visible by default, unlike the log record this replaced, and anyone who
+        wants it fatal can escalate it with ``-W error::UserWarning``. A merely
+        absent file warns only in the log, since an installation can legitimately
+        lack it.
         """
         if cls._special_cases_cache is None:
             yaml_path = Path(__file__).parent / "special_cases.yaml"
+            loaded: Any = []
             try:
                 with open(yaml_path) as f:
                     loaded = yaml.safe_load(f) or []
             except FileNotFoundError:
                 logger.warning(f"Special cases file not found: {yaml_path}")
-                cls._special_cases_cache = []
-                return cls._special_cases_cache
             except yaml.YAMLError as e:
-                raise ConfigurationError(f"Could not parse {yaml_path}: {e}") from e
-
-            if not isinstance(loaded, list):
-                raise ConfigurationError(
-                    f"{yaml_path} must contain a list of special cases, got {type(loaded).__name__}"
+                warnings.warn(
+                    f"Could not parse {yaml_path}, so names will not be special-cased: {e}",
+                    UserWarning,
+                    stacklevel=2,
                 )
+                loaded = []
+            else:
+                if not isinstance(loaded, list):
+                    warnings.warn(
+                        f"{yaml_path} must contain a list of special cases, got "
+                        f"{type(loaded).__name__}, so names will not be special-cased.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    loaded = []
 
             cls._special_cases_cache = loaded
         return cls._special_cases_cache
