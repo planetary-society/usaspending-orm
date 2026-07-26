@@ -165,13 +165,23 @@ class Recipient(LazyRecord):
                 client=self._client,
             )
 
-    @cached_property
+    @property
     def parents(self) -> list[Recipient]:
         """List of parent recipients.
+
+        Each read returns a new list over the same cached models, so a caller that
+        sorts or pops it cannot disturb the next reader. Copying costs far less
+        than rebuilding the models, which is why the cache sits behind this rather
+        than on it.
 
         Returns:
             List[Recipient]: List of parent Recipient objects.
         """
+        return list(self._parents)
+
+    @cached_property
+    def _parents(self) -> list[Recipient]:
+        """Build the parent models once."""
         plist = []
         # Use _lazy_get to ensure parents data is loaded if not present
         parents_data = self._lazy_get("parents", default=[])

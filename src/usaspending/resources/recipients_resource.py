@@ -103,15 +103,19 @@ class RecipientsResource(BaseResource):
         from ..queries.recipients_search import RecipientsSearch
 
         recipients = RecipientsSearch(self._client).keyword(keyword).limit(4)
+
+        # Keep the first result while scanning rather than calling first()
+        # afterwards, which would re-request the page this loop already read.
+        fallback = None
         for recipient in recipients:
             # A suffix check, not a substring one: the level is the tail of the
             # ID, and the search results are already normalized to one level.
             if recipient.recipient_id and recipient.recipient_id.endswith("-P"):
                 return recipient
+            if fallback is None:
+                fallback = recipient
 
-        # first() rather than indexing, which would force a count of a query
-        # whose total the API does not report cheaply.
-        return recipients.first()
+        return fallback
 
     def find_by_duns(self, duns: str) -> Recipient | None:
         """Retrieve a single recipient by DUNS number.

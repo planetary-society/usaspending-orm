@@ -713,3 +713,45 @@ class TestCircularReferenceProtection:
 
         # Total calls should be reasonable (2 for A and B)
         assert call_count <= 3
+
+
+class TestRecipientParentsIsolation:
+    """Each read of `parents` hands back its own list.
+
+    It was a cached_property building the list, so every caller received the same
+    object and one caller's ``pop()`` or ``sort()`` changed what every later
+    reader saw, for the model's lifetime. The models inside are still shared,
+    which is the pre-existing library stance.
+    """
+
+    def _recipient(self, mock_usa_client):
+        recipient = Recipient(
+            {
+                "recipient_id": "a-C",
+                "parents": [
+                    {"parent_id": "p1-P", "parent_name": "P One"},
+                    {"parent_id": "p2-P", "parent_name": "P Two"},
+                ],
+            },
+            mock_usa_client,
+        )
+        recipient._details_fetched = True
+        return recipient
+
+    def test_mutating_the_returned_list_does_not_affect_later_reads(self, mock_usa_client):
+        recipient = self._recipient(mock_usa_client)
+
+        recipient.parents.pop()
+
+        assert len(recipient.parents) == 2
+
+    def test_each_read_returns_a_distinct_list(self, mock_usa_client):
+        recipient = self._recipient(mock_usa_client)
+
+        assert recipient.parents is not recipient.parents
+
+    def test_the_models_are_built_once_and_shared(self, mock_usa_client):
+        """The copy is of the list, not of its contents."""
+        recipient = self._recipient(mock_usa_client)
+
+        assert recipient.parents[0] is recipient.parents[0]
