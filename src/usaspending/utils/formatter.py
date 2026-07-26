@@ -6,7 +6,7 @@ import warnings
 from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import yaml
 from titlecase import titlecase
@@ -175,17 +175,37 @@ PAREN_UPPERCASE_MAX_LEN: int = 9  # Fewer than 10 characters
 # --- Helper Function ---
 
 
+class _SpecialCaseLookups(NamedTuple):
+    """The lookups casing resolves through, and the list they were built from.
+
+    Carrying ``source`` alongside them is what lets them rebuild when the loaded
+    list is replaced, so clearing ``TextFormatter._special_cases_cache`` remains
+    the single way to invalidate casing state. Holding all three together makes
+    that one assignment, so a reader can never see a lookup paired with the wrong
+    source.
+    """
+
+    #: The loaded list these were derived from, compared by identity.
+    source: list
+
+    #: Lowercase keys, used by title casing. Carries each entry's lowercase form
+    #: plus, for an entry ending in a period, that form without it, so "inc"
+    #: matches "Inc.".
+    by_lower_form: dict[str, str]
+
+    #: Uppercase keys, used by sentence casing, which matches an entry as
+    #: written. Deliberately without the period-stripped variants: 15 forms such
+    #: as "l.l.c" would start being rewritten if it carried them.
+    by_upper_form: dict[str, str]
+
+
 class TextFormatter:
     """Unified text formatting utility class for sentence and title case conversions."""
 
     _special_cases_cache = None
 
-    #: Lookup derived from ``_special_cases_cache``, alongside the list object it
-    #: was built from. Storing the source lets the index rebuild itself when the
-    #: cache is replaced, so resetting ``_special_cases_cache`` remains the single
-    #: way to invalidate casing state.
-    _special_cases_index: dict[str, str] | None = None
-    _special_cases_index_source: list | None = None
+    #: Derived from ``_special_cases_cache``; see :class:`_SpecialCaseLookups`.
+    _special_cases_lookups: _SpecialCaseLookups | None = None
 
     @classmethod
     def _load_special_cases(cls):
@@ -197,11 +217,12 @@ class TextFormatter:
         mis-cased name is still the right name.
 
         A corrupt or wrongly shaped file is still a packaging or editing mistake
-        rather than a configuration, so it also emits a ``UserWarning``. That is
-        visible by default, unlike the log record this replaced, and anyone who
-        wants it fatal can escalate it with ``-W error::UserWarning``. A merely
-        absent file warns only in the log, since an installation can legitimately
-        lack it.
+        rather than a configuration, so it also emits a ``UserWarning``, which is
+        visible by default unlike the log record this replaced. Escalating that to
+        an error with ``-W error::UserWarning`` does reintroduce the raising
+        ``__repr__`` described above, so it suits a test run rather than
+        production. A merely absent file warns only in the log, since an
+        installation can legitimately lack it.
         """
         if cls._special_cases_cache is None:
             yaml_path = Path(__file__).parent / "special_cases.yaml"
@@ -232,10 +253,47 @@ class TextFormatter:
         return cls._special_cases_cache
 
     @classmethod
-    def _get_special_cases_set(cls):
-        """Get special cases as a set for fast lookups."""
+    def _special_case_lookups(cls) -> _SpecialCaseLookups:
+        """Return the casing lookups, building them once per loaded list.
+
+        Both map a normalized word to its canonical spelling and let the earliest
+        entry win, matching the scans they replace. See
+        :class:`_SpecialCaseLookups` for why they key differently.
+        """
         special_cases = cls._load_special_cases()
-        return {case.upper() for case in special_cases if isinstance(case, str)}
+
+        lookups = cls._special_cases_lookups
+        if lookups is None or lookups.source is not special_cases:
+            by_lower_form: dict[str, str] = {}
+            by_upper_form: dict[str, str] = {}
+            collisions: list[tuple[str, str]] = []
+
+            def claim(key: str, special_word: str) -> None:
+                held = by_lower_form.setdefault(key, special_word)
+                if held != special_word:
+                    collisions.append((held, special_word))
+
+            for special_word in special_cases:
+                if not isinstance(special_word, str):
+                    continue
+                claim(special_word.lower(), special_word)
+                if special_word.endswith("."):
+                    claim(special_word[:-1].lower(), special_word)
+                by_upper_form.setdefault(special_word.upper(), special_word)
+
+            if collisions:
+                warnings.warn(
+                    "special_cases.yaml has entries whose lowercase forms collide, so "
+                    "which spelling wins depends on their order: "
+                    f"{collisions}. Remove the duplicates.",
+                    UserWarning,
+                    stacklevel=3,
+                )
+
+            lookups = _SpecialCaseLookups(special_cases, by_lower_form, by_upper_form)
+            cls._special_cases_lookups = lookups
+
+        return lookups
 
     @classmethod
     def _split_word_punctuation(cls, word):
@@ -272,35 +330,6 @@ class TextFormatter:
         return clean_word, trailing_punct
 
     @classmethod
-    def _get_special_cases_index(cls) -> dict[str, str]:
-        """Map every lowercase form of a special case to its canonical spelling.
-
-        Built once and cached. This used to be a linear scan of the whole list
-        per word, with up to three ``.lower()`` comparisons per entry, which made
-        casing a single name cost tens of microseconds and dominated the cost of
-        reading a page of recipients.
-
-        Entries are keyed both as written and, for a form ending in a period,
-        without it, so that "inc" finds "Inc.". Earlier entries win, matching the
-        scan order this replaces.
-        """
-        special_cases = cls._load_special_cases()
-
-        # Rebuild when the underlying list is a different object, so that
-        # clearing _special_cases_cache invalidates this too.
-        if cls._special_cases_index is None or cls._special_cases_index_source is not special_cases:
-            index: dict[str, str] = {}
-            for special_word in special_cases:
-                if not isinstance(special_word, str):
-                    continue
-                index.setdefault(special_word.lower(), special_word)
-                if special_word.endswith("."):
-                    index.setdefault(special_word[:-1].lower(), special_word)
-            cls._special_cases_index = index
-            cls._special_cases_index_source = special_cases
-        return cls._special_cases_index
-
-    @classmethod
     def _preserve_special_case(cls, word):
         """Check if word should be preserved as special case, return preserved version or None."""
         if not isinstance(word, str):
@@ -310,16 +339,16 @@ class TextFormatter:
         if word.startswith("(") and word.endswith(")"):
             return word
 
-        index = cls._get_special_cases_index()
+        by_lower_form = cls._special_case_lookups().by_lower_form
 
         # The whole word, punctuation included, so that "u.s." matches as written.
-        special_word = index.get(word.lower())
+        special_word = by_lower_form.get(word.lower())
         if special_word is not None:
             return special_word
 
         # Then the word without its trailing punctuation, which is restored.
         clean_word, trailing_punct = cls._split_word_punctuation(word)
-        special_word = index.get(clean_word.lower())
+        special_word = by_lower_form.get(clean_word.lower())
         if special_word is not None:
             return special_word + trailing_punct
 
@@ -346,7 +375,7 @@ class TextFormatter:
         try:
             # Start with lowercase
             processed_text = text.lower()
-            special_cases_set = cls._get_special_cases_set()
+            special_cases_by_upper_form = cls._special_case_lookups().by_upper_form
 
             # Small words to ignore in acronym expansion
             SMALL_WORDS = r"\b(a|an|and|as|at|but|by|en|for|if|in|of|on|or|the|to|v\.?|via|vs\.?)\b"
@@ -414,10 +443,9 @@ class TextFormatter:
                     return word.capitalize()
 
                 # Check if word is a special case from YAML
-                if word.upper() in special_cases_set:
-                    for special_case in cls._load_special_cases():
-                        if isinstance(special_case, str) and word.upper() == special_case.upper():
-                            return special_case
+                special_case = special_cases_by_upper_form.get(word.upper())
+                if special_case is not None:
+                    return special_case
 
                 # Check if this is the start of a sentence (beginning or after . ! ? + space)
                 if word_start == 0:

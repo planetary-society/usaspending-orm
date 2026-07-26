@@ -4,9 +4,9 @@ The rest of the formatter suite injects a mock special-cases list
 (``tests/utils/test_formatter.py`` patches the cache, and
 ``tests/utils/test_text_formatter.py`` patches ``open``), so every existing test
 would pass even if the real YAML never loaded. That matters because
-``TextFormatter._load_special_cases`` catches the failure, logs a warning, and
-falls back to an empty list: title casing would silently lose every acronym,
-with no exception and no failing test.
+``TextFormatter._load_special_cases`` degrades to an empty list on failure:
+title casing would silently lose every acronym, and while a corrupt file now
+warns, a merely absent one does not, so no test would fail.
 
 These tests close that gap, and they are the guard for Phase 6, which moves
 TextFormatter into ``utils/textcase.py``. The data file is resolved relative to
@@ -72,3 +72,48 @@ def test_mixed_case_acronym_is_preserved_through_titlecase():
 def test_acronym_is_preserved_through_sentence_case():
     """Sentence casing must also honor the real special-cases list."""
     assert "NASA" in TextFormatter.to_sentence_case("NASA RESEARCH GRANT")
+
+
+class TestSpecialCasesShapeInvariants:
+    """Shape rules the casing lookup depends on for correctness.
+
+    Title casing resolves through a lookup keyed on lowercase forms rather than by
+    scanning the list. Lookup and scan agree on the current data, but that is a
+    property of the data, not of the code: the two disagree whenever one entry's
+    lowercase form collides with another's. (The sentence-casing lookup keys on
+    uppercase forms only, so it is unaffected.)
+
+    Concretely, a list containing both ``Inc`` and ``INC.`` casts ``"inc."`` to
+    ``"Inc."`` under a scan and ``"INC."`` under the index. The list already
+    contains ``Inc``, so adding ``INC.`` would silently change output for every
+    company name ending in it. These assertions turn that into a failing test.
+    """
+
+    def _entries(self):
+        """Read through the loader, so the invariant covers what the code sees."""
+        return [c for c in TextFormatter._load_special_cases() if isinstance(c, str)]
+
+    def test_no_two_entries_share_a_lowercase_form(self):
+        """Duplicates make which spelling wins depend on lookup order."""
+        seen: dict[str, str] = {}
+        collisions = []
+        for entry in self._entries():
+            key = entry.lower()
+            if key in seen:
+                collisions.append((seen[key], entry))
+            seen[key] = entry
+
+        assert not collisions, f"entries collide on lowercase form: {collisions}"
+
+    def test_no_entry_is_another_plus_a_period(self):
+        """An X / X-plus-period pair is the case where scan and index disagree."""
+        entries = self._entries()
+        lowered = {entry.lower() for entry in entries}
+        offenders = [
+            entry for entry in entries if entry.endswith(".") and entry[:-1].lower() in lowered
+        ]
+
+        assert not offenders, (
+            f"these entries duplicate another entry with a trailing period: {offenders}. "
+            "Casing would depend on whether the lookup scans or indexes."
+        )

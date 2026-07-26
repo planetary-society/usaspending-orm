@@ -47,15 +47,27 @@ class TestTextFormatter:
         ):
             assert TextFormatter._load_special_cases() == []
 
-    def test_get_special_cases_set(self):
-        """Test conversion of special cases to uppercase set."""
-        mock_special_cases = ["NASA", "Inc.", "OSIRIS-REx"]
-        mock_yaml_content = yaml.dump(mock_special_cases)
+    def test_special_case_lookups_exact_map(self):
+        """The exact lookup maps an uppercase form to its canonical spelling.
 
-        with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
-            cases_set = TextFormatter._get_special_cases_set()
-            expected = {"NASA", "INC.", "OSIRIS-REX"}
-            assert cases_set == expected
+        Sentence casing matches an entry as written, so this keys on the
+        uppercase form only. It must NOT carry the period-stripped keys the
+        title-case lookup needs, or words like "l.l.c" would start being
+        rewritten.
+        """
+        TextFormatter._special_cases_cache = None
+        mock_special_cases = ["NASA", "Inc.", "OSIRIS-REx"]
+
+        with patch("builtins.open", mock_open(read_data=yaml.dump(mock_special_cases))):
+            lookups = TextFormatter._special_case_lookups()
+
+        assert lookups.by_upper_form == {"NASA": "NASA", "INC.": "Inc.", "OSIRIS-REX": "OSIRIS-REx"}
+
+        # The title-case lookup additionally accepts "inc" for "Inc."
+        assert lookups.by_lower_form["inc"] == "Inc."
+        assert "inc" not in lookups.by_upper_form
+
+        TextFormatter._special_cases_cache = None
 
     def test_split_word_punctuation_simple(self):
         """Test splitting word from punctuation."""
@@ -318,16 +330,16 @@ class TestTextFormatterTitlecaseCallback:
         assert result == "NASA,"
 
 
-class TestSpecialCaseIndexInvalidation:
-    """The derived lookup must not outlive the list it was built from.
+class TestSpecialCaseLookupInvalidation:
+    """The derived lookups must not outlive the list they were built from.
 
-    Casing resolves through an index built once from special_cases.yaml, rather
-    than by scanning the list per word. That index is a second piece of cached
-    state, and twelve places in the suite invalidate casing by setting
-    ``_special_cases_cache = None``, so the index has to follow from that alone.
+    Casing resolves through lookups built once from special_cases.yaml, rather
+    than by scanning the list per word. Those lookups are a second piece of cached
+    state, and the suite invalidates casing throughout by setting
+    ``_special_cases_cache = None``, so they have to follow from that alone.
     """
 
-    def test_index_rebuilds_when_the_cache_is_replaced(self):
+    def test_lookups_rebuild_when_the_cache_is_replaced(self):
         original = TextFormatter._special_cases_cache
         try:
             assert TextFormatter._preserve_special_case("llc") == "LLC"
@@ -344,8 +356,6 @@ class TestSpecialCaseIndexInvalidation:
             assert TextFormatter._preserve_special_case("zzz") is None
         finally:
             TextFormatter._special_cases_cache = original
-            TextFormatter._special_cases_index = None
-            TextFormatter._special_cases_index_source = None
 
 
 class TestSpecialCasesLoadFailures:
@@ -364,8 +374,6 @@ class TestSpecialCasesLoadFailures:
                 return TextFormatter._load_special_cases()
         finally:
             TextFormatter._special_cases_cache = original
-            TextFormatter._special_cases_index = None
-            TextFormatter._special_cases_index_source = None
 
     def test_missing_file_degrades_to_no_special_casing(self):
         """An installation may legitimately lack the file."""
@@ -408,5 +416,50 @@ class TestSpecialCasesLoadFailures:
                 assert "Acme Corp" in repr(spending)
         finally:
             TextFormatter._special_cases_cache = original
-            TextFormatter._special_cases_index = None
-            TextFormatter._special_cases_index_source = None
+
+
+class TestSpecialCaseCollisionWarning:
+    """Colliding lowercase forms warn when the lookups are built.
+
+    tests/utils/test_special_cases_data.py pins the same invariant over the
+    shipped file, which is what catches it in CI and names the offenders. This
+    check covers the case that test cannot see: special_cases.yaml is data, so a
+    downstream consumer can edit it after install, where no test of ours runs.
+
+    Exact duplicates deliberately do not warn. The same spelling wins either way,
+    so there is nothing ambiguous to report; the CI test still flags them as
+    untidy data.
+    """
+
+    def _build(self, entries):
+        original = TextFormatter._special_cases_cache
+        try:
+            TextFormatter._special_cases_cache = None
+            with patch("builtins.open", mock_open(read_data=yaml.dump(entries))):
+                return TextFormatter._special_case_lookups()
+        finally:
+            TextFormatter._special_cases_cache = original
+            TextFormatter._special_cases_lookups = None
+
+    def test_same_form_different_spelling_warns(self):
+        with pytest.warns(UserWarning, match="lowercase forms collide"):
+            self._build(["Inc", "INC"])
+
+    def test_entry_plus_a_trailing_period_warns(self):
+        """The case invisible to the uppercase lookup, so it must be caught here."""
+        with pytest.warns(UserWarning, match="lowercase forms collide"):
+            self._build(["Inc", "INC."])
+
+    def test_exact_duplicates_do_not_warn(self):
+        import warnings as _warnings
+
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error", UserWarning)
+            assert self._build(["Inc", "Inc"]).by_lower_form["inc"] == "Inc"
+
+    def test_clean_data_does_not_warn(self):
+        import warnings as _warnings
+
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error", UserWarning)
+            self._build(["NASA", "Inc.", "OSIRIS-REx"])
