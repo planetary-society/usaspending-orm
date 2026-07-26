@@ -24,7 +24,7 @@ class TASAgenciesQuery(FilterTreeQuery["Agency"]):
         - description(): Filter by name text (substring, case-insensitive).
 
     Example:
-        >>> agencies = client.tas.agencies_query
+        >>> agencies = TASAgenciesQuery(client)
         >>> len(agencies)
         91
         >>> nasa = agencies.code("080").first()
@@ -32,9 +32,8 @@ class TASAgenciesQuery(FilterTreeQuery["Agency"]):
 
     ENDPOINT = "/references/filter_tree/tas/"
 
-    #: Rows key the agency code under ``id``, but ``Agency`` exposes that as
-    #: ``code``; its own ``id`` is the internal database ID and is None here, so
-    #: leaving the default would make :meth:`code` match nothing.
+    #: ``Agency`` exposes its code as ``code``; its own ``id`` is the internal
+    #: database ID, which a filter-tree row does not carry.
     CODE_KEY = "code"
 
     #: ``Agency`` has no ``description``, so a keyword search reads its name.
@@ -59,8 +58,8 @@ class TASAgenciesQuery(FilterTreeQuery["Agency"]):
 
         return Agency(
             {
+                # Agency.code is an alias for toptier_code, so one key suffices.
                 "toptier_code": data.get("id"),
-                "code": data.get("id"),
                 "name": data.get("description"),
                 # Retained for reference: how many TAS this agency has.
                 "_tas_count": data.get("count", 0),

@@ -41,9 +41,13 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
     #: alias like ``account_name`` honest rather than merely a synonym.
     KEYWORD_FIELDS: ClassVar[tuple[str, ...]] = ("description", "name")
 
-    #: Response key holding the code that :meth:`code` and :meth:`codes` match.
-    #: Filter-tree rows key their identifier under ``id`` at every level, even
-    #: where the resulting model exposes it under another name.
+    #: Attribute on the model that :meth:`_build_model` returns, which
+    #: :meth:`code` and :meth:`codes` match against. Filtering happens in memory
+    #: over built models, so this is a model attribute path and NOT a response
+    #: key, whatever the rows call it. Getting it wrong is expensive rather than
+    #: merely wrong: the filter reads a lazy-loading attribute on every row, so a
+    #: level of N rows can cost N requests and still match nothing. Override it
+    #: wherever the model exposes its code under another name.
     CODE_KEY: ClassVar[str] = "id"
 
     def __init__(self, client: USASpendingClient) -> None:
@@ -68,10 +72,14 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         whether the query is answerable at all, and it names the scope in
         ``repr``.
 
-        Returning any empty value means this query has no scope yet, which is a
-        legitimate state rather than an error, so the result set is empty and no
-        request is made. A model that does not know its own agency code
+        A mapping with an empty *value* means this query has no scope yet, which
+        is a legitimate state rather than an error, so the result set is empty and
+        no request is made. A model that does not know its own agency code
         constructs exactly this.
+
+        An empty *mapping* is the different case of a level that takes no scope at
+        all, such as the root of the tree. ``all(())`` is True, so that fetches
+        normally.
         """
 
     @abstractmethod
