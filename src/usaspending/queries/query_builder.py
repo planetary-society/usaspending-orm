@@ -145,7 +145,7 @@ class QueryBuilder(BaseQuery[T], ABC):
                     return
 
                 transformed = self._transform_result(item)
-                if transformed is not None:
+                if transformed is not None and self._row_passes(transformed):
                     yield transformed
                     items_yielded += 1
 
@@ -382,7 +382,11 @@ class QueryBuilder(BaseQuery[T], ABC):
 
     @abstractmethod
     def _compute_raw_count(self) -> int:
-        """Retrieve the count from the API, ignoring any caching.
+        """Return the matching total, uncapped by ``limit()`` or ``max_pages()``.
+
+        Usually the API's own figure. A query that filters rows in memory must
+        instead report what it would yield, or :meth:`count` disagrees with
+        iteration.
 
         Implement using one of the ``_count_*`` mechanisms below where possible.
 
@@ -431,12 +435,51 @@ class QueryBuilder(BaseQuery[T], ABC):
         response = self._execute_query(1)
         return response.get("page_metadata", {}).get(key, 0)
 
+    def _row_passes(self, item: T) -> bool:
+        """Report whether a fetched row belongs in the result set.
+
+        True for every row, unless a subclass filters in memory because the
+        endpoint offers no server-side equivalent. Consulted before the row is
+        yielded and before it counts toward ``limit()``, so such a filter narrows
+        the results rather than the fetch: ``limit(1)`` means one matching row, not
+        one row that may then be discarded. That is what lets :meth:`first` and
+        ``bool()`` agree with :meth:`__len__` on a filtered query.
+
+        A subclass that overrides this should also override :meth:`_countable_rows`
+        if it counts by paging, since the two answer for different layers: this one
+        decides what iteration yields, that one what the count reports.
+
+        Args:
+            item: A transformed row.
+
+        Returns:
+            bool: True if the row should be yielded.
+        """
+        return True
+
+    def _countable_rows(self, results: list[dict[str, Any]]) -> int:
+        """Return how many of one page's rows count toward the total.
+
+        Every row, since the default :meth:`_row_passes` keeps them all. A subclass
+        that filters in memory overrides this too, or its count reports rows that
+        iterating the same query never yields. Kept separate from
+        :meth:`_row_passes` so that counting stays cheap for the builders that do
+        not filter: this receives raw rows and need not build a model per row.
+
+        Args:
+            results: The raw rows from one page of the response.
+
+        Returns:
+            int: How many of them the caller would see.
+        """
+        return len(results)
+
     def _count_via_paging(self) -> int:
         """Count by walking pages and summing result lengths.
 
         The only correct mechanism for endpoints that report no count at all.
-        Unlike iterating the query, this counts raw response rows, so it does
-        not build a model per row only to discard it, and it deliberately does
+        Unlike iterating the query, this counts raw response rows, so by default it
+        does not build a model per row only to discard it, and it deliberately does
         not apply ``config.default_result_limit`` -- that default exists to stop
         unbounded *fetches*, and letting it cap a count would silently report
         10,000 for any larger result set.
@@ -462,7 +505,7 @@ class QueryBuilder(BaseQuery[T], ABC):
             response = self._execute_query(page)
             results = response.get("results", [])
 
-            countable = len(results)
+            countable = self._countable_rows(results)
             if self._total_limit is not None:
                 countable = min(countable, self._total_limit - total)
             total += countable

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from datetime import date
 from typing import TYPE_CHECKING, Any
 
@@ -48,8 +47,10 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             client: The USASpending client instance.
         """
         super().__init__(client)
-        # Client-side filters (not supported by API)
-        self._client_filters: dict[str, Any] = {}
+        # This endpoint has no server-side date filter, so these bounds are applied
+        # in memory, once per row: parsed here rather than at match time.
+        self._since: date | None = None
+        self._until: date | None = None
 
     @property
     def _endpoint(self) -> str:
@@ -59,8 +60,14 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
     def _clone(self) -> TransactionsSearch:
         """Creates an immutable copy of the query builder."""
         clone = super()._clone()
-        clone._client_filters = self._client_filters.copy()
+        clone._since = self._since
+        clone._until = self._until
         return clone
+
+    @property
+    def _has_client_filters(self) -> bool:
+        """Whether any in-memory date bound is set."""
+        return self._since is not None or self._until is not None
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload from the filter objects."""
@@ -88,15 +95,30 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
 
     def _compute_raw_count(self) -> int:
         """Counts the number of transactions per a given award id."""
-        # The count endpoint cannot know about client-side filters, so when any
-        # are set the only correct count comes from iterating filtered results.
-        if self._client_filters:
-            logger.debug("Client-side filters present, counting by iterating all results")
+        # The count endpoint cannot know about the in-memory date bounds, so when
+        # any is set the count has to come from paging, tallying the rows that pass.
+        if self._has_client_filters:
+            logger.debug("Client-side filters present, counting by paging matching results")
             return self._count_via_paging()
 
         return self._count_via_endpoint(
             f"/awards/count/transaction/{self._require_award_id()}/", "transactions"
         )
+
+    def _countable_rows(self, results: list[dict[str, Any]]) -> int:
+        """Tally only the rows on this page that pass the date bounds.
+
+        Reached only when a bound is set, since that is the only case routed to
+        paging, so there is no guard for the unbounded case: the predicate passes
+        every row when no bound is set, which would give the same tally anyway.
+
+        Args:
+            results: The raw rows from one page of the response.
+
+        Returns:
+            int: How many of them fall inside the bounds.
+        """
+        return sum(1 for row in results if self._row_passes(self._transform_result(row)))
 
     def __getitem__(self, key: int | slice) -> Transaction | list[Transaction]:
         """
@@ -105,7 +127,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         Overrides QueryBuilder.__getitem__ to handle client-side filtering.
         When client filters are active, we must iterate to find the correct items.
         """
-        if not self._client_filters:
+        if not self._has_client_filters:
             return super().__getitem__(key)
 
         # With client filters, we can't jump to a page. We must iterate.
@@ -167,7 +189,9 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             >>> # Combine with until() for a date range
             >>> q1_2024 = award.transactions.since("2024-01-01").until("2024-03-31").all()
         """
-        return self._with_date_bound("since_date", date)
+        clone = self._clone()
+        clone._since = parse_date_string(date, "since_date")
+        return clone
 
     def until(self, date: str) -> TransactionsSearch:
         """
@@ -194,7 +218,9 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             >>> # Combine with since() for a date range
             >>> fy2024 = award.transactions.since("2023-10-01").until("2024-09-30").all()
         """
-        return self._with_date_bound("until_date", date)
+        clone = self._clone()
+        clone._until = parse_date_string(date, "until_date")
+        return clone
 
     def order_by(self, field: str, direction: str = "desc") -> TransactionsSearch:
         """
@@ -247,31 +273,13 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         clone._order_direction = direction
         return clone
 
-    def _with_date_bound(self, key: str, value: str) -> TransactionsSearch:
-        """Return a clone carrying one more client-side date bound.
-
-        The bound is stored parsed rather than as a string, because the predicate
-        below runs once per transaction: a string here would cost one date parse
-        per row, on top of the one already spent validating it.
-
-        Args:
-            key: Which bound to set, ``since_date`` or ``until_date``.
-            value: The bound as a ``YYYY-MM-DD`` string.
-
-        Returns:
-            TransactionsSearch: A new query with the bound applied.
-        """
-        clone = self._clone()
-        clone._client_filters[key] = parse_date_string(value, key)
-        return clone
-
-    def _apply_client_filters(self, transaction: Transaction) -> bool:
-        """Report whether a transaction falls inside the client-side date bounds.
+    def _row_passes(self, transaction: Transaction) -> bool:
+        """Report whether a transaction falls inside the date bounds.
 
         Returns early when no bound is set, which is the common case: reading
         `action_date` re-parses the row's date string, so a query with no date
         filter would otherwise pay that for every row to answer a question nobody
-        asked. Measured at 5000 rows, the guard is the difference between 21 ms and
+        asked. Measured at 5000 rows the guard is the difference between 21 ms and
         7 ms, and it also keeps an unparseable date from being read, and warned
         about, by a query that never needed it.
 
@@ -280,26 +288,16 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         so that one comparison covers every combination of the two.
 
         Args:
-            transaction: The transaction to filter.
+            transaction: The transaction to test.
 
         Returns:
-            bool: True if the transaction passes all filters.
+            bool: True if the transaction falls inside the bounds.
         """
-        if not self._client_filters:
+        if not self._has_client_filters:
             return True
 
         action_date = transaction.action_date
         if not action_date:
             return True
 
-        since_date = self._client_filters.get("since_date") or date.min
-        until_date = self._client_filters.get("until_date") or date.max
-        return since_date <= action_date <= until_date
-
-    def __iter__(self) -> Iterator[Transaction]:
-        """
-        Override iteration to apply client-side filters.
-        """
-        for transaction in super().__iter__():
-            if self._apply_client_filters(transaction):
-                yield transaction
+        return (self._since or date.min) <= action_date <= (self._until or date.max)

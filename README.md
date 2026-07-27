@@ -79,7 +79,7 @@ awards_query = client.awards.search() \
 ```
 
 This returns a query object that can be further refined or executed to return results.
-The methods `.all()`, `.first()`, `.count()` will trigger a query to the API, as will iterating over the query object. Query objects also support the standard Python list interface, so `len(awards_query)` fires the corresponding count endpoint:
+The methods `.all()`, `.first()`, `.count()` will trigger a query to the API, as will iterating over the query object and testing it with `if query:` (which reads a single row). Query objects also support the standard Python list interface, so `len(awards_query)` fires the corresponding count endpoint:
 
 ```python
 len(client.awards.search()

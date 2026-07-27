@@ -133,35 +133,70 @@ class BaseQuery(ABC, Generic[T]):
         return clone
 
     def first(self) -> T | None:
-        """Return the first result, or None if no results are available."""
-        for result in self.limit(1):
+        """Return the first result, or None if no results are available.
+
+        Returns:
+            T | None: The first result, or None if the query matches nothing.
+        """
+        for result in self._narrowed_to(1):
             return result
         return None
+
+    def _narrowed_to(self: Q, num: int) -> Q:
+        """Return a clone fetching at most `num` results, never more than asked.
+
+        The internal counterpart to :meth:`limit`, which *sets* the bound, since
+        that is what a caller chaining it means. Narrowing instead is what keeps
+        ``limit(0).first()`` empty without a special case: raising the caller's own
+        zero would hand back a row that :meth:`all` and :meth:`__len__` both report
+        as absent.
+
+        Args:
+            num: The most results to fetch.
+
+        Returns:
+            BaseQuery: A clone bounded by the smaller of `num` and any existing limit.
+        """
+        clone = self._clone()
+        clone._total_limit = num if self._total_limit is None else min(self._total_limit, num)
+        return clone
 
     def all(self) -> list[T]:
         """Return all results as a list.
 
-                Iterates rather than passing ``self`` to ``list()``, which asks for a
-                length hint and so calls :meth:`__len__`. For a paginated query that means
-                a request to the count endpoint whose answer is then discarded, making
-                every ``all()`` cost one request more than iterating the same query.
-        ``__length_hint__`` is not a way out:
-                CPython consults ``__len__`` first and only falls back to it when that
-                raises, so a query cannot decline the hint while ``len()`` still means
-                something.
+        Iterates rather than passing ``self`` to ``list()``, which asks for a
+        length hint and so calls :meth:`__len__`. For a paginated query that means
+        a request to the count endpoint whose answer is then discarded, making
+        every ``all()`` cost one request more than iterating the same query.
+        ``__length_hint__`` is not a way out: CPython consults ``__len__`` first
+        and only falls back to it when that raises, so a query cannot decline the
+        hint while ``len()`` still means something.
 
-                Everything that asks for the hint still pays it: ``list(query)``,
-                ``tuple(query)``, ``sorted(query)``, ``[*query]`` and ``f(*query)``, and
-                also ``bool(query)``, since ``__len__`` with no ``__bool__`` makes
-                truthiness a count. ``set()``, ``dict.fromkeys()``, ``sum()``, ``in`` and
-                comprehensions do not. So this method, or a plain loop, is the cheap way to
-                read a query.
+        Anything that asks for the hint still pays it: ``list(query)``,
+        ``tuple(query)``, ``sorted(query)``, ``[*query]``, ``f(*query)``. Sets,
+        ``sum()``, ``in``, comprehensions and ``bool()`` do not. So this method, or
+        a plain loop, is the cheap way to read a query.
+
+        Returns:
+            list[T]: Every matching result.
         """
         return list(iter(self))
 
     def __len__(self) -> int:
         """Return the effective number of items respecting limit/max_pages."""
         return self._effective_count()
+
+    def __bool__(self) -> bool:
+        """Report whether the query matches anything, by reading one row.
+
+        Defined so ``if query:`` does not fall back to :meth:`__len__`, which
+        spends a request on a count, and on the endpoints that report none walks
+        every page to settle a single bit.
+
+        Returns:
+            bool: True if the query matches at least one result.
+        """
+        return self.first() is not None
 
     def _get_effective_page_size(self) -> int:
         """Return the effective page size based on limit and page size."""

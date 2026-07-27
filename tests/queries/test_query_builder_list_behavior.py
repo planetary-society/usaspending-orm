@@ -9,15 +9,77 @@ from usaspending.queries.awards_search import AwardsSearch
 
 
 @pytest.fixture
+def three_awards(mock_usa_client):
+    """A contracts search over three awards, with its count endpoint mocked."""
+    mock_usa_client.mock_award_search(
+        [{"generated_internal_id": f"CONT_AWD_{i}"} for i in range(3)]
+    )
+    return AwardsSearch(mock_usa_client).contracts()
+
+
+@pytest.fixture
 def awards_search(mock_usa_client):
     """Create an AwardsSearch instance with a mock client."""
     return AwardsSearch(mock_usa_client).award_type_codes("A")
 
 
+class TestTruthiness:
+    """`if query:` needs one row, not a count."""
+
+    def test_truthiness_does_not_count(self, mock_usa_client, three_awards):
+        """__len__ with no __bool__ made truthiness a count request.
+
+        Worse on the builders with no count endpoint, where counting pages the
+        whole result set to answer one bit.
+        """
+        assert bool(three_awards) is True
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT) == 0
+
+    def test_an_empty_query_is_falsey(self, mock_usa_client):
+        mock_usa_client.mock_award_search([])
+        query = AwardsSearch(mock_usa_client).contracts()
+
+        assert bool(query) is False
+        assert not query
+
+    def test_truthiness_reads_one_page_not_all_of_them(self, mock_usa_client):
+        """It asks for one row, so a large result set costs one page."""
+        mock_usa_client.mock_award_search(
+            [{"generated_internal_id": f"CONT_AWD_{i}"} for i in range(250)], page_size=100
+        )
+        query = AwardsSearch(mock_usa_client).contracts()
+
+        assert bool(query) is True
+        assert mock_usa_client.get_request_count() == 1
+
+
+class TestFirstRespectsLimits:
+    """first() must not contradict all() and len() on the same query."""
+
+    def test_a_zero_limit_yields_no_first_row(self, three_awards):
+        """first() called limit(1), overriding the caller's zero."""
+        query = three_awards.limit(0)
+
+        assert query.all() == []
+        assert len(query) == 0
+        assert query.first() is None
+        assert not query
+
+    def test_zero_max_pages_yields_no_first_row(self, three_awards):
+        query = three_awards.max_pages(0)
+
+        assert query.all() == []
+        assert query.first() is None
+
+    def test_a_positive_limit_still_yields_the_first_row(self, three_awards):
+        assert three_awards.limit(2).first() is not None
+        assert three_awards.first() is not None
+
+
 class TestAllDoesNotCount:
     """all() must not spend a request on a count it throws away."""
 
-    def test_all_does_not_request_a_count(self, mock_usa_client):
+    def test_all_does_not_request_a_count(self, mock_usa_client, three_awards):
         """`list(self)` asks for a length hint, which calls __len__ -> count().
 
         On a paginated query that is a request to the count endpoint whose answer
@@ -26,11 +88,7 @@ class TestAllDoesNotCount:
         total is what discriminates the fix from the bug: the mock pre-configures
         that endpoint, so the wasted request never failed a test.
         """
-        mock_usa_client.mock_award_search(
-            [{"generated_internal_id": f"CONT_AWD_{i}"} for i in range(3)]
-        )
-
-        returned = AwardsSearch(mock_usa_client).contracts().all()
+        returned = three_awards.all()
 
         assert [award.generated_unique_award_id for award in returned] == [
             f"CONT_AWD_{i}" for i in range(3)

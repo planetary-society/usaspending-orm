@@ -157,3 +157,48 @@ def test_simple_list_filter(
     result_codes = {item["code"] for item in results}
 
     assert result_codes == set(codes)
+
+
+class TestTruthinessOnInMemoryQueries:
+    """These hold their rows, so counting beats reading a row through a clone."""
+
+    def test_truthiness_does_not_re_request_the_level(self, mock_usa_client, load_fixture):
+        """first() would fetch into a clone, leaving this query to fetch again.
+
+        BaseQuery answers truthiness from one row, which is right for a paginated
+        query. Here the rows are already held, so reading one through a narrowed
+        clone caches the fetch on the clone and costs the caller a second request.
+        """
+        mock_usa_client.set_response(
+            "/references/filter_tree/tas/", load_fixture("tas_federal_accounts.json")
+        )
+        query = mock_usa_client.tas.agencies
+
+        assert bool(query) is True
+        query.all()
+
+        assert mock_usa_client.get_request_count("/references/filter_tree/tas/") == 1
+
+    def test_truthiness_does_not_sort(self, mock_usa_client, load_fixture):
+        """Ordering the whole collection to learn whether it has one row is waste."""
+        mock_usa_client.set_response(
+            "/references/filter_tree/tas/", load_fixture("tas_federal_accounts.json")
+        )
+        query = mock_usa_client.tas.agencies.order_by("name")
+        sorted_calls = []
+        original = type(query)._apply_ordering
+        type(query)._apply_ordering = lambda self, items: (
+            sorted_calls.append(1),
+            original(self, items),
+        )[1]
+        try:
+            assert bool(query) is True
+        finally:
+            type(query)._apply_ordering = original
+
+        assert sorted_calls == []
+
+    def test_an_empty_level_is_falsey(self, mock_usa_client):
+        mock_usa_client.set_response("/references/filter_tree/tas/", {"results": []})
+
+        assert not mock_usa_client.tas.agencies

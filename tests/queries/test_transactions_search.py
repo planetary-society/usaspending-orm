@@ -2,6 +2,7 @@
 
 import logging
 from datetime import date
+from typing import ClassVar
 
 import pytest
 from tests.mocks.mock_client import MockUSASpendingClient
@@ -11,6 +12,87 @@ from usaspending.models.transaction import Transaction
 from usaspending.queries.transactions_search import TransactionsSearch
 
 
+class TestFilteredCount:
+    """count(), len() and negative indexing must agree with iteration.
+
+    The date bounds are applied in memory, so a count taken from the API, or from
+    summing raw response rows, counts rows the caller will never see.
+    """
+
+    #: One row before the bound and two after, so a filtered count differs from
+    #: the raw one and a negative index lands differently under each.
+    ROWS: ClassVar[list[dict[str, str]]] = [
+        {"id": "old", "action_date": "2023-05-01", "modification_number": "0"},
+        {"id": "mid", "action_date": "2024-06-01", "modification_number": "1"},
+        {"id": "new", "action_date": "2024-07-01", "modification_number": "2"},
+    ]
+
+    def _filtered(self, mock_usa_client, page_size=100):
+        mock_usa_client.set_paginated_response("/transactions/", self.ROWS, page_size=page_size)
+        mock_usa_client.set_response(
+            "/awards/count/transaction/CONT_AWD_123/", {"transactions": len(self.ROWS)}
+        )
+        return TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").since("2024-01-01")
+
+    def test_count_matches_iteration(self, mock_usa_client):
+        query = self._filtered(mock_usa_client)
+
+        assert query.count() == len(query.all()) == 2
+
+    def test_len_agrees_with_slicing(self, mock_usa_client):
+        """A query whose len() disagrees with its own slice is indefensible."""
+        query = self._filtered(mock_usa_client)
+
+        assert len(query[0 : len(query)]) == len(query)
+
+    def test_negative_index_reaches_the_last_matching_row(self, mock_usa_client):
+        """Offsetting by an unfiltered total lands past the end of the stream."""
+        query = self._filtered(mock_usa_client)
+
+        assert query[-1].id == "new"
+        assert query[-2].id == "mid"
+
+    def test_the_count_spans_pages(self, mock_usa_client):
+        """Filtering happens per page, so the tally must accumulate across them."""
+        query = self._filtered(mock_usa_client, page_size=1)
+
+        assert query.count() == 2
+
+    def test_truthiness_agrees_with_the_filtered_count(self, mock_usa_client):
+        """The bounds narrow the results, so they must narrow what limit() bounds.
+
+        Truthiness reads one row. If `limit(1)` bounded rows fetched rather than
+        rows kept, that one row could be a non-matching one, the stream would end
+        empty, and a query with matches would report itself as empty.
+        """
+        query = self._filtered(mock_usa_client)
+
+        assert bool(query) is True
+        assert len(query) == 2
+
+    def test_first_returns_the_first_matching_row(self, mock_usa_client):
+        """Not the first fetched row, which the bounds exclude."""
+        query = self._filtered(mock_usa_client)
+
+        assert query.first().id == "mid"
+
+    def test_a_limit_counts_matching_rows(self, mock_usa_client):
+        """limit(1) means one row the caller will see, not one row fetched."""
+        query = self._filtered(mock_usa_client)
+
+        assert [transaction.id for transaction in query.limit(1)] == ["mid"]
+        assert [transaction.id for transaction in query.limit(2)] == ["mid", "new"]
+
+    def test_an_unfiltered_query_still_uses_the_count_endpoint(self, mock_usa_client):
+        """The cheap path must survive: no filter, no reason to page anything."""
+        mock_usa_client.set_paginated_response("/transactions/", self.ROWS)
+        mock_usa_client.set_response("/awards/count/transaction/CONT_AWD_123/", {"transactions": 3})
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        assert query.count() == 3
+        assert mock_usa_client.get_request_count("/transactions/") == 0
+
+
 class TestDateFilterParsing:
     """since()/until() parse once, at filter time, not once per row."""
 
@@ -18,7 +100,33 @@ class TestDateFilterParsing:
         """Storing the string instead would leave every behavioral test green."""
         query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").since("2024-01-11")
 
-        assert query._client_filters["since_date"] == date(2024, 1, 11)
+        assert query._since == date(2024, 1, 11)
+        assert query._until is None
+
+    def test_chaining_keeps_both_bounds(self, mock_usa_client):
+        """Each filter clones, so a clone that drops a bound loses the earlier one.
+
+        The rows are chosen so that losing `since` changes the answer: without it
+        the 2023 row passes the upper bound and comes back.
+        """
+        mock_usa_client.set_paginated_response(
+            "/transactions/",
+            [
+                {"id": "too_early", "action_date": "2023-01-01"},
+                {"id": "inside", "action_date": "2024-01-05"},
+                {"id": "too_late", "action_date": "2024-02-01"},
+            ],
+        )
+        query = (
+            TransactionsSearch(mock_usa_client)
+            .award_id("CONT_AWD_123")
+            .since("2024-01-01")
+            .until("2024-01-10")
+        )
+
+        assert query._since == date(2024, 1, 1)
+        assert query._until == date(2024, 1, 10)
+        assert [transaction.id for transaction in query] == ["inside"]
 
     @pytest.mark.parametrize("bound", ["since", "until"])
     def test_a_malformed_bound_is_rejected_at_filter_time(self, mock_usa_client, bound):

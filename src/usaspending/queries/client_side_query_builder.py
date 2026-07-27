@@ -245,6 +245,21 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         """Return the total number of matching results."""
         return len(self._apply_filters(self._materialize()))
 
+    def __bool__(self) -> bool:
+        """Answer from the in-memory count, which is less work here than one row.
+
+        :meth:`BaseQuery.__bool__` reads a row via ``first()``, which is the cheap
+        question for a paginated query. It is the expensive one here: ``first()``
+        narrows onto a clone, and this hierarchy holds its rows rather than fetching
+        them per page, so the clone sorts the whole collection when ``order_by`` is
+        set and, for a filter-tree level, caches the fetch on itself and leaves this
+        query to request the level again. Counting touches neither.
+
+        Returns:
+            bool: True if the query matches at least one result.
+        """
+        return self.count() > 0
+
     def _new_instance(self: Q) -> Q:
         """Construct an empty instance over the same source items."""
         return self.__class__(

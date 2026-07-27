@@ -133,6 +133,32 @@ consistency argument behind it.
 
 ### Fixed
 
+- `award.transactions` no longer reports a count that disagrees with what it
+  yields. `since()` and `until()` filter in memory, because the endpoint has no
+  date filter, but the count came from the API or from summing raw response rows,
+  so it included transactions the caller would never see. On a three-transaction
+  award with `since("2024-01-01")` matching two, `count()` and `len()` both said
+  three, `len(query[0:len(query)])` disagreed with `len(query)`, and `query[-1]`
+  raised `IndexError` because the negative index was offset from the unfiltered
+  total. `count()`, `len()` and iteration now all report two, the slice agrees with
+  `len()`, and `query[-1]` returns the last matching transaction. `bool(query)` and
+  `first()` agree too: an in-memory bound now narrows the results rather than the
+  fetch, so `limit(1)` means one matching row instead of one row that may then be
+  discarded.
+
+- `if query:` no longer costs a full pagination. With `__len__` defined and no
+  `__bool__`, truthiness fell through to a count. On the five builders whose count
+  comes from paging, that walked every page to settle a single bit: measured on 250
+  transactions across 3 pages, `bool(query)` was 3 requests and is now 1. It reads
+  one row via `first()`. The queries that hold their rows in memory, such as
+  `client.tas.agencies`, answer from their own count instead, which for them is
+  cheaper than reading a row and does not re-request the level.
+
+- `query.limit(0).first()` returned a row, contradicting `query.limit(0).all()`
+  and `len(query.limit(0))`, which both reported nothing. `first()` asked for
+  `limit(1)`, overriding the caller's zero. It now respects it, which is also what
+  makes the new `__bool__` correct for a zero-limit query.
+
 - `.all()` no longer spends an API request on a count it discards. `list(self)`
   asks an object for a length hint, which called `__len__` and so `count()`,
   sending a request purely to size the list it was about to build, then throwing
