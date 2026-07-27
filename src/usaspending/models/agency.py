@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..logging_config import USASpendingLogger
 from ..utils.dates import to_date
@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from ..client import USASpendingClient
     from ..queries.awards_search import AwardsSearch
     from ..queries.federal_accounts_query import FederalAccountsQuery
+    from .federal_account import FederalAccount
     from .subtier_agency import SubTierAgency
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -59,6 +60,8 @@ class Agency(LazyRecord):
     This model represents a toptier agency with its essential properties.
     For subtier agency information, use the SubTierAgency model separately.
     """
+
+    _REATTACH_INVALIDATES: ClassVar[tuple[str, ...]] = ("_federal_accounts_level",)
 
     def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize Agency instance.
@@ -483,6 +486,11 @@ class Agency(LazyRecord):
         Returns a query-like object that supports iteration, filtering,
         ordering, and .count().
 
+        The level is fetched once per Agency, so the reads below cost one request
+        between them rather than one each. The corollary is that a long-lived
+        Agency keeps reporting the accounts it first saw; construct a fresh one to
+        pick up changes.
+
         Returns:
             FederalAccountsQuery: Lazy query for federal accounts.
 
@@ -504,10 +512,22 @@ class Agency(LazyRecord):
             >>> for tas in account.tas_codes:
             ...     print(tas.id)
         """
+        return self._new_federal_accounts_query()._seed(lambda: self._federal_accounts_level)
+
+    def _new_federal_accounts_query(self) -> FederalAccountsQuery:
+        """Build an unfetched query for this agency's federal accounts."""
         from ..queries.federal_accounts_query import FederalAccountsQuery
 
-        toptier_code = self.code or ""
-        return FederalAccountsQuery(self._client, toptier_code)
+        return FederalAccountsQuery(self._client, self.code or "")
+
+    @cached_property
+    def _federal_accounts_level(self) -> list[FederalAccount]:
+        """Fetch this agency's accounts once, as models rather than as a query.
+
+        See "Who caches what" in :mod:`usaspending.queries.filter_tree_query` for
+        why a model caches the models where a resource may cache the query.
+        """
+        return self._new_federal_accounts_query().all()
 
     def get_obligations(
         self,

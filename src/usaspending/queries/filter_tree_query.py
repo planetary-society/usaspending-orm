@@ -8,11 +8,26 @@ code/description filters and their clone semantics.
 
 A subclass supplies three things: the endpoint it reads, how to turn a response
 row into a model, and any filters specific to its level of the tree.
+
+Who caches what
+---------------
+An owner that hands out one of these levels should fetch it once rather than per
+read, and which thing it caches depends on how it holds the client:
+
+* A **resource** holds its client strongly, so it may cache the query itself, as
+  ``TASResource.agencies`` does.
+* A **model** holds its client weakly, on purpose. Every query holds its client
+  strongly, so what matters is how long one is held: handing a fresh query out per
+  read pins the client only for that read, while caching a query on the model
+  would pin it for the model's whole lifetime and defeat the weak reference. So
+  cache the built models and seed a fresh query from them with :meth:`_seed`, as
+  ``Agency.federal_accounts`` and ``FederalAccount.tas_codes`` do.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from ..logging_config import USASpendingLogger
@@ -58,6 +73,7 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         """
         self._client = client
         self._results: list[T] | None = None
+        self._results_source: Callable[[], list[T]] | None = None
         super().__init__(items=[], keyword_fields=self.KEYWORD_FIELDS)
 
     # ==========================================================================
@@ -109,34 +125,50 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         return self.ENDPOINT.format(**self._scope())
 
     def _fetch(self) -> list[T]:
-        """Fetch this level of the tree, once per instance.
+        """Return this level of the tree, loading it once per instance.
 
         Returns:
-            list[T]: The fetched models, cached for subsequent calls.
+            list[T]: The models, cached for subsequent calls.
         """
-        if self._results is not None:
-            return self._results
+        if self._results is None:
+            self._results = (self._results_source or self._request_level)()
+        return self._results
 
+    def _request_level(self) -> list[T]:
+        """Request this level, or answer empty when the query has no scope.
+
+        The scope guard lives here rather than in :meth:`_fetch` so that seeding
+        reads as replacing the whole fetch strategy, guard included, instead of as
+        an early return that happens to precede it.
+
+        Returns:
+            list[T]: The models for this level, or an empty list when unscoped.
+        """
         if not all(self._scope().values()):
-            self._results = []
-            return self._results
+            return []
 
         endpoint = self._endpoint
         logger.debug("Fetching %s from %s", type(self).__name__, endpoint)
 
         response = self._client._make_request("GET", endpoint)
-        self._results = [
+        results = [
             self._build_model(data)
             for data in response.get("results", [])
             if isinstance(data, dict)
         ]
 
-        logger.debug("Fetched %d results", len(self._results))
+        logger.debug("Fetched %d results", len(results))
 
-        return self._results
+        return results
 
     def _materialize(self) -> list[T]:
-        """Return the fetched models for client-side filtering."""
+        """Return the fetched models for client-side filtering.
+
+        A seeded query's results are the owner's cached list by reference, so this
+        copies before handing them to the filter chain. Nothing in that chain
+        mutates in place today, which is why no test fails without the copy; it is
+        here so that a future in-place filter cannot reach an owner's cache.
+        """
         return list(self._fetch())
 
     def _clone(self: FTQ) -> FTQ:
@@ -147,7 +179,38 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         """
         clone = super()._clone()
         clone._results = self._results
+        clone._results_source = self._results_source
         return clone
+
+    def _seed(self: FTQ, source: Callable[[], list[T]]) -> FTQ:
+        """Draw results from `source` instead of requesting them.
+
+        Takes a callable rather than a list so the query stays lazy: passing the
+        models directly would evaluate the owner's cache at property-access time,
+        making a bare ``agency.federal_accounts`` fetch before anyone iterated it.
+
+        Lets an owner fetch its level once and still hand out an independent query
+        per read. The models are shared; the query is not, so a caller may filter
+        or exhaust what it gets without affecting the next reader.
+
+        Args:
+            source: Called on first fetch, returning the models to serve.
+
+        Returns:
+            This query, for chaining onto a constructor call. Mutating rather than
+            cloning is safe because every caller seeds a query it just built, which
+            the guard below keeps true: re-seeding a query someone else already
+            holds would silently rewire it for every later reader.
+
+        Raises:
+            RuntimeError: If this query has already been seeded.
+        """
+        if self._results_source is not None:
+            raise RuntimeError(
+                f"{type(self).__name__} is already seeded; seed a freshly built query instead."
+            )
+        self._results_source = source
+        return self
 
     # ==========================================================================
     # Filters common to every level

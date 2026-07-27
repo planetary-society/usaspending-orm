@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 from weakref import ref
 
 if TYPE_CHECKING:
@@ -126,6 +126,21 @@ class ClientAwareModel(BaseModel):
     creating circular references.
     """
 
+    #: Names of derived caches to discard on :meth:`reattach`, whatever ``recursive``
+    #: says. A cache holding models built from the old client would otherwise
+    #: survive it, and those models keep their own weak reference to a client that
+    #: is going away. Discarding is unconditional because such a cache is this
+    #: model's own derived state, not a nested model the caller holds: emptying it
+    #: mutates nothing the caller can see, and it restores what a property without
+    #: a cache did anyway, which is to build against whichever client is current.
+    #:
+    #: A subclass that caches models lists them here. Note that the recursive walk
+    #: below is no substitute: it recognizes only
+    #: :class:`~usaspending.models.lazy_record.LazyRecord`, and neither model
+    #: cached today is one, so it would step over both even under
+    #: ``recursive=True``.
+    _REATTACH_INVALIDATES: ClassVar[tuple[str, ...]] = ()
+
     def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize the client-aware model.
 
@@ -206,7 +221,14 @@ class ClientAwareModel(BaseModel):
         Note:
             QueryBuilder properties (like award.transactions) are not affected
             by reattach. They create new query builders when accessed, which
-            automatically use the reattached client.
+            automatically use the reattached client. Where such a property is
+            served from a cache of already-built models, that cache is named in
+            :attr:`_REATTACH_INVALIDATES` and discarded here, so the next read
+            rebuilds it rather than serving models bound to the old client. That
+            happens even when ``recursive`` is False, which does not contradict
+            the line above: ``recursive`` governs whether models the caller holds
+            are rebound, while a discarded cache is internal state no caller can
+            observe.
 
         Raises:
             DetachedInstanceError: If the provided client is closed.
@@ -220,6 +242,10 @@ class ClientAwareModel(BaseModel):
 
         # Update this model's client reference
         self._client_ref = ref(client)
+
+        # cached_property stores into the instance __dict__, so popping clears it.
+        for name in self._REATTACH_INVALIDATES:
+            self.__dict__.pop(name, None)
 
         # Handle recursive reattachment if requested
         if recursive:

@@ -35,6 +35,33 @@ behavior preserving and the public API is unchanged.
   `TASAgenciesQuery` is now exported, with `code()`, `codes()` and
   `description()` filters that were previously unreachable.
 
+- `Agency.federal_accounts` and `FederalAccount.tas_codes` fetch their level of
+  the TAS tree once per model instead of once per read. Both return the same
+  query type as before and stay lazy, so no call site changes; what changes is
+  the request count.
+
+  The saving is large because these levels nest. Walking an agency's 16 accounts
+  and reading each one's TAS codes used to cost 33 requests; it now costs 17, the
+  floor set by the API's one-request-per-level shape. Filtering costs nothing
+  extra, since it happens in memory: the same walk with three `fiscal_year()`
+  filters per account fell from 49 requests to the same 17, and three
+  `agency.federal_accounts.fiscal_year(...)` calls, whose predicate reads every
+  account's codes, fell from 99 to 17.
+
+  The tradeoff is staleness. A long-lived `Agency` keeps reporting the accounts
+  it first saw, where before every read went to the API. Construct a fresh model
+  to pick up changes, or `del agency._federal_accounts_level` to drop just the
+  cache. `reattach()` also discards these caches, since the models in them are
+  bound to the client being replaced.
+
+  Two caveats worth stating plainly. This cache is not the one `config` describes:
+  `cache_enabled` is off by default and governs HTTP responses with a TTL, while
+  this one is always on, per model instance, and has no TTL, so turning response
+  caching off does not make these two properties re-read. And what was previously
+  reallocated per read is now retained for the parent model's lifetime, about
+  0.2 MB for a 16-account agency with its codes, so a walk over many agencies
+  should drop each one as it goes rather than accumulate them.
+
 Title casing now emits a `UserWarning` when `special_cases.yaml` exists but
 cannot be read as a list, where before the problem went only to the log and was
 invisible in practice: names were still returned, just mis-cased. It still

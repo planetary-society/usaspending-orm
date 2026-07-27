@@ -1,7 +1,27 @@
 """Tests for Agency model TAS integration."""
 
+from tests.mocks import MockUSASpendingClient
 from usaspending.models.agency import Agency
 from usaspending.queries.federal_accounts_query import FederalAccountsQuery
+
+
+def seed_tas_tree(mock_usa_client, load_fixture) -> dict:
+    """Seed agency 080's account level and the TAS level under every account.
+
+    Seeds from the fixture rather than by iterating the query, so setup does not
+    consume the account-level fetch that the request-count tests are measuring.
+    Registering a response issues no request, so a test may take its baseline
+    count after calling this.
+
+    Returns:
+        dict: The account-level fixture, whose ``results`` name the seeded accounts.
+    """
+    accounts = load_fixture("tas_federal_accounts.json")
+    mock_usa_client.set_response("/references/filter_tree/tas/080/", accounts)
+    tas_codes = load_fixture("tas_codes.json")
+    for account in accounts["results"]:
+        mock_usa_client.set_response(f"/references/filter_tree/tas/080/{account['id']}/", tas_codes)
+    return accounts
 
 
 class TestAgencyFederalAccountsProperty:
@@ -142,16 +162,7 @@ class TestAgencyFederalAccountChain:
 
     def test_chain_iteration_pattern(self, mock_usa_client, load_fixture):
         """Test typical iteration pattern across all levels."""
-        federal_accounts_fixture = load_fixture("tas_federal_accounts.json")
-        tas_codes_fixture = load_fixture("tas_codes.json")
-
-        mock_usa_client.set_response("/references/filter_tree/tas/080/", federal_accounts_fixture)
-        # Set up response for each federal account (using same fixture for simplicity)
-        for result in federal_accounts_fixture["results"]:
-            account_id = result["id"]
-            mock_usa_client.set_response(
-                f"/references/filter_tree/tas/080/{account_id}/", tas_codes_fixture
-            )
+        seed_tas_tree(mock_usa_client, load_fixture)
 
         data = {
             "toptier_agency": {
@@ -170,3 +181,153 @@ class TestAgencyFederalAccountChain:
 
         # 16 accounts * 16 TAS codes each = 256
         assert total_tas_count == 256
+
+
+class TestFederalAccountsFetchedOnce:
+    """The federal-account level is fetched once per Agency, not once per read.
+
+    federal_accounts used to build a fresh query on every access, so the three
+    reads its own docstring demonstrates cost three requests for one level, and a
+    walk over N accounts reading tas_codes cost 2N.
+    """
+
+    def _agency(self, mock_usa_client, load_fixture):
+        """An agency whose whole TAS subtree is answerable, with nothing fetched."""
+        seed_tas_tree(mock_usa_client, load_fixture)
+        return Agency({"toptier_code": "080"}, mock_usa_client)
+
+    def test_repeated_reads_cost_one_request(self, mock_usa_client, load_fixture):
+        agency = self._agency(mock_usa_client, load_fixture)
+        before = mock_usa_client.get_request_count()
+
+        len(agency.federal_accounts)
+        agency.federal_accounts.code("080-0120").first()
+        agency.federal_accounts.description("science").all()
+        agency.federal_accounts[0]
+
+        assert mock_usa_client.get_request_count() - before == 1
+
+    def test_each_read_returns_an_independent_query(self, mock_usa_client, load_fixture):
+        agency = self._agency(mock_usa_client, load_fixture)
+
+        assert agency.federal_accounts is not agency.federal_accounts
+
+        expected = len(agency.federal_accounts)
+        agency.federal_accounts.all().pop()
+
+        assert len(agency.federal_accounts) == expected
+
+    def test_nested_walk_costs_one_request_per_level(self, mock_usa_client, load_fixture):
+        """The docstring's own pattern: iterate accounts, read each one's codes."""
+        agency = self._agency(mock_usa_client, load_fixture)
+
+        before = mock_usa_client.get_request_count()
+        accounts = list(agency.federal_accounts)
+        for account in accounts:
+            len(account.tas_codes)
+            account.tas_codes.all()
+
+        # One for the account level, one per account for its TAS level.
+        assert mock_usa_client.get_request_count() - before == 1 + len(accounts)
+
+    def test_an_agency_without_a_code_makes_no_request(self, mock_usa_client):
+        agency = Agency({"name": "Unknown"}, mock_usa_client)
+        agency._details_fetched = True
+        before = mock_usa_client.get_request_count()
+
+        assert agency.federal_accounts.all() == []
+        assert mock_usa_client.get_request_count() == before
+
+    def test_reading_the_property_alone_makes_no_request(self, mock_usa_client, load_fixture):
+        """Caching must not cost laziness.
+
+        The cache is reached through a callable for exactly this reason: handing
+        the models to the query directly would evaluate the cache here, at
+        property-access time, and fetch a level nobody has asked to see yet.
+        """
+        agency = self._agency(mock_usa_client, load_fixture)
+        before = mock_usa_client.get_request_count()
+
+        query = agency.federal_accounts
+        query = query.description("science")
+
+        assert mock_usa_client.get_request_count() == before
+        assert len(query.all()) > 0, "still fetches once someone reads it"
+
+    def test_filtering_by_fiscal_year_costs_one_request_per_level(
+        self, mock_usa_client, load_fixture
+    ):
+        """The pattern the TAS docstrings demonstrate, over a whole agency.
+
+        fiscal_year() filters in memory, so each additional year should be free.
+        Before the level was cached per model, every filter on every account
+        re-fetched, and three years over 16 accounts cost ~51 requests.
+        """
+        agency = self._agency(mock_usa_client, load_fixture)
+
+        before = mock_usa_client.get_request_count()
+        accounts = agency.federal_accounts.all()
+        for account in accounts:
+            for year in (2023, 2024, 2025):
+                account.tas_codes.fiscal_year(year).all()
+
+        assert mock_usa_client.get_request_count() - before == 1 + len(accounts)
+
+    def test_the_cross_level_filter_costs_one_request_per_level(
+        self, mock_usa_client, load_fixture
+    ):
+        """FederalAccountsQuery.fiscal_year reads tas_codes for every account.
+
+        This is the expensive filter and the one the request-count claim rests on:
+        its predicate crosses into the level below, so before the levels were cached
+        per model it re-fetched every account's codes on every call.
+        """
+        agency = self._agency(mock_usa_client, load_fixture)
+        accounts = len(load_fixture("tas_federal_accounts.json")["results"])
+
+        before = mock_usa_client.get_request_count()
+        for year in (2023, 2024, 2025):
+            agency.federal_accounts.fiscal_year(year).all()
+
+        # One for the account level, one per account for the codes its predicate reads.
+        assert mock_usa_client.get_request_count() - before == 1 + accounts
+
+    def test_reattach_rebinds_the_cached_accounts(self, mock_usa_client, load_fixture):
+        """A cache of models must not outlive the client those models point at.
+
+        The cached FederalAccounts each hold a weak reference to the client they
+        were built against, so keeping them across a reattach would hand back
+        accounts that raise DetachedInstanceError once the old client goes away.
+        """
+        accounts = seed_tas_tree(mock_usa_client, load_fixture)
+        agency = Agency({"toptier_code": "080"}, mock_usa_client)
+        agency.federal_accounts.all()
+
+        replacement = MockUSASpendingClient()
+        replacement.set_response("/references/filter_tree/tas/080/", accounts)
+        agency.reattach(replacement, recursive=True)
+
+        accounts = agency.federal_accounts.all()
+        assert len(accounts) > 0
+        assert all(account._client is replacement for account in accounts)
+
+    def test_reattach_rebinds_the_cache_even_when_not_recursive(
+        self, mock_usa_client, load_fixture
+    ):
+        """The cache is this Agency's own state, so `recursive` does not govern it.
+
+        `recursive` decides whether models the caller already holds get rebound.
+        A cache is not such a model: discarding it is invisible to the caller and
+        restores what an uncached property did anyway, which is to build against
+        whichever client is current. Were it kept, a non-recursive reattach would
+        hand back accounts bound to a client on its way out.
+        """
+        accounts = seed_tas_tree(mock_usa_client, load_fixture)
+        agency = Agency({"toptier_code": "080"}, mock_usa_client)
+        agency.federal_accounts.all()
+
+        replacement = MockUSASpendingClient()
+        replacement.set_response("/references/filter_tree/tas/080/", accounts)
+        agency.reattach(replacement, recursive=False)
+
+        assert all(a._client is replacement for a in agency.federal_accounts.all())

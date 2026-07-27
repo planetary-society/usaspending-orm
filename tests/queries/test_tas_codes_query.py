@@ -1,7 +1,60 @@
 """Tests for TASCodesQuery."""
 
+import pytest
+
 from usaspending.models.treasury_account_symbol import TreasuryAccountSymbol
 from usaspending.queries.tas_codes_query import TASCodesQuery
+
+
+class TestSeeding:
+    """A seeded query serves an owner's fetched level instead of requesting it."""
+
+    def test_a_seeded_query_makes_no_request(self, mock_usa_client, load_fixture):
+        codes = [
+            TreasuryAccountSymbol(row, mock_usa_client)
+            for row in load_fixture("tas_codes.json")["results"]
+        ]
+        query = TASCodesQuery(mock_usa_client, "080", "080-0120")._seed(lambda: codes)
+        before = mock_usa_client.get_request_count()
+
+        assert query.all() == codes
+        assert mock_usa_client.get_request_count() == before
+
+    def test_a_seeded_query_ignores_its_scope(self, mock_usa_client):
+        """The seed replaces the whole fetch, including the empty-scope guard.
+
+        An unscoped query normally answers empty without a request. Seeded, it must
+        serve what it was given, so that an owner which cannot name its own scope
+        can still hand out a level it fetched some other way.
+        """
+        query = TASCodesQuery(mock_usa_client, "", "")._seed(lambda: ["sentinel"])
+        before = mock_usa_client.get_request_count()
+
+        assert query.all() == ["sentinel"]
+        assert mock_usa_client.get_request_count() == before
+
+    def test_seeding_twice_is_refused(self, mock_usa_client):
+        """Re-seeding a query someone else holds would rewire it for every reader.
+
+        The mutate-rather-than-clone shape in _seed is only safe while every caller
+        seeds a query it just built, so the second attempt has to fail loudly.
+        """
+        query = TASCodesQuery(mock_usa_client, "080", "080-0120")._seed(lambda: [])
+
+        with pytest.raises(RuntimeError, match="already seeded"):
+            query._seed(lambda: ["other"])
+
+    def test_a_clone_still_serves_the_seed(self, mock_usa_client, load_fixture):
+        """Filtering a seeded query must not send the clone back to the API."""
+        codes = [
+            TreasuryAccountSymbol(row, mock_usa_client)
+            for row in load_fixture("tas_codes.json")["results"]
+        ]
+        query = TASCodesQuery(mock_usa_client, "080", "080-0120")._seed(lambda: codes)
+        before = mock_usa_client.get_request_count()
+
+        assert len(query.availability_type_code("X").all()) > 0
+        assert mock_usa_client.get_request_count() == before
 
 
 class TestTASCodesQueryBasics:
