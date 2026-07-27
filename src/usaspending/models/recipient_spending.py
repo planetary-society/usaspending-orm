@@ -17,6 +17,30 @@ class RecipientSpending(SpendingFields, Recipient):
 
     Represents spending data grouped by recipient with recipient-specific
     fields like recipient_id and UEI.
+
+    Warning:
+        Half of the inherited accessors cost one API request each, per row, and
+        the cost is not visible at the call site. ``/search/spending_by_category/
+        recipient/`` returns six fields per row, so anything beyond them is
+        lazy-loaded from ``/recipient/{id}/``:
+
+        Served by the row, free
+            ``amount``, ``code``, ``duns``, ``name``, ``recipient_id``,
+            ``spending_level``, ``total_outlays``, ``uei``, ``raw``
+
+        One request each, per row
+            ``alternate_names``, ``business_categories``, ``business_types``,
+            ``location``, ``parent``, ``parents``, ``recipient_level``,
+            ``total_face_value_loan_amount``,
+            ``total_face_value_loan_transactions``,
+            ``total_transaction_amount``, ``total_transactions``
+
+        So ``[row.location for row in page]`` is one request per row. That is the
+        API's shape rather than this class's: the recipient *list* endpoint carries
+        the same six-ish fields, so no bulk call supplies the rest, and reaching
+        them through an explicit association instead was measured to save exactly
+        zero requests. Read the free fields freely; treat the others as a
+        deliberate per-recipient fetch.
     """
 
     def __init__(self, data: dict, client: USASpendingClient):
