@@ -659,11 +659,9 @@ class MockUSASpendingClient(USASpendingClient):
             if "Recipient Name" not in award:
                 award["Recipient Name"] = "Test Recipient"
 
+        # Sets up the count endpoint too, unless the caller already configured one.
+        # Doing it here instead would bypass that check and overwrite the caller's.
         self.set_paginated_response("/search/spending_by_award/", awards, page_size)
-
-        # Also mock the count endpoint since __len__ now calls count()
-        # Default to contracts category for backward compatibility
-        self.mock_award_count(contracts=len(awards))
 
     def mock_award_count(self, **counts) -> None:
         """Set up mock response for award count.

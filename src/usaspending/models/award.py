@@ -740,7 +740,7 @@ class Award(LazyRecord):
         Examples:
             >>> award.transactions.count()  # Get count without loading all data
             >>> award.transactions.limit(10).all()  # Get first 10 transactions
-            >>> list(award.transactions)  # Iterate through all transactions
+            >>> award.transactions.all()  # Every transaction, as a list
 
         Returns:
             TransactionsSearch: The query builder for transactions.
@@ -758,7 +758,7 @@ class Award(LazyRecord):
             >>> award.funding.order_by(
             ...     "fiscal_date", "asc"
             ... ).all()  # Get all funding records sorted by date
-            >>> list(award.funding.limit(10))  # Iterate through first 10 funding records
+            >>> award.funding.limit(10).all()  # The first 10 funding records, as a list
 
         Returns:
             FundingSearch: The query builder for funding.
@@ -774,7 +774,7 @@ class Award(LazyRecord):
 
         Examples:
             >>> award.accounts.count()  # Get count without loading all data
-            >>> list(award.accounts)  # Iterate through all accounts
+            >>> award.accounts.all()  # Every account, as a list
             >>> award.accounts.order_by("amount", "desc").all()  # Sort by amount
 
         Returns:

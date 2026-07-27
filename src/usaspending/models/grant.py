@@ -196,7 +196,7 @@ class Grant(Award):
         Examples:
             >>> grant.subawards.count()  # Get count without loading all data
             >>> grant.subawards.limit(10).all()  # Get first 10 subawards
-            >>> list(grant.subawards)  # Iterate through all subawards
+            >>> grant.subawards.all()  # Every subaward, as a list
 
         Returns:
             SubAwardsSearch: A query builder object for subawards.

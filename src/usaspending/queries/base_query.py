@@ -139,8 +139,25 @@ class BaseQuery(ABC, Generic[T]):
         return None
 
     def all(self) -> list[T]:
-        """Return all results as a list."""
-        return list(self)
+        """Return all results as a list.
+
+                Iterates rather than passing ``self`` to ``list()``, which asks for a
+                length hint and so calls :meth:`__len__`. For a paginated query that means
+                a request to the count endpoint whose answer is then discarded, making
+                every ``all()`` cost one request more than iterating the same query.
+        ``__length_hint__`` is not a way out:
+                CPython consults ``__len__`` first and only falls back to it when that
+                raises, so a query cannot decline the hint while ``len()`` still means
+                something.
+
+                Everything that asks for the hint still pays it: ``list(query)``,
+                ``tuple(query)``, ``sorted(query)``, ``[*query]`` and ``f(*query)``, and
+                also ``bool(query)``, since ``__len__`` with no ``__bool__`` makes
+                truthiness a count. ``set()``, ``dict.fromkeys()``, ``sum()``, ``in`` and
+                comprehensions do not. So this method, or a plain loop, is the cheap way to
+                read a query.
+        """
+        return list(iter(self))
 
     def __len__(self) -> int:
         """Return the effective number of items respecting limit/max_pages."""

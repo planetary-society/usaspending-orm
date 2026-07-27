@@ -128,8 +128,11 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             raise IndexError("Transaction index out of range")
 
         elif isinstance(key, slice):
-            # Handle slicing - this fetches all matches then slices
-            return list(self)[key]
+            # Fetches every match, then slices. Delegates to all() so the
+            # no-length-hint rule lives in one place: this branch only runs when
+            # client filters are set, and in that state count() pages the whole
+            # result set, so asking for a hint here would page it twice.
+            return self.all()[key]
 
         else:
             raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")

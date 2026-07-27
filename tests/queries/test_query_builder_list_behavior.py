@@ -14,6 +14,31 @@ def awards_search(mock_usa_client):
     return AwardsSearch(mock_usa_client).award_type_codes("A")
 
 
+class TestAllDoesNotCount:
+    """all() must not spend a request on a count it throws away."""
+
+    def test_all_does_not_request_a_count(self, mock_usa_client):
+        """`list(self)` asks for a length hint, which calls __len__ -> count().
+
+        On a paginated query that is a request to the count endpoint whose answer
+        is used only to size the list, so every all() cost one request more than
+        the identical loop. Asserting on the count endpoint rather than on the
+        total is what discriminates the fix from the bug: the mock pre-configures
+        that endpoint, so the wasted request never failed a test.
+        """
+        mock_usa_client.mock_award_search(
+            [{"generated_internal_id": f"CONT_AWD_{i}"} for i in range(3)]
+        )
+
+        returned = AwardsSearch(mock_usa_client).contracts().all()
+
+        assert [award.generated_unique_award_id for award in returned] == [
+            f"CONT_AWD_{i}" for i in range(3)
+        ]
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT) == 0
+        assert mock_usa_client.get_request_count() == 1
+
+
 class TestLenMethod:
     """Test the __len__ method implementation."""
 

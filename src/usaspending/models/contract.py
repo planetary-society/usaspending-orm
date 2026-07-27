@@ -115,7 +115,7 @@ class Contract(ProcurementAward):
         Examples:
             >>> contract.subawards.count()  # Get count without loading all data
             >>> contract.subawards.limit(10).all()  # Get first 10 subawards
-            >>> list(contract.subawards)  # Iterate through all subawards
+            >>> contract.subawards.all()  # Every subaward, as a list
 
         Returns:
             SubAwardsSearch: A query builder object for subawards.

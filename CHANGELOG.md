@@ -133,6 +133,32 @@ consistency argument behind it.
 
 ### Fixed
 
+- `.all()` no longer spends an API request on a count it discards. `list(self)`
+  asks an object for a length hint, which called `__len__` and so `count()`,
+  sending a request purely to size the list it was about to build, then throwing
+  the answer away. Every `.all()` in the library paid it, so
+  `client.awards.search().contracts().all()` sent two requests where the
+  equivalent loop sent one. `all()` now iterates instead of handing itself to
+  `list()`, so it asks for no hint.
+
+  On the five builders with no count endpoint, the cost was not one request but a
+  second complete pass over every page, because their count is produced by paging
+  the whole result set: award funding, spending search, IDV child awards, unscoped
+  subaward search, and transactions whenever a date filter is set. Measured on 250
+  transactions across 3 pages, `.all()` went from 6 requests to 3, and the saving
+  grows with the result set. For a filter-tree level, which needs no extra
+  request, the same change halved the in-memory work: 3.6 ms to 1.8 ms over 2000
+  rows.
+
+  `len(query)` still calls the count endpoint, as it must, and so does everything
+  that consults the hint: `list(query)`, `tuple(query)`, `sorted(query)`,
+  `[*query]`, `f(*query)`, and `bool(query)` -- a bare `if query:` is a count, and
+  on those five builders a full pagination. None of it can be made cheap while
+  `len()` remains meaningful, since Python checks `__len__` before
+  `__length_hint__`. Prefer `.all()` or a plain loop; `set(query)`, `sum(...)`,
+  `in` and comprehensions were never affected. The 13 docstring examples that
+  taught `list(...)` now show `.all()`.
+
 - `client.recipients.find_by_id()` no longer addresses the wrong record for a
   recipient ID carrying several levels, such as `"<hash>-['C', 'R']"`.
   Normalization was implemented twice with algorithms that disagreed:
