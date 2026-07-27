@@ -102,15 +102,14 @@ class LazyRecord(ClientAwareModel):
         Returns:
             Any: The value found for the first matching key, or the default value.
         """
-        keys_list = list(keys)
-
         # If we haven't fetched details yet, check whether any key
         # exists in current data. If no key is present at all, trigger
         # a lazy load. A key present with a None value is treated as
         # legitimate API data (not missing), so it does NOT trigger a fetch.
-        if not self._details_fetched and not any(key in self._data for key in keys_list):
+        if not self._details_fetched and not any(key in self._data for key in keys):
             self._ensure_details()
 
         # Delegate to get_value for consistent multi-key lookup semantics:
-        # it skips None values, tries alternate keys, and returns default.
-        return self.get_value(keys_list, default=default)
+        # it skips None values, tries alternate keys, and returns default. The
+        # tuple is passed as-is; get_value takes any iterable of keys.
+        return self.get_value(keys, default=default)

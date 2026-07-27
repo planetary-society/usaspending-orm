@@ -507,7 +507,10 @@ def parse_fiscal_year(year: int | str) -> int:
         2024
         >>> parse_fiscal_year("2024")
         2024
-        >>> parse_fiscal_year(2007)  # Raises ValidationError
+        >>> parse_fiscal_year(2007)
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid fiscal year: 2007. Must be >= 2008 (earliest year supported by USASpending.gov).
     """
     if isinstance(year, str):
         try:

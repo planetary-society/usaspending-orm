@@ -38,9 +38,7 @@ class SubAward(ClientAwareModel):
 
     Example:
         >>> # Find subawards for a specific prime award
-        >>> subawards = client.subawards.search()
-        ...     .for_prime_award_piid("80NSSC21C0123")
-        ...     .limit(10)
+        >>> subawards = client.subawards.search().for_prime_award_piid("80NSSC21C0123").limit(10)
         >>> for subaward in subawards:
         ...     print(f"{subaward.sub_awardee_name}: ${subaward.sub_award_amount or 0:,.2f}")
     """

@@ -92,11 +92,13 @@ class AwardResource(BaseResource):
             AwardSearch query builder for chaining filters
 
         Example:
-            >>> awards = client.awards.search()
+            >>> awards = (
+            ...     client.awards.search()
             ...     .agency("National Aeronautics and Space Administration")
             ...     .place_of_performance_locations({"state_code": "TX", "country_code": "USA"})
             ...     .fiscal_year(2024)
             ...     .limit(10)
+            ... )
         """
         logger.debug("Creating new AwardsSearch query builder")
         from ..queries.awards_search import AwardsSearch

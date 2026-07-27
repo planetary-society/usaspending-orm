@@ -72,11 +72,13 @@ class RecipientsResource(BaseResource):
             RecipientsSearch query builder for recipient searches
 
         Example:
-            >>> recipients = client.recipients.search()
+            >>> recipients = (
+            ...     client.recipients.search()
             ...     .keyword("california")
             ...     .award_type("contracts")
             ...     .order_by("amount", "desc")
             ...     .limit(10)
+            ... )
         """
         logger.debug("Creating new RecipientsSearch query builder for recipient searches")
         from ..queries.recipients_search import RecipientsSearch

@@ -29,8 +29,7 @@ class TransactionsResource(BaseResource):
             TransactionsSearch query builder for chaining filters
 
         Example:
-            >>> transactions = client.transactions.award_id("CONT_AWD_123")
-            ...     .limit(50)
+            >>> transactions = client.transactions.award_id("CONT_AWD_123").limit(50)
             >>> for txn in transactions:
             ...     print(f"{txn.action_date}: ${txn.federal_action_obligation or 0:,.2f}")
         """

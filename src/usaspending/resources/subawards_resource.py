@@ -36,10 +36,12 @@ class SubAwardsResource(BaseResource):
             SubAwardsSearch query builder for chaining filters
 
         Example:
-            >>> subawards = client.subawards.search()
+            >>> subawards = (
+            ...     client.subawards.search()
             ...     .award_type_codes("A", "B", "C")
             ...     .time_period("2024-01-01", "2024-12-31")
             ...     .limit(50)
+            ... )
             >>> for sub in subawards:
             ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount or 0:,.2f}")
         """
@@ -60,8 +62,7 @@ class SubAwardsResource(BaseResource):
             SubAwardsSearch query builder for chaining filters
 
         Example:
-            >>> subawards = client.subawards.award_id("CONT_AWD_123...")
-            ...     .limit(50)
+            >>> subawards = client.subawards.award_id("CONT_AWD_123...").limit(50)
             >>> for sub in subawards:
             ...     print(f"{sub.sub_award_date}: {sub.sub_awardee_name}")
         """

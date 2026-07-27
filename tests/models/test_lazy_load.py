@@ -104,7 +104,9 @@ class TestLazyRecord:
         result = test_lazy_record._lazy_get("any_field", default="any_default")
 
         # Should use get_value with the provided default
-        test_lazy_record.get_value.assert_called_once_with(["any_field"], default="any_default")
+        # A tuple, not a list: _lazy_get passes its *keys through untouched, since
+        # get_value takes any iterable of keys.
+        test_lazy_record.get_value.assert_called_once_with(("any_field",), default="any_default")
         assert result == "mocked_value"
 
     def test_lazy_get_with_multiple_keys(self, test_lazy_record):
