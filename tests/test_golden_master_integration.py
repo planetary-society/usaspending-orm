@@ -131,6 +131,14 @@ VOLATILE_PROPERTIES = frozenset(
         "total_outlays",
         "total_subaward_amount",
         "total_subsidy_cost",
+        # Recipient-side aggregates, the same class of server-computed total as
+        # the award-side ones above. Missed when this list was first written, and
+        # they drift for the same reason: USASpending revises transactions, so
+        # these fall as well as rise.
+        "total_face_value_loan_amount",
+        "total_face_value_loan_transactions",
+        "total_transaction_amount",
+        "total_transactions",
     }
 )
 

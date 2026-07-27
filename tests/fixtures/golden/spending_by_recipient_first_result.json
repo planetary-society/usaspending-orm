@@ -43,14 +43,26 @@
     "recipient_id": "6e76fa33-2d96-c636-941c-bca1997db076-C",
     "recipient_level": "C",
     "spending_level": "transactions",
-    "total_face_value_loan_amount": "Decimal(0.00)",
-    "total_face_value_loan_transactions": 0,
+    "total_face_value_loan_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_face_value_loan_transactions": {
+      "__type__": "int",
+      "empty": false
+    },
     "total_outlays": {
       "__type__": "NoneType",
       "empty": true
     },
-    "total_transaction_amount": "Decimal(2204978442.58)",
-    "total_transactions": 1354,
+    "total_transaction_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_transactions": {
+      "__type__": "int",
+      "empty": false
+    },
     "uei": "YC1YP79BFD19"
   }
 }
