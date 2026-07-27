@@ -11,7 +11,7 @@ import requests
 from ..config import config
 from ..exceptions import HTTPError, RateLimitError
 from ..logging_config import USASpendingLogger
-from .formatter import to_int
+from .numbers import to_int
 
 logger = USASpendingLogger.get_logger(__name__)
 

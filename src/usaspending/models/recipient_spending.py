@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..utils.formatter import round_to_millions
+from ..utils.numbers import round_to_millions
 from .recipient import Recipient
 from .spending import SpendingFields
 

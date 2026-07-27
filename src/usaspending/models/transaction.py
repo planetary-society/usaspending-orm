@@ -5,7 +5,9 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from ..utils.formatter import TextFormatter, to_date, to_decimal
+from ..utils.dates import to_date
+from ..utils.numbers import to_decimal
+from ..utils.textcase import TextFormatter
 from .base_model import BaseModel
 
 

@@ -6,7 +6,8 @@ from tests.conftest import load_json_fixture
 from tests.utils import assert_decimal_equal
 from usaspending.models import Recipient, RecipientSpending
 from usaspending.queries.spending_search import SpendingSearch
-from usaspending.utils.formatter import round_to_millions, titlecase_name
+from usaspending.utils.numbers import round_to_millions
+from usaspending.utils.textcase import titlecase_name
 
 
 class TestRecipientSpendingInitialization:

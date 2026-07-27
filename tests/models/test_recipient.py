@@ -11,7 +11,7 @@ from tests.utils import assert_decimal_equal
 from usaspending.exceptions import ValidationError
 from usaspending.models.location import Location
 from usaspending.models.recipient import Recipient
-from usaspending.utils.formatter import titlecase_name
+from usaspending.utils.textcase import titlecase_name
 
 
 class TestRecipientInitialization:

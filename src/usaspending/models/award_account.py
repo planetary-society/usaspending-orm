@@ -6,7 +6,7 @@ from decimal import Decimal
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
-from ..utils.formatter import to_decimal, to_int
+from ..utils.numbers import to_decimal, to_int
 from .federal_account import FederalAccount
 
 if TYPE_CHECKING:

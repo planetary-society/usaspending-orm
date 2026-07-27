@@ -3,7 +3,7 @@
 from tests.utils import assert_decimal_equal
 from usaspending.models.agency import Agency
 from usaspending.models.subtier_agency import SubTierAgency
-from usaspending.utils.formatter import titlecase_name
+from usaspending.utils.textcase import titlecase_name
 
 
 class TestAgencySubagencies:

@@ -1,11 +1,49 @@
-"""Tests for TextFormatter class."""
+"""Tests for title and sentence casing."""
 
+from contextlib import contextmanager
 from unittest.mock import mock_open, patch
 
 import pytest
 import yaml
 
-from usaspending.utils.formatter import TextFormatter
+from usaspending.utils.textcase import TextFormatter, titlecase_name
+
+#: Superset of the special cases the casing tests rely on. One list rather than
+#: three near-identical ones, since a case only matters to a test that mentions it.
+MOCK_SPECIAL_CASES = [
+    "NASA",
+    "ESA",
+    "USA",
+    "SBIR",
+    "LLC",
+    "Inc.",
+    "Ltd.",
+    "NE",
+    "SW",
+    "St.",
+    "Ave.",
+    "OSIRIS-REx",
+    "SCaN",
+    "EPSCoR",
+]
+
+
+@contextmanager
+def casing_from(entries):
+    """Run a block with `entries` standing in for special_cases.yaml.
+
+    Clearing the cache is the whole invalidation contract: the derived lookups
+    rebuild when the loaded list is a different object, which
+    TestSpecialCaseLookupInvalidation pins. So this resets only the cache, on the
+    way in and again on the way out.
+    """
+    original = TextFormatter._special_cases_cache
+    TextFormatter._special_cases_cache = None
+    try:
+        with patch("builtins.open", mock_open(read_data=yaml.dump(entries))):
+            yield
+    finally:
+        TextFormatter._special_cases_cache = original
 
 
 class TestTextFormatter:
@@ -131,26 +169,9 @@ class TestTextFormatterSentenceCase:
 
     @pytest.fixture(autouse=True)
     def setup_yaml(self):
-        """Mock the YAML file for consistent tests."""
-        TextFormatter._special_cases_cache = None
-
-        mock_special_cases = [
-            "NASA",
-            "ESA",
-            "USA",
-            "SBIR",
-            "LLC",
-            "Inc.",
-            "OSIRIS-REx",
-            "SCaN",
-            "EPSCoR",
-        ]
-        mock_yaml_content = yaml.dump(mock_special_cases)
-
-        with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
+        """Stand a fixed special-case list in for the shipped YAML."""
+        with casing_from(MOCK_SPECIAL_CASES):
             yield
-
-        TextFormatter._special_cases_cache = None
 
     def test_empty_input(self):
         """Test empty input handling."""
@@ -288,16 +309,9 @@ class TestTextFormatterTitlecaseCallback:
 
     @pytest.fixture(autouse=True)
     def setup_yaml(self):
-        """Mock the YAML file for consistent tests."""
-        TextFormatter._special_cases_cache = None
-
-        mock_special_cases = ["NASA", "Inc.", "LLC"]
-        mock_yaml_content = yaml.dump(mock_special_cases)
-
-        with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
+        """Stand a fixed special-case list in for the shipped YAML."""
+        with casing_from(MOCK_SPECIAL_CASES):
             yield
-
-        TextFormatter._special_cases_cache = None
 
     def test_non_string_input(self):
         """Test non-string input handling."""
@@ -432,14 +446,8 @@ class TestSpecialCaseCollisionWarning:
     """
 
     def _build(self, entries):
-        original = TextFormatter._special_cases_cache
-        try:
-            TextFormatter._special_cases_cache = None
-            with patch("builtins.open", mock_open(read_data=yaml.dump(entries))):
-                return TextFormatter._special_case_lookups()
-        finally:
-            TextFormatter._special_cases_cache = original
-            TextFormatter._special_cases_lookups = None
+        with casing_from(entries):
+            return TextFormatter._special_case_lookups()
 
     def test_same_form_different_spelling_warns(self):
         with pytest.warns(UserWarning, match="lowercase forms collide"):
@@ -463,3 +471,70 @@ class TestSpecialCaseCollisionWarning:
         with _warnings.catch_warnings():
             _warnings.simplefilter("error", UserWarning)
             self._build(["NASA", "Inc.", "OSIRIS-REx"])
+
+
+class TestTitlecaseName:
+    """Test the titlecase_name function."""
+
+    @pytest.fixture(autouse=True)
+    def setup_yaml(self):
+        """Stand a fixed special-case list in for the shipped YAML."""
+        with casing_from(MOCK_SPECIAL_CASES):
+            yield
+
+    def test_none_input(self):
+        """Test handling of None input."""
+        assert titlecase_name(None) is None
+
+    def test_basic_titlecase(self):
+        """Test basic title casing."""
+        assert titlecase_name("hello world") == "Hello World"
+        assert titlecase_name("HELLO WORLD") == "Hello World"
+
+    def test_acronyms_preserved(self):
+        """Test that acronyms are preserved."""
+        assert titlecase_name("nasa research") == "NASA Research"
+        assert titlecase_name("working with nasa") == "Working With NASA"
+        assert titlecase_name("sbir program") == "SBIR Program"
+
+    def test_business_suffixes(self):
+        """Test business suffixes."""
+        assert titlecase_name("acme inc.") == "Acme Inc."
+        assert titlecase_name("technology llc") == "Technology LLC"
+        assert titlecase_name("services ltd.") == "Services Ltd."
+
+    def test_small_words(self):
+        """Test that small words are lowercase in middle."""
+        assert titlecase_name("bread and butter") == "Bread and Butter"
+        assert titlecase_name("the quick fox") == "The Quick Fox"
+        assert titlecase_name("of the people") == "Of the People"
+
+    def test_directional_abbreviations(self):
+        """Test directional abbreviations."""
+        assert titlecase_name("123 main st. ne") == "123 Main St. NE"
+        assert titlecase_name("456 oak ave. sw") == "456 Oak Ave. SW"
+
+    def test_directional_with_punctuation(self):
+        """Test directional abbreviations with punctuation."""
+
+        assert titlecase_name("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
+
+    def test_special_casing(self):
+        """Test special casing rules."""
+        assert titlecase_name("osiris-rex mission") == "OSIRIS-REx Mission"
+        assert titlecase_name("scan network") == "SCaN Network"
+        assert titlecase_name("epscor funding") == "EPSCoR Funding"
+
+    def test_complex_examples(self):
+        """Test complex real-world examples."""
+        assert (
+            titlecase_name("nasa sbir program for small business llc")
+            == "NASA SBIR Program for Small Business LLC"
+        )
+
+        assert titlecase_name("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
+
+        assert (
+            titlecase_name("the university of maryland and nasa")
+            == "The University of Maryland and NASA"
+        )

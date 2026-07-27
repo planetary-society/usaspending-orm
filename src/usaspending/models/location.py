@@ -4,7 +4,7 @@ from typing import Any
 
 from titlecase import titlecase
 
-from ..utils.formatter import titlecase_name
+from ..utils.textcase import titlecase_name
 from .base_model import BaseModel
 
 

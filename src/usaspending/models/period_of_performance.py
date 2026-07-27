@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from ..utils.formatter import to_date
+from ..utils.dates import to_date
 from .base_model import BaseModel
 
 

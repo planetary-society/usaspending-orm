@@ -1,10 +1,22 @@
+"""Title and sentence casing for the uppercased text the API returns.
+
+Recipient, agency and place names arrive in capitals, and plain casing mangles
+the acronyms and suffixes they contain, so casing consults ``special_cases.yaml``
+in this directory. That list is deliberately NASA-centric; see
+:func:`titlecase_name`. Lifting the mechanism into a plugin, so another agency's
+vocabulary could be supplied instead, is deferred rather than attempted here. The
+seam for that is narrower than this module: everything else in here is
+agency-neutral English mechanics, so only :meth:`TextFormatter._load_special_cases`
+would change. What blocks a per-client vocabulary is that the loaded list and its
+lookups are class attributes, i.e. process-global, which the project's
+instance-based design rules out.
+
+The data file is resolved relative to this module, so it moves with it."""
+
 from __future__ import annotations
 
-import decimal
 import re
 import warnings
-from datetime import date, datetime
-from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -15,164 +27,8 @@ from ..logging_config import USASpendingLogger
 
 logger = USASpendingLogger.get_logger(__name__)
 
-
-def to_date(date_string: str | date | None) -> date | None:
-    """Convert date string to date object.
-
-    Supports multiple date formats:
-    - YYYY-MM-DD (date only)
-    - YYYY-MM-DD HH:MM:SS (space-separated datetime)
-    - YYYY-MM-DD HH:MM:SS.ffffff (space-separated datetime with microseconds)
-    - YYYY-MM-DDTHH:MM:SS (ISO datetime)
-    - YYYY-MM-DDTHH:MM:SS.ffffff (ISO datetime with microseconds)
-    - YYYY-MM-DDTHH:MM:SSZ (ISO datetime with UTC indicator)
-    - YYYY-MM-DDTHH:MM:SS+/-HH:MM (ISO datetime with timezone offset)
-
-    Note: For formats with time components, only the date portion is returned.
-    If input is already a date object, returns it unchanged.
-
-    Args:
-        date_string: Date string in any supported format, or a date object
-
-    Returns:
-        date object or None if parsing fails
-    """
-    if not date_string:
-        return None
-
-    if isinstance(date_string, datetime):
-        return date_string.date()
-    if isinstance(date_string, date):
-        return date_string
-
-    # Define formats to try, in order of likelihood
-    formats = [
-        "%Y-%m-%d",  # Date only (original format)
-        "%Y-%m-%d %H:%M:%S",  # Datetime with space separator
-        "%Y-%m-%d %H:%M:%S.%f",  # Datetime with space separator and microseconds
-        "%Y-%m-%dT%H:%M:%S",  # ISO datetime without timezone
-        "%Y-%m-%dT%H:%M:%S.%f",  # ISO datetime with microseconds
-        "%Y-%m-%dT%H:%M:%SZ",  # ISO datetime with UTC indicator
-        "%Y-%m-%dT%H:%M:%S%z",  # ISO datetime with timezone offset
-    ]
-
-    for fmt in formats:
-        try:
-            parsed_datetime = datetime.strptime(date_string, fmt)
-            # Return only the date portion
-            return parsed_datetime.date()
-        except ValueError:
-            continue
-
-    # If no format matched, log warning and return None
-    logger.warning(f"Could not parse date string: {date_string}")
-    return None
-
-
-def round_to_millions(amount: int | float | Decimal) -> str:
-    """
-    Formats a monetary amount with commas and two decimal places, displaying as millions or billions when appropriate.
-
-    Args:
-        amount (Any): The monetary value to format.
-
-    Returns:
-        str: The formatted string representing the amount in dollars, millions, or billions.
-    """
-
-    amount = to_decimal(amount)
-
-    if amount is None:
-        return "$0.00"
-    elif amount >= 1_000_000_000:
-        return f"${amount / 1_000_000_000:,.1f} billion"
-    elif amount >= 1_000_000:
-        return f"${amount / 1_000_000:,.1f} million"
-    else:
-        return f"${amount:,.2f}"
-
-
-def current_fiscal_year() -> int:
-    """
-    Returns the current fiscal year based on the current date.
-
-    The fiscal year starts in October. If the current month is October or later,
-    the fiscal year is considered to be the next calendar year.
-
-    Returns:
-        int: The current fiscal year.
-    """
-    # One reading of the clock, not two: separate calls could straddle the
-    # October boundary and report a year the calendar never had.
-    today = datetime.now()
-    return today.year + 1 if today.month >= 10 else today.year
-
-
-def to_decimal(x: Any) -> Decimal | None:
-    """Convert input to a Decimal with 2 decimal places using banker's rounding.
-
-    Args:
-        x: Value to convert to Decimal (number, string, etc.)
-
-    Returns:
-        Optional[Decimal]: Decimal object quantized to 2 decimal places, or None if input is None or conversion fails
-    """
-    if x is None:
-        return None
-    try:
-        return Decimal(str(x)).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
-    except (TypeError, ValueError, decimal.InvalidOperation):
-        return None
-
-
-def to_float(x: Any) -> float | None:
-    """
-    Converts the input value to a float if possible.
-    Attempts to cast the provided value to a float. If the conversion fails due to a TypeError or ValueError,
-    returns None instead.
-
-    Args:
-        x (Any): The value to convert to float.
-
-    Returns:
-        Optional[float]: The converted float value, or None if conversion is not possible.
-    """
-
-    if x is None:
-        return None
-    try:
-        return float(x)
-    except (TypeError, ValueError):
-        return None
-
-
-def to_int(x: Any) -> int | None:
-    """
-    Converts the input value to an integer if possible.
-    Attempts to cast the provided value to an integer. If the conversion fails due to a TypeError or ValueError,
-    returns None instead.
-
-    Args:
-        x (Any): The value to convert to an integer.
-
-    Returns:
-        Optional[int]: The integer representation of `x` if conversion is successful; otherwise, None.
-    """
-
-    # A missing value is the common case for optional API fields, and reaching
-    # int(None) just to catch the TypeError costs roughly 7x this early return.
-    if x is None:
-        return None
-    try:
-        return int(x)
-    except (TypeError, ValueError):
-        return None
-
-
 # Maximum length for parenthesized text to be uppercased
 PAREN_UPPERCASE_MAX_LEN: int = 9  # Fewer than 10 characters
-
-# --- Helper Function ---
 
 
 class _SpecialCaseLookups(NamedTuple):
@@ -355,7 +211,9 @@ class TextFormatter:
         return None
 
     @classmethod
-    def to_sentence_case(cls, text: str | None, paren_max_len: int = 9) -> str:
+    def to_sentence_case(
+        cls, text: str | None, paren_max_len: int = PAREN_UPPERCASE_MAX_LEN
+    ) -> str:
         """
         Convert text to sentence case, preserving special cases from YAML.
 
@@ -421,11 +279,9 @@ class TextFormatter:
                                     # Mark these words for capitalization
                                     acronym_expansion_words.update(last_n_content)
 
-                # Return uppercase parenthetical if short enough
-                if len(paren_content) <= paren_max_len:
-                    return f"({paren_content.upper()})"
-                else:
-                    return full_match
+                # Short enough by construction: the longer case returned above,
+                # and neither the content nor the threshold changes in between.
+                return f"({paren_content.upper()})"
 
             # Initialize acronym expansion tracking (local to this call)
             acronym_expansion_words: set[str] = set()

@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING, ClassVar
 
-from ..utils.formatter import to_decimal
+from ..utils.numbers import to_decimal
 from .base_model import BaseModel
 
 if TYPE_CHECKING:

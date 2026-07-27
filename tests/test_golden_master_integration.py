@@ -447,9 +447,20 @@ class TestQueryResultGoldenMasters:
         ],
     )
     def test_spending_first_result(self, client, name, category):
+        """Snapshot the first row each spending category transforms.
+
+        Takes the head of a two-row page rather than calling ``first()``, which
+        requests ``limit=1``. The recipient category was once observed answering
+        ``limit=1`` with zero results while ``limit=2`` returned two, and it has
+        since stopped doing so, so treat that as upstream flakiness rather than a
+        contract. This test exists to snapshot the transformed row, and asking for
+        two rows keeps it off a single-row edge case the API has mishandled at
+        least once.
+        """
         query = getattr(client.spending.search(), category)()
         query = query.fiscal_year(ANCHOR_FISCAL_YEAR).agency(ANCHOR_AGENCY)
-        _verify(name, query.first())
+        rows = query.limit(2).all()
+        _verify(name, rows[0] if rows else None)
 
 
 class TestCountMechanisms:

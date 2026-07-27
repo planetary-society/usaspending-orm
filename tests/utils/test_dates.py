@@ -1,111 +1,11 @@
-"""Tests for formatter utility functions."""
+"""Tests for date parsing and fiscal-year helpers."""
 
-from decimal import Decimal
-from unittest.mock import mock_open, patch
+from __future__ import annotations
 
-import pytest
-import yaml
+from datetime import date, datetime
+from unittest.mock import patch
 
-from usaspending.utils.formatter import (
-    TextFormatter,
-    titlecase_name,
-    to_date,
-    to_float,
-    to_int,
-)
-
-
-class TestContractsTitlecase:
-    """Test the titlecase_name function."""
-
-    @pytest.fixture(autouse=True)
-    def setup_yaml(self):
-        """Mock the YAML file for consistent tests."""
-        import usaspending.utils.formatter
-
-        usaspending.utils.formatter._special_cases_cache = None
-        TextFormatter._special_cases_cache = None
-
-        mock_special_cases = [
-            "NASA",
-            "ESA",
-            "USA",
-            "SBIR",
-            "LLC",
-            "Inc.",
-            "Ltd.",
-            "NE",
-            "SW",
-            "St.",
-            "Ave.",
-            "OSIRIS-REx",
-            "SCaN",
-            "EPSCoR",
-        ]
-        mock_yaml_content = yaml.dump(mock_special_cases)
-
-        with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
-            yield
-
-        usaspending.utils.formatter._special_cases_cache = None
-        TextFormatter._special_cases_cache = None
-
-    def test_none_input(self):
-        """Test handling of None input."""
-        assert titlecase_name(None) is None
-
-    def test_basic_titlecase(self):
-        """Test basic title casing."""
-        assert titlecase_name("hello world") == "Hello World"
-        assert titlecase_name("HELLO WORLD") == "Hello World"
-
-    def test_acronyms_preserved(self):
-        """Test that acronyms are preserved."""
-        assert titlecase_name("nasa research") == "NASA Research"
-        assert titlecase_name("working with nasa") == "Working With NASA"
-        assert titlecase_name("sbir program") == "SBIR Program"
-
-    def test_business_suffixes(self):
-        """Test business suffixes."""
-        assert titlecase_name("acme inc.") == "Acme Inc."
-        assert titlecase_name("technology llc") == "Technology LLC"
-        assert titlecase_name("services ltd.") == "Services Ltd."
-
-    def test_small_words(self):
-        """Test that small words are lowercase in middle."""
-        assert titlecase_name("bread and butter") == "Bread and Butter"
-        assert titlecase_name("the quick fox") == "The Quick Fox"
-        assert titlecase_name("of the people") == "Of the People"
-
-    def test_directional_abbreviations(self):
-        """Test directional abbreviations."""
-        assert titlecase_name("123 main st. ne") == "123 Main St. NE"
-        assert titlecase_name("456 oak ave. sw") == "456 Oak Ave. SW"
-
-    def test_directional_with_punctuation(self):
-        """Test directional abbreviations with punctuation."""
-
-        assert titlecase_name("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
-
-    def test_special_casing(self):
-        """Test special casing rules."""
-        assert titlecase_name("osiris-rex mission") == "OSIRIS-REx Mission"
-        assert titlecase_name("scan network") == "SCaN Network"
-        assert titlecase_name("epscor funding") == "EPSCoR Funding"
-
-    def test_complex_examples(self):
-        """Test complex real-world examples."""
-        assert (
-            titlecase_name("nasa sbir program for small business llc")
-            == "NASA SBIR Program for Small Business LLC"
-        )
-
-        assert titlecase_name("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
-
-        assert (
-            titlecase_name("the university of maryland and nasa")
-            == "The University of Maryland and NASA"
-        )
+from usaspending.utils.dates import to_date
 
 
 class TestToDate:
@@ -119,8 +19,6 @@ class TestToDate:
 
     def test_basic_date_format(self):
         """Test the original YYYY-MM-DD format."""
-        from datetime import date
-
         result = to_date("2025-08-29")
         assert result is not None
         assert isinstance(result, date)
@@ -130,8 +28,6 @@ class TestToDate:
 
     def test_iso_datetime_format(self):
         """Test ISO datetime format without timezone - returns date only."""
-        from datetime import date
-
         result = to_date("2025-08-29T00:00:00")
         assert result is not None
         assert isinstance(result, date)
@@ -141,8 +37,6 @@ class TestToDate:
 
     def test_iso_datetime_with_time(self):
         """Test ISO datetime format with specific time - returns date only."""
-        from datetime import date
-
         result = to_date("2025-08-29T14:30:45")
         assert result is not None
         assert isinstance(result, date)
@@ -152,8 +46,6 @@ class TestToDate:
 
     def test_iso_datetime_with_microseconds(self):
         """Test ISO datetime format with microseconds - returns date only."""
-        from datetime import date
-
         result = to_date("2025-08-29T14:30:45.123456")
         assert result is not None
         assert isinstance(result, date)
@@ -163,8 +55,6 @@ class TestToDate:
 
     def test_iso_datetime_with_utc_indicator(self):
         """Test ISO datetime format with Z (UTC) indicator - returns date only."""
-        from datetime import date
-
         result = to_date("2025-08-29T14:30:45Z")
         assert result is not None
         assert isinstance(result, date)
@@ -174,8 +64,6 @@ class TestToDate:
 
     def test_iso_datetime_with_timezone_offset(self):
         """Test ISO datetime format with timezone offset - returns date only."""
-        from datetime import date
-
         result = to_date("2025-08-29T14:30:45+00:00")
         assert result is not None
         assert isinstance(result, date)
@@ -214,8 +102,6 @@ class TestToDate:
 
     def test_real_usaspending_formats(self):
         """Test formats actually returned by USAspending API."""
-        from datetime import date
-
         # Common format from API responses
         result = to_date("2025-08-25T00:00:00")
         assert result is not None
@@ -226,8 +112,6 @@ class TestToDate:
 
     def test_space_separated_datetime_format(self):
         """Test datetime format with a space separator - returns date only."""
-        from datetime import date
-
         result = to_date("2026-03-31 10:11:00")
         assert result is not None
         assert isinstance(result, date)
@@ -235,7 +119,7 @@ class TestToDate:
         assert result.month == 3
         assert result.day == 31
 
-    @patch("usaspending.utils.formatter.logger")
+    @patch("usaspending.utils.dates.logger")
     def test_logging_on_invalid_format(self, mock_logger):
         """Test that invalid formats trigger a warning log."""
         result = to_date("invalid-date-format")
@@ -256,7 +140,6 @@ class TestToDate:
         assert result.day == 15
 
         # Test that we get the same results as before for standard dates
-        from datetime import date
 
         date1 = to_date("2025-06-15")
         date2 = date(2025, 6, 15)
@@ -264,8 +147,6 @@ class TestToDate:
 
     def test_date_object_passthrough(self):
         """Test that date objects are returned unchanged (idempotent behavior)."""
-        from datetime import date
-
         input_date = date(2024, 8, 12)
         result = to_date(input_date)
 
@@ -278,8 +159,6 @@ class TestToDate:
         This was a bug where Award.start_date called to_date() on a value
         that was already converted to a date by PeriodOfPerformance.
         """
-        from datetime import date
-
         # Simulate double conversion scenario
         first_conversion = to_date("2024-08-12")
         assert first_conversion == date(2024, 8, 12)
@@ -295,74 +174,8 @@ class TestToDate:
         ``isinstance(x, date)`` check let datetimes through unchanged,
         leaking a datetime out of a function typed ``date | None``.
         """
-        from datetime import date, datetime
-
         dt = datetime(2025, 8, 29, 14, 30, 45)
         result = to_date(dt)
 
         assert type(result) is date
         assert result == date(2025, 8, 29)
-
-
-class TestToInt:
-    """Tests for to_int, which backs every optional integer getter."""
-
-    @pytest.mark.parametrize(
-        ("value", "expected"),
-        [
-            ("2020", 2020),
-            (2020, 2020),
-            ("0", 0),
-            (0, 0),
-            ("-5", -5),
-            (7.9, 7),  # int() truncates toward zero
-            (Decimal("42.7"), 42),
-            (True, 1),
-        ],
-    )
-    def test_parseable_values(self, value, expected):
-        """Values that int() accepts convert, including truncating floats."""
-        assert to_int(value) == expected
-
-    @pytest.mark.parametrize(
-        "value",
-        [
-            None,
-            "",
-            "   ",
-            "not-a-number",
-            "FY2020",
-            "12.5",  # int() rejects a decimal string, unlike a float
-            [],
-            {},
-            object(),
-        ],
-    )
-    def test_unparseable_values_return_none(self, value):
-        """Absent or malformed values yield None instead of raising.
-
-        API-supplied field values coerce leniently; only user-provided
-        parameters raise, via the validators in utils/validations.py.
-        """
-        assert to_int(value) is None
-
-    def test_none_short_circuits_before_int(self):
-        """None returns early rather than raising TypeError inside int()."""
-        assert to_int(None) is None
-
-
-class TestToFloat:
-    """Tests for to_float, which shares to_int's lenient contract."""
-
-    @pytest.mark.parametrize(
-        ("value", "expected"),
-        [("12.5", 12.5), (12.5, 12.5), ("0", 0.0), (0, 0.0), ("-3.25", -3.25), (7, 7.0)],
-    )
-    def test_parseable_values(self, value, expected):
-        """Values that float() accepts convert, including integer strings."""
-        assert to_float(value) == expected
-
-    @pytest.mark.parametrize("value", [None, "", "not-a-number", "1.2.3", [], {}])
-    def test_unparseable_values_return_none(self, value):
-        """Absent or malformed values yield None instead of raising."""
-        assert to_float(value) is None

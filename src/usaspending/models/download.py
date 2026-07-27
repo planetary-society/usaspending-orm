@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from ..utils.formatter import to_float, to_int
+from ..utils.numbers import to_float, to_int
 from .base_model import BaseModel
 
 AwardType = Literal["contract", "assistance", "idv"]

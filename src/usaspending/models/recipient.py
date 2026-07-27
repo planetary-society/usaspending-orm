@@ -5,7 +5,8 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from ..logging_config import USASpendingLogger
-from ..utils.formatter import titlecase_name, to_decimal
+from ..utils.numbers import to_decimal
+from ..utils.textcase import titlecase_name
 from ..utils.validations import normalize_recipient_id
 from .lazy_record import LazyRecord
 from .location import Location

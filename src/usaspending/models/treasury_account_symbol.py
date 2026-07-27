@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
-from ..utils.formatter import to_int
+from ..utils.numbers import to_int
 from .base_model import ClientAwareModel
 
 if TYPE_CHECKING:

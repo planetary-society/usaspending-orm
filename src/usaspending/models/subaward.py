@@ -5,13 +5,9 @@ from decimal import Decimal
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from ..utils.formatter import (
-    TextFormatter,
-    titlecase_name,
-    to_date,
-    to_decimal,
-    to_int,
-)
+from ..utils.dates import to_date
+from ..utils.numbers import to_decimal, to_int
+from ..utils.textcase import TextFormatter, titlecase_name
 from .award import Award
 from .base_model import ClientAwareModel
 from .location import Location

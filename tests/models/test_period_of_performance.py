@@ -204,7 +204,7 @@ class TestPeriodOfPerformance:
         assert period.end_date is None
         assert period.last_modified_date is None
 
-    @patch("usaspending.utils.formatter.logger")
+    @patch("usaspending.utils.dates.logger")
     def test_date_parsing_warning(self, mock_logger):
         """Test that invalid dates log warnings"""
         invalid_data = {"start_date": "invalid-date-format"}

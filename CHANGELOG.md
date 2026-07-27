@@ -96,10 +96,6 @@ consistency argument behind it.
 
 ### Fixed
 
-- `current_fiscal_year()` reads the clock once instead of twice. Two separate
-  `datetime.now()` calls could straddle the October boundary between them and
-  report a fiscal year the calendar never had.
-
 - `client.recipients.find_by_id()` no longer addresses the wrong record for a
   recipient ID carrying several levels, such as `"<hash>-['C', 'R']"`.
   Normalization was implemented twice with algorithms that disagreed:
@@ -127,6 +123,17 @@ consistency argument behind it.
 - `FederalAccount.count` no longer fires an API request when the count is already present in the response, and repeated access now costs at most one request rather than one per access. The fallback that counts TAS codes was passed as a default argument, which Python evaluates eagerly, so every access paid for a request whose result was then discarded.
 
 ### Removed
+
+- `usaspending.utils.formatter` is split into `usaspending.utils.dates`,
+  `usaspending.utils.numbers` and `usaspending.utils.textcase`. Every symbol it
+  held was internal, absent from `__all__` and from the README, so there is no
+  compatibility shim; anything importing it directly was reaching past the public
+  API. The casing machinery is now one cohesive module, which is the boundary a
+  future plugin would lift.
+- `current_fiscal_year()`, which had no callers. Nothing in the library used it,
+  it was not exported, and it had no test; the endpoints that document defaulting
+  to the current fiscal year are defaulted server-side. It briefly gained a fix in
+  this release for reading the clock twice, which was a fix to dead code.
 
 - `Agency.__init__`'s third parameter, `subtier_data`. It was stored on the
   instance and never read: `Agency` exposes no subtier property, and subtier

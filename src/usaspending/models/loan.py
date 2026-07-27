@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import ClassVar
 
-from ..utils.formatter import to_decimal
+from ..utils.numbers import to_decimal
 from .award import Award
 from .grant import Grant
 

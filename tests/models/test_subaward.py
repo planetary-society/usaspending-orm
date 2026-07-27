@@ -12,6 +12,8 @@ from usaspending.models.award import Award
 from usaspending.models.location import Location
 from usaspending.models.recipient import Recipient
 from usaspending.models.subaward import SubAward
+from usaspending.utils.dates import to_date
+from usaspending.utils.textcase import TextFormatter, titlecase_name
 
 
 class TestSubAwardModel:
@@ -48,7 +50,6 @@ class TestSubAwardModel:
 
     def test_subaward_type_and_description(self, subaward_data, mock_usa_client):
         """Test SubAward type and description properties."""
-        from usaspending.utils.formatter import TextFormatter
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
@@ -61,7 +62,6 @@ class TestSubAwardModel:
 
     def test_subaward_amount_and_date(self, subaward_data, mock_usa_client):
         """Test SubAward amount and date properties."""
-        from usaspending.utils.formatter import to_date
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
@@ -72,7 +72,6 @@ class TestSubAwardModel:
 
     def test_subaward_recipient_properties(self, subaward_data, mock_usa_client):
         """Test SubAward recipient-related properties."""
-        from usaspending.utils.formatter import titlecase_name
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
@@ -148,8 +147,6 @@ class TestSubAwardModel:
         """Test SubAward place_of_performance property."""
         from titlecase import titlecase
 
-        from usaspending.utils.formatter import titlecase_name
-
         subaward = SubAward(subaward_data, mock_usa_client)
 
         pop = subaward.place_of_performance
@@ -198,11 +195,7 @@ class TestSubAwardModel:
 
     def test_subaward_helper_properties(self, subaward_data, mock_usa_client):
         """Test SubAward helper properties (name, amount, description, award_date)."""
-        from usaspending.utils.formatter import (
-            TextFormatter,
-            titlecase_name,
-            to_date,
-        )
+        from usaspending.utils.textcase import TextFormatter, titlecase_name
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
@@ -236,7 +229,6 @@ class TestSubAwardModel:
 
     def test_subaward_repr(self, subaward_data, mock_usa_client):
         """Test SubAward string representation."""
-        from usaspending.utils.formatter import titlecase_name
 
         subaward = SubAward(subaward_data, mock_usa_client)
 
@@ -328,7 +320,6 @@ class TestSubAwardModel:
         assert subaward.sub_award_id == data_with_null_id["Sub-Award ID"]
 
         # repr should use sub_award_id when internal_id is None
-        from usaspending.utils.formatter import titlecase_name
 
         expected_name = titlecase_name(data_with_null_id["Sub-Awardee Name"])
         repr_str = repr(subaward)

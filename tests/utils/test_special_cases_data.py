@@ -1,18 +1,17 @@
 """Verify the real special_cases.yaml ships, loads, and is actually applied.
 
-The rest of the formatter suite injects a mock special-cases list
-(``tests/utils/test_formatter.py`` patches the cache, and
-``tests/utils/test_text_formatter.py`` patches ``open``), so every existing test
-would pass even if the real YAML never loaded. That matters because
+The rest of the casing suite injects a mock special-cases list
+(``tests/utils/test_textcase.py`` patches both the cache and ``open``), so every
+existing test would pass even if the real YAML never loaded. That matters because
 ``TextFormatter._load_special_cases`` degrades to an empty list on failure:
 title casing would silently lose every acronym, and while a corrupt file now
 warns, a merely absent one does not, so no test would fail.
 
-These tests close that gap, and they are the guard for Phase 6, which moves
-TextFormatter into ``utils/textcase.py``. The data file is resolved relative to
-the module that loads it, so the path is derived the same way here rather than
-hardcoding the repository layout, which would break on that move even though
-the library kept working.
+These tests close that gap, and they were the guard for the move of TextFormatter
+into ``utils/textcase.py``. The data file is resolved relative to the module that
+loads it, so the path is derived the same way here rather than hardcoding the
+repository layout, which would have broken on that move even though the library
+kept working.
 """
 
 from __future__ import annotations
@@ -22,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from usaspending.utils.formatter import TextFormatter, titlecase_name
+from usaspending.utils.textcase import TextFormatter, titlecase_name
 
 EXPECTED_ACRONYMS = frozenset({"NASA", "JPL", "EPSCoR", "STEM"})
 

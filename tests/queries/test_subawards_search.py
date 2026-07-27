@@ -11,6 +11,7 @@ from tests.mocks.mock_client import MockUSASpendingClient
 from usaspending.exceptions import ValidationError
 from usaspending.models.subaward import SubAward
 from usaspending.queries.subawards_search import SubAwardsSearch
+from usaspending.utils.textcase import titlecase_name
 
 
 class TestSubAwardsSearch:
@@ -58,7 +59,6 @@ class TestSubAwardsSearch:
 
     def test_transform_result_returns_subaward(self, mock_usa_client, subawards_response):
         """Test that transform_result returns SubAward instances."""
-        from usaspending.utils.formatter import titlecase_name
 
         search = SubAwardsSearch(mock_usa_client)
 

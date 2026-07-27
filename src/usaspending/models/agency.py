@@ -9,7 +9,8 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from ..logging_config import USASpendingLogger
-from ..utils.formatter import to_date, to_decimal, to_int
+from ..utils.dates import to_date
+from ..utils.numbers import to_decimal, to_int
 from .award_types import (
     CONTRACT_CODES,
     DIRECT_PAYMENT_CODES,

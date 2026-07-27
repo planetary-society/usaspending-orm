@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from ..utils.formatter import round_to_millions, to_decimal, to_int
+from ..utils.numbers import round_to_millions, to_decimal, to_int
 from .base_model import ClientAwareModel
 
 if TYPE_CHECKING:

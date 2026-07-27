@@ -5,7 +5,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from ..utils.formatter import titlecase_name, to_decimal, to_int
+from ..utils.numbers import to_decimal, to_int
+from ..utils.textcase import titlecase_name
 from .base_model import BaseModel
 
 if TYPE_CHECKING:

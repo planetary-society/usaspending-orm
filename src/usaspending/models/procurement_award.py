@@ -6,7 +6,7 @@ from decimal import Decimal
 from functools import cached_property
 from typing import Any
 
-from ..utils.formatter import to_decimal
+from ..utils.numbers import to_decimal
 from .award import Award
 
 
