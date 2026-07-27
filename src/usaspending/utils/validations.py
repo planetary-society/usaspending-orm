@@ -40,7 +40,10 @@ def validate_non_empty_string(
     Example:
         >>> validate_non_empty_string("hello", "name")
         'hello'
-        >>> validate_non_empty_string("  ", "name")  # Raises ValidationError
+        >>> validate_non_empty_string("  ", "name")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: name cannot be empty
     """
     if not value or not isinstance(value, str):
         raise ValidationError(f"{field_name} cannot be empty")
@@ -71,8 +74,12 @@ def parse_date_string(
     Example:
         >>> parse_date_string("2024-01-15", "start_date")
         datetime.date(2024, 1, 15)
-        >>> parse_date_string(datetime.date(2024, 1, 15), "start_date")
+        >>> parse_date_string(date(2024, 1, 15), "start_date")
         datetime.date(2024, 1, 15)
+        >>> parse_date_string("15/01/2024", "start_date")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid start_date format: '15/01/2024'. Expected '%Y-%m-%d'.
     """
     if isinstance(value, date):
         return value
@@ -252,8 +259,10 @@ def validate_sort_field(
 
     Example:
         >>> validate_sort_field("Award Amount", {"Award Amount", "Award ID"}, "awards search")
-        >>> validate_sort_field("Invalid Field", {"Award Amount", "Award ID"}, "awards search")
-        # Raises ValidationError: Invalid sort field 'Invalid Field' for awards search.
+        >>> validate_sort_field("Nope", {"Award ID"}, "awards search")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid sort field 'Nope' for awards search. Valid fields: Award ID
     """
     if field not in valid_fields:
         sorted_fields = sorted(valid_fields)

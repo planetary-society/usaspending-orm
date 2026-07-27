@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import date
 from typing import TYPE_CHECKING, Any
 
 from ..exceptions import ValidationError
@@ -164,12 +164,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             >>> # Combine with until() for a date range
             >>> q1_2024 = award.transactions.since("2024-01-01").until("2024-03-31").all()
         """
-        # Validate date format (parse_date_string validates and returns a date object)
-        parse_date_string(date, "since_date")
-
-        clone = self._clone()
-        clone._client_filters["since_date"] = date
-        return clone
+        return self._with_date_bound("since_date", date)
 
     def until(self, date: str) -> TransactionsSearch:
         """
@@ -196,12 +191,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             >>> # Combine with since() for a date range
             >>> fy2024 = award.transactions.since("2023-10-01").until("2024-09-30").all()
         """
-        # Validate date format (parse_date_string validates and returns a date object)
-        parse_date_string(date, "until_date")
-
-        clone = self._clone()
-        clone._client_filters["until_date"] = date
-        return clone
+        return self._with_date_bound("until_date", date)
 
     def order_by(self, field: str, direction: str = "desc") -> TransactionsSearch:
         """
@@ -254,28 +244,44 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         clone._order_direction = direction
         return clone
 
-    def _apply_client_filters(self, transaction: Transaction) -> bool:
-        """
-        Apply client-side filters to a transaction.
+    def _with_date_bound(self, key: str, value: str) -> TransactionsSearch:
+        """Return a clone carrying one more client-side date bound.
+
+        The bound is stored parsed rather than as a string, because the predicate
+        below runs once per transaction: a string here would cost one date parse
+        per row, on top of the one already spent validating it.
 
         Args:
-            transaction: The transaction to filter
+            key: Which bound to set, ``since_date`` or ``until_date``.
+            value: The bound as a ``YYYY-MM-DD`` string.
 
         Returns:
-            True if transaction passes all filters, False otherwise
+            TransactionsSearch: A new query with the bound applied.
         """
-        # Apply date filters
-        if "since_date" in self._client_filters:
-            since_date = datetime.strptime(self._client_filters["since_date"], "%Y-%m-%d").date()
-            if transaction.action_date and transaction.action_date < since_date:
-                return False
+        clone = self._clone()
+        clone._client_filters[key] = parse_date_string(value, key)
+        return clone
 
-        if "until_date" in self._client_filters:
-            until_date = datetime.strptime(self._client_filters["until_date"], "%Y-%m-%d").date()
-            if transaction.action_date and transaction.action_date > until_date:
-                return False
+    def _apply_client_filters(self, transaction: Transaction) -> bool:
+        """Report whether a transaction falls inside the client-side date bounds.
 
-        return True
+        A transaction with no action date is kept: an unknown date cannot be shown
+        to fall outside the range. Absent bounds widen to the ends of the calendar
+        so that one comparison covers every combination of the two.
+
+        Args:
+            transaction: The transaction to filter.
+
+        Returns:
+            bool: True if the transaction passes all filters.
+        """
+        action_date = transaction.action_date
+        if not action_date:
+            return True
+
+        since_date = self._client_filters.get("since_date") or date.min
+        until_date = self._client_filters.get("until_date") or date.max
+        return since_date <= action_date <= until_date
 
     def __iter__(self) -> Iterator[Transaction]:
         """

@@ -92,11 +92,11 @@ class BaseModel:
         """
         return self._data
 
-    def get_value(self, keys: list[str] | str, default: Any = None) -> Any:
+    def get_value(self, keys: Iterable[str] | str, default: Any = None) -> Any:
         """Return the first non-None value from the given keys.
 
         Args:
-            keys: A string key or a list of string keys to search for.
+            keys: A string key, or an iterable of keys tried in order.
             default: The value to return if no key is found or values are None.
 
         Returns:
@@ -105,16 +105,15 @@ class BaseModel:
         Raises:
             TypeError: If the underlying data is not a dictionary.
         """
-        if not isinstance(keys, list):
+        if isinstance(keys, str):
             keys = [keys]
 
         if not isinstance(self._data, dict):
             raise TypeError("Empty object data")
         for key in keys:
-            if key in self._data:
-                value = self._data[key]
-                if value is not None:  # Check for non-None instead of truthiness
-                    return value
+            value = self._data.get(key)
+            if value is not None:
+                return value
         return default
 
 

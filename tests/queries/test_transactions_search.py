@@ -1,10 +1,31 @@
 """Tests for TransactionsSearch query builder."""
 
+from datetime import date
+
 import pytest
 from tests.mocks.mock_client import MockUSASpendingClient
 
+from usaspending.exceptions import ValidationError
 from usaspending.models.transaction import Transaction
 from usaspending.queries.transactions_search import TransactionsSearch
+
+
+class TestDateFilterParsing:
+    """since()/until() parse once, at filter time, not once per row."""
+
+    def test_the_bound_is_stored_parsed(self, mock_usa_client):
+        """Storing the string instead would leave every behavioral test green."""
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").since("2024-01-11")
+
+        assert query._client_filters["since_date"] == date(2024, 1, 11)
+
+    @pytest.mark.parametrize("bound", ["since", "until"])
+    def test_a_malformed_bound_is_rejected_at_filter_time(self, mock_usa_client, bound):
+        """Not deferred to iteration, which is where the value is used."""
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        with pytest.raises(ValidationError, match="Expected"):
+            getattr(query, bound)("15/01/2024")
 
 
 class TestTransactionsSearchPageSize:
@@ -113,6 +134,29 @@ class TestTransactionsSearchIndexing:
         assert len(items) == 5
         assert items[0].modification_number == "0"
         assert items[4].modification_number == "4"
+
+    def test_an_undated_row_survives_both_bounds(self, mock_usa_client):
+        """An unknown date cannot be shown to fall outside the range.
+
+        Read through iteration rather than off the predicate, so it also shows the
+        kept row reaching the caller and the bounds still excluding what they should.
+        """
+        mock_usa_client.set_paginated_response(
+            "/transactions/",
+            [
+                {"id": "undated", "action_date": None},
+                {"id": "inside", "action_date": "2024-01-05"},
+                {"id": "outside", "action_date": "2024-02-01"},
+            ],
+        )
+        query = (
+            TransactionsSearch(mock_usa_client)
+            .award_id("CONT_AWD_123")
+            .since("2024-01-05")
+            .until("2024-01-06")
+        )
+
+        assert [transaction.id for transaction in query] == ["undated", "inside"]
 
     def test_getitem_out_of_bounds_with_filters(self, setup_client):
         """Test out of bounds access with filters."""
