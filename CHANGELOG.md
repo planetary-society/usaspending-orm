@@ -25,6 +25,16 @@ behavior preserving and the public API is unchanged.
 
 ### Changed
 
+- `client.tas.agencies` returns a `TASAgenciesQuery` instead of `list[Agency]`,
+  matching the two levels below it in the same tree: `Agency.federal_accounts`
+  and `FederalAccount.tas_codes` are both queries. Iteration, `len()`, indexing
+  and slicing work unchanged, so most code needs no edit; call `.all()` where a
+  real list is required, and note that `== []` no longer works as an emptiness
+  check. In exchange the level is fetched once, filtering costs no further
+  requests, and there is no shared list for one caller to corrupt for the next.
+  `TASAgenciesQuery` is now exported, with `code()`, `codes()` and
+  `description()` filters that were previously unreachable.
+
 Title casing now emits a `UserWarning` when `special_cases.yaml` exists but
 cannot be read as a list, where before the problem went only to the log and was
 invisible in practice: names were still returned, just mis-cased. It still
