@@ -356,11 +356,11 @@ class SubAward(ClientAwareModel):
         return self.sub_awardee_name
 
     @property
-    def amount(self) -> float | None:
+    def amount(self) -> Decimal | None:
         """Alias for sub_award_amount.
 
         Returns:
-            Optional[float]: The subaward amount as a float, or None.
+            Optional[Decimal]: The subaward amount, or None.
         """
         return self.sub_award_amount
 

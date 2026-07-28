@@ -4,7 +4,7 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.8.0] - 2026-07-28
 
 Internal simplification pass. Except where listed below, every change is
 behavior preserving and the public API is unchanged.
@@ -35,7 +35,8 @@ behavior preserving and the public API is unchanged.
   added, removed or made required fails the suite instead of passing unnoticed.
   It also covers the `usaspending.utils` and `usaspending.download` exports and
   pins the deep import paths callers are most likely to have written against
-  0.7.3.
+  0.7.3. The `models` listing now includes the exported base classes
+  (`BaseModel`, `ClientAwareModel`, `LazyRecord`).
 
 ### Changed
 
@@ -52,9 +53,13 @@ behavior preserving and the public API is unchanged.
   the server's total. Count before bounding: `search.count()` is the total under
   those filters, `search.limit(3).count()` is what the bounded query yields.
 
-  `config.default_result_limit` is deliberately still excluded. It exists to stop
+  `config.default_result_limit` is deliberately excluded. It exists to stop
   unbounded _fetches_, and letting it cap a count would report 10,000 for any
-  larger result set; only the bounds a caller sets apply.
+  larger result set; only the bounds a caller sets apply. That is itself a
+  change for the builders whose count pages the result set: their 0.7.3
+  counts went through iteration, which applied the default, so
+  `len(award.funding)` on a result set larger than the default used to
+  report the cap and now reports the true total.
 
   Bounds that forbid every result are now answered without a request:
   `query.limit(0).count()` is 0 where it used to spend a count call to arrive at
@@ -82,9 +87,57 @@ behavior preserving and the public API is unchanged.
   `.since(y).until(x)`.
 
   Equal bounds still select that single day, and 2007-10-01 itself is still
-  valid. Internally both filters now share `parse_api_date` and
+  valid. If you relied on a pre-FY2008 bound as a harmless no-op, clamp it to
+  `2007-10-01` or drop it; the API holds no rows before FY2008 either way.
+  Internally both filters now share `parse_api_date` and
   `validate_date_range`, so the two paths cannot drift apart again; the error
   messages `time_period()` produced are unchanged.
+
+- `order_by()` now validates its direction on every builder. Three behaviors
+  used to hide behind one signature: five builders already raised
+  (`TransactionsSearch`, `FundingSearch`, `AwardAccountsQuery`,
+  `IDVChildAwardsSearch`, `SubAgencyQuery`), the remaining client-side queries
+  accepted any string and silently sorted ascending, and the paginated searches
+  passed the caller's spelling through, so
+  `client.recipients.search().order_by("amount", "sideways")` put
+  `"order": "sideways"` on the wire for the API to interpret. Every builder now
+  raises `ValidationError` for a direction other than `"asc"` or `"desc"`.
+
+  **This can break working code** that passed an unrecognized direction and
+  relied on whatever came back: pass `"asc"` or `"desc"`. Which fields each
+  builder accepts is unchanged. The five that already raised now share one
+  message wording; the exception type is what it always was, and a few other
+  validator messages were likewise unified in wording only, including the
+  sort-field and `agency_type` messages.
+
+- `Award.start_date` and `end_date` delegate to `period_of_performance` rather
+  than reading the flat search keys again themselves. The property and the
+  period model each kept its own copy of the key list, and the copies had
+  drifted apart, which let the same award answer different dates depending on
+  which was asked. Three behaviors moved:
+
+  - Where a payload carries both the flat and the nested spelling, the nested
+    `period_of_performance` object now wins; the flat `"Start Date"` and
+    `"End Date"` used to.
+  - The `"Period of Performance End Date"` alias is no longer read; no recorded
+    API response carries it. A payload whose only end-date spelling is that
+    alias now answers `None` where it answered the alias's value.
+  - The start side still reads `"Base Obligation Date"`, but it now yields to
+    `"Period of Performance Start Date"` where a payload carries both; the old
+    property ordered them the other way.
+
+  **This can break working code** that feeds `Award` hand-built payloads and
+  relies on any old behavior; read `award.raw` directly where the payload's
+  spelling matters. Live API responses never carry disagreeing spellings, and
+  the search-projection and golden-master suites pin all three precedences.
+
+  The cost moved rather than vanished (measured on Apple Silicon, CPython
+  3.10): the period model parses both dates once on construction, so the first
+  read of a single date is several times slower than the old flat read, repeat
+  reads are roughly four times faster, and the crossover lands around six
+  reads. Against 0.7.3 every measured pattern is still faster, because the old
+  format walk dominated everything; the trade is visible only against an
+  intermediate form that never shipped.
 
 - Date parsing reads the shape the API actually sends about 11 times faster.
   Every date the library returns passes through one converter, which worked down
@@ -107,12 +160,22 @@ behavior preserving and the public API is unchanged.
 - `client.tas.agencies` returns a `TASAgenciesQuery` instead of `list[Agency]`,
   matching the two levels below it in the same tree: `Agency.federal_accounts`
   and `FederalAccount.tas_codes` are both queries. Iteration, `len()`, indexing
-  and slicing work unchanged, so most code needs no edit; call `.all()` where a
-  real list is required, and note that `== []` no longer works as an emptiness
-  check. In exchange the level is fetched once, filtering costs no further
-  requests, and there is no shared list for one caller to corrupt for the next.
-  `TASAgenciesQuery` is now exported, with `code()`, `codes()` and
-  `description()` filters that were previously unreachable.
+  and slicing work unchanged, so most code needs no edit. **This can break
+  working code** that requires a real list: call `.all()`, and note that
+  `== []` no longer works as an emptiness check; use `if not query:`. In
+  exchange the level is fetched once, filtering costs no further requests, and
+  there is no shared list for one caller to corrupt for the next.
+  `TASAgenciesQuery` is now exported from `usaspending.queries`, with
+  `code()`, `codes()` and `description()` filters that were previously
+  unreachable.
+
+- `SubAward.amount`'s return annotation is corrected from `float | None` to
+  `Decimal | None` to match its actual runtime type; no runtime change.
+
+- `to_int` reads numeric API fields leniently: a non-numeric value now yields
+  `None` where the affected properties previously raised `ValueError`. Narrow
+  but real; it touches the integer counts on `Funding`, `SubAward`,
+  `TreasuryAccountSymbol` and `Award.subaward_count`.
 
 - `Agency.federal_accounts` and `FederalAccount.tas_codes` fetch their level of
   the TAS tree once per model instead of once per read. Both return the same
@@ -148,7 +211,9 @@ degrades to no special casing rather than raising, because casing runs inside
 `__repr__` on several models and a cosmetic problem must not break debuggers,
 logging or error messages. Anyone wanting it fatal can escalate with
 `-W error::UserWarning`. A merely absent file warns only in the log, since an
-installation can legitimately lack it.
+installation can legitimately lack it. A separate `UserWarning` also names
+colliding entries, two spellings that lowercase to the same key, and the one
+duplicate in the shipped data file was removed.
 
 Optional money and string getters now return `None` when the API reports no
 value, instead of a fabricated `Decimal("0.00")` or `""`. A value the API
@@ -252,13 +317,37 @@ failure re-sends the request, which is the point of the change.
 ### Deprecated
 
 - `parse_date_string`'s `format_str` parameter, which is scheduled for removal in
-  a future release. Passing anything other than `"%Y-%m-%d"` still parses with
-  that pattern and still raises `ValidationError` for a value it cannot read, and
-  now emits a `DeprecationWarning`. Only `YYYY-MM-DD` was ever accepted in
-  practice, and nothing in the library passes one. Omitting the parameter, or
-  passing its default, is unchanged and warns about nothing.
+  a future release. Passing a non-default pattern still parses with the pattern
+  the caller supplied and still raises `ValidationError` for a value it cannot
+  read, and now emits a `DeprecationWarning`. Only `YYYY-MM-DD` was ever
+  accepted in practice, and nothing in the library passes one. Omitting the
+  parameter, or passing its default, is unchanged and warns about nothing.
 
 ### Fixed
+
+- Building a query's payload no longer mutates the filters that built it. When
+  two filters serialized under one key, aggregation stored the first filter's
+  own list and extended it in place, and since clones share filter objects, a
+  derived query's payload grew on every build and corrupted its parent:
+  `q1 = search().keywords("alpha")` followed by `q2 = q1.keywords("beta")`
+  left `q1` sending `["alpha", "beta", "beta"]` after two builds of `q2`.
+  Affected chained `keywords`, `award_type_codes`, simple `psc_codes` and
+  `treasury_account_components` filters. Present in 0.7.3.
+
+- Indexing and slicing an in-memory query now read the limited collection.
+  `agency.federal_accounts.limit(3)[:]` returned every account and
+  `limit(3)[5]` returned a row; both now agree with `len()` and `.all()`, so
+  the slice holds three rows and the index raises `IndexError`. Present in
+  0.7.3 for every in-memory query; the new `tas.agencies` query made it
+  visible.
+
+- `Recipient.parents` returns a fresh list on each read, so a caller that
+  sorts or pops the result no longer corrupts the model for its lifetime.
+  Present in 0.7.3.
+
+- A `TransactionsSearch` with no award set raises `ValidationError` from
+  `count()` instead of requesting `/awards/count/transaction/None/`. Present
+  in 0.7.3.
 
 - The two date parsers now answer an unusable value the way their documented
   contracts say, and each explains the other. A date filter given something that
@@ -372,14 +461,15 @@ failure re-sends the request, which is the point of the change.
 
   `len(query)` still calls the count endpoint, as it must, and so does everything
   that consults the hint: `list(query)`, `tuple(query)`, `sorted(query)`,
-  `[*query]`, `f(*query)`, and `bool(query)` -- a bare `if query:` is a count, and
-  on those five builders a full pagination. None of it can be made cheap while
-  `len()` remains meaningful, since Python checks `__len__` before
+  `[*query]`, `f(*query)`. `bool(query)` is not among them: `__bool__` is
+  defined and answers from one row, or for the in-memory queries from their own
+  count, as described above. None of the rest can be made
+  cheap while `len()` remains meaningful, since Python checks `__len__` before
   `__length_hint__`. Prefer `.all()` or a plain loop; `set(query)`, `sum(...)`,
   `in` and comprehensions were never affected. The 13 docstring examples that
   taught `list(...)` now show `.all()`.
 
-- `client.recipients.find_by_id()` no longer addresses the wrong record for a
+- `client.recipients.find_by_recipient_id()` no longer addresses the wrong record for a
   recipient ID carrying several levels, such as `"<hash>-['C', 'R']"`.
   Normalization was implemented twice with algorithms that disagreed:
   `Recipient` kept the first level in the list while the recipient query
@@ -387,20 +477,23 @@ failure re-sends the request, which is the point of the change.
   `<hash>-R` through the finder. Six such IDs appear in the captured API
   fixtures, so this reached real data.
 
-  Both paths now avoid the `R` level whenever another is available. Measured
+  Both paths now avoid the `R` level whenever another is available. To address
+  a specific level, pass the suffix yourself:
+  `find_by_recipient_id("<hash>-R")` is used as-is; see
+  `Recipient.recipient_level` under Added. Measured
   against the live endpoint for all six of those IDs, the `R` record reports
   less spending than its sibling and reports flat zero in four of the six, with
   `parent_id`, `parent_name` and `parents` all null. One example reports $24.6M
   over 109 transactions at `-C` and $0 over 0 transactions at `-R`, so the
-  finder could previously report a $1.3B recipient as having no spending and no
+  finder could previously report a recipient with real spending as having no spending and no
   parent at all.
 
 - `client.spending.search().recipient_id()` also normalizes its argument. It
   validated the ID but passed it through unchanged, so a multi-level ID copied
-  out of `raw()` or off the USAspending website produced a filter the API could
+  out of `raw` or off the USAspending website produced a filter the API could
   not match.
 
-- Iterating `idv.child_awards` no longer raises `AttributeError: 'str' object has no attribute 'get'` when reading `funding_agency`, `awarding_agency`, `funding_subtier_agency` or `awarding_subtier_agency`. The `/idvs/awards/` endpoint reuses those keys for a plain agency-name string rather than an agency record, and the model accepted any truthy value there. All four now return `None` for such records, and the name remains available via `raw()`. Present in 0.7.3.
+- Iterating `idv.child_awards` no longer raises `AttributeError: 'str' object has no attribute 'get'` when reading `funding_agency`, `awarding_agency`, `funding_subtier_agency` or `awarding_subtier_agency`. The `/idvs/awards/` endpoint reuses those keys for a plain agency-name string rather than an agency record, and the model accepted any truthy value there. All four now return `None` for such records, and the name remains available via `raw`. Present in 0.7.3.
 - `Award._load_agency_data` raises `ValidationError` rather than a bare `ValueError` for an invalid `agency_type`, matching every other agency-type check in the library. `ValidationError` subclasses `ValueError`, so existing `except ValueError` handlers are unaffected.
 - `Transaction` instances no longer compare equal to one another regardless of their data. The class was declared `@dataclass` with no fields, which generated an `__eq__` comparing empty tuples, so any two transactions were equal and `__hash__` was `None`, making them unhashable. They now compare by identity, like every other model, and can be used in sets and as dict keys.
 - `FederalAccount.count` no longer fires an API request when the count is already present in the response, and repeated access now costs at most one request rather than one per access. The fallback that counts TAS codes was passed as a default argument, which Python evaluates eagerly, so every access paid for a request whose result was then discarded.
@@ -421,6 +514,15 @@ failure re-sends the request, which is the point of the change.
   value was discarded. Callers who passed a third argument should drop it; the
   resulting `Agency` is identical either way. Use `Award.funding_subtier_agency`
   or `Award.awarding_subtier_agency` to reach subtier data.
+
+- Module-level `usaspending.logging_config.get_logger`. The classmethod
+  `USASpendingLogger.get_logger` is the one entry point; the module function
+  was a second spelling of it, absent from `__all__` and the README.
+
+- `AgencyAwardSummary.find_by_id`, which only ever raised
+  `NotImplementedError` pointing at `get_awards_summary()`, along with the
+  `SingleResourceBase` class behind it. No caller can lose behavior that
+  consisted of an error.
 
 ## [0.7.3] - 2026-07-05
 

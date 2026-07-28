@@ -399,7 +399,7 @@ usaspending_config.configure(
     # Set HTTP request parameters (default: max_retries=3, timeout=30)
     # Set number of retries for failed requests (default: 3)
     max_retries=5,
-    # Set delay between retries in seconds (default: 1.0)
+    # Set delay between retries in seconds (default: 10.0)
     retry_delay=10.0,
     # Set exponential backoff factor for retries (default: 2.0)
     retry_backoff=2.0,
