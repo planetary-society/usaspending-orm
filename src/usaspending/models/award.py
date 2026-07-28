@@ -504,26 +504,10 @@ class Award(LazyRecord):
         ):
             return PeriodOfPerformance(self.raw.get("period_of_performance"))
 
-        # Award search results return Period of Performance information in a flat structure
-        # We need to assign these values to a PeriodOfPerformance object
-        # to maintain consistency.
-        date_keys = ["Start Date", "End Date", "Last Modified Date"]
-        if any(k in self._data for k in date_keys):
-            return PeriodOfPerformance(
-                {
-                    "start_date": self.get_value(
-                        [
-                            "Start Date",
-                            "Base Obligation Date",
-                            "Period of Performance Start Date",
-                        ]
-                    ),
-                    "end_date": self.get_value(
-                        ["End Date", "Period of Performance Current End Date"]
-                    ),
-                    "last_modified_date": self.get_value("Last Modified Date"),
-                }
-            )
+        # Award search results report these dates as flat keys, which
+        # PeriodOfPerformance reads itself, so there is nothing to translate here.
+        if any(key in self._data for key in PeriodOfPerformance._SEARCH_KEYS):
+            return PeriodOfPerformance._from_search_result(self._data)
 
         # If no data, trigger fetch
         self._ensure_details()
@@ -557,22 +541,10 @@ class Award(LazyRecord):
         if "recipient" in self._data and isinstance(self._data["recipient"], dict):
             return Recipient(self._data["recipient"], self._client)
 
-        # Then, check for flat recipient fields from search results
-        recipient_keys = ["Recipient Name", "recipient_id", "Recipient Location"]
-        if any(key in self._data for key in recipient_keys):
-            recipient_data = {
-                "recipient_name": self._data.get("Recipient Name"),
-                "recipient_unique_id": self._data.get("Recipient DUNS Number"),
-                "recipient_id": self._data.get("recipient_id"),
-                "recipient_hash": self._data.get("recipient_hash"),
-                "recipient_uei": self._data.get("Recipient UEI"),
-            }
-            recipient = Recipient(recipient_data, self._client)
-            if "Recipient Location" in self._data and isinstance(
-                self._data["Recipient Location"], dict
-            ):
-                recipient.location = Location(self._data["Recipient Location"])
-            return recipient
+        # Then, check for flat recipient fields from search results. Recipient reads
+        # those spellings itself, so there is nothing to translate here.
+        if any(key in self._data for key in Recipient._SEARCH_KEYS):
+            return Recipient._from_search_result(self._data, self._client)
 
         # If no recipient data is available locally, trigger a fetch
         self._ensure_details()

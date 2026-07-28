@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..logging_config import USASpendingLogger
 from ..utils.numbers import to_decimal
@@ -26,7 +26,39 @@ class Recipient(LazyRecord):
 
     This class provides access to recipient details, including name, IDs,
     location, and business categories.
+
+    An award search result reports its recipient as flat, title-cased keys rather
+    than as the nested object a detail response sends. Both spellings are read
+    here, so an award holding a search result can hand its payload over via
+    :meth:`_from_search_result` rather than translating the keys itself.
     """
+
+    #: The flat keys an award search result carries for its recipient. Every one is
+    #: read by a property below, and this is the projection
+    #: :meth:`_from_search_result` copies.
+    _SEARCH_KEYS: ClassVar[tuple[str, ...]] = (
+        "recipient_id",
+        "Recipient Name",
+        "Recipient DUNS Number",
+        "Recipient UEI",
+        "Recipient Location",
+    )
+
+    @classmethod
+    def _from_search_result(cls, data: dict[str, Any], client: USASpendingClient) -> Recipient:
+        """Build from an award search result, taking only the keys this model owns.
+
+        Copies rather than aliasing, since this is a lazy record whose ``raw`` is
+        replaced in place when a detail fetch fires.
+
+        Args:
+            data: An award search result, whose other keys are ignored.
+            client: The client the new model should hold.
+
+        Returns:
+            Recipient: A model whose ``raw`` holds only recipient data.
+        """
+        return cls({key: data[key] for key in cls._SEARCH_KEYS if key in data}, client)
 
     def __init__(
         self,
@@ -140,7 +172,7 @@ class Recipient(LazyRecord):
         Returns:
             Optional[str]: The UEI, or None.
         """
-        return self._lazy_get("uei", "recipient_uei")
+        return self._lazy_get("uei", "recipient_uei", "Recipient UEI")
 
     @cached_property
     def parent(self) -> Recipient | None:
@@ -230,7 +262,7 @@ class Recipient(LazyRecord):
         Returns:
             Optional[Location]: The Location object, or None.
         """
-        data = self._lazy_get("location")
+        data = self._lazy_get("location", "Recipient Location")
         return Location(data) if data else None
 
     @property

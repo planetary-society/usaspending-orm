@@ -14,6 +14,69 @@ from usaspending.models.recipient import Recipient
 from usaspending.utils.textcase import titlecase_name
 
 
+class TestSearchResultKeys:
+    """The flat keys an award search result carries are read by this model.
+
+    Three of the five were already read here and two were not, so `Award` had to
+    translate its payload before handing it over. Reading all five here makes this
+    the one owner of the mapping.
+    """
+
+    def test_every_flat_key_is_read(self, mock_usa_client):
+        """Each flat spelling an award search result sends reaches its property."""
+        recipient = Recipient(
+            {
+                "recipient_id": "abc123-C",
+                "Recipient Name": "ACME CORPORATION",
+                "Recipient DUNS Number": "123456789",
+                "Recipient UEI": "UEIXYZ123",
+                "Recipient Location": {"city_name": "PASADENA", "state_code": "CA"},
+            },
+            mock_usa_client,
+        )
+
+        assert recipient.name == "Acme Corporation"
+        assert recipient.duns == "123456789"
+        assert recipient.uei == "UEIXYZ123"
+        assert recipient.location is not None
+        assert recipient.location.state_code == "CA"
+
+    def test_the_nested_spellings_still_win(self, mock_usa_client):
+        """A detail response's own keys take precedence over the flat ones."""
+        recipient = Recipient(
+            {
+                "recipient_uei": "NESTED_UEI",
+                "Recipient UEI": "FLAT_UEI",
+                "location": {"state_code": "TX"},
+                "Recipient Location": {"state_code": "CA"},
+            },
+            mock_usa_client,
+        )
+
+        assert recipient.uei == "NESTED_UEI"
+        assert recipient.location.state_code == "TX"
+
+    def test_from_search_result_takes_only_its_own_keys(self, mock_usa_client):
+        """The projection is scoped, so `raw` describes a recipient and not an award.
+
+        It must also copy rather than alias, since this is a lazy record whose
+        `raw` is replaced in place when a detail fetch fires.
+        """
+        award_data = {
+            "recipient_id": "abc123-C",
+            "Recipient Name": "ACME",
+            "Award ID": "CONT_AWD_1",
+            "Start Date": "2020-01-01",
+        }
+
+        recipient = Recipient._from_search_result(award_data, mock_usa_client)
+
+        assert set(recipient.raw) == {"recipient_id", "Recipient Name"}
+
+        award_data.clear()
+        assert recipient.name == "Acme"
+
+
 class TestRecipientInitialization:
     """Test Recipient model initialization."""
 

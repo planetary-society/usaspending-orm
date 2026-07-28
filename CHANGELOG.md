@@ -212,6 +212,19 @@ consistency argument behind it.
   serializes with `strftime`, which formats a datetime correctly; the range
   validation was the only thing in the path that could detect the leak.
 
+- A `Recipient` built directly from an award search result now reports its `uei`
+  and `location`. Those two properties read only the nested spellings a detail
+  response sends, so they answered `None` for the flat, title-cased keys a search
+  result carries. It went unnoticed because `Award.recipient` translated the keys
+  on the way in, which repaired it for the common path only: reading
+  `award.recipient.uei` worked, while `Recipient(row, client).uei` for the same
+  row did not. `PeriodOfPerformance` had the same gap for `Base Obligation Date`,
+  which an award search result uses where others send `Start Date`.
+
+  Both models now read every spelling of their own fields, and `Award` hands its
+  payload over rather than reproducing the mapping, so the two cannot disagree
+  again. Nested spellings still take precedence where a payload carries both.
+
 - `reattach(recursive=True)` now reaches every nested model that holds the client.
   It recognized only lazy-loading models, so `AwardAccount`, `FederalAccount`,
   `Funding`, `SubAward` and `TreasuryAccountSymbol` were silently stepped over and

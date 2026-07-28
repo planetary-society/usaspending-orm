@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import Any, ClassVar
 
 from ..utils.dates import to_date
 from .base_model import BaseModel
@@ -12,7 +12,40 @@ class PeriodOfPerformance(BaseModel):
 
     Represents the time period during which the work of an award is expected
     to be performed or the funding is available for obligation.
+
+    An award search result reports these dates as flat, title-cased keys rather
+    than as the nested object a detail response sends. Both spellings are read
+    here, so an award holding a search result can hand its payload over via
+    :meth:`_from_search_result` rather than translating the keys itself.
     """
+
+    #: The flat keys an award search result carries for its period of performance.
+    #: Every one is read by a property below, and this is the projection
+    #: :meth:`_from_search_result` copies.
+    _SEARCH_KEYS: ClassVar[tuple[str, ...]] = (
+        "Start Date",
+        "Base Obligation Date",
+        "End Date",
+        "Period of Performance Current End Date",
+        "Period of Performance Potential End Date",
+        "Last Modified Date",
+    )
+
+    @classmethod
+    def _from_search_result(cls, data: dict[str, Any]) -> PeriodOfPerformance:
+        """Build from an award search result, taking only the keys this model owns.
+
+        Copies rather than aliasing: an award replaces its payload in place when a
+        detail fetch fires, and this model reads some of its dates lazily, so a
+        shared reference would let that fetch change an object already built.
+
+        Args:
+            data: An award search result, whose other keys are ignored.
+
+        Returns:
+            PeriodOfPerformance: A model whose ``raw`` holds only period data.
+        """
+        return cls({key: data[key] for key in cls._SEARCH_KEYS if key in data})
 
     def __init__(self, data: dict[str, Any]):
         """Initialize PeriodOfPerformance.
@@ -22,7 +55,14 @@ class PeriodOfPerformance(BaseModel):
         """
         super().__init__(data)
         self._start_date = to_date(
-            self.get_value(["start_date", "Start Date", "Period of Performance Start Date"])
+            self.get_value(
+                [
+                    "start_date",
+                    "Start Date",
+                    "Period of Performance Start Date",
+                    "Base Obligation Date",
+                ]
+            )
         )
         self._end_date = to_date(
             self.get_value(["end_date", "End Date", "Period of Performance Current End Date"])
