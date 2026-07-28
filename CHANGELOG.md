@@ -6,27 +6,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.8.0] - 2026-07-28
 
-A simplification and correctness release. The query interface now keeps one set
-of promises everywhere: `count()`, `len()`, iteration, indexing, slicing and
-truthiness agree under the bounds you set. Several classes of silently wrong or fabricated data
-now surface honestly, and the release is verified by CI on Python 3.9 through
-3.14.
+Mostly refactoring internals to DRY the codebase and standardize the query interface.
+It now keeps one set of promises everywhere: `count()`, `len()`, iteration, indexing, slicing and
+truthiness agree under the bounds you set. Adding CI tests to verify compatability for Pythons 3.9 - 3.14.
 
-**Breaking changes at a glance**, ordered by how likely they are to reach your
-code. Each has a full entry with migration notes below.
+**Breaking changes**
 
 - Optional money and string getters return `None` when the API reports no
   value; a reported zero is still `Decimal("0.00")`. Format with a fallback:
   `f"{award.total_obligation or 0:,.2f}"`.
 - `count()` honors `limit()` and `max_pages()` on every query. Read the server
-  total by counting before bounding.
+  total by counting before bounding (i.e. it will never return a count greater
+  that your set limit).
 - A lazy load that fails now raises instead of silently answering `None`
   forever. Only the API's "no such record" answers still read as absent data.
-- `since()` and `until()` raise `ValidationError` for a pre-FY2008 bound or an
-  inverted range instead of silently matching nothing useful.
+- `since()` and `until()` raise `ValidationError` for a pre-FY2008 bound (the lower
+  limit for USASpending data) or given an inverted range instead of silently matching
+  nothing useful.
 - `order_by()` raises `ValidationError` on every builder for a direction other
   than `"asc"` or `"desc"`.
-- `client.tas.agencies` returns a query rather than `list[Agency]`; `== []` no
+- `client.tas.agencies` returns a query object rather than a list. So `== []` no
   longer works as an emptiness check.
 - A multi-level recipient ID now resolves away from the often-empty `R` level,
   changing which record `find_by_recipient_id()` returns for it.
@@ -39,27 +38,12 @@ code. Each has a full entry with migration notes below.
 ### Added
 
 - `Recipient.recipient_level`: which level of the recipient hierarchy a record
-  describes, as `"C"` (child), `"P"` (parent) or `"R"` (no parent). The API
-  reports it on every recipient payload and the library previously dropped it.
-  To fetch a specific level, pass an ID that already carries the suffix:
-  `client.recipients.find_by_recipient_id("<hash>-R")` is used as-is; only the
-  multi-level `"<hash>-['C', 'R']"` form is reduced.
+  describes, as `"C"` (child), `"P"` (parent) or `"R"` (no parent).
 
 - `usaspending.utils.current_fiscal_year()`: the federal fiscal year today
   falls in, as an int. October 1 opens the fiscal year named for the calendar
   year it ends in, so it reports 2026 on 2026-09-30 and 2027 on 2026-10-01.
   Relocated from the removed `usaspending.utils.formatter.current_fiscal_year`.
-
-- `tests/test_public_api_surface.py` now records the shape of every public
-  call, constructors included, rather than its name alone, so a parameter that
-  is added, removed or made required fails the suite. It also covers the
-  `usaspending.utils` and `usaspending.download` exports, the exported model
-  base classes, and the deep import paths most likely written against 0.7.3.
-
-- Continuous integration (`.github/workflows/test.yml` and `integration.yml`):
-  the unit suite on Python 3.9 through 3.14 plus ruff, a coverage floor and a
-  built-wheel smoke test on every push to `main` and every pull request; the
-  live-API suite weekly and on demand.
 
 ### Changed
 
@@ -278,7 +262,7 @@ code. Each has a full entry with migration notes below.
   `q1 = search().keywords("alpha")` followed by `q2 = q1.keywords("beta")`
   left `q1` sending `["alpha", "beta", "beta"]`. Affected chained `keywords`,
   `award_type_codes`, simple `psc_codes` and `treasury_account_components`
-  filters. Present in 0.7.3.
+  filters. 
 
 - `client.recipients.find_by_recipient_id()` no longer addresses the wrong
   record for a recipient ID carrying several levels, such as
@@ -290,7 +274,7 @@ code. Each has a full entry with migration notes below.
   pass the suffix yourself (see `Recipient.recipient_level` under Added).
   `client.spending.search().recipient_id()` also normalizes its argument now,
   so a multi-level ID copied out of `raw` produces a filter the API can
-  match. Present in 0.7.3.
+  match. 
 
 - `award.transactions` no longer reports a count that disagrees with what it
   yields. `since()` and `until()` filter in memory, but the count came from
@@ -298,7 +282,7 @@ code. Each has a full entry with migration notes below.
   and `len()` said three where iteration yielded two, slices disagreed with
   `len()`, and `query[-1]` raised `IndexError`. All of them now agree, and
   `limit(1)` means one matching row rather than one row that may then be
-  discarded. Present in 0.7.3.
+  discarded. 
 
 - A `Recipient` built directly from an award search result now reports its
   `uei` and `location`, which read only the nested spellings a detail
@@ -307,7 +291,7 @@ code. Each has a full entry with migration notes below.
   not. `PeriodOfPerformance` had the same gap for `"Base Obligation Date"`.
   Both models now read every spelling of their own fields, and `Award` hands
   its payload over rather than reproducing the mapping; nested spellings
-  still take precedence where a payload carries both. Present in 0.7.3.
+  still take precedence where a payload carries both. 
 
 - Indexing and slicing an in-memory query now read the limited collection:
   `agency.federal_accounts.limit(3)[:]` returned every account and
@@ -319,10 +303,10 @@ code. Each has a full entry with migration notes below.
   fieldless `@dataclass` declaration generated an `__eq__` comparing empty
   tuples, so any two transactions were equal and none was hashable. They now
   compare by identity, like every other model, and can be used in sets and as
-  dict keys. Present in 0.7.3.
+  dict keys. 
 
 - `Recipient.parents` returns a fresh list on each read, so sorting or
-  popping the result no longer corrupts the model. Present in 0.7.3.
+  popping the result no longer corrupts the model. 
 
 - Iterating `idv.child_awards` no longer raises
   `AttributeError: 'str' object has no attribute 'get'` when reading the four
@@ -360,7 +344,7 @@ code. Each has a full entry with migration notes below.
 - `FederalAccount.count` no longer fires an API request when the count is
   already in the response; the fallback was an eagerly evaluated default
   argument, so every access paid for a request whose result was discarded.
-  Present in 0.7.3.
+  
 
 - `query.limit(0).first()` returned a row, contradicting `.all()` and
   `len()`. It now respects the zero, which is also what makes `__bool__`
@@ -380,8 +364,7 @@ code. Each has a full entry with migration notes below.
   payload was never affected.
 
 - A `TransactionsSearch` with no award set raises `ValidationError` from
-  `count()` instead of requesting `/awards/count/transaction/None/`. Present
-  in 0.7.3.
+  `count()` instead of requesting `/awards/count/transaction/None/`.
 
 - `Award._load_agency_data` raises `ValidationError` rather than a bare
   `ValueError` for an invalid `agency_type`; `ValidationError` subclasses
