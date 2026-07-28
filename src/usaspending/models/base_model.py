@@ -129,6 +129,13 @@ class ClientAwareModel(BaseModel):
     #: whose models would otherwise go on serving the outgoing client. A recursive
     #: reattach rebinds them in place and keeps the cache instead, so an entry must
     #: hold models the walk can reach: a model, or a dict/list/tuple/set of them.
+    #:
+    #: There are two entries, one per filter-tree level. A descriptor that checked
+    #: staleness when the level is read would retire this list, and the whole
+    #: non-recursive branch of :meth:`reattach` with it, at the cost of a
+    #: project-local replacement for ``cached_property`` and about 0.7 us on each
+    #: read of a cached level. That is not worth learning for two call sites, but it
+    #: is the right answer once a third appears and this list becomes a registry.
     _REATTACH_INVALIDATES: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, data: dict[str, Any], client: USASpendingClient):
