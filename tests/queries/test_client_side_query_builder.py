@@ -86,12 +86,15 @@ def test_count_applies_filters(
     def_codes_query: DefCodesQuery,
     agency_fixture_data: dict[str, Any],
 ) -> None:
-    """Ensure count reflects filters but ignores limits."""
+    """Ensure count reflects filters, and the bounds the caller set."""
     def_codes = agency_fixture_data["def_codes"]
     expected = sum(1 for item in def_codes if item.get("disaster") == "covid_19")
 
-    filtered = def_codes_query.disaster("covid_19").limit(1).max_pages(0)
+    filtered = def_codes_query.disaster("covid_19")
     assert filtered.count() == expected
+
+    # max_pages(0) fetches nothing, and limit(1) would allow one row.
+    assert filtered.limit(1).max_pages(0).count() == 0
 
 
 def test_order_by_sorts_results(

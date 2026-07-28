@@ -238,8 +238,21 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         return self.all()[key]
 
     def count(self) -> int:
-        """Return the total number of matching results."""
-        return len(self._apply_filters(self._materialize()))
+        """Return how many results this query yields.
+
+        ``limit()`` and ``max_pages()`` apply here as they do to iteration, so
+        ``count()``, ``len()`` and ``len(all())`` always agree. For the total
+        under a set of filters, count before bounding the query.
+
+        Returns:
+            int: Matching items, held to whatever bounds are set.
+        """
+        # Bounds that forbid every result answer the question themselves, and
+        # materializing is a request for a filter-tree level not yet fetched.
+        if self._yields_nothing():
+            return 0
+
+        return self._cap(len(self._apply_filters(self._materialize())))
 
     def __bool__(self) -> bool:
         """Answer from the in-memory count, which is less work here than one row.
@@ -250,6 +263,9 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         them per page, so the clone sorts the whole collection when ``order_by`` is
         set and, for a filter-tree level, caches the fetch on itself and leaves this
         query to request the level again. Counting touches neither.
+
+        Since the count honors ``limit()``, a zero-limit query is falsy without a
+        special case here, matching what it yields.
 
         Returns:
             bool: True if the query matches at least one result.
@@ -300,16 +316,8 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         return sorted(items, key=self._sort_key, reverse=reverse)
 
     def _apply_limits(self, items: list[T]) -> list[T]:
-        """Apply limit and max_pages constraints to the item list."""
-        max_items = len(items)
-
-        if self._max_pages is not None:
-            max_items = min(max_items, self._max_pages * self._page_size)
-
-        if self._total_limit is not None:
-            max_items = min(max_items, self._total_limit)
-
-        return items[:max_items]
+        """Truncate the item list to what limit() and max_pages() allow."""
+        return items[: self._cap(len(items))]
 
     def _sort_key(self, item: T) -> tuple[bool, Any]:
         """Build a stable sort key for the configured order field."""

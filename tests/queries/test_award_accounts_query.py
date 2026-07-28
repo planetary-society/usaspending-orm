@@ -257,21 +257,23 @@ class TestAwardAccountsQueryCount:
         assert count1 == count2 == 2
         assert mock_usa_client.get_request_count() == 2
 
-    def test_indexing_does_not_corrupt_a_later_count(self, mock_usa_client, load_fixture):
-        """A capped count must not leak back out of count().
+    def test_indexing_agrees_with_a_later_count(self, mock_usa_client, load_fixture):
+        """Indexing and count() read one bounded figure, whichever runs first.
 
-        Indexing caches the count after limit() capping, while count() reports
-        what the API said. These used to share one field, so indexing first made
-        the next count() return the capped figure instead.
+        Indexing caches the count, and count() honors limit() as indexing does,
+        so the cached value is the one count() would report anyway. The API says
+        two here; the caller asked for one.
         """
         fixture = load_fixture("awards/accounts.json")
         mock_usa_client.set_response("/awards/accounts/", fixture)
 
         query = AwardAccountsQuery(mock_usa_client).award_id("CONT_AWD_123").limit(1)
 
-        query[0]  # populates the effective-count cache with the capped value
+        query[0]  # populates the count cache
 
-        assert query.count() == 2  # what the API reports, not the capped 1
+        assert query.count() == 1
+        assert len(query) == 1
+        assert len(query.all()) == 1
 
     def test_count_requires_award_id(self, mock_usa_client):
         """Test count raises error without award_id."""

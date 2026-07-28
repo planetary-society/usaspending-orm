@@ -25,6 +25,30 @@ behavior preserving and the public API is unchanged.
 
 ### Changed
 
+- `count()` now honors `limit()` and `max_pages()` on every query, so `count()`,
+  `len(query)` and `len(query.all())` always agree. Which answer you got used to
+  depend on how the endpoint reports a total. The builders backed by a count
+  endpoint or by page metadata returned the server's figure whatever the caller
+  had asked for, so `client.awards.search().contracts().limit(3).count()` said 510
+  while that same query yielded three rows and `len()` said 3. The builders that
+  count by walking pages, such as spending search and award funding, already
+  stopped at the bound.
+
+  **This can break working code** that used `count()` on a bounded query to read
+  the server's total. Count before bounding: `search.count()` is the total under
+  those filters, `search.limit(3).count()` is what the bounded query yields.
+
+  `config.default_result_limit` is deliberately still excluded. It exists to stop
+  unbounded _fetches_, and letting it cap a count would report 10,000 for any
+  larger result set; only the bounds a caller sets apply.
+
+  Bounds that forbid every result are now answered without a request:
+  `query.limit(0).count()` is 0 where it used to spend a count call to arrive at
+  the same place, and so is `query.max_pages(0).count()`, which for a query with
+  no count endpoint used to fetch a page it was not allowed to keep. For a query
+  that filters in memory, `bool(query.limit(0))` was True and is now False,
+  matching what the query yields.
+
 - `award.transactions.since()` and `until()` now reject a bound the API cannot
   answer, instead of accepting it and quietly matching nothing useful. Two rules
   that `time_period()` already enforced were missing here, and both failed
@@ -37,8 +61,8 @@ behavior preserving and the public API is unchanged.
     returned an empty result that was indistinguishable from an award with no
     transactions in range.
 
-  Both now raise `ValidationError`. **This is the one change here that can break
-  working code**: if you relied on an inverted range as a way to select nothing,
+  Both now raise `ValidationError`. **This can break working code**: if you
+  relied on an inverted range as a way to select nothing,
   use `limit(0)` or skip the query. The range is checked by whichever of the two
   calls comes second, so `.until(x).since(y)` is validated the same as
   `.since(y).until(x)`.

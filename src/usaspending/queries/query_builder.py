@@ -84,9 +84,9 @@ class QueryBuilder(BaseQuery[T], ABC):
         super().__init__()
         self._client = client
         self._filter_objects: list[BaseFilter] = []
-        # The count *after* limit()/max_pages() capping, memoized for indexing so
-        # that walking pages does not re-count. count() deliberately does not
-        # read it: doing so let a capped figure leak out as the total.
+        # The result of count(), memoized for indexing so that walking pages does
+        # not re-count. count() deliberately does not read it, so that repeated
+        # calls observe fresh data.
         self._cached_count: int | None = None
 
     def __iter__(self) -> Iterator[T]:
@@ -171,13 +171,14 @@ class QueryBuilder(BaseQuery[T], ABC):
         return results
 
     def _get_cached_count(self) -> int:
-        """Get the effective count, using cached value if available.
+        """Get the count, using the cached value if one is available.
 
-        Returns the count capped by limit() and max_pages() constraints.
-        This avoids redundant count API calls during indexing/slicing operations.
+        Holds what :meth:`count` reports, so it honors ``limit()`` and
+        ``max_pages()`` too. This avoids redundant count API calls during
+        indexing/slicing operations.
         """
         if self._cached_count is None:
-            self._cached_count = self._effective_count()
+            self._cached_count = self.count()
         return self._cached_count
 
     def __getitem__(self, key: int | slice) -> T | list[T]:
@@ -363,31 +364,39 @@ class QueryBuilder(BaseQuery[T], ABC):
     # ==========================================================================
     # Counting
     #
-    # count() is shared and not overridden: it owns the caching and the logging.
+    # count() is shared and not overridden: it owns the capping and the logging.
     # Subclasses implement _compute_raw_count() and pick one of the mechanisms
     # below, which cover everything these endpoints actually offer. Keeping the
-    # cache here is what stops some counts from caching and others not.
+    # capping here is what stops some counts from honoring a bound and others not.
     # ==========================================================================
 
     def count(self) -> int:
-        """Return the total number of matching results.
+        """Return how many results this query yields.
+
+        ``limit()`` and ``max_pages()`` are the caller's own bounds, so they apply
+        here as they do to iteration: ``count()``, ``len()`` and ``len(all())``
+        always agree. For the server's total under a set of filters, count before
+        bounding the query. ``config.default_result_limit`` is deliberately not
+        applied; see :meth:`_count_via_paging`.
 
         This always asks the API, so repeated calls observe fresh data. The only
         count cache is :meth:`_get_cached_count`, which indexing uses to avoid
-        re-counting while walking pages; it holds the count *after* ``limit()``
-        and ``max_pages()`` capping, which is why it must not be read from here.
+        re-counting while walking pages.
 
         Returns:
-            int: Total matching results, before any client-side capping.
+            int: Matching results, held to whatever bounds are set.
         """
         logger.debug(f"{self.__class__.__name__}.count() called")
-        count = self._compute_raw_count()
+
+        # Bounds that forbid every result answer the question themselves, so the
+        # request is skipped rather than made and then discarded by the cap.
+        count = 0 if self._yields_nothing() else self._cap(self._compute_raw_count())
         logger.info(f"{self.__class__.__name__}.count() = {count}")
         return count
 
     @abstractmethod
     def _compute_raw_count(self) -> int:
-        """Return the matching total, uncapped by ``limit()`` or ``max_pages()``.
+        """Return the matching total, before :meth:`count` applies the bounds.
 
         Usually the API's own figure. A query that filters rows in memory must
         instead report what it would yield, or :meth:`count` disagrees with
@@ -489,15 +498,14 @@ class QueryBuilder(BaseQuery[T], ABC):
         unbounded *fetches*, and letting it cap a count would silently report
         10,000 for any larger result set.
 
-        Explicit ``limit()`` and ``max_pages()`` are still honored, so a bounded
-        query reports the bounded figure.
+        Explicit ``limit()`` and ``max_pages()`` are honored here as well as in
+        :meth:`count`, which is not redundant: stopping early is what keeps a
+        bounded query from paging the whole result set, and capping an already
+        bounded figure changes nothing.
 
         Returns:
             int: Number of matching rows.
         """
-        if self._total_limit is not None and self._total_limit <= 0:
-            return 0
-
         total = 0
         page = 1
         pages_fetched = 0

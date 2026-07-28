@@ -248,6 +248,7 @@ class MockUSASpendingClient(USASpendingClient):
         endpoint: str,
         items: list[dict[str, Any]],
         page_size: int = 100,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Automatically paginate a list of items.
 
@@ -255,6 +256,8 @@ class MockUSASpendingClient(USASpendingClient):
             endpoint: API endpoint
             items: List of all items to paginate
             page_size: Items per page
+            metadata: Extra page_metadata keys added to every page, for
+                endpoints that report a total there (optional)
         """
         # Clear any existing responses and reset index
         self._responses[endpoint] = []
@@ -267,13 +270,15 @@ class MockUSASpendingClient(USASpendingClient):
             has_next = (i + page_size) < len(items)
 
             response = ResponseBuilder.paginated_response(
-                results=page_items, page=page_num, has_next=has_next
+                results=page_items, page=page_num, has_next=has_next, metadata=metadata
             )
             self._responses[endpoint].append(response)
 
         # If no items, add single empty response
         if not items:
-            self._responses[endpoint].append(ResponseBuilder.paginated_response([], has_next=False))
+            self._responses[endpoint].append(
+                ResponseBuilder.paginated_response([], has_next=False, metadata=metadata)
+            )
 
         # Automatically set up count endpoint (skips if already configured)
         self._auto_setup_count_endpoint(endpoint, len(items))

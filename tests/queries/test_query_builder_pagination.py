@@ -130,8 +130,9 @@ class TestLimitFunctionality:
         results = list(search)
 
         assert len(results) == 0
-        # Should make one call to count endpoint (from __len__), but not the search endpoint
-        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT) == 1
+        # list() asks for a length hint, which counts, but a zero limit is
+        # answerable without asking the API at all.
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT) == 0
         assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 0
 
     def test_no_limit_fetches_all(self, awards_search, mock_usa_client):

@@ -32,7 +32,7 @@ class BaseQuery(ABC, Generic[T]):
 
     @abstractmethod
     def count(self) -> int:
-        """Return the total number of matching results."""
+        """Return how many results the query yields, honoring its bounds."""
 
     def _new_instance(self: Q) -> Q:
         """Construct a fresh instance of this class, carrying no query state.
@@ -194,8 +194,8 @@ class BaseQuery(ABC, Generic[T]):
         return list(iter(self))
 
     def __len__(self) -> int:
-        """Return the effective number of items respecting limit/max_pages."""
-        return self._effective_count()
+        """Return how many results the query yields, honoring its bounds."""
+        return self.count()
 
     def __bool__(self) -> bool:
         """Report whether the query matches anything, by reading one row.
@@ -215,16 +215,25 @@ class BaseQuery(ABC, Generic[T]):
             return min(self._page_size, self._total_limit)
         return self._page_size
 
-    def _effective_count(self) -> int:
-        """Return count capped by limit() and max_pages() constraints.
+    def _cap(self, count: int) -> int:
+        """Return `count` held to whatever ``limit()`` and ``max_pages()`` allow.
+
+        Both :meth:`count` implementations end here, so the paginated and the
+        in-memory hierarchies cannot drift on what a bounded query reports.
+
+        Args:
+            count: Matching results before the caller's own bounds apply.
 
         Returns:
-            The smaller of the raw API count and any user-set constraints.
+            int: The smallest of `count` and every bound that is set.
         """
-        raw = self.count()
-        caps = [raw]
+        caps = [count]
         if self._total_limit is not None:
             caps.append(self._total_limit)
         if self._max_pages is not None:
             caps.append(self._max_pages * self._page_size)
         return min(caps)
+
+    def _yields_nothing(self) -> bool:
+        """Return True when the caller's bounds already forbid every result."""
+        return self._cap(1) <= 0

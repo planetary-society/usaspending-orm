@@ -136,7 +136,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         if isinstance(key, int):
             # Handle negative index by counting first
             if key < 0:
-                total = self.count()
+                total = self._get_cached_count()
                 key += total
 
             if key < 0:
