@@ -114,9 +114,23 @@
       "validate_init_data",
       "website"
     ],
+    "AgencyAwardSummary": [
+      "get_awards_summary"
+    ],
     "AgencyFilter": [
       "key",
       "to_dict"
+    ],
+    "AgencyQuery": [
+      "find_by_id"
+    ],
+    "AgencyResource": [
+      "client",
+      "find_all_awarding_agencies_by_name",
+      "find_all_funding_agencies_by_name",
+      "find_by_toptier_code",
+      "search",
+      "subagencies"
     ],
     "AgencyTier": [
       "SUBTIER",
@@ -177,6 +191,22 @@
       "usa_spending_url",
       "validate_init_data"
     ],
+    "AwardAccountsQuery": [
+      "SORT_FIELD_MAP",
+      "all",
+      "award_id",
+      "count",
+      "first",
+      "limit",
+      "max_pages",
+      "order_by",
+      "page_size",
+      "to_filters_payload"
+    ],
+    "AwardAccountsResource": [
+      "award_id",
+      "client"
+    ],
     "AwardAmountFilter": [
       "key",
       "to_dict"
@@ -186,6 +216,16 @@
       "DATE_SIGNED",
       "LAST_MODIFIED",
       "NEW_AWARDS_ONLY"
+    ],
+    "AwardQuery": [
+      "find_by_generated_id",
+      "find_by_id"
+    ],
+    "AwardResource": [
+      "client",
+      "find_by_award_id",
+      "find_by_generated_id",
+      "search"
     ],
     "AwardingAgenciesSearch": [
       "agency_type",
@@ -246,6 +286,24 @@
       "time_period",
       "to_filters_payload",
       "treasury_account_components"
+    ],
+    "BaseQuery": [
+      "all",
+      "count",
+      "first",
+      "limit",
+      "max_pages",
+      "order_by",
+      "page_size"
+    ],
+    "ClientSideQueryBuilder": [
+      "all",
+      "count",
+      "first",
+      "limit",
+      "max_pages",
+      "order_by",
+      "page_size"
     ],
     "ConfigurationError": [
       "args",
@@ -339,6 +397,31 @@
       "args",
       "with_traceback"
     ],
+    "DownloadResource": [
+      "assistance",
+      "client",
+      "contract",
+      "idv",
+      "search",
+      "status"
+    ],
+    "FederalAccountsQuery": [
+      "CODE_KEY",
+      "ENDPOINT",
+      "KEYWORD_FIELDS",
+      "account_name",
+      "all",
+      "code",
+      "codes",
+      "count",
+      "description",
+      "first",
+      "fiscal_year",
+      "limit",
+      "max_pages",
+      "order_by",
+      "page_size"
+    ],
     "Funding": [
       "account_title",
       "awarding_agency",
@@ -385,6 +468,10 @@
       "subtier",
       "to_filters_payload",
       "toptier"
+    ],
+    "FundingResource": [
+      "award_id",
+      "client"
     ],
     "FundingSearch": [
       "SORT_FIELD_MAP",
@@ -532,6 +619,18 @@
       "usa_spending_url",
       "validate_init_data"
     ],
+    "IDVChildAwardsSearch": [
+      "SORT_FIELD_MAP",
+      "all",
+      "award_type",
+      "count",
+      "first",
+      "limit",
+      "max_pages",
+      "order_by",
+      "page_size",
+      "to_filters_payload"
+    ],
     "KeywordsFilter": [
       "key",
       "to_dict"
@@ -656,6 +755,16 @@
       "to_dict",
       "validate_init_data"
     ],
+    "QueryBuilder": [
+      "all",
+      "count",
+      "first",
+      "limit",
+      "max_pages",
+      "order_by",
+      "page_size",
+      "to_filters_payload"
+    ],
     "RateLimitError": [
       "args",
       "with_traceback"
@@ -682,6 +791,9 @@
       "total_transactions",
       "uei",
       "validate_init_data"
+    ],
+    "RecipientQuery": [
+      "find_by_id"
     ],
     "RecipientSpending": [
       "alternate_names",
@@ -710,6 +822,13 @@
       "uei",
       "validate_init_data"
     ],
+    "RecipientsResource": [
+      "client",
+      "find_by_duns",
+      "find_by_recipient_id",
+      "find_by_uei",
+      "search"
+    ],
     "RecipientsSearch": [
       "all",
       "award_type",
@@ -734,6 +853,10 @@
       "to_dict",
       "total_outlays",
       "validate_init_data"
+    ],
+    "SpendingResource": [
+      "client",
+      "search"
     ],
     "SpendingSearch": [
       "agencies",
@@ -797,6 +920,19 @@
       "to_dict",
       "total_outlays",
       "validate_init_data"
+    ],
+    "SubAgencyQuery": [
+      "agency_type",
+      "all",
+      "award_type_codes",
+      "count",
+      "first",
+      "fiscal_year",
+      "limit",
+      "max_pages",
+      "order_by",
+      "page_size",
+      "to_filters_payload"
     ],
     "SubAward": [
       "CONTRACT_SUBAWARD_FIELDS",
@@ -892,6 +1028,44 @@
       "transaction_count",
       "validate_init_data"
     ],
+    "TASAgenciesQuery": [
+      "CODE_KEY",
+      "ENDPOINT",
+      "KEYWORD_FIELDS",
+      "all",
+      "code",
+      "codes",
+      "count",
+      "description",
+      "first",
+      "limit",
+      "max_pages",
+      "order_by",
+      "page_size"
+    ],
+    "TASCodesQuery": [
+      "CODE_KEY",
+      "ENDPOINT",
+      "KEYWORD_FIELDS",
+      "all",
+      "availability_type_code",
+      "code",
+      "codes",
+      "count",
+      "description",
+      "first",
+      "fiscal_year",
+      "limit",
+      "max_pages",
+      "name",
+      "order_by",
+      "page_size"
+    ],
+    "TASResource": [
+      "ENDPOINT",
+      "agencies",
+      "client"
+    ],
     "TimePeriodFilter": [
       "date_type",
       "key",
@@ -915,6 +1089,10 @@
       "type",
       "type_description",
       "validate_init_data"
+    ],
+    "TransactionsResource": [
+      "award_id",
+      "client"
     ],
     "TransactionsSearch": [
       "VALID_SORT_FIELDS",
@@ -957,6 +1135,49 @@
     "ValidationError": [
       "args",
       "with_traceback"
+    ]
+  },
+  "subpackages": {
+    "queries": [
+      "APIError",
+      "AgenciesSearch",
+      "AgencyAwardSummary",
+      "AgencyQuery",
+      "AwardAccountsQuery",
+      "AwardQuery",
+      "AwardingAgenciesSearch",
+      "AwardsSearch",
+      "BaseQuery",
+      "ClientSideQueryBuilder",
+      "ConfigurationError",
+      "FederalAccountsQuery",
+      "FundingAgenciesSearch",
+      "FundingSearch",
+      "HTTPError",
+      "IDVChildAwardsSearch",
+      "QueryBuilder",
+      "RateLimitError",
+      "RecipientQuery",
+      "RecipientsSearch",
+      "SpendingSearch",
+      "SubAgencyQuery",
+      "SubAwardsSearch",
+      "TASAgenciesQuery",
+      "TASCodesQuery",
+      "TransactionsSearch",
+      "USASpendingError",
+      "ValidationError"
+    ],
+    "resources": [
+      "AgencyResource",
+      "AwardAccountsResource",
+      "AwardResource",
+      "DownloadResource",
+      "FundingResource",
+      "RecipientsResource",
+      "SpendingResource",
+      "TASResource",
+      "TransactionsResource"
     ]
   }
 }
