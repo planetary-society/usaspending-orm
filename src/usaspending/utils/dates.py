@@ -16,15 +16,47 @@ logger = USASpendingLogger.get_logger(__name__)
 
 #: Every shape the API is known to report a date in, tried in order of likelihood.
 #: :func:`to_date` documents what each one is, and this tuple decides what parses.
+#:
+#: Keep this short. CPython caches compiled strptime patterns in one
+#: process-global dict and clears all of it once it holds more than five, so a
+#: list long enough to be walked past that point evicts the entries every other
+#: caller in the process depends on. `%z` reads a `Z` as well as a numeric
+#: offset, which is why no separate format is needed for it.
 _DATE_FORMATS: tuple[str, ...] = (
     "%Y-%m-%d",
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%d %H:%M:%S.%f",
     "%Y-%m-%dT%H:%M:%S",
     "%Y-%m-%dT%H:%M:%S.%f",
-    "%Y-%m-%dT%H:%M:%SZ",
     "%Y-%m-%dT%H:%M:%S%z",
 )
+
+#: Shortest date the format list can read, an unpadded `YYYY-M-D`.
+_SHORTEST_DATE = 8
+
+
+def _starts_like_a_date(value: object) -> bool:
+    """Report whether `value` could be one of the shapes in `_DATE_FORMATS`.
+
+    Every format begins `%Y-%m-`, and `%Y` matches exactly four digits, so
+    anything the list can read starts with four digits and a dash. Checking that
+    first is what keeps a value that is not a date at all, such as the "N/A" the
+    API occasionally sends, from being walked against every format: that walk is
+    the expensive failure, and it is the one that overflows the shared strptime
+    cache.
+
+    Args:
+        value: Any value, including ones of the wrong type entirely.
+
+    Returns:
+        bool: True if the value is a string whose start could begin a date.
+    """
+    return (
+        isinstance(value, str)
+        and len(value) >= _SHORTEST_DATE
+        and value[:4].isdigit()
+        and value[4] == "-"
+    )
 
 
 def to_date(date_string: str | date | None) -> date | None:
@@ -61,8 +93,8 @@ def to_date(date_string: str | date | None) -> date | None:
         return date_string
 
     # Date-only is nearly everything the API sends, and `date.fromisoformat` reads it
-    # about 11x faster than working down the format list. The shape check pins the
-    # fast path to that one shape, which is what keeps it from widening what parses.
+    # about 11x faster than working down the format list. The width pins the fast
+    # path to that one shape, which is what keeps it from widening what parses.
     # Both ways that can go wrong are named in the tests, which fail if either does.
     try:
         if len(date_string) == 10 and date_string[4] == date_string[7] == "-":
@@ -72,11 +104,15 @@ def to_date(date_string: str | date | None) -> date | None:
         # through, so every unusable value answers by the one path below.
         pass
 
-    for fmt in _DATE_FORMATS:
-        try:
-            return datetime.strptime(date_string, fmt).date()
-        except (TypeError, ValueError):
-            continue
+    # Only a value that could be one of the formats is walked against them. This
+    # sits after the fast path rather than before it so the shape it tests, which
+    # is nearly everything the API sends, is answered without paying for it.
+    if _starts_like_a_date(date_string):
+        for fmt in _DATE_FORMATS:
+            try:
+                return datetime.strptime(date_string, fmt).date()
+            except ValueError:
+                continue
 
     logger.warning(f"Could not parse date string: {date_string}")
     return None

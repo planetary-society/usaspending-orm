@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import _strptime
 from datetime import date, datetime
 from unittest.mock import patch
 
@@ -282,6 +283,22 @@ class TestToDate:
         """
         assert to_date(value) is None
         mock_logger.warning.assert_called_once()
+
+    def test_an_unusable_value_leaves_the_shared_strptime_cache_alone(self):
+        """Rejecting a non-date must not evict regexes other callers rely on.
+
+        CPython caches compiled strptime patterns in one process-global dict and
+        clears the whole thing when it exceeds five entries. Walking the format
+        list to exhaustion therefore used to flush every entry in the process,
+        making the next `strptime` call anywhere in the application recompile,
+        so one bad API field charged its cost to unrelated code.
+        """
+        datetime.strptime("2024-01-15", "%Y-%m-%d")
+        assert "%Y-%m-%d" in _strptime._regex_cache
+
+        assert to_date("this is not a date at all") is None
+
+        assert "%Y-%m-%d" in _strptime._regex_cache
 
     def test_datetime_object_returns_date_portion(self):
         """datetime input is narrowed to its date() portion.
