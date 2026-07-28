@@ -114,6 +114,11 @@ tests/
 - Run integration tests: `uv run pytest -m integration`
 - Lint: `uv run ruff check src/ tests/`
 - Format: `uv run ruff format src/ tests/`
+- Format check (what CI runs): `uv run ruff format --check src/ tests/`
+- Coverage gate (what CI runs): `uv run pytest --cov=src/usaspending --cov-fail-under=80`
+- CI: `.github/workflows/test.yml` runs the unit suite on Python 3.9-3.14 plus the
+  checks above on every push to `main` and every PR; `integration.yml` runs the
+  live-API suite weekly and on demand
 - No Justfile in this project
 
 ## Implementation Patterns
@@ -228,7 +233,7 @@ tests/
 ### Quality Gates
 
 - 100% public API documented
-- Type hints pass mypy
+- Type hints pass mypy (aspirational; not yet enforced, no CI job runs mypy)
 - Tests pass with >80% coverage
 - No TODO/FIXME in code
 

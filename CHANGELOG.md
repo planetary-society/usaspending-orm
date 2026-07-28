@@ -38,6 +38,13 @@ behavior preserving and the public API is unchanged.
   0.7.3. The `models` listing now includes the exported base classes
   (`BaseModel`, `ClientAwareModel`, `LazyRecord`).
 
+- `.github/workflows/test.yml` and `.github/workflows/integration.yml`:
+  continuous integration. The unit suite runs on Python 3.9 through 3.14, with
+  ruff, a coverage floor and a built-wheel smoke test alongside it, on every
+  push to `main` and every pull request; the live-API suite runs weekly and on
+  demand, so the golden master keeps watching real data shapes without gating
+  pushes.
+
 ### Changed
 
 - `count()` now honors `limit()` and `max_pages()` on every query, so `count()`,
