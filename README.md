@@ -244,13 +244,17 @@ with USASpendingClient() as client:
 
 # Reattach to a new session to access related properties
 with USASpendingClient() as new_client:
-    award.reattach(new_client)
-    print(f"Subawards: {award.subawards.count()}")  # Works!
-
-    # Recursive reattach for nested objects
+    # recursive=True is normally what you want: it also rebinds models already
+    # loaded from this one, such as award.recipient
     award.reattach(new_client, recursive=True)
-    print(f"Recipient: {award.recipient.name}")  # Recipient also reattached
+    print(f"Subawards: {award.subawards.count()}")
+    print(f"Recipient: {award.recipient.name}")
 ```
+
+Without `recursive=True` only the award itself is rebound. That is enough for
+properties it loads afresh, but a nested model already loaded, such as
+`award.recipient`, keeps pointing at the old session and raises
+`DetachedInstanceError` once that session is gone.
 
 ### Performance Considerations
 

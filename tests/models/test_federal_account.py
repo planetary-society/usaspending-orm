@@ -280,9 +280,10 @@ class TestTASCodesFetchedOnce:
         account.tas_codes.all()
 
         replacement = MockUSASpendingClient()
-        replacement.set_response(self.ENDPOINT, load_fixture("tas_codes.json"))
         account.reattach(replacement, recursive=True)
 
         codes = account.tas_codes.all()
-        assert len(codes) > 0
+        # The replacement has no responses, so a refetch would return nothing.
+        assert replacement.get_request_count() == 0
+        assert len(codes) == 16
         assert all(code._client is replacement for code in codes)

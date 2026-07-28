@@ -4,8 +4,15 @@ from __future__ import annotations
 
 import pytest
 
+from tests.mocks import MockUSASpendingClient
 from usaspending.exceptions import DetachedInstanceError, ValidationError
+from usaspending.models.award_account import AwardAccount
 from usaspending.models.base_model import BaseModel, ClientAwareModel
+from usaspending.models.federal_account import FederalAccount
+from usaspending.models.funding import Funding
+from usaspending.models.lazy_record import LazyRecord
+from usaspending.models.subaward import SubAward
+from usaspending.models.treasury_account_symbol import TreasuryAccountSymbol
 
 
 class TestBaseModelGetValue:
@@ -592,8 +599,8 @@ class TestReattachMethod:
         assert obj1._client == mock_client2
         assert obj2._client == mock_client2
 
-    def test_reattach_skips_non_lazyrecord_properties(self):
-        """Test that reattach only affects LazyRecord instances."""
+    def test_reattach_skips_values_that_hold_no_client(self):
+        """Only models holding a client need rebinding, so only they are touched."""
         from unittest.mock import Mock
 
         from usaspending.models.base_model import BaseModel
@@ -621,3 +628,54 @@ class TestReattachMethod:
         assert parent._regular_model._data == {"regular": "data"}
         assert parent._string_value == "test"
         assert parent._int_value == 123
+
+
+class TestReattachReachesEveryClientAwareModel:
+    """The walk must recognize what holds a client, not what loads lazily."""
+
+    @pytest.mark.parametrize(
+        "hold",
+        [lambda model: model, lambda model: [model], lambda model: {"key": model}],
+        ids=["bare", "list", "dict"],
+    )
+    def test_a_nested_model_is_rebound_even_when_it_is_not_lazy(self, hold):
+        """ClientAwareModel is itself not a LazyRecord, so it proves the predicate.
+
+        The container shape is the axis worth varying: the walk descends through
+        mappings and sequences, and a cached level arrives as a list.
+        """
+        first, second = MockUSASpendingClient(), MockUSASpendingClient()
+        parent = ClientAwareModel({"parent": "data"}, first)
+        nested = ClientAwareModel({"nested": "data"}, first)
+        parent._held = hold(nested)
+
+        parent.reattach(second, recursive=True)
+
+        assert nested._client is second
+
+    def test_the_raw_payload_is_not_walked(self):
+        """Models are built from `_data`, never stored in it, so it is skipped.
+
+        Descending it would walk the whole API response node by node, which is 93%
+        of the work of reattaching an award and half of it for an agency's TAS tree.
+        This pins the boundary that makes skipping safe: a model placed in the raw
+        payload, which nothing in the library does, would not be rebound.
+        """
+        first, second = MockUSASpendingClient(), MockUSASpendingClient()
+        parent = ClientAwareModel({"nested": ClientAwareModel({}, first)}, first)
+
+        parent.reattach(second, recursive=True)
+
+        assert parent._client is second
+        assert parent._data["nested"]._client is first
+
+    def test_these_classes_hold_a_client_without_being_lazy(self):
+        """The five the walk used to step over, pinned as a hierarchy fact.
+
+        Asserted directly rather than by rebinding one of each, so it also fires if
+        one of them later stops holding a client or becomes a lazy record, either of
+        which changes whether the walk needs to reach it.
+        """
+        for model in (AwardAccount, FederalAccount, Funding, SubAward, TreasuryAccountSymbol):
+            assert issubclass(model, ClientAwareModel)
+            assert not issubclass(model, LazyRecord)

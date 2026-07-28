@@ -292,35 +292,37 @@ class TestFederalAccountsFetchedOnce:
         # One for the account level, one per account for the codes its predicate reads.
         assert mock_usa_client.get_request_count() - before == 1 + accounts
 
-    def test_reattach_rebinds_the_cached_accounts(self, mock_usa_client, load_fixture):
-        """A cache of models must not outlive the client those models point at.
-
-        The cached FederalAccounts each hold a weak reference to the client they
-        were built against, so keeping them across a reattach would hand back
-        accounts that raise DetachedInstanceError once the old client goes away.
-        """
-        accounts = seed_tas_tree(mock_usa_client, load_fixture)
-        agency = Agency({"toptier_code": "080"}, mock_usa_client)
-        agency.federal_accounts.all()
-
-        replacement = MockUSASpendingClient()
-        replacement.set_response("/references/filter_tree/tas/080/", accounts)
-        agency.reattach(replacement, recursive=True)
-
-        accounts = agency.federal_accounts.all()
-        assert len(accounts) > 0
-        assert all(account._client is replacement for account in accounts)
-
-    def test_reattach_rebinds_the_cache_even_when_not_recursive(
+    def test_a_recursive_reattach_rebinds_the_cache_without_refetching(
         self, mock_usa_client, load_fixture
     ):
-        """The cache is this Agency's own state, so `recursive` does not govern it.
+        """The cached models hold a weak reference to the client they were built with.
 
-        `recursive` decides whether models the caller already holds get rebound.
-        A cache is not such a model: discarding it is invisible to the caller and
-        restores what an uncached property did anyway, which is to build against
-        whichever client is current. Were it kept, a non-recursive reattach would
-        hand back accounts bound to a client on its way out.
+        Left alone they would raise DetachedInstanceError once that client went
+        away. Rebinding them in place fixes that and keeps the level, where
+        discarding the cache would be equally correct but would refetch every level
+        already fetched. The replacement is deliberately given no responses, so any
+        request at all is a failure.
+        """
+        seed_tas_tree(mock_usa_client, load_fixture)
+        agency = Agency({"toptier_code": "080"}, mock_usa_client)
+        len(agency.federal_accounts[0].tas_codes)
+
+        replacement = MockUSASpendingClient()
+        agency.reattach(replacement, recursive=True)
+        accounts = agency.federal_accounts.all()
+        codes = accounts[0].tas_codes.all()
+
+        assert replacement.get_request_count() == 0
+        assert len(accounts) == 16
+        assert all(account._client is replacement for account in accounts)
+        assert all(code._client is replacement for code in codes)
+
+    def test_a_non_recursive_reattach_discards_the_cache(self, mock_usa_client, load_fixture):
+        """It leaves nested models alone, so it cannot rebind them and must drop them.
+
+        The next read rebuilds against whichever client is current, which is what
+        an uncached property did anyway. Keeping the cache instead would hand back
+        accounts bound to a client on its way out.
         """
         accounts = seed_tas_tree(mock_usa_client, load_fixture)
         agency = Agency({"toptier_code": "080"}, mock_usa_client)

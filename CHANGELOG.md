@@ -133,6 +133,22 @@ consistency argument behind it.
 
 ### Fixed
 
+- `reattach(recursive=True)` now reaches every nested model that holds the client.
+  It recognized only lazy-loading models, so `AwardAccount`, `FederalAccount`,
+  `Funding`, `SubAward` and `TreasuryAccountSymbol` were silently stepped over and
+  kept a weak reference to the outgoing client. Reading one after that client was
+  collected raised `DetachedInstanceError`, including for a model the caller was
+  still holding, such as a `TreasuryAccountSymbol` taken from
+  `account.tas_codes`.
+
+  Holding a client, not loading lazily, is what makes a model need rebinding, so
+  that is what the walk now tests. It also means a recursive reattach rebinds the
+  models inside a cached level in place rather than discarding the level: a
+  16-account agency with its TAS codes now costs no requests after a reattach,
+  where discarding cost 17. A non-recursive reattach still discards those caches,
+  since it deliberately leaves nested models alone and they would otherwise serve
+  a client on its way out.
+
 - `award.transactions` no longer reports a count that disagrees with what it
   yields. `since()` and `until()` filter in memory, because the endpoint has no
   date filter, but the count came from the API or from summing raw response rows,
