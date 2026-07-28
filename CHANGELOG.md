@@ -151,6 +151,24 @@ consistency argument behind it.
 
 ### Fixed
 
+- The two date parsers now answer an unusable value the way their documented
+  contracts say, and each explains the other. A date filter given something that
+  is not a date at all, most often the `None` that arrives from threading an
+  `Optional` through, raised `TypeError: strptime() argument 1 must be str`
+  from inside the parser rather than the `ValidationError` its `Raises:` section
+  promises. It now raises `ValidationError` naming the field, like every other
+  invalid filter value. Its counterpart for API payloads, which is documented to
+  answer a missing or unparseable value with `None`, could also let a `TypeError`
+  out for a wrong-typed value; it now returns `None`, matching the numeric
+  coercers alongside it.
+
+  Two related cleanups to that error. It quoted `%Y-%m-%d` where the docstring
+  promises `YYYY-MM-DD`, so a public error string leaked a strftime pattern the
+  caller never supplied; it now quotes the documented form. And the offending
+  value is shown with `repr`, so an empty or whitespace value is distinguishable
+  in the message. The parser's `format_str` parameter is gone, having had no
+  caller that ever passed one; only `YYYY-MM-DD` was ever accepted in practice.
+
 - Passing a `datetime` where a date filter is documented to accept one no longer
   raises `TypeError`. `time_period()` publishes `datetime.date | str`, and
   `datetime` is a subclass of `date`, so `time_period(datetime.now(), ...)` was

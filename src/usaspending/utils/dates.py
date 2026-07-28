@@ -43,7 +43,9 @@ def to_date(date_string: str | date | None) -> date | None:
     If input is already a date object, returns it unchanged.
 
     Args:
-        date_string: Date string in any supported format, or a date object
+        date_string: Date string in any supported format, or a date object. A
+            value of any other type is unusable and answers None, since this
+            reads API payloads rather than caller input.
 
     Returns:
         date object or None if parsing fails
@@ -62,18 +64,18 @@ def to_date(date_string: str | date | None) -> date | None:
     # about 11x faster than working down the format list. The shape check pins the
     # fast path to that one shape, which is what keeps it from widening what parses.
     # Both ways that can go wrong are named in the tests, which fail if either does.
-    if len(date_string) == 10 and date_string[4] == date_string[7] == "-":
-        try:
+    try:
+        if len(date_string) == 10 and date_string[4] == date_string[7] == "-":
             return date.fromisoformat(date_string)
-        except ValueError:
-            # Well shaped but not a real date. Fall through, so an impossible date
-            # warns by the same path as every other failure.
-            pass
+    except (TypeError, ValueError):
+        # Well shaped but not a real date, or not a string at all. Both fall
+        # through, so every unusable value answers by the one path below.
+        pass
 
     for fmt in _DATE_FORMATS:
         try:
             return datetime.strptime(date_string, fmt).date()
-        except ValueError:
+        except (TypeError, ValueError):
             continue
 
     logger.warning(f"Could not parse date string: {date_string}")

@@ -53,24 +53,29 @@ def validate_non_empty_string(
     return result
 
 
-def parse_date_string(
-    value: str | date,
-    field_name: str = "date",
-    format_str: str = "%Y-%m-%d",
-) -> date:
-    """Parse a date string or pass through a date object.
+def parse_date_string(value: str | date, field_name: str = "date") -> date:
+    """Parse a date string, or narrow a date-like object to a date.
+
+    The strict counterpart to :func:`usaspending.utils.dates.to_date`. That one
+    reads API payloads, so it answers anything unusable with None; this one reads
+    what a caller supplied, so anything unusable is a mistake worth raising over
+    and naming the field for.
+
+    Only ``YYYY-MM-DD`` is accepted, which is what every filter calling this
+    documents. Note this deliberately does not use ``date.fromisoformat``, which
+    on Python 3.11 and later would also accept ``20240115`` and ISO week dates
+    that the 3.9 floor refuses, making the accepted set depend on the interpreter.
 
     Args:
-        value: Date string, date or datetime. A datetime is narrowed to its
-            date portion.
+        value: Date string in YYYY-MM-DD format, or a date. A datetime is
+            narrowed to its date portion.
         field_name: Name of the field for error messages.
-        format_str: Expected date format (default "YYYY-MM-DD").
 
     Returns:
         Parsed date object.
 
     Raises:
-        ValidationError: If string format is invalid.
+        ValidationError: If the value is not a YYYY-MM-DD string or a date.
 
     Example:
         >>> parse_date_string("2024-01-15", "start_date")
@@ -82,7 +87,11 @@ def parse_date_string(
         >>> parse_date_string("15/01/2024", "start_date")
         Traceback (most recent call last):
             ...
-        usaspending.exceptions.ValidationError: Invalid start_date format: '15/01/2024'. Expected '%Y-%m-%d'.
+        usaspending.exceptions.ValidationError: Invalid start_date format: '15/01/2024'. Expected 'YYYY-MM-DD'.
+        >>> parse_date_string(None, "start_date")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid start_date format: None. Expected 'YYYY-MM-DD'.
     """
     # datetime subclasses date, so narrow before the date check, not after. The
     # same pair guards `to_date` in utils/dates.py, which had this bug first.
@@ -91,10 +100,13 @@ def parse_date_string(
     if isinstance(value, date):
         return value
     try:
-        return datetime.strptime(value, format_str).date()
-    except ValueError as e:
+        # A TypeError is a value of the wrong type entirely, such as the None a
+        # caller gets from threading an Optional through. Both are the same
+        # mistake to the caller, so both answer with the documented error.
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except (TypeError, ValueError) as e:
         raise ValidationError(
-            f"Invalid {field_name} format: '{value}'. Expected '{format_str}'."
+            f"Invalid {field_name} format: {value!r}. Expected 'YYYY-MM-DD'."
         ) from e
 
 

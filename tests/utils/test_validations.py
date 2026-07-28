@@ -115,6 +115,29 @@ class TestParseDateString:
         assert type(result) is datetime.date
         assert result == datetime.date(2024, 3, 20)
 
+    @pytest.mark.parametrize("value", [None, 20240101, 1.5, b"2024-01-01", [], object()])
+    def test_a_value_that_is_not_a_date_at_all_raises_validation_error(self, value):
+        """An unusable type raises the documented error, not a raw TypeError.
+
+        The mirror of ``to_date``'s policy: this is the strict entry point, so an
+        unusable value is a caller mistake worth naming the field for. It used to
+        escape as ``TypeError: strptime() argument 1 must be str``, which is
+        outside the documented ``Raises`` contract and names nothing useful.
+        ``None`` is the one that matters, since threading an Optional through is
+        the ordinary way to arrive here.
+        """
+        with pytest.raises(ValidationError, match="Invalid my_field format"):
+            parse_date_string(value, "my_field")
+
+    def test_the_error_names_the_documented_format_not_a_strftime_pattern(self):
+        """The message quotes YYYY-MM-DD, which is what the docstring promises.
+
+        A public error string is API surface, so leaking ``%Y-%m-%d`` into it
+        exposed an implementation detail the caller never supplied.
+        """
+        with pytest.raises(ValidationError, match=r"Expected 'YYYY-MM-DD'"):
+            parse_date_string("15/01/2024", "start_date")
+
     def test_invalid_format_raises_error(self):
         """Test that invalid date format raises ValidationError."""
         with pytest.raises(ValidationError, match="Invalid start_date format"):

@@ -266,6 +266,23 @@ class TestToDate:
         second_conversion = to_date(first_conversion)
         assert second_conversion == date(2024, 8, 12)
 
+    @pytest.mark.parametrize("value", [123, 1.5, b"2025-08-29", [1], object()])
+    @patch("usaspending.utils.dates.logger")
+    def test_a_value_that_is_not_a_date_at_all_returns_none(self, mock_logger, value):
+        """An unusable type answers None, like every other coercer in the package.
+
+        ``utils/numbers.py`` states the convention for the family: a missing or
+        unparseable value answers None rather than raising. This one used to let a
+        TypeError out of ``strptime``, or out of the length check ahead of it, so
+        it was the only coercer that could raise on a caller's bad input.
+
+        Every value here is truthy, so each reaches the parsing below rather than
+        the missing-value guard. A falsy one of any type, ``[]`` as much as ``""``,
+        is the missing case and answers None without a warning.
+        """
+        assert to_date(value) is None
+        mock_logger.warning.assert_called_once()
+
     def test_datetime_object_returns_date_portion(self):
         """datetime input is narrowed to its date() portion.
 
