@@ -151,6 +151,26 @@ consistency argument behind it.
 
 ### Fixed
 
+- Passing a `datetime` where a date filter is documented to accept one no longer
+  raises `TypeError`. `time_period()` publishes `datetime.date | str`, and
+  `datetime` is a subclass of `date`, so `time_period(datetime.now(), ...)` was
+  always a legal call; it raised
+  `TypeError: can't compare datetime.datetime to datetime.date` from inside the
+  FY2008 floor check. The shared date parser tested `isinstance(value, date)`,
+  which is true for a datetime as well, so the value passed through unnarrowed
+  and the first comparison against a real date failed.
+
+  `TransactionsSearch.since()` and `until()` were hit by the same defect, and
+  worse: their bound is only read while iterating, so the failure surfaced at
+  iteration rather than at the call. Both now accept a date or datetime as well
+  as a string, which is what they already did at runtime, and their type hints
+  say so.
+
+  A datetime is narrowed to its date portion, matching what `to_date` has always
+  done for API values. Note the wire payload was never affected, since the filter
+  serializes with `strftime`, which formats a datetime correctly; the range
+  validation was the only thing in the path that could detect the leak.
+
 - `reattach(recursive=True)` now reaches every nested model that holds the client.
   It recognized only lazy-loading models, so `AwardAccount`, `FederalAccount`,
   `Funding`, `SubAward` and `TreasuryAccountSymbol` were silently stepped over and

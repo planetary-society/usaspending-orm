@@ -61,7 +61,8 @@ def parse_date_string(
     """Parse a date string or pass through a date object.
 
     Args:
-        value: Date string or date object.
+        value: Date string, date or datetime. A datetime is narrowed to its
+            date portion.
         field_name: Name of the field for error messages.
         format_str: Expected date format (default "YYYY-MM-DD").
 
@@ -76,11 +77,17 @@ def parse_date_string(
         datetime.date(2024, 1, 15)
         >>> parse_date_string(date(2024, 1, 15), "start_date")
         datetime.date(2024, 1, 15)
+        >>> parse_date_string(datetime(2024, 1, 15, 9, 30), "start_date")
+        datetime.date(2024, 1, 15)
         >>> parse_date_string("15/01/2024", "start_date")
         Traceback (most recent call last):
             ...
         usaspending.exceptions.ValidationError: Invalid start_date format: '15/01/2024'. Expected '%Y-%m-%d'.
     """
+    # datetime subclasses date, so narrow before the date check, not after. The
+    # same pair guards `to_date` in utils/dates.py, which had this bug first.
+    if isinstance(value, datetime):
+        return value.date()
     if isinstance(value, date):
         return value
     try:

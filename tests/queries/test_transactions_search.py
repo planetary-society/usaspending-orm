@@ -1,7 +1,7 @@
 """Tests for TransactionsSearch query builder."""
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import ClassVar
 
 import pytest
@@ -127,6 +127,25 @@ class TestDateFilterParsing:
         assert query._since == date(2024, 1, 1)
         assert query._until == date(2024, 1, 10)
         assert [transaction.id for transaction in query] == ["inside"]
+
+    @pytest.mark.parametrize("bound", ["since", "until"])
+    def test_a_datetime_bound_is_narrowed_to_a_date(self, mock_usa_client, bound):
+        """A datetime bound is stored as a date, so the row comparison works.
+
+        The predicate compares the bound against `Transaction.action_date`, a
+        date, and `datetime <= date` raises TypeError. Because the bound is only
+        read during iteration, an unnarrowed one failed there rather than at the
+        call, which puts the traceback a long way from the mistake.
+        """
+        mock_usa_client.set_paginated_response(
+            "/transactions/", [{"id": "row", "action_date": "2024-01-05"}]
+        )
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        bounded = getattr(query, bound)(datetime(2024, 1, 5, 14, 30))
+
+        assert getattr(bounded, f"_{bound}") == date(2024, 1, 5)
+        assert [transaction.id for transaction in bounded] == ["row"]
 
     @pytest.mark.parametrize("bound", ["since", "until"])
     def test_a_malformed_bound_is_rejected_at_filter_time(self, mock_usa_client, bound):

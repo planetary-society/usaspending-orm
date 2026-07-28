@@ -51,6 +51,8 @@ def to_date(date_string: str | date | None) -> date | None:
     if not date_string:
         return None
 
+    # datetime subclasses date, so narrow before the date check, not after. The
+    # same pair guards `parse_date_string` in utils/validations.py.
     if isinstance(date_string, datetime):
         return date_string.date()
     if isinstance(date_string, date):

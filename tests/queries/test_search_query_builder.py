@@ -83,6 +83,44 @@ class TestTimePeriodFilter:
             ]
         }
 
+    def test_time_period_with_datetimes(self, search_builder):
+        """A datetime is accepted wherever a date is, and serializes the same.
+
+        Regression: datetime subclasses date, so this was always type-legal, but
+        the unnarrowed bound reached the FY2008 floor check and raised
+        ``TypeError: can't compare datetime.datetime to datetime.date``.
+        """
+        result = search_builder.time_period(
+            start_date=datetime.datetime(2024, 1, 1, 9, 30, 0),
+            end_date=datetime.datetime(2024, 12, 31, 17, 45, 30),
+            date_type="action_date",
+        )
+
+        filter_dict = result._filter_objects[0].to_dict()
+        assert filter_dict == {
+            "time_period": [
+                {
+                    "start_date": "2024-01-01",
+                    "end_date": "2024-12-31",
+                    "date_type": "action_date",
+                }
+            ]
+        }
+
+    def test_time_period_still_validates_datetime_bounds(self, search_builder):
+        """The FY2008 floor is enforced for a datetime bound, not skipped.
+
+        Guards a different repair than the test above: the TypeError came from
+        this comparison, so the tempting bad fix is to skip it for datetimes
+        rather than to narrow them. Narrowing correctly and validating are two
+        claims, and only this one fails if the second is dropped.
+        """
+        with pytest.raises(ValidationError, match="before the minimum supported date"):
+            search_builder.time_period(
+                start_date=datetime.datetime(2007, 9, 30, 23, 59, 59),
+                end_date=datetime.datetime(2008, 9, 30, 0, 0),
+            )
+
     def test_time_period_new_awards_convenience(self, search_builder):
         """Test time_period with new_awards_only convenience parameter."""
         result = search_builder.time_period(

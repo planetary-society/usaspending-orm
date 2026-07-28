@@ -102,6 +102,19 @@ class TestParseDateString:
         result = parse_date_string(input_date, "end_date")
         assert result is input_date
 
+    def test_datetime_object_returns_date_portion(self):
+        """datetime input is narrowed to its date() portion.
+
+        datetime is a subclass of date, so a bare ``isinstance(x, date)`` check
+        lets one through unchanged, leaking a datetime out of a function
+        annotated ``-> date``. Callers then compare it against a real date and
+        get a TypeError. ``to_date`` fixed the same defect; this is the sibling.
+        """
+        result = parse_date_string(datetime.datetime(2024, 3, 20, 14, 30, 45), "end_date")
+
+        assert type(result) is datetime.date
+        assert result == datetime.date(2024, 3, 20)
+
     def test_invalid_format_raises_error(self):
         """Test that invalid date format raises ValidationError."""
         with pytest.raises(ValidationError, match="Invalid start_date format"):

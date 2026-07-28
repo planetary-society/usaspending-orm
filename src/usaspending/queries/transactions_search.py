@@ -163,12 +163,13 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
     # Filter Methods
     # ==========================================================================
 
-    def since(self, date: str) -> TransactionsSearch:
+    def since(self, date: str | date) -> TransactionsSearch:
         """
         Filter transactions to those on or after the specified date.
 
         Args:
-            date: Date string in YYYY-MM-DD format.
+            date: Date string in YYYY-MM-DD format, or a date or datetime object.
+                A datetime is narrowed to its date portion.
 
         Returns:
             TransactionsSearch: A new instance with the date filter applied.
@@ -193,12 +194,13 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         clone._since = parse_date_string(date, "since_date")
         return clone
 
-    def until(self, date: str) -> TransactionsSearch:
+    def until(self, date: str | date) -> TransactionsSearch:
         """
         Filter transactions to those on or before the specified date.
 
         Args:
-            date: Date string in YYYY-MM-DD format.
+            date: Date string in YYYY-MM-DD format, or a date or datetime object.
+                A datetime is narrowed to its date portion.
 
         Returns:
             TransactionsSearch: A new instance with the date filter applied.
