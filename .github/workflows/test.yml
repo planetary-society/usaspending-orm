@@ -1,0 +1,71 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          # Also keys the wheel cache per interpreter; without it every
+          # matrix leg shares the key of whichever leg saved first.
+          python-version: ${{ matrix.python-version }}
+      - name: Sync environment
+        run: uv sync --locked
+      - name: Run unit suite
+        run: uv run --no-sync pytest -q
+
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v9.0.0
+      - name: Sync environment
+        run: uv sync --locked
+      - name: Ruff lint
+        run: uv run --no-sync ruff check src/ tests/
+      - name: Ruff format
+        run: uv run --no-sync ruff format --check src/ tests/
+      - name: Coverage floor
+        run: uv run --no-sync pytest -q --cov=src/usaspending --cov-fail-under=80
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v9.0.0
+      - name: Build sdist and wheel
+        run: uv build
+      - name: Smoke-test the built wheel
+        # A behavioral assertion rather than a bare import: the sdist include
+        # list is hand-written, and a dropped package-data file (such as
+        # special_cases.yaml) degrades output silently instead of failing.
+        run: |
+          uv venv /tmp/smoke
+          uv pip install --python /tmp/smoke/bin/python dist/*.whl
+          /tmp/smoke/bin/python -c "
+          import usaspending
+          from usaspending.utils.textcase import titlecase_name
+          got = titlecase_name('NASA GODDARD SPACE FLIGHT CENTER, L.L.C.')
+          assert got == 'NASA Goddard Space Flight Center, LLC', got
+          "

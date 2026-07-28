@@ -29,13 +29,13 @@ class FundingResource(BaseResource):
             FundingSearch query builder for chaining filters
 
         Example:
-            >>> funding = client.funding.award_id("CONT_AWD_123")
-            ...     .order_by("fiscal_date", "asc")
-            ...     .limit(50)
+            >>> funding = (
+            ...     client.funding.award_id("CONT_AWD_123").order_by("fiscal_date", "asc").limit(50)
+            ... )
             >>> for record in funding:
             ...     print(
             ...         f"{record.reporting_fiscal_year}-{record.reporting_fiscal_month}: "
-            ...         f"${record.transaction_obligated_amount:,.2f}"
+            ...         f"${record.transaction_obligated_amount or 0:,.2f}"
             ...     )
         """
         logger.debug(f"Creating funding search for award: {award_id}")

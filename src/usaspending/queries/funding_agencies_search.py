@@ -36,17 +36,10 @@ class FundingAgenciesSearch(AgenciesSearch):
             )
         super().__init__(client, agency_type="funding")
 
-    def _clone(self) -> FundingAgenciesSearch:
-        """Create immutable copy for chaining without extra warnings."""
-        clone = self.__class__(self._client, warn=False)
-        clone._filter_objects = self._filter_objects.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
-        clone._agency_type = self._agency_type
-        clone._search_text = self._search_text
-        clone._limit = self._limit
-        clone._result_type = self._result_type
-        return clone
+    def _new_instance(self) -> FundingAgenciesSearch:
+        """Reconstruct without re-emitting the deprecation warning.
+
+        Chaining clones the builder, so warning here would fire once per filter
+        call rather than once per construction.
+        """
+        return self.__class__(self._client, warn=False)

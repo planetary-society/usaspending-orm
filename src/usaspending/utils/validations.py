@@ -1,11 +1,17 @@
-"""Generic validation utilities for USASpending API client.
+"""Validation utilities for the USASpending API client.
 
-This module provides reusable validation functions that are used across
-query builders and filters to reduce code duplication.
+Reusable checks shared across query builders, models and filters. Most are
+generic and parameterized by field name; a few encode a specific USASpending
+convention, such as the shape of an agency toptier code. Domain validators live
+here rather than in ``queries/filters.py`` so that ``models/`` and ``resources/``
+can import them without pulling in the query layer.
 """
 
 from __future__ import annotations
 
+import re
+import warnings
+from collections.abc import Collection
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, TypeVar
@@ -13,6 +19,10 @@ from typing import Any, TypeVar
 from ..exceptions import ValidationError
 
 E = TypeVar("E", bound=Enum)
+
+#: The only format :func:`parse_date_string` documents, and the only value its
+#: deprecated ``format_str`` parameter can carry without warning.
+_ISO_DATE_FORMAT = "%Y-%m-%d"
 
 
 def validate_non_empty_string(
@@ -36,7 +46,10 @@ def validate_non_empty_string(
     Example:
         >>> validate_non_empty_string("hello", "name")
         'hello'
-        >>> validate_non_empty_string("  ", "name")  # Raises ValidationError
+        >>> validate_non_empty_string("  ", "name")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: name cannot be empty
     """
     if not value or not isinstance(value, str):
         raise ValidationError(f"{field_name} cannot be empty")
@@ -49,34 +62,84 @@ def validate_non_empty_string(
 def parse_date_string(
     value: str | date,
     field_name: str = "date",
-    format_str: str = "%Y-%m-%d",
+    format_str: str = _ISO_DATE_FORMAT,
 ) -> date:
-    """Parse a date string or pass through a date object.
+    """Parse a date string, or narrow a date-like object to a date.
+
+    The strict counterpart to :func:`usaspending.utils.dates.to_date`. That one
+    reads API payloads, so it answers anything unusable with None; this one reads
+    what a caller supplied, so anything unusable is a mistake worth raising over
+    and naming the field for.
+
+    Only ``YYYY-MM-DD`` is accepted, which is what every filter calling this
+    documents. Note this deliberately does not use ``date.fromisoformat``, which
+    on Python 3.11 and later would also accept ``20240115`` and ISO week dates
+    that the 3.9 floor refuses, making the accepted set depend on the interpreter.
 
     Args:
-        value: Date string or date object.
+        value: Date string in YYYY-MM-DD format, or a date. A datetime is
+            narrowed to its date portion.
         field_name: Name of the field for error messages.
-        format_str: Expected date format (default "YYYY-MM-DD").
+        format_str: Deprecated. A strptime pattern to read ``value`` with, kept
+            for callers written against 0.7.3. Any value other than
+            ``"%Y-%m-%d"`` emits a ``DeprecationWarning`` and is scheduled for
+            removal in a future release, after which only ``YYYY-MM-DD`` is
+            accepted. The default takes the supported path and warns about
+            nothing.
 
     Returns:
         Parsed date object.
 
     Raises:
-        ValidationError: If string format is invalid.
+        ValidationError: If the value is not a YYYY-MM-DD string or a date, or
+            not readable with a deprecated ``format_str``.
 
     Example:
         >>> parse_date_string("2024-01-15", "start_date")
         datetime.date(2024, 1, 15)
-        >>> parse_date_string(datetime.date(2024, 1, 15), "start_date")
+        >>> parse_date_string(date(2024, 1, 15), "start_date")
         datetime.date(2024, 1, 15)
+        >>> parse_date_string(datetime(2024, 1, 15, 9, 30), "start_date")
+        datetime.date(2024, 1, 15)
+        >>> parse_date_string("15/01/2024", "start_date")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid start_date format: '15/01/2024'. Expected 'YYYY-MM-DD'.
+        >>> parse_date_string(None, "start_date")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid start_date format: None. Expected 'YYYY-MM-DD'.
     """
+    # The supported call names the documented form in its error rather than the
+    # strftime pattern behind it; a deprecated one names the pattern the caller
+    # themselves supplied, which is the only thing that would explain the failure.
+    expected = "YYYY-MM-DD"
+    if format_str != _ISO_DATE_FORMAT:
+        # Warn for any deprecated call, including one whose value makes the
+        # format moot, since it is the parameter rather than the parsing that is
+        # going away.
+        warnings.warn(
+            "The format_str parameter of parse_date_string is deprecated and is "
+            "scheduled for removal in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        expected = format_str
+
+    # datetime subclasses date, so narrow before the date check, not after. The
+    # same pair guards `to_date` in utils/dates.py, which had this bug first.
+    if isinstance(value, datetime):
+        return value.date()
     if isinstance(value, date):
         return value
     try:
+        # A TypeError is a value of the wrong type entirely, such as the None a
+        # caller gets from threading an Optional through. Both are the same
+        # mistake to the caller, so both answer with the documented error.
         return datetime.strptime(value, format_str).date()
-    except ValueError as e:
+    except (TypeError, ValueError) as e:
         raise ValidationError(
-            f"Invalid {field_name} format: '{value}'. Expected '{format_str}'."
+            f"Invalid {field_name} format: {value!r}. Expected '{expected}'."
         ) from e
 
 
@@ -121,28 +184,205 @@ def parse_enum_value(
     raise ValidationError(f"Invalid {field_name}: '{value}'. Valid options: {valid_options}")
 
 
+def validate_toptier_code(toptier_code: str | int | None) -> str:
+    """Validate and normalize an agency toptier code.
+
+    Args:
+        toptier_code: The code to validate. Coerced to a stripped string.
+
+    Returns:
+        str: The normalized code.
+
+    Raises:
+        ValidationError: If the code is missing, or is not a 3-4 digit numeric
+            string.
+
+    Example:
+        >>> validate_toptier_code("080")
+        '080'
+        >>> validate_toptier_code(" 012 ")
+        '012'
+    """
+    if not toptier_code:
+        raise ValidationError("toptier_code is required")
+
+    normalized = str(toptier_code).strip()
+
+    if not normalized.isdigit() or len(normalized) not in (3, 4):
+        raise ValidationError(
+            f"Invalid toptier_code: {normalized}. Must be a 3-4 digit numeric string"
+        )
+
+    return normalized
+
+
+#: Matches the list-annotated recipient-ID form, ``<hash>-['C', 'R']``.
+_RECIPIENT_LEVEL_LIST_RE = re.compile(
+    r"""
+    ^(?P<base>.+?)              # the recipient hash, non-greedy
+    -\[\s*(?P<body>[^\]]+)\]    #  -[ 'C', 'R' ]
+    $
+    """,
+    re.VERBOSE,
+)
+
+
+def normalize_recipient_id(recipient_id: Any) -> Any:
+    """Normalize a recipient ID to a single ``<hash>-<level>`` form.
+
+    USASpending sometimes reports a recipient ID carrying every level the
+    recipient exists at, as ``"<hash>-['C', 'R']"``. The ``/recipient/{id}/``
+    endpoint takes one level and returns a different record for each, so one
+    has to be chosen.
+
+    ``R`` is avoided whenever another level is available, and otherwise the
+    first level listed wins. That is measured rather than assumed: against the
+    live endpoint, for all six multi-level IDs in the captured fixtures, the
+    ``R`` record reports *less* spending than its sibling and reports flat zero
+    in four of the six, with ``parent_id``, ``parent_name`` and ``parents`` all
+    null. ``26e104c4-1307-f677-c014-ac7fe7ab9e6d`` reports $24.6M over 109
+    transactions at ``-C`` and $0 over 0 transactions at ``-R``. Since a lazy
+    load merges whatever that record holds, choosing ``R`` would report a
+    recipient as having no spending and no parent.
+
+    The rule deliberately does not encode an order among the non-``R`` levels.
+    Every observed level list is ``['C']`` or ``['C', 'R']``, which is also
+    consistent with the API simply emitting them alphabetically, so there is no
+    evidence about ``P`` versus ``C``. Skipping ``R`` is what the data supports,
+    and doing it by membership rather than by position means a list arriving as
+    ``['R', 'C']`` cannot reintroduce the zeroing.
+
+    Args:
+        recipient_id: The raw recipient ID. Non-string input is returned
+            unchanged, defensively, since this runs during model construction.
+
+    Returns:
+        The normalized ID, or the input unchanged if it is not a string or
+        carries no level list.
+
+    Example:
+        >>> normalize_recipient_id("abc123-['C', 'R']")
+        'abc123-C'
+        >>> normalize_recipient_id("abc123-['R', 'C']")
+        'abc123-C'
+        >>> normalize_recipient_id("abc123-['R']")
+        'abc123-R'
+        >>> normalize_recipient_id("abc123-C/")
+        'abc123-C'
+    """
+    if not isinstance(recipient_id, str):
+        return recipient_id
+
+    normalized = recipient_id.strip().rstrip("/")
+
+    match = _RECIPIENT_LEVEL_LIST_RE.match(normalized)
+    if not match:
+        return normalized
+
+    levels = [
+        token.strip().strip("'\"").upper()
+        for token in match.group("body").split(",")
+        if token.strip().strip("'\"")
+    ]
+
+    # Guard the chosen level rather than the list: a list of empty tokens would
+    # otherwise produce a bare trailing dash.
+    level = next((lvl for lvl in levels if lvl != "R"), levels[0] if levels else "")
+    if not level:
+        return match.group("base")
+
+    return f"{match.group('base')}-{level}"
+
+
 def validate_sort_field(
     field: str,
-    valid_fields: set[str],
-    context: str = "query",
-) -> None:
+    valid_fields: Collection[str],
+    context: str | None = None,
+) -> str:
     """Validate that a sort field is allowed for the query type.
 
     Args:
         field: The sort field to validate.
-        valid_fields: Set of valid sort field names.
-        context: Description of the query context for error messages.
+        valid_fields: The permitted sort field names. Read twice, once to test
+            membership and once to list them in the error, so a one-shot iterable
+            would report no valid fields at all.
+        context: What the fields are valid *for*, named in the error when the same
+            field is accepted by one query and not another.
+
+    Returns:
+        The field, unchanged.
 
     Raises:
         ValidationError: If field is not in valid_fields.
 
     Example:
-        >>> validate_sort_field("Award Amount", {"Award Amount", "Award ID"}, "awards search")
-        >>> validate_sort_field("Invalid Field", {"Award Amount", "Award ID"}, "awards search")
-        # Raises ValidationError: Invalid sort field 'Invalid Field' for awards search.
+        >>> validate_sort_field("Award Amount", {"Award Amount", "Award ID"})
+        'Award Amount'
+        >>> validate_sort_field("Nope", {"Award ID"})
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid sort field 'Nope'. Valid fields are: Award ID
+        >>> validate_sort_field("Loan Value", {"Award ID"}, "contracts")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid sort field 'Loan Value' for contracts. Valid fields are: Award ID
     """
     if field not in valid_fields:
-        sorted_fields = sorted(valid_fields)
+        where = f" for {context}" if context else ""
         raise ValidationError(
-            f"Invalid sort field '{field}' for {context}. Valid fields: {', '.join(sorted_fields)}"
+            f"Invalid sort field '{field}'{where}. "
+            f"Valid fields are: {', '.join(sorted(valid_fields))}"
         )
+    return field
+
+
+def validate_sort_direction(direction: str) -> str:
+    """Validate a sort direction.
+
+    Args:
+        direction: The direction to validate.
+
+    Returns:
+        The direction, unchanged.
+
+    Raises:
+        ValidationError: If direction is neither "asc" nor "desc".
+
+    Example:
+        >>> validate_sort_direction("asc")
+        'asc'
+        >>> validate_sort_direction("sideways")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid sort direction 'sideways'. Must be 'asc' or 'desc'.
+    """
+    if direction not in ("asc", "desc"):
+        raise ValidationError(f"Invalid sort direction '{direction}'. Must be 'asc' or 'desc'.")
+    return direction
+
+
+def validate_agency_type(agency_type: str) -> str:
+    """Validate an awarding/funding agency type.
+
+    Args:
+        agency_type: The agency type to validate.
+
+    Returns:
+        The agency type, unchanged.
+
+    Raises:
+        ValidationError: If agency_type is neither "awarding" nor "funding".
+
+    Example:
+        >>> validate_agency_type("awarding")
+        'awarding'
+        >>> validate_agency_type("neither")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid agency_type: neither. Must be 'awarding' or 'funding'.
+    """
+    if agency_type not in ("awarding", "funding"):
+        raise ValidationError(
+            f"Invalid agency_type: {agency_type}. Must be 'awarding' or 'funding'."
+        )
+    return agency_type

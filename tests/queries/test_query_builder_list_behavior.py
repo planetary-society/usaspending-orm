@@ -9,9 +9,92 @@ from usaspending.queries.awards_search import AwardsSearch
 
 
 @pytest.fixture
+def three_awards(mock_usa_client):
+    """A contracts search over three awards, with its count endpoint mocked."""
+    mock_usa_client.mock_award_search(
+        [{"generated_internal_id": f"CONT_AWD_{i}"} for i in range(3)]
+    )
+    return AwardsSearch(mock_usa_client).contracts()
+
+
+@pytest.fixture
 def awards_search(mock_usa_client):
     """Create an AwardsSearch instance with a mock client."""
     return AwardsSearch(mock_usa_client).award_type_codes("A")
+
+
+class TestTruthiness:
+    """`if query:` needs one row, not a count."""
+
+    def test_truthiness_does_not_count(self, mock_usa_client, three_awards):
+        """__len__ with no __bool__ made truthiness a count request.
+
+        Worse on the builders with no count endpoint, where counting pages the
+        whole result set to answer one bit.
+        """
+        assert bool(three_awards) is True
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT) == 0
+
+    def test_an_empty_query_is_falsey(self, mock_usa_client):
+        mock_usa_client.mock_award_search([])
+        query = AwardsSearch(mock_usa_client).contracts()
+
+        assert bool(query) is False
+        assert not query
+
+    def test_truthiness_reads_one_page_not_all_of_them(self, mock_usa_client):
+        """It asks for one row, so a large result set costs one page."""
+        mock_usa_client.mock_award_search(
+            [{"generated_internal_id": f"CONT_AWD_{i}"} for i in range(250)], page_size=100
+        )
+        query = AwardsSearch(mock_usa_client).contracts()
+
+        assert bool(query) is True
+        assert mock_usa_client.get_request_count() == 1
+
+
+class TestFirstRespectsLimits:
+    """first() must not contradict all() and len() on the same query."""
+
+    def test_a_zero_limit_yields_no_first_row(self, three_awards):
+        """first() called limit(1), overriding the caller's zero."""
+        query = three_awards.limit(0)
+
+        assert query.all() == []
+        assert len(query) == 0
+        assert query.first() is None
+        assert not query
+
+    def test_zero_max_pages_yields_no_first_row(self, three_awards):
+        query = three_awards.max_pages(0)
+
+        assert query.all() == []
+        assert query.first() is None
+
+    def test_a_positive_limit_still_yields_the_first_row(self, three_awards):
+        assert three_awards.limit(2).first() is not None
+        assert three_awards.first() is not None
+
+
+class TestAllDoesNotCount:
+    """all() must not spend a request on a count it throws away."""
+
+    def test_all_does_not_request_a_count(self, mock_usa_client, three_awards):
+        """`list(self)` asks for a length hint, which calls __len__ -> count().
+
+        On a paginated query that is a request to the count endpoint whose answer
+        is used only to size the list, so every all() cost one request more than
+        the identical loop. Asserting on the count endpoint rather than on the
+        total is what discriminates the fix from the bug: the mock pre-configures
+        that endpoint, so the wasted request never failed a test.
+        """
+        returned = three_awards.all()
+
+        assert [award.generated_unique_award_id for award in returned] == [
+            f"CONT_AWD_{i}" for i in range(3)
+        ]
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_COUNT) == 0
+        assert mock_usa_client.get_request_count() == 1
 
 
 class TestLenMethod:
@@ -297,59 +380,23 @@ class TestIntegration:
 
 
 class TestLenRespectsLimits:
-    """Test that __len__ respects limit() and max_pages()."""
+    """len() is count(), bounds and all.
 
-    def test_len_with_limit_less_than_count(self, awards_search, mock_usa_client):
-        """len() returns limit when limit < API count."""
+    Which figure each bound produces is pinned once per counting mechanism in
+    tests/queries/test_count_respects_limits.py. What is left here is the
+    delegation itself, on the builder this file is about.
+    """
+
+    def test_len_is_the_count_under_bounds(self, awards_search, mock_usa_client):
+        """The two cannot disagree, whether or not a bound is set."""
         mock_usa_client.set_response(
             MockUSASpendingClient.Endpoints.AWARD_COUNT,
             {"results": {"contracts": 250}},
         )
-        assert len(awards_search.limit(5)) == 5
+        assert len(awards_search) == awards_search.count() == 250
 
-    def test_len_with_limit_greater_than_count(self, awards_search, mock_usa_client):
-        """len() returns API count when limit > API count."""
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT,
-            {"results": {"contracts": 3}},
-        )
-        assert len(awards_search.limit(100)) == 3
-
-    def test_len_with_max_pages(self, awards_search, mock_usa_client):
-        """len() respects max_pages constraint."""
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT,
-            {"results": {"contracts": 500}},
-        )
-        # page_size=100, max_pages=2 => max 200 items
-        assert len(awards_search.max_pages(2)) == 200
-
-    def test_len_with_limit_and_max_pages_takes_stricter(self, awards_search, mock_usa_client):
-        """len() uses the stricter of limit and max_pages."""
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT,
-            {"results": {"contracts": 500}},
-        )
-        # limit=150 vs max_pages=2*100=200 => 150 wins
-        assert len(awards_search.limit(150).max_pages(2)) == 150
-
-    def test_len_without_limits_returns_api_count(self, awards_search, mock_usa_client):
-        """len() without limits returns raw API count (regression)."""
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT,
-            {"results": {"contracts": 42}},
-        )
-        assert len(awards_search) == 42
-
-    def test_count_stays_raw_while_len_is_capped(self, awards_search, mock_usa_client):
-        """count() returns full API total; len() returns capped value."""
-        mock_usa_client.set_response(
-            MockUSASpendingClient.Endpoints.AWARD_COUNT,
-            {"results": {"contracts": 250}},
-        )
-        limited = awards_search.limit(5)
-        assert limited.count() == 250  # raw API total, unaffected by limit()
-        assert len(limited) == 5  # effective count, capped by limit()
+        limited = awards_search.limit(5).max_pages(2)
+        assert len(limited) == limited.count() == 5
 
 
 class TestGetItemRespectsLimits:
@@ -364,8 +411,10 @@ class TestGetItemRespectsLimits:
         with pytest.raises(IndexError):
             awards_search.limit(5)[6]
 
-    def test_negative_index_uses_effective_count(self, awards_search, mock_usa_client):
-        """Negative index resolves against effective count, not API total."""
+    def test_negative_index_resolves_against_the_bounded_count(
+        self, awards_search, mock_usa_client
+    ):
+        """limit(5)[-1] is the fifth row, not the 250th."""
         mock_usa_client.set_response(
             MockUSASpendingClient.Endpoints.AWARD_COUNT,
             {"results": {"contracts": 250}},

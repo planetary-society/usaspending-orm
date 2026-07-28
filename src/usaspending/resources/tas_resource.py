@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 from ..logging_config import USASpendingLogger
 from .base_resource import BaseResource
 
 if TYPE_CHECKING:
-    from ..models.agency import Agency
+    from ..queries.tas_agencies_query import TASAgenciesQuery
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -32,46 +33,33 @@ class TASResource(BaseResource):
 
     ENDPOINT = "/references/filter_tree/tas/"
 
-    @property
-    def agencies(self) -> list[Agency]:
-        """List all agencies with TAS codes.
+    @cached_property
+    def agencies(self) -> TASAgenciesQuery:
+        """Agencies that have Treasury Account Symbols.
 
-        Returns a list of Agency model instances for agencies that have
-        at least one Treasury Account Symbol affiliated with them.
+        Returns a query rather than a list, matching the two levels below it in
+        the same tree: :attr:`Agency.federal_accounts` and
+        :attr:`FederalAccount.tas_codes` are both queries. Iteration, ``len()``,
+        indexing and slicing all work directly on it, and ``all()`` gives a list
+        when one is wanted.
+
+        Handing back a query also means there is no shared list to corrupt. The
+        query holds the fetched level, so filtering and repeated reads cost no
+        further requests, while every ``all()`` builds a fresh list.
 
         Returns:
-            List of Agency model instances.
+            TASAgenciesQuery: Query supporting ``code()``, ``codes()`` and
+            ``description()``.
 
         Example:
-            >>> agencies = client.tas.agencies
-            >>> for agency in agencies:
-            ...     print(
-            ...         f"{agency.code}: {agency.name} ({agency.federal_accounts.count()} accounts)"
-            ...     )
+            >>> for agency in client.tas.agencies:
+            ...     print(f"{agency.code}: {agency.name}")
+            >>> len(client.tas.agencies)
+            91
+            >>> nasa = client.tas.agencies.code("080").first()
+            >>> universities = client.tas.agencies.description("university").all()
         """
-        logger.debug("Fetching TAS agencies")
+        logger.debug("Creating TAS agencies query")
+        from ..queries.tas_agencies_query import TASAgenciesQuery
 
-        response = self._client._make_request("GET", self.ENDPOINT)
-        results = response.get("results", [])
-
-        from ..models.agency import Agency
-
-        agencies = []
-        for data in results:
-            if not isinstance(data, dict):
-                continue
-
-            # Transform filter tree node data to Agency-compatible format
-            agency_data = {
-                "toptier_code": data.get("id"),
-                "code": data.get("id"),
-                "name": data.get("description"),
-                # Include the TAS count for reference
-                "_tas_count": data.get("count", 0),
-            }
-
-            agencies.append(Agency(agency_data, self._client))
-
-        logger.debug("Fetched %d TAS agencies", len(agencies))
-
-        return agencies
+        return TASAgenciesQuery(self._client)

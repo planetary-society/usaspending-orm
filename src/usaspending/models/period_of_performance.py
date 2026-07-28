@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import Any, ClassVar
 
-from ..utils.formatter import to_date
+from ..utils.dates import to_date
 from .base_model import BaseModel
 
 
@@ -12,7 +12,46 @@ class PeriodOfPerformance(BaseModel):
 
     Represents the time period during which the work of an award is expected
     to be performed or the funding is available for obligation.
+
+    A search result reports these dates as flat, title-cased keys where a detail
+    response sends a nested object. Both spellings are read here.
     """
+
+    #: Every flat spelling the properties below read, which is both the projection
+    #: :meth:`_from_search_result` copies and the set an award tests to decide it
+    #: can build one of these without fetching. The two uses are why this must name
+    #: exactly what the properties read: a spelling missing here is a payload that
+    #: goes to the network for an answer already in hand. A test pins the pair.
+    #:
+    #: Not all of them are keys a search result is known to send; the
+    #: `Period of Performance ...` forms appear in no documented field list and no
+    #: recorded response. They are the properties' existing fallbacks, kept because
+    #: they cost nothing and reading one is better than fetching.
+    _SEARCH_KEYS: ClassVar[tuple[str, ...]] = (
+        "Start Date",
+        "Base Obligation Date",
+        "Period of Performance Start Date",
+        "End Date",
+        "Period of Performance Current End Date",
+        "Period of Performance Potential End Date",
+        "Last Modified Date",
+    )
+
+    @classmethod
+    def _from_search_result(cls, data: dict[str, Any]) -> PeriodOfPerformance:
+        """Build from an award search result, taking only the keys this model owns.
+
+        Copies rather than aliasing: an award replaces its payload in place when a
+        detail fetch fires, and this model reads some of its dates lazily, so a
+        shared reference would let that fetch change an object already built.
+
+        Args:
+            data: An award search result, whose other keys are ignored.
+
+        Returns:
+            PeriodOfPerformance: A model whose ``raw`` holds only period data.
+        """
+        return cls({key: data[key] for key in cls._SEARCH_KEYS if key in data})
 
     def __init__(self, data: dict[str, Any]):
         """Initialize PeriodOfPerformance.
@@ -22,7 +61,14 @@ class PeriodOfPerformance(BaseModel):
         """
         super().__init__(data)
         self._start_date = to_date(
-            self.get_value(["start_date", "Start Date", "Period of Performance Start Date"])
+            self.get_value(
+                [
+                    "start_date",
+                    "Start Date",
+                    "Period of Performance Start Date",
+                    "Base Obligation Date",
+                ]
+            )
         )
         self._end_date = to_date(
             self.get_value(["end_date", "End Date", "Period of Performance Current End Date"])

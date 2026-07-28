@@ -11,7 +11,83 @@ from tests.utils import assert_decimal_equal
 from usaspending.exceptions import ValidationError
 from usaspending.models.location import Location
 from usaspending.models.recipient import Recipient
-from usaspending.utils.formatter import contracts_titlecase
+from usaspending.utils.textcase import titlecase_name
+
+
+class TestSearchResultKeys:
+    """The flat keys an award search result carries are read by this model.
+
+    Three of the five were already read here and two were not, so `Award` had to
+    translate its payload before handing it over. Reading all five here makes this
+    the one owner of the mapping.
+    """
+
+    def test_every_flat_key_is_read(self, mock_usa_client):
+        """Each flat spelling an award search result sends reaches its property."""
+        recipient = Recipient(
+            {
+                "recipient_id": "abc123-C",
+                "Recipient Name": "ACME CORPORATION",
+                "Recipient DUNS Number": "123456789",
+                "Recipient UEI": "UEIXYZ123",
+                "Recipient Location": {"city_name": "PASADENA", "state_code": "CA"},
+            },
+            mock_usa_client,
+        )
+
+        assert recipient.name == "Acme Corporation"
+        assert recipient.duns == "123456789"
+        assert recipient.uei == "UEIXYZ123"
+        assert recipient.location is not None
+        assert recipient.location.state_code == "CA"
+
+    def test_the_nested_spellings_still_win(self, mock_usa_client):
+        """A detail response's own keys take precedence over the flat ones."""
+        recipient = Recipient(
+            {
+                "recipient_uei": "NESTED_UEI",
+                "Recipient UEI": "FLAT_UEI",
+                "location": {"state_code": "TX"},
+                "Recipient Location": {"state_code": "CA"},
+            },
+            mock_usa_client,
+        )
+
+        assert recipient.uei == "NESTED_UEI"
+        assert recipient.location.state_code == "TX"
+
+    def test_a_hash_survives_the_projection(self, mock_usa_client):
+        """`recipient_hash` is the fallback identity, so it must not be filtered out.
+
+        `__init__` and `recipient_id` both read it, and it is what a record with no
+        `recipient_id` lazy-loads by. Dropping it in the projection would build a
+        recipient that cannot fetch its own details.
+        """
+        recipient = Recipient._from_search_result(
+            {"recipient_hash": "abc123", "Recipient Name": "ACME"}, mock_usa_client
+        )
+
+        assert recipient.recipient_id == "abc123"
+
+    def test_from_search_result_takes_only_its_own_keys(self, mock_usa_client):
+        """The projection is scoped, so `raw` describes a recipient and not an award.
+
+        It must also copy rather than alias, since this is a lazy record whose
+        `raw` is replaced in place when a detail fetch fires.
+        """
+        award_data = {
+            "recipient_id": "abc123-C",
+            "Recipient Name": "ACME",
+            "Award ID": "CONT_AWD_1",
+            "Start Date": "2020-01-01",
+        }
+
+        recipient = Recipient._from_search_result(award_data, mock_usa_client)
+
+        assert set(recipient.raw) == {"recipient_id", "Recipient Name"}
+
+        award_data.clear()
+        assert recipient.name == "Acme"
 
 
 class TestRecipientInitialization:
@@ -89,7 +165,7 @@ class TestRecipientInitialization:
         fixture_data = load_json_fixture("recipient_university.json")
         base_id = fixture_data["recipient_id"].split("-")[0]  # Get base part before dash
 
-        # Test with list-annotated ID
+        # Test with list-annotated ID: the first level listed wins
         data = {"recipient_id": f"{base_id}-['C','R']"}
         recipient = Recipient(data, mock_usa_client)
         assert recipient._data["recipient_id"] == f"{base_id}-C"
@@ -104,43 +180,76 @@ class TestRecipientInitialization:
 
 
 class TestRecipientIdCleaning:
-    """Test recipient ID cleaning functionality."""
+    """Construction normalizes the recipient ID.
 
-    def test_clean_recipient_id_normal(self):
-        """Test cleaning normal recipient IDs."""
-        assert Recipient._clean_recipient_id("abc123-C") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-P") == "xyz789-P"
+    The normalizer's own edge cases live in tests/utils/test_validations.py; what
+    matters here is that Recipient applies it, so a model and a query built from
+    the same raw ID address the same entity.
+    """
 
-    def test_clean_recipient_id_with_list_annotation(self):
-        """Test cleaning IDs with list annotations like abc123-['C','R']."""
-        assert Recipient._clean_recipient_id("abc123-['C','R']") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-['P','C']") == "xyz789-P"
+    def test_construction_normalizes_a_level_list(self, mock_usa_client):
+        """A level list collapses to the single level the API will be asked for."""
+        recipient = Recipient({"recipient_id": "abc123-['C','R']"}, mock_usa_client)
 
-    def test_clean_recipient_id_with_single_annotation(self):
-        """Test cleaning IDs with single annotations like abc123-['C']."""
-        assert Recipient._clean_recipient_id("abc123-['C']") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-['P']") == "xyz789-P"
+        assert recipient.recipient_id == "abc123-C"
 
-    def test_clean_recipient_id_with_trailing_slash(self):
-        """Test cleaning IDs with trailing slashes."""
-        assert Recipient._clean_recipient_id("abc123-C/") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-['P']/") == "xyz789-P"
+    def test_construction_leaves_a_normal_id_alone(self, mock_usa_client):
+        """An already-normal ID passes through untouched."""
+        recipient = Recipient({"recipient_id": "abc123-C"}, mock_usa_client)
 
-    def test_clean_recipient_id_with_whitespace(self):
-        """Test cleaning IDs with extra whitespace."""
-        assert Recipient._clean_recipient_id("  abc123-C  ") == "abc123-C"
-        assert Recipient._clean_recipient_id("xyz789-[ 'P' , 'C' ]") == "xyz789-P"
+        assert recipient.recipient_id == "abc123-C"
 
-    def test_clean_recipient_id_empty_list(self):
-        """Test handling of empty annotation lists."""
-        # Empty brackets don't match the regex pattern, so they're returned as-is
-        assert Recipient._clean_recipient_id("abc123-[]") == "abc123-[]"
+    def test_construction_agrees_with_the_query_path(self, mock_usa_client):
+        """The two paths that used to disagree now resolve identically."""
+        from usaspending.queries.recipient_query import RecipientQuery
 
-    def test_clean_recipient_id_non_string(self):
-        """Test defensive handling of non-string IDs."""
-        # Should return input unchanged if not a string
-        assert Recipient._clean_recipient_id(None) is None
-        assert Recipient._clean_recipient_id(123) == 123
+        raw = "abc123-['C','R']"
+        recipient = Recipient({"recipient_id": raw}, mock_usa_client)
+
+        assert recipient.recipient_id == RecipientQuery(mock_usa_client)._clean_resource_id(raw)
+
+
+class TestRecipientLevel:
+    """recipient_level says which level of the hierarchy a record describes.
+
+    Normalization picks one level from a multi-level ID, so without this the
+    caller would have to parse the ID string to learn which record they hold.
+    """
+
+    def test_level_from_a_detail_payload(self, mock_usa_client):
+        """The API reports the level; it is not parsed from the ID."""
+        recipient = Recipient({"recipient_id": "abc123-C", "recipient_level": "C"}, mock_usa_client)
+
+        assert recipient.recipient_level == "C"
+
+    def test_level_reflects_the_record_actually_fetched(self, mock_usa_client):
+        """A multi-level ID collapses, and the level matches what came back."""
+        mock_usa_client.set_response(
+            "/recipient/abc123-C/",
+            {"recipient_id": "abc123-C", "recipient_level": "C", "name": "ACME"},
+        )
+        recipient = Recipient({"recipient_id": "abc123-['C','R']"}, mock_usa_client)
+
+        assert recipient.recipient_id == "abc123-C"
+        assert recipient.recipient_level == "C"
+
+    def test_an_explicit_suffix_selects_that_level(self, mock_usa_client):
+        """An ID given with a suffix is used as-is, which is how a caller opts in to -R."""
+        mock_usa_client.set_response(
+            "/recipient/abc123-R/",
+            {"recipient_id": "abc123-R", "recipient_level": "R", "name": "ACME"},
+        )
+        recipient = Recipient({"recipient_id": "abc123-R"}, mock_usa_client)
+
+        assert recipient.recipient_id == "abc123-R"
+        assert recipient.recipient_level == "R"
+
+    def test_absent_level_is_none(self, mock_usa_client):
+        """Not every payload reports it."""
+        recipient = Recipient({"recipient_id": "abc123-C"}, mock_usa_client)
+        recipient._details_fetched = True
+
+        assert recipient.recipient_level is None
 
 
 class TestRecipientProperties:
@@ -165,7 +274,7 @@ class TestRecipientProperties:
         """Test name property with titlecase formatting."""
         # Use actual fixture data
         recipient = Recipient(recipient_data, mock_usa_client)
-        assert recipient.name == contracts_titlecase(recipient_data["name"])
+        assert recipient.name == titlecase_name(recipient_data["name"])
 
     def test_name_property_with_none(self, mock_usa_client):
         """Test name property when value is None."""
@@ -184,7 +293,7 @@ class TestRecipientProperties:
         """Test alternate_names property returns list with titlecase."""
         recipient = Recipient(recipient_data, mock_usa_client)
         expected_names = [
-            contracts_titlecase(name) for name in recipient_data.get("alternate_names", [])
+            titlecase_name(name) for name in recipient_data.get("alternate_names", [])
         ]
         assert recipient.alternate_names == expected_names
 
@@ -208,7 +317,7 @@ class TestRecipientProperties:
         recipient = Recipient(recipient_data, mock_usa_client)
         repr_str = repr(recipient)
         assert "Recipient" in repr_str
-        assert contracts_titlecase(recipient_data["name"]) in repr_str
+        assert titlecase_name(recipient_data["name"]) in repr_str
         assert recipient_data["recipient_id"] in repr_str
 
     def test_repr_with_no_name(self, mock_usa_client):
@@ -398,7 +507,7 @@ class TestRecipientLazyLoading:
         name = recipient.name
 
         # Verify the value from fixture
-        assert name == contracts_titlecase(recipient_data["name"])
+        assert name == titlecase_name(recipient_data["name"])
 
         # Verify the endpoint was called
         assert mock_usa_client.get_request_count(f"/recipient/{recipient_id}/") == 1
@@ -447,7 +556,7 @@ class TestRecipientLazyLoading:
         name = recipient.name
 
         # Check that new data was loaded
-        assert name == contracts_titlecase(recipient_data["name"])
+        assert name == titlecase_name(recipient_data["name"])
 
         # Check that original field is preserved
         assert recipient._data["existing_field"] == "original_value"
@@ -680,3 +789,45 @@ class TestCircularReferenceProtection:
 
         # Total calls should be reasonable (2 for A and B)
         assert call_count <= 3
+
+
+class TestRecipientParentsIsolation:
+    """Each read of `parents` hands back its own list.
+
+    It was a cached_property building the list, so every caller received the same
+    object and one caller's ``pop()`` or ``sort()`` changed what every later
+    reader saw, for the model's lifetime. The models inside are still shared,
+    which is the pre-existing library stance.
+    """
+
+    def _recipient(self, mock_usa_client):
+        recipient = Recipient(
+            {
+                "recipient_id": "a-C",
+                "parents": [
+                    {"parent_id": "p1-P", "parent_name": "P One"},
+                    {"parent_id": "p2-P", "parent_name": "P Two"},
+                ],
+            },
+            mock_usa_client,
+        )
+        recipient._details_fetched = True
+        return recipient
+
+    def test_mutating_the_returned_list_does_not_affect_later_reads(self, mock_usa_client):
+        recipient = self._recipient(mock_usa_client)
+
+        recipient.parents.pop()
+
+        assert len(recipient.parents) == 2
+
+    def test_each_read_returns_a_distinct_list(self, mock_usa_client):
+        recipient = self._recipient(mock_usa_client)
+
+        assert recipient.parents is not recipient.parents
+
+    def test_the_models_are_built_once_and_shared(self, mock_usa_client):
+        """The copy is of the list, not of its contents."""
+        recipient = self._recipient(mock_usa_client)
+
+        assert recipient.parents[0] is recipient.parents[0]

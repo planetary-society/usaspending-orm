@@ -1,11 +1,49 @@
-"""Tests for TextFormatter class."""
+"""Tests for title and sentence casing."""
 
+from contextlib import contextmanager
 from unittest.mock import mock_open, patch
 
 import pytest
 import yaml
 
-from usaspending.utils.formatter import TextFormatter
+from usaspending.utils.textcase import TextFormatter, titlecase_name
+
+#: Superset of the special cases the casing tests rely on. One list rather than
+#: three near-identical ones, since a case only matters to a test that mentions it.
+MOCK_SPECIAL_CASES = [
+    "NASA",
+    "ESA",
+    "USA",
+    "SBIR",
+    "LLC",
+    "Inc.",
+    "Ltd.",
+    "NE",
+    "SW",
+    "St.",
+    "Ave.",
+    "OSIRIS-REx",
+    "SCaN",
+    "EPSCoR",
+]
+
+
+@contextmanager
+def casing_from(entries):
+    """Run a block with `entries` standing in for special_cases.yaml.
+
+    Clearing the cache is the whole invalidation contract: the derived lookups
+    rebuild when the loaded list is a different object, which
+    TestSpecialCaseLookupInvalidation pins. So this resets only the cache, on the
+    way in and again on the way out.
+    """
+    original = TextFormatter._special_cases_cache
+    TextFormatter._special_cases_cache = None
+    try:
+        with patch("builtins.open", mock_open(read_data=yaml.dump(entries))):
+            yield
+    finally:
+        TextFormatter._special_cases_cache = original
 
 
 class TestTextFormatter:
@@ -34,23 +72,40 @@ class TestTextFormatter:
             assert cases == []
 
     def test_load_special_cases_yaml_error(self):
-        """Test graceful handling of YAML parsing errors."""
+        """Unparseable YAML warns rather than failing silently.
+
+        See TestSpecialCasesLoadFailures for the full contract; this pins that the
+        problem is announced, where before it went only to the log.
+        """
+        TextFormatter._special_cases_cache = None
         with (
             patch("builtins.open", mock_open(read_data="invalid: yaml: content:")),
             patch("yaml.safe_load", side_effect=yaml.YAMLError),
+            pytest.warns(UserWarning, match="Could not parse"),
         ):
-            cases = TextFormatter._load_special_cases()
-            assert cases == []
+            assert TextFormatter._load_special_cases() == []
 
-    def test_get_special_cases_set(self):
-        """Test conversion of special cases to uppercase set."""
+    def test_special_case_lookups_exact_map(self):
+        """The exact lookup maps an uppercase form to its canonical spelling.
+
+        Sentence casing matches an entry as written, so this keys on the
+        uppercase form only. It must NOT carry the period-stripped keys the
+        title-case lookup needs, or words like "l.l.c" would start being
+        rewritten.
+        """
+        TextFormatter._special_cases_cache = None
         mock_special_cases = ["NASA", "Inc.", "OSIRIS-REx"]
-        mock_yaml_content = yaml.dump(mock_special_cases)
 
-        with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
-            cases_set = TextFormatter._get_special_cases_set()
-            expected = {"NASA", "INC.", "OSIRIS-REX"}
-            assert cases_set == expected
+        with patch("builtins.open", mock_open(read_data=yaml.dump(mock_special_cases))):
+            lookups = TextFormatter._special_case_lookups()
+
+        assert lookups.by_upper_form == {"NASA": "NASA", "INC.": "Inc.", "OSIRIS-REX": "OSIRIS-REx"}
+
+        # The title-case lookup additionally accepts "inc" for "Inc."
+        assert lookups.by_lower_form["inc"] == "Inc."
+        assert "inc" not in lookups.by_upper_form
+
+        TextFormatter._special_cases_cache = None
 
     def test_split_word_punctuation_simple(self):
         """Test splitting word from punctuation."""
@@ -114,26 +169,9 @@ class TestTextFormatterSentenceCase:
 
     @pytest.fixture(autouse=True)
     def setup_yaml(self):
-        """Mock the YAML file for consistent tests."""
-        TextFormatter._special_cases_cache = None
-
-        mock_special_cases = [
-            "NASA",
-            "ESA",
-            "USA",
-            "SBIR",
-            "LLC",
-            "Inc.",
-            "OSIRIS-REx",
-            "SCaN",
-            "EPSCoR",
-        ]
-        mock_yaml_content = yaml.dump(mock_special_cases)
-
-        with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
+        """Stand a fixed special-case list in for the shipped YAML."""
+        with casing_from(MOCK_SPECIAL_CASES):
             yield
-
-        TextFormatter._special_cases_cache = None
 
     def test_empty_input(self):
         """Test empty input handling."""
@@ -271,16 +309,9 @@ class TestTextFormatterTitlecaseCallback:
 
     @pytest.fixture(autouse=True)
     def setup_yaml(self):
-        """Mock the YAML file for consistent tests."""
-        TextFormatter._special_cases_cache = None
-
-        mock_special_cases = ["NASA", "Inc.", "LLC"]
-        mock_yaml_content = yaml.dump(mock_special_cases)
-
-        with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
+        """Stand a fixed special-case list in for the shipped YAML."""
+        with casing_from(MOCK_SPECIAL_CASES):
             yield
-
-        TextFormatter._special_cases_cache = None
 
     def test_non_string_input(self):
         """Test non-string input handling."""
@@ -311,3 +342,199 @@ class TestTextFormatterTitlecaseCallback:
         """Test callback with punctuation."""
         result = TextFormatter.titlecase_callback("nasa,")
         assert result == "NASA,"
+
+
+class TestSpecialCaseLookupInvalidation:
+    """The derived lookups must not outlive the list they were built from.
+
+    Casing resolves through lookups built once from special_cases.yaml, rather
+    than by scanning the list per word. Those lookups are a second piece of cached
+    state, and the suite invalidates casing throughout by setting
+    ``_special_cases_cache = None``, so they have to follow from that alone.
+    """
+
+    def test_lookups_rebuild_when_the_cache_is_replaced(self):
+        original = TextFormatter._special_cases_cache
+        try:
+            assert TextFormatter._preserve_special_case("llc") == "LLC"
+
+            TextFormatter._special_cases_cache = None
+            with patch("builtins.open", mock_open(read_data=yaml.dump(["ZZZ"]))):
+                # The real list is gone, so its entries must stop resolving...
+                assert TextFormatter._preserve_special_case("llc") is None
+                # ...and the replacement must take effect.
+                assert TextFormatter._preserve_special_case("zzz") == "ZZZ"
+
+            TextFormatter._special_cases_cache = None
+            assert TextFormatter._preserve_special_case("llc") == "LLC"
+            assert TextFormatter._preserve_special_case("zzz") is None
+        finally:
+            TextFormatter._special_cases_cache = original
+
+
+class TestSpecialCasesLoadFailures:
+    """A missing list degrades; a corrupt one does not.
+
+    Casing failures are quiet by nature: a mis-cased name is still a name, so a
+    logged warning gets scrolled past. A file that exists but cannot be read as a
+    list is a packaging or editing mistake, and it fails loudly.
+    """
+
+    def _load(self, **patch_kwargs):
+        original = TextFormatter._special_cases_cache
+        try:
+            TextFormatter._special_cases_cache = None
+            with patch("builtins.open", **patch_kwargs):
+                return TextFormatter._load_special_cases()
+        finally:
+            TextFormatter._special_cases_cache = original
+
+    def test_missing_file_degrades_to_no_special_casing(self):
+        """An installation may legitimately lack the file."""
+        assert self._load(side_effect=FileNotFoundError) == []
+
+    def test_empty_file_is_not_an_error(self):
+        """An empty list is a valid, if useless, configuration."""
+        assert self._load(new=mock_open(read_data="")) == []
+
+    def test_corrupt_yaml_warns_and_degrades(self):
+        """Unparseable YAML is a mistake, and says so, without raising."""
+        with pytest.warns(UserWarning, match="Could not parse"):
+            assert self._load(new=mock_open(read_data="[unclosed: {")) == []
+
+    def test_wrong_shape_warns_and_degrades(self):
+        """A mapping where a list belongs would silently case nothing."""
+        with pytest.warns(UserWarning, match="must contain a list"):
+            assert self._load(new=mock_open(read_data="a: 1\nb: 2\n")) == []
+
+    def test_casing_never_raises_from_repr(self):
+        """A cosmetic problem must not break __repr__, logging or a debugger.
+
+        Casing runs inside __repr__ on several models, so raising here would turn
+        a mis-cased name into a crash at the least convenient site.
+        """
+        from tests.mocks import MockUSASpendingClient
+        from usaspending.models.recipient_spending import RecipientSpending
+
+        spending = RecipientSpending(
+            {"name": "ACME CORP", "amount": 5, "recipient_id": "a-C"},
+            MockUSASpendingClient(),
+        )
+        original = TextFormatter._special_cases_cache
+        try:
+            TextFormatter._special_cases_cache = None
+            with (
+                patch("builtins.open", mock_open(read_data="[unclosed: {")),
+                pytest.warns(UserWarning),
+            ):
+                assert "Acme Corp" in repr(spending)
+        finally:
+            TextFormatter._special_cases_cache = original
+
+
+class TestSpecialCaseCollisionWarning:
+    """Colliding lowercase forms warn when the lookups are built.
+
+    tests/utils/test_special_cases_data.py pins the same invariant over the
+    shipped file, which is what catches it in CI and names the offenders. This
+    check covers the case that test cannot see: special_cases.yaml is data, so a
+    downstream consumer can edit it after install, where no test of ours runs.
+
+    Exact duplicates deliberately do not warn. The same spelling wins either way,
+    so there is nothing ambiguous to report; the CI test still flags them as
+    untidy data.
+    """
+
+    def _build(self, entries):
+        with casing_from(entries):
+            return TextFormatter._special_case_lookups()
+
+    def test_same_form_different_spelling_warns(self):
+        with pytest.warns(UserWarning, match="lowercase forms collide"):
+            self._build(["Inc", "INC"])
+
+    def test_entry_plus_a_trailing_period_warns(self):
+        """The case invisible to the uppercase lookup, so it must be caught here."""
+        with pytest.warns(UserWarning, match="lowercase forms collide"):
+            self._build(["Inc", "INC."])
+
+    def test_exact_duplicates_do_not_warn(self):
+        import warnings as _warnings
+
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error", UserWarning)
+            assert self._build(["Inc", "Inc"]).by_lower_form["inc"] == "Inc"
+
+    def test_clean_data_does_not_warn(self):
+        import warnings as _warnings
+
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error", UserWarning)
+            self._build(["NASA", "Inc.", "OSIRIS-REx"])
+
+
+class TestTitlecaseName:
+    """Test the titlecase_name function."""
+
+    @pytest.fixture(autouse=True)
+    def setup_yaml(self):
+        """Stand a fixed special-case list in for the shipped YAML."""
+        with casing_from(MOCK_SPECIAL_CASES):
+            yield
+
+    def test_none_input(self):
+        """Test handling of None input."""
+        assert titlecase_name(None) is None
+
+    def test_basic_titlecase(self):
+        """Test basic title casing."""
+        assert titlecase_name("hello world") == "Hello World"
+        assert titlecase_name("HELLO WORLD") == "Hello World"
+
+    def test_acronyms_preserved(self):
+        """Test that acronyms are preserved."""
+        assert titlecase_name("nasa research") == "NASA Research"
+        assert titlecase_name("working with nasa") == "Working With NASA"
+        assert titlecase_name("sbir program") == "SBIR Program"
+
+    def test_business_suffixes(self):
+        """Test business suffixes."""
+        assert titlecase_name("acme inc.") == "Acme Inc."
+        assert titlecase_name("technology llc") == "Technology LLC"
+        assert titlecase_name("services ltd.") == "Services Ltd."
+
+    def test_small_words(self):
+        """Test that small words are lowercase in middle."""
+        assert titlecase_name("bread and butter") == "Bread and Butter"
+        assert titlecase_name("the quick fox") == "The Quick Fox"
+        assert titlecase_name("of the people") == "Of the People"
+
+    def test_directional_abbreviations(self):
+        """Test directional abbreviations."""
+        assert titlecase_name("123 main st. ne") == "123 Main St. NE"
+        assert titlecase_name("456 oak ave. sw") == "456 Oak Ave. SW"
+
+    def test_directional_with_punctuation(self):
+        """Test directional abbreviations with punctuation."""
+
+        assert titlecase_name("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
+
+    def test_special_casing(self):
+        """Test special casing rules."""
+        assert titlecase_name("osiris-rex mission") == "OSIRIS-REx Mission"
+        assert titlecase_name("scan network") == "SCaN Network"
+        assert titlecase_name("epscor funding") == "EPSCoR Funding"
+
+    def test_complex_examples(self):
+        """Test complex real-world examples."""
+        assert (
+            titlecase_name("nasa sbir program for small business llc")
+            == "NASA SBIR Program for Small Business LLC"
+        )
+
+        assert titlecase_name("123 main st. ne, suite 100") == "123 Main St. NE, Suite 100"
+
+        assert (
+            titlecase_name("the university of maryland and nasa")
+            == "The University of Maryland and NASA"
+        )

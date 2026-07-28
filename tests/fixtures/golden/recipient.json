@@ -1,0 +1,60 @@
+{
+  "class": "Recipient",
+  "properties": {
+    "alternate_names": [
+      "Calif Institute Technology",
+      "California Inst of Tech",
+      "California Institute of Tech",
+      "California Institute of Techno",
+      "California Institute of Technology (3307)"
+    ],
+    "business_categories": [
+      "category_business",
+      "corporate_entity_tax_exempt",
+      "educational_institution",
+      "higher_education",
+      "nonprofit",
+      "other_than_small_business",
+      "private_institution_of_higher_education",
+      "special_designations",
+      "us_owned_business"
+    ],
+    "business_types": [
+      "category_business",
+      "corporate_entity_tax_exempt",
+      "educational_institution",
+      "higher_education",
+      "nonprofit",
+      "other_than_small_business",
+      "private_institution_of_higher_education",
+      "special_designations",
+      "us_owned_business"
+    ],
+    "duns": "009584210",
+    "location": {
+      "__type__": "Location"
+    },
+    "name": "California Institute of Technology",
+    "parent": null,
+    "parents": [],
+    "recipient_id": "74bac010-0a24-8f82-8021-0fa16ab4bc6d-R",
+    "recipient_level": "R",
+    "total_face_value_loan_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_face_value_loan_transactions": {
+      "__type__": "int",
+      "empty": false
+    },
+    "total_transaction_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_transactions": {
+      "__type__": "int",
+      "empty": false
+    },
+    "uei": "U2JMKHNS5TG4"
+  }
+}

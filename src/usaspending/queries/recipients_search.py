@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
 
-from ..client import USASpendingClient
 from ..logging_config import USASpendingLogger
+from ..utils.validations import validate_sort_direction
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
+    from ..client import USASpendingClient
     from ..models.recipient import Recipient
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -89,7 +90,7 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
             result["recipient_id"] = result["id"]
         return Recipient(result, self._client)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """
         Get the total count of results using the dedicated count endpoint.
 
@@ -99,8 +100,6 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
         Returns:
             The total number of matching recipients.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
         # Build payload for count endpoint (no pagination params needed)
         payload = {
             "award_type": self._award_type,
@@ -115,7 +114,6 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
         response = self._client._make_request("POST", count_endpoint, json=payload)
 
         total_count = response.get("count", 0)
-        logger.info(f"{self.__class__.__name__}.count() = {total_count}")
         return total_count
 
     # ==========================================================================
@@ -160,8 +158,11 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
 
         Returns:
             A new RecipientsSearch instance with the sorting applied.
+
+        Raises:
+            ValidationError: If direction is neither "asc" nor "desc".
         """
         clone = self._clone()
         clone._sort_field = field
-        clone._sort_direction = direction
+        clone._sort_direction = validate_sort_direction(direction)
         return clone

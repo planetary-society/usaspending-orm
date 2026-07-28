@@ -17,6 +17,7 @@ class ResponseBuilder:
         has_next: bool = False,
         messages: list[str] | None = None,
         page_size: int = 20,
+        metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Build a paginated response with metadata.
 
@@ -25,6 +26,9 @@ class ResponseBuilder:
             page: Current page number
             has_next: Whether there are more pages
             messages: API messages (optional)
+            page_size: Value reported under the response's "limit" key
+            metadata: Extra page_metadata keys, for endpoints that report a
+                total there (optional)
 
         Returns:
             Complete API response dict
@@ -38,6 +42,7 @@ class ResponseBuilder:
                 # the following values would vary based on actual data
                 "last_record_unique_id": 131519463,
                 "last_record_sort_value": "NNX17CD03C",
+                **(metadata or {}),
             },
             "messages": messages or [],
         }

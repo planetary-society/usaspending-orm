@@ -117,31 +117,35 @@ class AgencyResource(BaseResource):
 
         Example:
             >>> # Get all matches (agencies, subtiers, offices)
-            >>> all_results = list(
+            >>> all_results = client.agencies.find_all_funding_agencies_by_name(
+            ...     "National Aeronautics and Space Administration"
+            ... ).all()
+            >>>
+            >>> # Get only toptier agencies
+            >>> agencies = (
             ...     client.agencies.find_all_funding_agencies_by_name(
             ...         "National Aeronautics and Space Administration"
             ...     )
-            ... )
-            >>>
-            >>> # Get only toptier agencies
-            >>> agencies = list(
-            ...     client.agencies.find_all_funding_agencies_by_name(
-            ...         "National Aeronautics and Space Administration"
-            ...     ).toptier()
+            ...     .toptier()
+            ...     .all()
             ... )
             >>>
             >>> # Get only subtier agencies
-            >>> subtiers = list(
+            >>> subtiers = (
             ...     client.agencies.find_all_funding_agencies_by_name(
             ...         "National Aeronautics and Space Administration"
-            ...     ).subtier()
+            ...     )
+            ...     .subtier()
+            ...     .all()
             ... )
             >>>
             >>> # Get only offices
-            >>> offices = list(
+            >>> offices = (
             ...     client.agencies.find_all_funding_agencies_by_name(
             ...         "National Aeronautics and Space Administration"
-            ...     ).office()
+            ...     )
+            ...     .office()
+            ...     .all()
             ... )
         """
         warnings.warn(
@@ -166,31 +170,35 @@ class AgencyResource(BaseResource):
 
         Example:
             >>> # Get all matches (agencies, subtiers, offices)
-            >>> all_results = list(
+            >>> all_results = client.agencies.find_all_awarding_agencies_by_name(
+            ...     "National Aeronautics and Space Administration"
+            ... ).all()
+            >>>
+            >>> # Get only toptier agencies
+            >>> agencies = (
             ...     client.agencies.find_all_awarding_agencies_by_name(
             ...         "National Aeronautics and Space Administration"
             ...     )
-            ... )
-            >>>
-            >>> # Get only toptier agencies
-            >>> agencies = list(
-            ...     client.agencies.find_all_awarding_agencies_by_name(
-            ...         "National Aeronautics and Space Administration"
-            ...     ).toptier()
+            ...     .toptier()
+            ...     .all()
             ... )
             >>>
             >>> # Get only subtier agencies
-            >>> subtiers = list(
+            >>> subtiers = (
             ...     client.agencies.find_all_awarding_agencies_by_name(
             ...         "National Aeronautics and Space Administration"
-            ...     ).subtier()
+            ...     )
+            ...     .subtier()
+            ...     .all()
             ... )
             >>>
             >>> # Get only offices
-            >>> offices = list(
+            >>> offices = (
             ...     client.agencies.find_all_awarding_agencies_by_name(
             ...         "National Aeronautics and Space Administration"
-            ...     ).office()
+            ...     )
+            ...     .office()
+            ...     .all()
             ... )
         """
         warnings.warn(

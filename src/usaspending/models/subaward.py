@@ -5,12 +5,9 @@ from decimal import Decimal
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from ..utils.formatter import (
-    contracts_titlecase,
-    smart_sentence_case,
-    to_date,
-    to_decimal,
-)
+from ..utils.dates import to_date
+from ..utils.numbers import to_decimal, to_int
+from ..utils.textcase import TextFormatter, titlecase_name
 from .award import Award
 from .base_model import ClientAwareModel
 from .location import Location
@@ -41,11 +38,9 @@ class SubAward(ClientAwareModel):
 
     Example:
         >>> # Find subawards for a specific prime award
-        >>> subawards = client.subawards.search()
-        ...     .for_prime_award_piid("80NSSC21C0123")
-        ...     .limit(10)
+        >>> subawards = client.subawards.search().for_prime_award_piid("80NSSC21C0123").limit(10)
         >>> for subaward in subawards:
-        ...     print(f"{subaward.sub_awardee_name}: ${subaward.sub_award_amount:,.2f}")
+        ...     print(f"{subaward.sub_awardee_name}: ${subaward.sub_award_amount or 0:,.2f}")
     """
 
     def __init__(self, data: dict[str, Any], client: USASpendingClient):
@@ -195,7 +190,7 @@ class SubAward(ClientAwareModel):
             Optional[str]: The recipient name, or None.
         """
         name = self.get_value("Sub-Awardee Name")
-        return contracts_titlecase(name) if name else None
+        return titlecase_name(name) if name else None
 
     @property
     def sub_award_date(self) -> date | None:
@@ -250,7 +245,7 @@ class SubAward(ClientAwareModel):
             Optional[str]: The prime recipient name, or None.
         """
         name = self.get_value("Prime Recipient Name")
-        return contracts_titlecase(name) if name else None
+        return titlecase_name(name) if name else None
 
     @property
     def prime_award_recipient_id(self) -> str | None:
@@ -269,7 +264,7 @@ class SubAward(ClientAwareModel):
             Optional[str]: The description, or None.
         """
         desc = self.get_value("Sub-Award Description")
-        return smart_sentence_case(desc) if desc else None
+        return TextFormatter.to_sentence_case(desc) if desc else None
 
     @property
     def subaward_description_sorted(self) -> str | None:
@@ -314,8 +309,7 @@ class SubAward(ClientAwareModel):
         Returns:
             Optional[int]: The internal ID, or None.
         """
-        val = self.get_value("prime_award_internal_id")
-        return int(val) if val is not None else None
+        return to_int(self.get_value("prime_award_internal_id"))
 
     @property
     def naics(self) -> str | None:
@@ -362,11 +356,11 @@ class SubAward(ClientAwareModel):
         return self.sub_awardee_name
 
     @property
-    def amount(self) -> float | None:
+    def amount(self) -> Decimal | None:
         """Alias for sub_award_amount.
 
         Returns:
-            Optional[float]: The subaward amount as a float, or None.
+            Optional[Decimal]: The subaward amount, or None.
         """
         return self.sub_award_amount
 

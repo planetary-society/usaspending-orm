@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-from ..client import USASpendingClient
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.district_spending import DistrictSpending
@@ -12,14 +11,11 @@ from ..models.download import SpendingLevel
 from ..models.recipient_spending import RecipientSpending
 from ..models.spending import Spending
 from ..models.state_spending import StateSpending
-from ..utils.validations import validate_non_empty_string
+from ..utils.validations import normalize_recipient_id, validate_non_empty_string
 from .query_builder import SearchQueryBuilder
 
-# Note: We don't use SimpleListFilter for recipient_id as the API expects a string, not an array
-
-# Import award type codes from models
-# These are defined by USASpending.gov and represent different categories of awards
-
+if TYPE_CHECKING:
+    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -81,7 +77,8 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
 
         final_filters = self._aggregate_filters()
 
-        # Add recipient_id as a string (not an array) per API requirements
+        # Sent as a bare string rather than through SimpleListFilter, because
+        # this endpoint expects a scalar here and not an array.
         if self._recipient_id:
             final_filters["recipient_id"] = self._recipient_id
 
@@ -117,62 +114,16 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         else:
             return Spending(result_with_category, self._client)
 
-    def count(self) -> int:
-        """
-        Get the total count of results by iterating through pages.
+    def _compute_raw_count(self) -> int:
+        """Count by walking pages.
 
-        Respects pagination constraints like limit() and max_pages() to match
-        the behavior of iteration. The spending by category endpoints don't
-        have a total count in page_metadata, so we fetch pages and count results.
+        The spending-by-category endpoints report no total in page_metadata, so
+        pages have to be walked and their results summed.
 
         Returns:
             The total number of matching spending records, up to any set limits.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
-        # Early return for zero or negative limits
-        if self._total_limit is not None and self._total_limit <= 0:
-            logger.info(f"{self.__class__.__name__}.count() = 0 (limit: {self._total_limit})")
-            return 0
-
-        total_count = 0
-        page = 1
-        pages_fetched = 0
-
-        while True:
-            # Check if we've reached the max pages limit
-            if self._max_pages and pages_fetched >= self._max_pages:
-                logger.debug(f"Max pages limit ({self._max_pages}) reached")
-                break
-
-            response = self._execute_query(page)
-            results = response.get("results", [])
-
-            # Count items, but respect total_limit
-            items_to_count = len(results)
-            if self._total_limit is not None:
-                remaining = self._total_limit - total_count
-                items_to_count = min(items_to_count, remaining)
-
-            total_count += items_to_count
-
-            # Stop if we've reached our limit
-            if self._total_limit is not None and total_count >= self._total_limit:
-                logger.debug(f"Total limit of {self._total_limit} items reached")
-                break
-
-            # Check if there are more pages
-            page_metadata = response.get("page_metadata", {})
-            has_next = page_metadata.get("hasNext", False)
-
-            if not has_next or not results:
-                break
-
-            page += 1
-            pages_fetched += 1
-
-        logger.info(f"{self.__class__.__name__}.count() = {total_count}")
-        return total_count
+        return self._count_via_paging()
 
     # ==========================================================================
     # Category Selection Methods
@@ -336,7 +287,9 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         Filter by specific recipient ID.
 
         The recipient ID is a unique identifier that includes the recipient hash
-        and level suffix (e.g., "abc123-P" for parent, "abc123-C" for child).
+        and level suffix (e.g., "abc123-P" for parent, "abc123-C" for child). An
+        ID carrying several levels, as ``raw()`` and the website sometimes report
+        it, is normalized to one level the API can match.
 
         Note: This filter is not supported when using subawards mode.
 
@@ -352,5 +305,5 @@ class SpendingSearch(SearchQueryBuilder["Spending"]):
         validated_id = validate_non_empty_string(recipient_id, "recipient_id")
 
         clone = self._clone()
-        clone._recipient_id = validated_id
+        clone._recipient_id = normalize_recipient_id(validated_id)
         return clone

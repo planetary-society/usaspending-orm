@@ -51,10 +51,13 @@ with USASpendingClient() as client:
 ```python
 with USASpendingClient() as client:
     award = client.awards.find_by_award_id("80GSFC18C0008")
-    award.recipient.location.full_address # -> 105 Jessup Hall, Iowa City, IA, 52242, United States
-    award.subawards.count() # -> 100
-    award.subawards[2].recipient.place_of_performance.district # -> AL-03
+    award.recipient.name # -> "The University of Iowa"
+    award.recipient.location.formatted_address # -> "105 Jessup Hall\nIowa City, IA, 52242\nUnited States"
+    award.subawards.count() # -> 150
+    award.subawards[2].recipient.name # -> "Bison Aerospace, Inc"
 ```
+
+Sample outputs throughout this document were validated against live USAspending data in July 2026. Counts, amounts, and dates will drift as agencies report new spending.
 
 #### Searching for Awards
 
@@ -76,7 +79,17 @@ awards_query = client.awards.search() \
 ```
 
 This returns a query object that can be further refined or executed to return results.
-The methods `.all()`, `.first()`, `.count()` will trigger a query to the API, as will iterating over the query object.
+The methods `.all()`, `.first()`, `.count()` will trigger a query to the API, as will iterating over the query object and testing it with `if query:` (which reads a single row). Query objects also support the standard Python list interface, so `len(awards_query)` fires the corresponding count endpoint:
+
+```python
+len(client.awards.search()
+    .agency("National Aeronautics and Space Administration")
+    .grants()
+    .keywords("Mars")
+    .fiscal_year(2024))  # -> 404
+```
+
+Additional filters follow the same snake_case pattern. For example, `.object_classes("10", "252")` filters awards by object class codes (per Office of Management and Budget Circular A-11; pass codes, not names).
 
 ### Example: Searching for National Aeronautics and Space Administration Contracts to SpaceX in 2023
 
@@ -101,16 +114,16 @@ with USASpendingClient() as client:
     top_spacex_award = awards_query.first()
 
     # Returned value is an Award object with all properties mapped
-    # and properly typed.
-    top_spacex_award.total_obligation  # -> Decimal('3029850123.69')
+    # and properly typed. The top result is the Human Landing System contract.
+    top_spacex_award.total_obligation  # -> Decimal('3047851482.99')
     top_spacex_award.category  # -> "contract"
-    top_spacex_award.description  # -> "The Commercial Crew Program (CCP) contract ...."
+    top_spacex_award.description  # -> "Work required for the design, development, manufacture, test, launch..."
 
     # Helper methods provide easy access to common fields without having to account for
     # inconsistent naming or nested structures in the raw API response
-    top_spacex_award.award_identifier  # -> "80GSFC18C0008"
-    top_spacex_award.start_date  # -> datetime.date(2016, 12, 30)
-    top_spacex_award.end_date  # -> datetime.date(2023,12,31)
+    top_spacex_award.award_identifier  # -> "80MSFC20C0034"
+    top_spacex_award.start_date  # -> datetime.date(2020, 5, 13)
+    top_spacex_award.end_date  # -> datetime.date(2027, 12, 6)
 
     # The resulting object provides a normalized interface to the full Award record,
     # and provides access to related data via chained associations
@@ -121,10 +134,39 @@ with USASpendingClient() as client:
 
     # Award Transactions
     last_transaction = top_spacex_award.transactions.order_by("action_date", "desc").first()
-    last_transaction.action_date  # -> datetime.date(2025, 10, 08)
+    last_transaction.action_date  # -> datetime.date(2026, 7, 1)
     last_transaction.action_type_description  # -> "SUPPLEMENTAL AGREEMENT FOR WORK WITHIN SCOPE"
 
 ```
+
+### Example: Top National Aeronautics and Space Administration Contractors in Fiscal Year 2024
+
+Aggregation endpoints are available through `client.spending`. The same fluent filters
+build a category rollup instead of an award list, and iterating the query handles
+pagination automatically:
+
+```python
+with USASpendingClient() as client:
+    top_recipients = (
+        client.spending.search()
+        .by_recipient()
+        .agency("National Aeronautics and Space Administration")
+        .contracts()
+        .fiscal_year(2024)
+        .limit(5)
+    )
+
+    for spending in top_recipients:
+        print(f"{spending.name}: ${spending.amount:,.0f}")
+
+# California Institute of Technology: $2,175,598,668
+# Space Exploration Technologies Corp.: $1,589,359,578
+# The Boeing Company: $1,123,735,127
+# Lockheed Martin Corp: $570,859,903
+# Blue Origin Washington, LLC: $502,942,297
+```
+
+Spending rollups can also be grouped geographically with `.by_district()` or `.by_state()`.
 
 ### Downloading Bulk Data
 
@@ -153,6 +195,8 @@ job = client.downloads.search(query, spending_level=["awards"], file_format="csv
 status = job.wait_for_completion()
 ```
 
+The `/api/v2/download/search/` endpoint does not accept every search filter. In particular, `object_classes` is ignored by the endpoint, so the library emits a `UserWarning` when a download query includes it.
+
 ## Configuration
 
 ### Session Management and Lazy-Loading
@@ -168,7 +212,8 @@ with USASpendingClient() as client:
     awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
     for award in awards:
         # Access lazy-loaded properties inside the context
-        print(f"{award.recipient.name}: ${award.total_obligation:,.2f}")
+        # Money getters return None when the award reports no figure
+        print(f"{award.recipient.name}: ${award.total_obligation or 0:,.2f}")
         print(f"Subawards: {award.subaward_count}")
 # Session automatically closed here
 
@@ -199,13 +244,17 @@ with USASpendingClient() as client:
 
 # Reattach to a new session to access related properties
 with USASpendingClient() as new_client:
-    award.reattach(new_client)
-    print(f"Subawards: {award.subawards.count()}")  # Works!
-
-    # Recursive reattach for nested objects
+    # recursive=True is normally what you want: it also rebinds models already
+    # loaded from this one, such as award.recipient
     award.reattach(new_client, recursive=True)
-    print(f"Recipient: {award.recipient.name}")  # Recipient also reattached
+    print(f"Subawards: {award.subawards.count()}")
+    print(f"Recipient: {award.recipient.name}")
 ```
+
+Without `recursive=True` only the award itself is rebound. That is enough for
+properties it loads afresh, but a nested model already loaded, such as
+`award.recipient`, keeps pointing at the old session and raises
+`DetachedInstanceError` once that session is gone.
 
 ### Performance Considerations
 
@@ -350,7 +399,7 @@ usaspending_config.configure(
     # Set HTTP request parameters (default: max_retries=3, timeout=30)
     # Set number of retries for failed requests (default: 3)
     max_retries=5,
-    # Set delay between retries in seconds (default: 1.0)
+    # Set delay between retries in seconds (default: 10.0)
     retry_delay=10.0,
     # Set exponential backoff factor for retries (default: 2.0)
     retry_backoff=2.0,

@@ -82,9 +82,13 @@ class TestRecipientQueryExecution:
         mock_usa_client: MockUSASpendingClient,
         load_fixture: Callable[[str], dict[str, Any]],
     ) -> None:
-        """Test that recipient_id list suffix is cleaned before request."""
+        """A multi-level suffix is reduced to its first level before the request.
+
+        This path preferred 'R' until 0.8.0, which disagreed with the model and,
+        measured live, addressed the record reporting zero spending.
+        """
         raw_id = "abc123-['C','R']"
-        cleaned_id = "abc123-R"
+        cleaned_id = "abc123-C"
         endpoint = set_recipient_fixture(mock_usa_client, load_fixture, cleaned_id)
 
         recipient = recipient_query.find_by_id(raw_id)

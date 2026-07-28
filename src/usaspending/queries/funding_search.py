@@ -2,25 +2,23 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import Any, ClassVar
 
-from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.funding import Funding
-from ..utils.validations import validate_non_empty_string
+from .mixins import AwardScopedQuery, SortableQuery
 from .query_builder import QueryBuilder
-
-if TYPE_CHECKING:
-    from ..client import USASpendingClient
 
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class FundingSearch(QueryBuilder["Funding"]):
+class FundingSearch(AwardScopedQuery, SortableQuery, QueryBuilder["Funding"]):
     """
     Builds and executes a funding search query, allowing for retrieval
     of federal account funding data for a specific award.
     """
+
+    _sort_field: str = "reporting_fiscal_date"
 
     # Map user-friendly sort field names to API field names
     SORT_FIELD_MAP: ClassVar[dict[str, str]] = {
@@ -38,137 +36,31 @@ class FundingSearch(QueryBuilder["Funding"]):
         "obligation": "transaction_obligated_amount",
     }
 
-    def __init__(self, client: USASpendingClient):
-        """
-        Initializes the FundingSearch query builder.
-
-        Args:
-            client: The USASpending client instance.
-        """
-        super().__init__(client)
-        self._award_id: str | None = None
-        self._sort_field: str = "reporting_fiscal_date"
-        self._sort_order: str = "desc"
-
     @property
     def _endpoint(self) -> str:
         """The API endpoint for this query."""
         return "/awards/funding/"
 
-    def _clone(self) -> FundingSearch:
-        """Creates an immutable copy of the query builder."""
-        clone = super()._clone()
-        clone._award_id = self._award_id
-        clone._sort_field = self._sort_field
-        clone._sort_order = self._sort_order
-        return clone
-
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Constructs the final API request payload."""
-        if not self._award_id:
-            raise ValidationError("An award_id is required. Use the .award_id() method.")
-
-        payload = {
-            "award_id": self._award_id,
+        return {
+            "award_id": self._require_award_id(),
             "limit": self._get_effective_page_size(),
             "page": page,
-            "sort": self._sort_field,
-            "order": self._sort_order,
+            **self._sort_payload(),
         }
-
-        return payload
 
     def _transform_result(self, result: dict[str, Any]) -> Funding:
         """Transforms a single API result item into a Funding model."""
         return Funding(result, client=self._client)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """
         Counts the number of funding records for the award.
 
         Since the funding endpoint doesn't provide a count API,
-        we need to iterate through all pages to get the count.
+        pages have to be walked and their results summed.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
+        self._require_award_id()
 
-        if not self._award_id:
-            raise ValidationError("An award_id is required. Use the .award_id() method.")
-
-        # Iterate through all results to count
-        count = 0
-        for _ in self:
-            count += 1
-
-        logger.info(
-            f"{self.__class__.__name__}.count() = {count} funding records "
-            f"for award {self._award_id}"
-        )
-        return count
-
-    # ==========================================================================
-    # Filter Methods
-    # ==========================================================================
-
-    def award_id(self, award_id: str) -> FundingSearch:
-        """
-        Filter funding records for a specific award.
-
-        Args:
-            award_id: The unique award identifier.
-
-        Returns:
-            A new FundingSearch instance with the award filter applied.
-        """
-        validated_id = validate_non_empty_string(award_id, "award_id")
-
-        clone = self._clone()
-        clone._award_id = validated_id
-        return clone
-
-    def order_by(self, field: str, direction: str = "desc") -> FundingSearch:
-        """
-        Set the sort order for results.
-
-        Args:
-            field: The field to sort by. Can be a user-friendly name or API field name.
-                   User-friendly names include:
-                   - 'account_title', 'awarding_agency', 'disaster_code'
-                   - 'federal_account', 'funding_agency', 'gross_outlay'
-                   - 'object_class', 'program_activity', 'reporting_date'
-                   - 'fiscal_date', 'obligated_amount', 'obligation'
-            direction: Sort direction - 'asc' or 'desc' (default: 'desc')
-
-        Returns:
-            A new FundingSearch instance with the sort configuration applied.
-        """
-        # Validate direction
-        if direction not in ["asc", "desc"]:
-            raise ValidationError(f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'.")
-
-        # Map user-friendly field names to API field names
-        api_field = self.SORT_FIELD_MAP.get(field.lower(), field)
-
-        # Validate that the field is supported by the API
-        valid_api_fields = [
-            "account_title",
-            "awarding_agency_name",
-            "disaster_emergency_fund_code",
-            "federal_account",
-            "funding_agency_name",
-            "gross_outlay_amount",
-            "object_class",
-            "program_activity",
-            "reporting_fiscal_date",
-            "transaction_obligated_amount",
-        ]
-
-        if api_field not in valid_api_fields:
-            raise ValidationError(
-                f"Invalid sort field: {field}. "
-                f"Valid fields are: {', '.join(self.SORT_FIELD_MAP.keys())}"
-            )
-
-        clone = self._clone()
-        clone._sort_field = api_field
-        clone._sort_order = direction
-        return clone
+        return self._count_via_paging()

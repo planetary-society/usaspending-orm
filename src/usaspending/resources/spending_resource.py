@@ -27,18 +27,22 @@ class SpendingResource(BaseResource):
 
         Example:
             >>> # Search spending by recipient
-            >>> recipient_spending = client.spending.search()
+            >>> recipient_spending = (
+            ...     client.spending.search()
             ...     .by_recipient()
             ...     .agency("National Aeronautics and Space Administration")
             ...     .fiscal_year(2024)
             ...     .limit(10)
+            ... )
 
             >>> # Search spending by district
-            >>> district_spending = client.spending.search()
+            >>> district_spending = (
+            ...     client.spending.search()
             ...     .by_district()
             ...     .spending_level("awards")
-            ...     .place_of_performance_locations({"country_code": "USA", "state_code": "TX"))
+            ...     .place_of_performance_locations({"country_code": "USA", "state_code": "TX"})
             ...     .all()
+            ... )
         """
         logger.debug("Creating new SpendingSearch query builder")
         from ..queries.spending_search import SpendingSearch

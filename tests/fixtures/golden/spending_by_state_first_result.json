@@ -1,0 +1,17 @@
+{
+  "class": "StateSpending",
+  "properties": {
+    "amount": "Decimal(4653333753.68)",
+    "category": "state",
+    "code": "CA",
+    "id": null,
+    "name": "California",
+    "spending_level": "transactions",
+    "state_code": "CA",
+    "state_name": "California",
+    "total_outlays": {
+      "__type__": "NoneType",
+      "empty": true
+    }
+  }
+}

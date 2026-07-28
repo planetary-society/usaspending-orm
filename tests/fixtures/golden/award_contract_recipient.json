@@ -1,0 +1,51 @@
+{
+  "class": "Recipient",
+  "properties": {
+    "alternate_names": [
+      "Boeing Company"
+    ],
+    "business_categories": [
+      "category_business",
+      "corporate_entity_not_tax_exempt",
+      "manufacturer_of_goods",
+      "other_than_small_business"
+    ],
+    "business_types": [
+      "category_business",
+      "corporate_entity_not_tax_exempt",
+      "manufacturer_of_goods",
+      "other_than_small_business"
+    ],
+    "duns": "014513647",
+    "location": {
+      "__type__": "Location"
+    },
+    "name": "The Boeing Company",
+    "parent": {
+      "__type__": "Recipient"
+    },
+    "parents": {
+      "__type__": "list",
+      "empty": false
+    },
+    "recipient_id": "690fafd3-ecd8-1228-92a0-07aa28dd1ee2-C",
+    "recipient_level": "C",
+    "total_face_value_loan_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_face_value_loan_transactions": {
+      "__type__": "int",
+      "empty": false
+    },
+    "total_transaction_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_transactions": {
+      "__type__": "int",
+      "empty": false
+    },
+    "uei": "HLWWEH2CCXW5"
+  }
+}

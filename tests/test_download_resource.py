@@ -4,6 +4,7 @@ import pytest
 
 from tests.mocks.mock_client import MockUSASpendingClient
 from usaspending.exceptions import DownloadError, ValidationError
+from usaspending.models import IDV, Award, Contract, Grant
 from usaspending.models.download import DownloadState
 
 
@@ -89,6 +90,31 @@ def test_queue_search_download(mock_usa_client, download_search_fixture_data):
     )
 
 
+def test_queue_search_download_object_classes_warns_but_forwards(
+    mock_usa_client, download_search_fixture_data
+):
+    """object_classes triggers a UserWarning yet is still forwarded unmodified."""
+    mock_usa_client.mock_search_download(download_search_fixture_data)
+
+    query = mock_usa_client.awards.search().contracts().object_classes("10")
+    # Derive the expected filters from the query rather than re-typing them.
+    expected_filters = query.to_filters_payload()
+
+    with pytest.warns(UserWarning, match="object_classes"):
+        mock_usa_client.downloads.search(query, spending_level=["awards"])
+
+    # The unsupported filter is still sent to the API untouched.
+    mock_usa_client.assert_called_with(
+        MockUSASpendingClient.Endpoints.DOWNLOAD_SEARCH,
+        method="POST",
+        json={
+            "filters": expected_filters,
+            "file_format": "csv",
+            "spending_level": ["awards"],
+        },
+    )
+
+
 def test_queue_search_download_omits_unset_options(mock_usa_client, download_search_fixture_data):
     """Optional params left as None are omitted from the request payload."""
     mock_usa_client.mock_search_download(download_search_fixture_data)
@@ -132,6 +158,102 @@ def test_search_download_passes_all_options(mock_usa_client, download_search_fix
             "limit": 1000,
         },
     )
+
+
+class TestAwardDownloadDispatch:
+    """Award.download() wires a model type to a DownloadResource method.
+
+    That link is what nothing else covers: the registry tests in
+    test_award_category_registry.py check that each declared download type names
+    a real method, but not that an award of that type reaches it.
+    """
+
+    @pytest.mark.parametrize(
+        ("model", "award_id", "endpoint"),
+        [
+            pytest.param(
+                Contract,
+                "CONT_AWD_123",
+                "/download/contract/",
+                id="Contract",
+            ),
+            pytest.param(
+                Grant,
+                "ASST_NON_456",
+                "/download/assistance/",
+                id="Grant",
+            ),
+            pytest.param(
+                IDV,
+                "IDV_321",
+                "/download/idv/",
+                id="IDV",
+            ),
+        ],
+    )
+    def test_each_award_type_queues_at_its_own_endpoint(
+        self, mock_usa_client, model, award_id, endpoint
+    ):
+        """The endpoints are written out, so the registry cannot confirm itself."""
+        mock_usa_client.mock_download_queue(model._download_type, award_id)
+        award = model({"generated_unique_award_id": award_id}, mock_usa_client)
+
+        job = award.download()
+
+        assert job.state == DownloadState.PENDING
+        mock_usa_client.assert_called_with(
+            endpoint,
+            method="POST",
+            json={"award_id": award_id, "file_format": "csv"},
+        )
+
+    def test_the_file_format_reaches_the_queue_request(self, mock_usa_client):
+        """The argument is forwarded positionally, so an order slip would swap it."""
+        mock_usa_client.mock_download_queue("contract", "CONT_AWD_123")
+        award = Contract({"generated_unique_award_id": "CONT_AWD_123"}, mock_usa_client)
+
+        award.download(file_format="tsv")
+
+        mock_usa_client.assert_called_with(
+            MockUSASpendingClient.Endpoints.DOWNLOAD_CONTRACT,
+            method="POST",
+            json={"award_id": "CONT_AWD_123", "file_format": "tsv"},
+        )
+
+    def test_an_award_without_a_download_type_is_refused(self, mock_usa_client):
+        """Direct payments and other assistance have no bulk-download endpoint."""
+        award = Award({"generated_unique_award_id": "ASST_NON_000"}, mock_usa_client)
+
+        with pytest.raises(NotImplementedError, match="Download not supported"):
+            award.download()
+
+        assert mock_usa_client.get_request_count() == 0
+
+    def test_an_unrecognized_download_type_is_refused(self, mock_usa_client):
+        """A subclass declaring its own type gets a named error, not an opaque one.
+
+        The dispatch resolves the method by name, so without the guard a type
+        naming some other DownloadResource method fails on the call itself, with
+        a TypeError about argument counts that says nothing about download types.
+        """
+
+        class Spreadsheet(Contract):
+            """A model declaring a download type the API does not offer."""
+
+            _download_type = "status"
+
+        award = Spreadsheet({"generated_unique_award_id": "CONT_AWD_123"}, mock_usa_client)
+
+        with pytest.raises(NotImplementedError, match="unknown download type 'status'"):
+            award.download()
+
+    def test_an_award_without_an_id_is_refused(self, mock_usa_client):
+        """The queue request is keyed on the award ID, so a partial award cannot make one."""
+        award = Contract({"piid": "80GSFC18C0008"}, mock_usa_client)
+        award._details_fetched = True
+
+        with pytest.raises(ValidationError, match="generated_unique_award_id"):
+            award.download()
 
 
 def test_search_download_rejects_non_query(mock_usa_client):

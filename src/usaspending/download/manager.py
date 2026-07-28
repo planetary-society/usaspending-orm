@@ -67,7 +67,9 @@ class DownloadManager:
         Queues a download combining award, transaction, and subaward data.
 
         Sends a request to the ``/download/search/`` endpoint, which generates a single
-        zip file of records matching the supplied search filters.
+        zip file of records matching the supplied search filters. The endpoint's
+        validator silently drops filter keys it does not recognize, such as
+        ``object_classes``, so those filters do not narrow the resulting download.
 
         Args:
             filters: The standard search ``filters`` object, as built by an

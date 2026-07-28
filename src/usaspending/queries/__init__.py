@@ -33,7 +33,7 @@ Example:
     ...     .limit(50)
     ... )
     >>> for award in awards:
-    ...     print(f"{award.award_identifier}: ${award.total_obligation:,.2f}")
+    ...     print(f"{award.award_identifier}: ${award.total_obligation or 0:,.2f}")
 """
 
 from __future__ import annotations
@@ -66,6 +66,7 @@ from .recipients_search import RecipientsSearch
 from .spending_search import SpendingSearch
 from .sub_agency_query import SubAgencyQuery
 from .subawards_search import SubAwardsSearch
+from .tas_agencies_query import TASAgenciesQuery
 from .tas_codes_query import TASCodesQuery
 from .transactions_search import TransactionsSearch
 
@@ -94,6 +95,7 @@ __all__ = [
     "SpendingSearch",
     "SubAgencyQuery",
     "SubAwardsSearch",
+    "TASAgenciesQuery",
     "TASCodesQuery",
     "TransactionsSearch",
     "USASpendingError",

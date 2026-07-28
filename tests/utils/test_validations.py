@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import datetime
+import warnings
 from enum import Enum
 
 import pytest
 
 from usaspending.exceptions import ValidationError
 from usaspending.utils.validations import (
+    normalize_recipient_id,
     parse_date_string,
     parse_enum_value,
     validate_non_empty_string,
@@ -101,6 +103,42 @@ class TestParseDateString:
         result = parse_date_string(input_date, "end_date")
         assert result is input_date
 
+    def test_datetime_object_returns_date_portion(self):
+        """datetime input is narrowed to its date() portion.
+
+        datetime is a subclass of date, so a bare ``isinstance(x, date)`` check
+        lets one through unchanged, leaking a datetime out of a function
+        annotated ``-> date``. Callers then compare it against a real date and
+        get a TypeError. ``to_date`` fixed the same defect; this is the sibling.
+        """
+        result = parse_date_string(datetime.datetime(2024, 3, 20, 14, 30, 45), "end_date")
+
+        assert type(result) is datetime.date
+        assert result == datetime.date(2024, 3, 20)
+
+    @pytest.mark.parametrize("value", [None, 20240101, 1.5, b"2024-01-01", [], object()])
+    def test_a_value_that_is_not_a_date_at_all_raises_validation_error(self, value):
+        """An unusable type raises the documented error, not a raw TypeError.
+
+        The mirror of ``to_date``'s policy: this is the strict entry point, so an
+        unusable value is a caller mistake worth naming the field for. It used to
+        escape as ``TypeError: strptime() argument 1 must be str``, which is
+        outside the documented ``Raises`` contract and names nothing useful.
+        ``None`` is the one that matters, since threading an Optional through is
+        the ordinary way to arrive here.
+        """
+        with pytest.raises(ValidationError, match="Invalid my_field format"):
+            parse_date_string(value, "my_field")
+
+    def test_the_error_names_the_documented_format_not_a_strftime_pattern(self):
+        """The message quotes YYYY-MM-DD, which is what the docstring promises.
+
+        A public error string is API surface, so leaking ``%Y-%m-%d`` into it
+        exposed an implementation detail the caller never supplied.
+        """
+        with pytest.raises(ValidationError, match=r"Expected 'YYYY-MM-DD'"):
+            parse_date_string("15/01/2024", "start_date")
+
     def test_invalid_format_raises_error(self):
         """Test that invalid date format raises ValidationError."""
         with pytest.raises(ValidationError, match="Invalid start_date format"):
@@ -125,6 +163,69 @@ class TestParseDateString:
         """Test that default format is YYYY-MM-DD."""
         result = parse_date_string("2024-12-25", "xmas")
         assert result == datetime.date(2024, 12, 25)
+
+
+class TestParseDateStringDeprecatedFormatStr:
+    """The 0.7.3 ``format_str`` parameter, restored as deprecated but working.
+
+    It was dropped outright, which broke any caller that passed one. It parses
+    again, warns, and is scheduled for removal; the supported call is untouched
+    and must stay that way, which is what the first test pins.
+    """
+
+    @pytest.mark.parametrize("kwargs", [{}, {"format_str": "%Y-%m-%d"}])
+    def test_the_supported_call_warns_about_nothing(self, kwargs):
+        """Omitting the parameter, or spelling out its default, costs nothing.
+
+        A caller who wrote ``format_str="%Y-%m-%d"`` asked for exactly what the
+        library still does, so there is as little to warn them about as there is
+        for the caller who passed nothing.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+
+            assert parse_date_string("2024-01-15", "start_date", **kwargs) == datetime.date(
+                2024, 1, 15
+            )
+
+    def test_a_non_default_format_parses_and_warns_against_the_caller_line(self):
+        """The deprecated path still reads what 0.7.3 read, and says so usefully.
+
+        The filename assertion is what pins the stacklevel: a deprecation reported
+        against a file inside the library tells the caller nothing about which of
+        their calls to change.
+        """
+        with pytest.warns(DeprecationWarning, match="format_str") as caught:
+            result = parse_date_string("15/01/2024", "start_date", format_str="%d/%m/%Y")
+
+        assert result == datetime.date(2024, 1, 15)
+        assert caught[0].filename == __file__
+
+    @pytest.mark.parametrize("value", ["2024-01-15", None])
+    def test_a_value_the_supplied_format_cannot_read_raises_validation_error(self, value):
+        """A parse failure keeps the documented exception, and quotes the caller's format.
+
+        ``None`` covers the TypeError that ``strptime`` raises for a non-string,
+        which the supported path stopped leaking. The pattern is echoed here where
+        it is not echoed on the supported path, since this one the caller supplied.
+        """
+        with (
+            pytest.warns(DeprecationWarning),
+            pytest.raises(ValidationError, match=r"Invalid my_field format: .*Expected '%d/%m/%Y'"),
+        ):
+            parse_date_string(value, "my_field", format_str="%d/%m/%Y")
+
+    @pytest.mark.parametrize(
+        "value",
+        [datetime.date(2024, 3, 20), datetime.datetime(2024, 3, 20, 14, 30, 45)],
+    )
+    def test_a_date_like_value_ignores_the_format_but_still_warns(self, value):
+        """The format is moot for a date, yet the parameter is still on its way out."""
+        with pytest.warns(DeprecationWarning, match="format_str"):
+            result = parse_date_string(value, "end_date", format_str="%d/%m/%Y")
+
+        assert type(result) is datetime.date
+        assert result == datetime.date(2024, 3, 20)
 
 
 # ==============================================================================
@@ -224,3 +325,55 @@ class TestValidatorsIntegration:
 
         result = parse_enum_value("NEW_AWARDS_ONLY", AwardDateType, "date_type", normalize=True)
         assert result == AwardDateType.NEW_AWARDS_ONLY
+
+
+class TestNormalizeRecipientId:
+    """Edge cases for recipient-ID normalization.
+
+    This was implemented twice with divergent algorithms until 0.8.0, so the
+    contract is pinned in one place now. See
+    tests/test_characterization.py::TestRecipientIdNormalizationIsSingleSourced
+    for the cross-path agreement it guarantees.
+    """
+
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            # Already-normal forms
+            ("abc123-C", "abc123-C"),
+            ("xyz789-P", "xyz789-P"),
+            ("abc123", "abc123"),
+            # 'R' is avoided whenever another level is available: measured
+            # live, it is the record that can report zero spending
+            ("abc123-['C','R']", "abc123-C"),
+            ("abc123-['R','C']", "abc123-C"),
+            ("abc123-['P','R']", "abc123-P"),
+            # ...but kept when it is the only level offered
+            ("abc123-['R']", "abc123-R"),
+            ("abc123-['C']", "abc123-C"),
+            ("xyz789-['P']", "xyz789-P"),
+            ("xyz789-['P','C']", "xyz789-P"),
+            # Levels are case-insensitive
+            ("abc123-['c','r']", "abc123-C"),
+            # Whitespace inside and around the list
+            ("xyz789-[ 'P' , 'C' ]", "xyz789-P"),
+            ("  abc123-C  ", "abc123-C"),
+            # An accidental trailing slash is dropped
+            ("abc123-C/", "abc123-C"),
+            ("xyz789-['P']/", "xyz789-P"),
+            # Empty brackets do not match the pattern and pass through
+            ("abc123-[]", "abc123-[]"),
+            # A list of empty tokens yields the bare hash, not a trailing dash
+            ("abc123-['']", "abc123"),
+            ("abc123-['','']", "abc123"),
+            ("abc123-[ ]", "abc123"),
+            ("abc123-[,]", "abc123"),
+        ],
+    )
+    def test_normalization(self, raw, expected):
+        assert normalize_recipient_id(raw) == expected
+
+    @pytest.mark.parametrize("value", [None, 123, [], {}])
+    def test_non_string_passes_through(self, value):
+        """Defensive: this runs during model construction on raw API data."""
+        assert normalize_recipient_id(value) == value

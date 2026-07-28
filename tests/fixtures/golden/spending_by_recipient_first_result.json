@@ -1,0 +1,68 @@
+{
+  "class": "RecipientSpending",
+  "properties": {
+    "alternate_names": [
+      "California Institute of Techno"
+    ],
+    "amount": "Decimal(2566048830.22)",
+    "business_categories": [
+      "category_business",
+      "corporate_entity_tax_exempt",
+      "educational_institution",
+      "higher_education",
+      "nonprofit",
+      "other_than_small_business",
+      "private_institution_of_higher_education",
+      "special_designations",
+      "us_owned_business"
+    ],
+    "business_types": [
+      "category_business",
+      "corporate_entity_tax_exempt",
+      "educational_institution",
+      "higher_education",
+      "nonprofit",
+      "other_than_small_business",
+      "private_institution_of_higher_education",
+      "special_designations",
+      "us_owned_business"
+    ],
+    "code": "095633152",
+    "duns": "095633152",
+    "location": {
+      "__type__": "Location"
+    },
+    "name": "California Institute of Technology",
+    "parent": {
+      "__type__": "Recipient"
+    },
+    "parents": {
+      "__type__": "list",
+      "empty": false
+    },
+    "recipient_id": "6e76fa33-2d96-c636-941c-bca1997db076-C",
+    "recipient_level": "C",
+    "spending_level": "transactions",
+    "total_face_value_loan_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_face_value_loan_transactions": {
+      "__type__": "int",
+      "empty": false
+    },
+    "total_outlays": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "total_transaction_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_transactions": {
+      "__type__": "int",
+      "empty": false
+    },
+    "uei": "YC1YP79BFD19"
+  }
+}

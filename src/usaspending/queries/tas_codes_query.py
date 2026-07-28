@@ -2,36 +2,31 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from ..logging_config import USASpendingLogger
 from ..utils.validations import validate_non_empty_string
-from .client_side_query_builder import ClientSideQueryBuilder
-from .filters import KeywordsFilter, SimpleListFilter, SimpleStringFilter
+from .filter_tree_query import FilterTreeQuery
+from .filters import SimpleStringFilter
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
     from ..models.treasury_account_symbol import TreasuryAccountSymbol
 
-logger = USASpendingLogger.get_logger(__name__)
 
-
-class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
+class TASCodesQuery(FilterTreeQuery["TreasuryAccountSymbol"]):
     """Lazy query for Treasury Account Symbols (TAS).
 
     Provides a query-like interface for fetching TAS codes under a
     federal account. Supports iteration, indexing, count operations, and
     client-side filtering.
 
-    The query is lazily evaluated - the API is only called when results
-    are actually accessed (iteration, indexing, count, etc.).
-
     Filters:
         - code(): Filter by TAS code.
         - codes(): Filter by multiple TAS codes.
         - availability_type_code(): Filter by availability type (e.g., "X").
-        - description(): Filter by description text (case-insensitive substring).
-        - fiscal_year(): Filter by fiscal year coverage.
+        - description(): Filter by description text (substring, case-insensitive).
+        - name(): Alias for description().
+        - fiscal_year(): Filter to TAS codes covering a fiscal year.
 
     Example:
         >>> tas_codes = account.tas_codes
@@ -60,86 +55,31 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
             toptier_code: Agency toptier code (e.g., "080").
             federal_account: Federal account code (e.g., "080-0120").
         """
-        self._client = client
         self._toptier_code = toptier_code
         self._federal_account = federal_account
-        self._results: list[TreasuryAccountSymbol] | None = None
-        super().__init__(
-            items=[],
-            keyword_fields=["description", "name"],
-        )
+        super().__init__(client)
 
-    def _fetch(self) -> list[TreasuryAccountSymbol]:
-        """Fetch TAS codes from the API.
+    def _scope(self) -> dict[str, str]:
+        """Return the agency and federal account this query is scoped to."""
+        return {
+            "toptier_code": self._toptier_code,
+            "federal_account": self._federal_account,
+        }
 
-        Returns:
-            List of TreasuryAccountSymbol model instances.
-        """
-        if self._results is not None:
-            return self._results
+    def _build_model(self, data: dict[str, Any]) -> TreasuryAccountSymbol:
+        """Build a TreasuryAccountSymbol, carrying its scope down to it."""
+        from ..models.treasury_account_symbol import TreasuryAccountSymbol
 
-        # Handle empty parameters
-        if not self._toptier_code or not self._federal_account:
-            self._results = []
-            return self._results
-
-        endpoint = self.ENDPOINT.format(
+        return TreasuryAccountSymbol(
+            data,
+            self._client,
             toptier_code=self._toptier_code,
             federal_account=self._federal_account,
         )
 
-        logger.debug(
-            "Fetching TAS codes for %s/%s",
-            self._toptier_code,
-            self._federal_account,
-        )
-
-        response = self._client._make_request("GET", endpoint)
-        results = response.get("results", [])
-
-        from ..models.treasury_account_symbol import TreasuryAccountSymbol
-
-        self._results = [
-            TreasuryAccountSymbol(
-                data,
-                self._client,
-                toptier_code=self._toptier_code,
-                federal_account=self._federal_account,
-            )
-            for data in results
-            if isinstance(data, dict)
-        ]
-
-        logger.debug("Fetched %d TAS codes", len(self._results))
-
-        return self._results
-
-    def _materialize(self) -> list[TreasuryAccountSymbol]:
-        """Return fetched TAS codes for client-side filtering."""
-        return list(self._fetch())
-
-    def code(self, code: str) -> TASCodesQuery:
-        """Filter by TAS code.
-
-        Args:
-            code: TAS code (e.g., "080-2011/2012-0120-000").
-
-        Returns:
-            TASCodesQuery: Filtered query.
-        """
-        validated = validate_non_empty_string(code, "code")
-        return self._add_filter_object(SimpleStringFilter(key="id", value=validated))
-
-    def codes(self, *codes: str) -> TASCodesQuery:
-        """Filter by multiple TAS codes.
-
-        Args:
-            *codes: One or more TAS codes.
-
-        Returns:
-            TASCodesQuery: Filtered query.
-        """
-        return self._add_filter_object(SimpleListFilter(key="id", values=list(codes)))
+    def _new_instance(self) -> TASCodesQuery:
+        """Reconstruct with the required toptier code and federal account."""
+        return self.__class__(self._client, self._toptier_code, self._federal_account)
 
     def availability_type_code(self, code: str) -> TASCodesQuery:
         """Filter by availability type code.
@@ -154,18 +94,6 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
         return self._add_filter_object(
             SimpleStringFilter(key="availability_type_code", value=validated)
         )
-
-    def description(self, text: str) -> TASCodesQuery:
-        """Filter by description text (case-insensitive substring).
-
-        Args:
-            text: Description text to search for.
-
-        Returns:
-            TASCodesQuery: Filtered query.
-        """
-        validated = validate_non_empty_string(text, "description")
-        return self._add_filter_object(KeywordsFilter(values=[validated]))
 
     def name(self, text: str) -> TASCodesQuery:
         """Alias for description().
@@ -192,22 +120,3 @@ class TASCodesQuery(ClientSideQueryBuilder["TreasuryAccountSymbol"]):
             return tas.fiscal_year(year)
 
         return self._add_filter(predicate)
-
-    def _clone(self) -> TASCodesQuery:
-        """Create a copy for method chaining."""
-        clone = self.__class__(self._client, self._toptier_code, self._federal_account)
-        clone._results = self._results
-        clone._filter_objects = self._filter_objects.copy()
-        clone._predicate_filters = self._predicate_filters.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
-        return clone
-
-    def __repr__(self) -> str:
-        """String representation of TASCodesQuery."""
-        if self._results is not None:
-            return f"<TASCodesQuery {self._toptier_code}/{self._federal_account} [{len(self._results)} results]>"
-        return f"<TASCodesQuery {self._toptier_code}/{self._federal_account} [not fetched]>"

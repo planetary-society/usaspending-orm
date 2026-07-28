@@ -11,7 +11,7 @@ from typing import Any
 
 from usaspending import USASpendingClient
 from usaspending.config import config
-from usaspending.exceptions import APIError, HTTPError
+from usaspending.exceptions import APIError, HTTPError, RateLimitError
 
 from .response_builder import ResponseBuilder
 
@@ -95,6 +95,9 @@ class MockUSASpendingClient(USASpendingClient):
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
 
+        # Set by forbid_requests() once a test has finished its setup.
+        self._requests_forbidden = False
+
         # Fixture directory
         self._fixture_dir = Path(__file__).parent.parent / "fixtures"
 
@@ -119,8 +122,11 @@ class MockUSASpendingClient(USASpendingClient):
             Mocked API response
 
         Raises:
-            APIError: For mocked 400 errors
-            HTTPError: For mocked non-400 errors
+            AssertionError: If requests have been forbidden. See
+                :meth:`forbid_requests`.
+            APIError: For mocked 400 and 422 errors
+            RateLimitError: For mocked 429 errors
+            HTTPError: For every other mocked error
         """
         # Track request
         request_data = {
@@ -132,6 +138,11 @@ class MockUSASpendingClient(USASpendingClient):
         }
         self._request_history.append(request_data)
         self._request_counts[endpoint] += 1
+
+        # Recorded before raising, so get_request_count() and get_last_request()
+        # still describe the attempt the failure is about.
+        if self._requests_forbidden:
+            raise AssertionError(f"no request allowed: {method} {endpoint}")
 
         # Simulate rate limiting if enabled
         if self._simulate_rate_limit:
@@ -147,6 +158,13 @@ class MockUSASpendingClient(USASpendingClient):
                     error_data.get("detail", error_data.get("error", f"HTTP {status_code} error")),
                     status_code=status_code,
                     response_body=error_data,
+                )
+            elif status_code == 429:
+                # The real client's retry handler exhausts its ladder and raises
+                # this rather than an HTTPError carrying the status.
+                raise RateLimitError(
+                    error_data.get("error", "Rate limit exceeded"),
+                    retry_after=error_data.get("retry_after"),
                 )
             else:
                 raise HTTPError(
@@ -248,6 +266,7 @@ class MockUSASpendingClient(USASpendingClient):
         endpoint: str,
         items: list[dict[str, Any]],
         page_size: int = 100,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Automatically paginate a list of items.
 
@@ -255,6 +274,8 @@ class MockUSASpendingClient(USASpendingClient):
             endpoint: API endpoint
             items: List of all items to paginate
             page_size: Items per page
+            metadata: Extra page_metadata keys added to every page, for
+                endpoints that report a total there (optional)
         """
         # Clear any existing responses and reset index
         self._responses[endpoint] = []
@@ -267,13 +288,15 @@ class MockUSASpendingClient(USASpendingClient):
             has_next = (i + page_size) < len(items)
 
             response = ResponseBuilder.paginated_response(
-                results=page_items, page=page_num, has_next=has_next
+                results=page_items, page=page_num, has_next=has_next, metadata=metadata
             )
             self._responses[endpoint].append(response)
 
         # If no items, add single empty response
         if not items:
-            self._responses[endpoint].append(ResponseBuilder.paginated_response([], has_next=False))
+            self._responses[endpoint].append(
+                ResponseBuilder.paginated_response([], has_next=False, metadata=metadata)
+            )
 
         # Automatically set up count endpoint (skips if already configured)
         self._auto_setup_count_endpoint(endpoint, len(items))
@@ -332,6 +355,18 @@ class MockUSASpendingClient(USASpendingClient):
             if count_endpoint:
                 self.set_response(count_endpoint, error_data, status_code=error_code)
 
+    def clear_error_response(self, endpoint: str) -> None:
+        """Stop simulating an error for an endpoint.
+
+        Lets a test model a failure that does not repeat: set an error, exercise
+        the failing call, clear it, then exercise the retry against a normal
+        response. Any response set for the endpoint is left in place.
+
+        Args:
+            endpoint: API endpoint to stop failing.
+        """
+        self._error_responses.pop(endpoint, None)
+
     def add_response_sequence(self, endpoint: str, responses: list[dict[str, Any]]) -> None:
         """Add multiple responses for sequential calls.
 
@@ -374,6 +409,29 @@ class MockUSASpendingClient(USASpendingClient):
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
 
+    def forbid_requests(self) -> None:
+        """Make every further request a test failure.
+
+        For tests whose subject is that a model answered from data it already
+        held. A configured response cannot show that: the model reads the answer
+        either way, and the test passes whether or not it went to the network.
+        Once this is set, the attempt itself raises ``AssertionError`` naming the
+        method and endpoint, so the failure lands at the read that caused it
+        rather than in a request-count assertion at the end.
+
+        Call it after the test's setup, so a fixture may still be served and only
+        the reads under test are forbidden. Attempts are still recorded, so
+        :meth:`get_request_count` and :meth:`get_last_request` keep working, and
+        :meth:`reset` clears them as usual.
+
+        Example:
+            >>> mock_usa_client.set_response("/awards/A1/", recorded_payload)
+            >>> award = mock_usa_client.awards.find_by_generated_id("A1")
+            >>> mock_usa_client.forbid_requests()
+            >>> award.total_obligation  # raises if this reaches the network
+        """
+        self._requests_forbidden = True
+
     def _auto_setup_count_endpoint(self, search_endpoint: str, total_count: int) -> None:
         """Automatically set up count endpoint for a search endpoint.
 
@@ -415,6 +473,11 @@ class MockUSASpendingClient(USASpendingClient):
 
     def get_request_count(self, endpoint: str | None = None) -> int:
         """Get count of requests made.
+
+        When asserting on a total, read the query with ``all()`` rather than
+        ``list()``: ``list()`` also consults ``__len__`` for a size hint, which
+        costs a count request a number of times that varies by Python version
+        (twice on 3.9, once after).
 
         Args:
             endpoint: Specific endpoint to count, or None for total
@@ -659,11 +722,9 @@ class MockUSASpendingClient(USASpendingClient):
             if "Recipient Name" not in award:
                 award["Recipient Name"] = "Test Recipient"
 
+        # Sets up the count endpoint too, unless the caller already configured one.
+        # Doing it here instead would bypass that check and overwrite the caller's.
         self.set_paginated_response("/search/spending_by_award/", awards, page_size)
-
-        # Also mock the count endpoint since __len__ now calls count()
-        # Default to contracts category for backward compatibility
-        self.mock_award_count(contracts=len(awards))
 
     def mock_award_count(self, **counts) -> None:
         """Set up mock response for award count.

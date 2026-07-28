@@ -1,6 +1,6 @@
 [project]
 name = "usaspending-orm"
-version = "0.7.2"
+version = "0.8.0"
 description = "A Python ORM wrapper for the USAspending.gov API with intuitive queries, automatic pagination, and smart caching"
 authors = [
     {name = "Casey Dreier", email = "casey.dreier@planetary.org"}
@@ -21,6 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
@@ -39,8 +41,23 @@ Documentation = "https://github.com/planetary-society/usaspending-orm/blob/main/
 [dependency-groups]
 dev = [
     "pytest>=8.4.1,<9",
+    "pytest-cov>=5,<8",
     "requests-mock>=1.12.1,<2",
     "ruff>=0.12.7,<1",
+]
+
+[tool.hatch.build.targets.sdist]
+# An allowlist so the sdist does not depend on working-tree cleanliness:
+# hatchling's fallback includes any file git does not ignore, untracked ones
+# included.
+include = [
+    "src/usaspending",
+    "tests",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE",
+    "api-docs-links.md",
+    "uv.lock",
 ]
 
 [build-system]

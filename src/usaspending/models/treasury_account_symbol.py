@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
+from ..utils.numbers import to_int
 from .base_model import ClientAwareModel
 
 if TYPE_CHECKING:
@@ -188,8 +189,7 @@ class TreasuryAccountSymbol(ClientAwareModel):
             The beginning fiscal year (e.g., 2011), or None if this is
             a no-year account (availability_type_code == 'X').
         """
-        bpoa_str = self._parse_tas_id()["bpoa"]
-        return int(bpoa_str) if bpoa_str else None
+        return to_int(self._parse_tas_id()["bpoa"])
 
     @property
     def epoa(self) -> int | None:
@@ -199,8 +199,7 @@ class TreasuryAccountSymbol(ClientAwareModel):
             The ending fiscal year (e.g., 2012), or None if this is
             a no-year account (availability_type_code == 'X').
         """
-        epoa_str = self._parse_tas_id()["epoa"]
-        return int(epoa_str) if epoa_str else None
+        return to_int(self._parse_tas_id()["epoa"])
 
     @property
     def availability_type_code(self) -> str | None:

@@ -5,7 +5,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from ..utils.formatter import contracts_titlecase, to_decimal, to_int
+from ..utils.numbers import to_decimal, to_int
+from ..utils.textcase import titlecase_name
 from .base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -17,6 +18,12 @@ class SubTierAgency(BaseModel):
 
     This model represents a subtier agency with its essential properties,
     including nested office information.
+
+    Note:
+        The client is held as a plain attribute rather than through
+        ``ClientAwareModel``. No property here issues a request, and ``offices``
+        reshapes local data only, so the weakref indirection would make it fail
+        once the client is collected.
     """
 
     def __init__(self, data: dict[str, Any], client: USASpendingClient | None = None):
@@ -30,7 +37,7 @@ class SubTierAgency(BaseModel):
         office_agency_name = data.get("office_agency_name")
         if office_agency_name and "children" not in data:
             # Create a synthetic child office from office_agency_name
-            office_child = {"name": contracts_titlecase(office_agency_name)}
+            office_child = {"name": titlecase_name(office_agency_name)}
             # Create a copy of data with the office child
             data = data.copy()
             data["children"] = [office_child]
@@ -45,7 +52,7 @@ class SubTierAgency(BaseModel):
         Returns:
             Optional[str]: The name of the subtier agency, or None.
         """
-        return contracts_titlecase(self.get_value("name"))
+        return titlecase_name(self.get_value("name"))
 
     @property
     def code(self) -> str | None:

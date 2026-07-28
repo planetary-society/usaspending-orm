@@ -1,0 +1,74 @@
+{
+  "class": "Agency",
+  "properties": {
+    "abbreviation": "NASA",
+    "about_agency_data": null,
+    "agency_id": 862,
+    "awards": {
+      "__type__": "AwardsSearch"
+    },
+    "code": "080",
+    "congressional_justification_url": "https://www.nasa.gov/cj",
+    "contract_obligations": {
+      "__network_backed__": true
+    },
+    "def_codes": {
+      "__type__": "list",
+      "empty": false
+    },
+    "direct_payment_obligations": {
+      "__network_backed__": true
+    },
+    "federal_accounts": {
+      "__type__": "FederalAccountsQuery"
+    },
+    "fiscal_year": {
+      "__type__": "int",
+      "empty": false
+    },
+    "grant_obligations": {
+      "__network_backed__": true
+    },
+    "has_agency_page": false,
+    "icon_filename": "NASA.jpg",
+    "id": 862,
+    "idv_obligations": {
+      "__network_backed__": true
+    },
+    "latest_action_date": {
+      "__network_backed__": true
+    },
+    "loan_obligations": {
+      "__network_backed__": true
+    },
+    "messages": {
+      "__type__": "list",
+      "empty": true
+    },
+    "mission": "Drive advances in science, technology, aeronautics, and space exploration to enhance knowledge, education, innovation, economic vitality, and stewardship of Earth.",
+    "name": "National Aeronautics and Space Administration",
+    "obligations": {
+      "__network_backed__": true
+    },
+    "office_agency_name": null,
+    "other_obligations": {
+      "__network_backed__": true
+    },
+    "slug": null,
+    "subagencies": {
+      "__network_backed__": true
+    },
+    "subtier_agency_count": {
+      "__type__": "int",
+      "empty": false
+    },
+    "toptier_code": "080",
+    "total_obligations": {
+      "__network_backed__": true
+    },
+    "transaction_count": {
+      "__network_backed__": true
+    },
+    "website": "https://www.nasa.gov/"
+  }
+}

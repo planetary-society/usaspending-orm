@@ -11,6 +11,7 @@ from tests.mocks.mock_client import MockUSASpendingClient
 from usaspending.exceptions import ValidationError
 from usaspending.models.subaward import SubAward
 from usaspending.queries.subawards_search import SubAwardsSearch
+from usaspending.utils.textcase import titlecase_name
 
 
 class TestSubAwardsSearch:
@@ -58,7 +59,6 @@ class TestSubAwardsSearch:
 
     def test_transform_result_returns_subaward(self, mock_usa_client, subawards_response):
         """Test that transform_result returns SubAward instances."""
-        from usaspending.utils.formatter import contracts_titlecase
 
         search = SubAwardsSearch(mock_usa_client)
 
@@ -67,7 +67,7 @@ class TestSubAwardsSearch:
 
         assert isinstance(result, SubAward)
         assert result.id == subaward_data["internal_id"]
-        expected_name = contracts_titlecase(subaward_data["Sub-Awardee Name"])
+        expected_name = titlecase_name(subaward_data["Sub-Awardee Name"])
         assert result.sub_awardee_name == expected_name
 
     def test_get_fields_for_contract_subawards(self, mock_usa_client):
@@ -181,6 +181,11 @@ class TestSubAwardsSearch:
         assert hasattr(search, "place_of_performance_locations")
         assert hasattr(search, "recipient_locations")
         assert hasattr(search, "award_amounts")
+
+    def test_object_classes_not_supported(self, mock_usa_client):
+        """Test that object_classes raises ValidationError for subaward searches."""
+        with pytest.raises(ValidationError, match="not supported for subaward"):
+            SubAwardsSearch(mock_usa_client).object_classes("10")
 
     def test_immutability(self, mock_usa_client):
         """Test that SubAwardsSearch maintains immutability."""

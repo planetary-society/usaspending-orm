@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 from ..download.job import DownloadJob
@@ -118,6 +119,12 @@ class DownloadResource(BaseResource):
         Raises:
             ValidationError: If ``query`` is not an awards search query.
 
+        Note:
+            The ``/download/search/`` endpoint ignores filter keys its validator does
+            not recognize, such as ``object_classes``. When the query carries such a
+            filter it is still forwarded unmodified, but a ``UserWarning`` is emitted to
+            flag that the download will not be narrowed by that filter.
+
         Example:
             >>> # Download National Aeronautics and Space Administration contracts for FY2024
             >>> query = (
@@ -138,8 +145,18 @@ class DownloadResource(BaseResource):
                 "for example client.awards.search().contracts()."
             )
 
+        filters = query.to_filters_payload()
+        if "object_classes" in filters:
+            warnings.warn(
+                "The 'object_classes' filter is not supported by the "
+                "/download/search/ endpoint and will be ignored by the API; "
+                "the download will not be narrowed by object class.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         return self._manager.queue_search_download(
-            query.to_filters_payload(),
+            filters,
             file_format=file_format,
             spending_level=spending_level,
             columns=columns,

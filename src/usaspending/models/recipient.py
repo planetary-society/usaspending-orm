@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import re
 from decimal import Decimal
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..logging_config import USASpendingLogger
-from ..utils.formatter import contracts_titlecase, to_decimal
+from ..utils.numbers import to_decimal
+from ..utils.textcase import titlecase_name
+from ..utils.validations import normalize_recipient_id
 from .lazy_record import LazyRecord
 from .location import Location
 
@@ -25,17 +26,41 @@ class Recipient(LazyRecord):
 
     This class provides access to recipient details, including name, IDs,
     location, and business categories.
+
+    An award search result reports its recipient as flat, title-cased keys where a
+    detail response sends a nested object. Both spellings are read here.
     """
 
-    # compiled once at import time
-    _LIST_SUFFIX_RE = re.compile(
-        r"""
-        ^(?P<base>.+?)          # everything before the dash (non-greedy)
-        -\[\s*(?P<body>[^\]]+)\]  #  -[  ... ]
-        $                       # end of string
-        """,
-        re.VERBOSE,
+    #: Every key of an award payload this model reads, which is both the projection
+    #: :meth:`_from_search_result` copies and the set an award tests to decide it
+    #: can build one of these without fetching. A key read by a property but
+    #: missing here is dropped on the way in, so `recipient_hash` belongs even
+    #: though no recorded search response carries it: it is the fallback identity
+    #: that :meth:`recipient_id` needs to lazy-load at all. A test pins the pair.
+    _SEARCH_KEYS: ClassVar[tuple[str, ...]] = (
+        "recipient_id",
+        "recipient_hash",
+        "Recipient Name",
+        "Recipient DUNS Number",
+        "Recipient UEI",
+        "Recipient Location",
     )
+
+    @classmethod
+    def _from_search_result(cls, data: dict[str, Any], client: USASpendingClient) -> Recipient:
+        """Build from an award search result, taking only the keys this model owns.
+
+        Copies rather than aliasing, since this is a lazy record whose ``raw`` is
+        replaced in place when a detail fetch fires.
+
+        Args:
+            data: An award search result, whose other keys are ignored.
+            client: The client the new model should hold.
+
+        Returns:
+            Recipient: A model whose ``raw`` holds only recipient data.
+        """
+        return cls({key: data[key] for key in cls._SEARCH_KEYS if key in data}, client)
 
     def __init__(
         self,
@@ -56,7 +81,7 @@ class Recipient(LazyRecord):
         # Apply recipient-specific ID cleaning
         rid = raw.get("recipient_id") or raw.get("recipient_hash")
         if rid:
-            raw["recipient_id"] = self._clean_recipient_id(rid)
+            raw["recipient_id"] = normalize_recipient_id(rid)
 
         super().__init__(raw, client)
 
@@ -64,7 +89,14 @@ class Recipient(LazyRecord):
         """Fetch full recipient details from the API.
 
         Returns:
-            Optional[Dict[str, Any]]: The recipient details dictionary, or None.
+            Optional[Dict[str, Any]]: The recipient details dictionary, or None if
+            there is no id to fetch with, or the API has no such recipient or
+            rejected the id.
+
+        Raises:
+            USASpendingError: If the failure is not an answer about this recipient,
+                such as a server error, a rate limit, or a closed client session.
+            requests.RequestException: If the request never reached the API.
         """
         recipient_id = self.recipient_id
         if not recipient_id:
@@ -78,49 +110,37 @@ class Recipient(LazyRecord):
             response = self._client._make_request("GET", endpoint)
             return response
         except Exception as e:
-            # If fetch fails, return None to avoid breaking the application
+            if not self._is_absent_record(e):
+                raise
             logger.error(f"Failed to fetch recipient details for {recipient_id}: {e}")
             return None
 
-    @staticmethod
-    def _clean_recipient_id(rid: str) -> str:
-        """Normalise list-annotated recipient IDs.
-
-        Sometimes these look like "abc123-['C','R']". This will select the
-        first letter after the dash.
-
-        Args:
-            rid: The raw recipient ID string.
-
-        Returns:
-            str: The normalized recipient ID.
-        """
-        if not isinstance(rid, str):
-            return rid  # defensive; shouldn't happen
-
-        rid = rid.strip().rstrip("/")  # drop accidental trailing slash
-
-        m = Recipient._LIST_SUFFIX_RE.match(rid)
-        if not m:
-            return rid  # already in normal form
-
-        base = m.group("base")
-        body = m.group("body")
-
-        # turn  "'C','R'"  or  "'R'"  etc.  into a list of clean tokens
-        tokens = [tok.strip().strip("'\"").upper() for tok in body.split(",") if tok.strip()]
-
-        letter = tokens[0]
-        return f"{base}-{letter}" if letter else base
-
     @property
     def recipient_id(self) -> str | None:
-        """Recipient identifier (hash).
+        """Recipient identifier (hash plus level suffix).
+
+        A raw ID reporting several levels, as ``"<hash>-['C', 'R']"``, is reduced
+        to one on construction. See :attr:`recipient_level` for which one, and
+        :func:`~usaspending.utils.validations.normalize_recipient_id` for why.
 
         Returns:
             Optional[str]: The recipient ID/hash, or None.
         """
         return self.get_value(["recipient_id", "recipient_hash"], default=None)
+
+    @property
+    def recipient_level(self) -> str | None:
+        """Which level of the recipient hierarchy this record describes.
+
+        ``"C"`` for a child, ``"P"`` for a parent, ``"R"`` for a recipient with
+        no parent. The same entity can exist at several levels, each a separate
+        record with its own totals, so this says which one is in hand. Reported
+        by the API rather than parsed from :attr:`recipient_id`.
+
+        Returns:
+            Optional[str]: The recipient level, or None when not reported.
+        """
+        return self._lazy_get("recipient_level")
 
     @property
     def name(self) -> str | None:
@@ -129,7 +149,7 @@ class Recipient(LazyRecord):
         Returns:
             Optional[str]: The recipient name in title case, or None.
         """
-        return contracts_titlecase(
+        return titlecase_name(
             self._lazy_get("name", "recipient_name", "Recipient Name", default=None)
         )
 
@@ -142,7 +162,7 @@ class Recipient(LazyRecord):
         """
         names = self._lazy_get("alternate_names", default=[])
         if isinstance(names, list):
-            return [contracts_titlecase(name) for name in names if isinstance(name, str)]
+            return [titlecase_name(name) for name in names if isinstance(name, str)]
         else:
             return []
 
@@ -162,7 +182,7 @@ class Recipient(LazyRecord):
         Returns:
             Optional[str]: The UEI, or None.
         """
-        return self._lazy_get("uei", "recipient_uei")
+        return self._lazy_get("uei", "recipient_uei", "Recipient UEI")
 
     @cached_property
     def parent(self) -> Recipient | None:
@@ -188,13 +208,23 @@ class Recipient(LazyRecord):
                 client=self._client,
             )
 
-    @cached_property
+    @property
     def parents(self) -> list[Recipient]:
         """List of parent recipients.
+
+        Each read returns a new list over the same cached models, so a caller that
+        sorts or pops it cannot disturb the next reader. Copying costs far less
+        than rebuilding the models, which is why the cache sits behind this rather
+        than on it.
 
         Returns:
             List[Recipient]: List of parent Recipient objects.
         """
+        return list(self._parents)
+
+    @cached_property
+    def _parents(self) -> list[Recipient]:
+        """Build the parent models once."""
         plist = []
         # Use _lazy_get to ensure parents data is loaded if not present
         parents_data = self._lazy_get("parents", default=[])
@@ -242,7 +272,7 @@ class Recipient(LazyRecord):
         Returns:
             Optional[Location]: The Location object, or None.
         """
-        data = self._lazy_get("location")
+        data = self._lazy_get("location", "Recipient Location")
         return Location(data) if data else None
 
     @property

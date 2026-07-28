@@ -5,6 +5,7 @@ import pytest
 from usaspending.exceptions import ValidationError
 from usaspending.models.award_types import CONTRACT_CODES, GRANT_CODES
 from usaspending.queries.agency_award_summary import AgencyAwardSummary
+from usaspending.queries.single_resource_base import SingleResourceBase
 
 
 class TestAgencyAwardSummaryInitialization:
@@ -17,18 +18,21 @@ class TestAgencyAwardSummaryInitialization:
 
 
 class TestAgencyAwardSummaryEndpoint:
-    """Test AgencyAwardSummary endpoint construction."""
+    """The endpoint is asserted end to end in TestAgencyAwardSummaryExecution.
 
-    def test_base_endpoint(self, mock_usa_client):
-        """Test base endpoint property."""
-        query = AgencyAwardSummary(mock_usa_client)
-        assert query._endpoint == "/agency/"
+    The class used to expose ``_endpoint`` and ``_construct_endpoint`` because
+    ``SingleResourceBase`` required them. It no longer inherits that base, so the
+    URL is built inline at its single call site and verified through the request
+    the client actually makes.
+    """
 
-    def test_construct_endpoint(self, mock_usa_client):
-        """Test endpoint construction with toptier_code."""
+    def test_requests_the_awards_endpoint(self, mock_usa_client):
         query = AgencyAwardSummary(mock_usa_client)
-        endpoint = query._construct_endpoint("080")
-        assert endpoint == "/agency/080/awards/"
+        mock_usa_client.set_response("/agency/080/awards/", {"toptier_code": "080"})
+
+        query.get_awards_summary("080")
+
+        mock_usa_client.assert_called_with("/agency/080/awards/", "GET")
 
 
 class TestAgencyAwardSummaryValidation:
@@ -259,12 +263,8 @@ class TestAgencyAwardSummaryExecution:
         assert result is not None
 
 
-class TestAgencyAwardSummaryNotImplemented:
-    """Test methods that should not be used."""
+class TestAgencyAwardSummaryIsNotAResourceFinder:
+    """This class returns an aggregate, not a single resource."""
 
-    def test_find_by_id_raises_not_implemented_error(self, mock_usa_client):
-        """Test that find_by_id raises NotImplementedError."""
-        query = AgencyAwardSummary(mock_usa_client)
-
-        with pytest.raises(NotImplementedError, match="Use get_awards_summary"):
-            query.find_by_id("080")
+    def test_is_not_a_single_resource_base(self, mock_usa_client):
+        assert not isinstance(AgencyAwardSummary(mock_usa_client), SingleResourceBase)

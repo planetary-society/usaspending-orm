@@ -1,0 +1,136 @@
+{
+  "class": "IDV",
+  "properties": {
+    "SEARCH_FIELDS": [
+      "Award ID",
+      "recipient_id",
+      "Recipient Name",
+      "Recipient DUNS Number",
+      "Recipient UEI",
+      "Recipient Location",
+      "Awarding Agency",
+      "Awarding Agency Code",
+      "Awarding Sub Agency",
+      "Awarding Sub Agency Code",
+      "Funding Agency",
+      "Funding Agency Code",
+      "Funding Sub Agency",
+      "Funding Sub Agency Code",
+      "Place of Performance City Code",
+      "Place of Performance State Code",
+      "Place of Performance Country Code",
+      "Place of Performance Zip5",
+      "Description",
+      "Last Modified Date",
+      "Base Obligation Date",
+      "prime_award_recipient_id",
+      "generated_internal_id",
+      "def_codes",
+      "COVID-19 Obligations",
+      "COVID-19 Outlays",
+      "Infrastructure Obligations",
+      "Infrastructure Outlays",
+      "Primary Place of Performance"
+    ],
+    "account_obligations_by_defc": [],
+    "account_outlays_by_defc": [],
+    "accounts": {
+      "__type__": "AwardAccountsQuery"
+    },
+    "award_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "award_identifier": "NNS14AA17B",
+    "award_type_code": "IDV_B_B",
+    "awarding_agency": {
+      "__type__": "Agency"
+    },
+    "awarding_subtier_agency": {
+      "__type__": "SubTierAgency"
+    },
+    "base_obligation_date": "2013-11-27",
+    "category": "idv",
+    "covid19_obligations": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "covid19_outlays": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "date_signed": "2013-11-27",
+    "description": "Igf::ot::igf the contractor shall provide engineering and scientific Research to NASA, other government agencies and various tenants at the john c. Stennis space center. The areas of work include rocket propulsion testing Research and development, project formulation, new business development, remote sensing applications, ecosystem integration and analysis, coastal community resiliency and sustainable development, water quality, climate change and variability effects on regional ecosystems, acoustics, image analysis, geographic information systems, computational fluid dynamics, polymers/ceramics, electron microscopy, micro-electromechanical systems, magneto hydrodynamics, diagnostics instrumentation, and other associated scientific, computational and engineering areas. Specific examples of past Research in several of these areas is shown is section 5 below. The Mississippi Research Consortium (MRC) is a collaboration of four Mississippi universities dedicated to providing Research and technology development to various State and federal agencies. The mrc consists of Jackson State University (JSU), Mississippi State University (MSU), University of Southern Mississippi (USM) and University of Mississippi (UM). Section 2 administering institution: the contract will be administered by a single mrc institution that will serve as the mrc liaison to NASA in the performance of this contract. The administering institution will be responsible for: a. Receiving statements of work from the NASA office of procurement. B.distribute the SOW within three work days to each mrc institution office of sponsored Research with instructions on the procedure and required schedule for submitting proposals. C. Collecting and reviewing the proposals to verify the technical requirements are met, including budget and schedule. D.providing all submitted proposals to NASA, along with mrc recommendation of the proposal that best meets the requirements of the individual SOW and provides best value to the government.E.provide the total cost of the proposal to government.f.entering into a contract with the mrc institution selected by NASA when a fixed cost Research proposal is funded by NASA. G.performing general oversight and administrative functions.h.providing monthly invoices. I.providing status reports on project schedules to the mrc institutions, the NASA Contracting Officer (CO) and the NASA Contracting Officer Representatives (COR) j.require each Principal Investigator (PI) to provide a technical report at the conclusion of the Research before final payment is made to the PI or the PI institution k.provide NASA co and cor one copy of all final reports within 90 days of the completion of each project. L.include the final report in the SSC S technical documentation system prior",
+    "download_type": "idv",
+    "end_date": {
+      "__type__": "date",
+      "empty": false
+    },
+    "executive_details": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "funding": {
+      "__type__": "FundingSearch"
+    },
+    "funding_agency": {
+      "__type__": "Agency"
+    },
+    "funding_subtier_agency": {
+      "__type__": "SubTierAgency"
+    },
+    "generated_unique_award_id": "CONT_IDV_NNS14AA17B_8000",
+    "id": 351432745,
+    "infrastructure_obligations": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "infrastructure_outlays": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "parent_award": null,
+    "period_of_performance": {
+      "__type__": "PeriodOfPerformance"
+    },
+    "place_of_performance": null,
+    "recipient": {
+      "__type__": "Recipient"
+    },
+    "recipient_uei": "M1K8LJAET5R1",
+    "start_date": "2013-12-01",
+    "subaward_count": {
+      "__type__": "int",
+      "empty": false
+    },
+    "subawards": {
+      "__error__": "NotImplementedError"
+    },
+    "total_account_obligation": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_account_outlay": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_obligation": {
+      "__type__": "Decimal",
+      "empty": false
+    },
+    "total_outlay": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "total_subaward_amount": {
+      "__type__": "NoneType",
+      "empty": true
+    },
+    "transactions": {
+      "__type__": "TransactionsSearch"
+    },
+    "type": "IDV_B_B",
+    "type_description": "INDEFINITE DELIVERY / INDEFINITE QUANTITY",
+    "usa_spending_url": "https://www.usaspending.gov/award/CONT_IDV_NNS14AA17B_8000/"
+  }
+}

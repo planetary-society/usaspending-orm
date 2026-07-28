@@ -9,8 +9,13 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
-from ..utils.formatter import smart_sentence_case, to_date, to_decimal
+from ..utils.dates import to_date
+from ..utils.numbers import to_decimal, to_int
+from ..utils.textcase import TextFormatter
+from ..utils.validations import validate_agency_type
 from .agency import Agency
+from .award_identifier import parse_award_identifier
+from .award_types import DOWNLOAD_TYPES
 from .download import AwardType, FileFormat
 from .lazy_record import LazyRecord
 from .location import Location
@@ -97,6 +102,28 @@ class Award(LazyRecord):
     def _fetch_details(self) -> dict[str, Any] | None:
         """Fetch full award details from the awards resource.
 
+        Note:
+            When this instance is a base ``Award``, the fetched data reveals the
+            award type for the first time and the instance rebinds its own
+            ``__class__`` to the matching subclass. That reassignment is
+            deliberate late binding, not a workaround.
+
+            An award can be constructed before its type is knowable: from an ID
+            alone, or from ``SubAward.parent_award`` and ``Award.parent_award``,
+            which build a bare ``Award`` from an identifier carried on the child
+            record. There is no type code in either case. The alternatives are
+            worse. Returning the base class permanently would silently deny
+            callers ``Contract.piid``, ``Grant.cfda_number`` and every other
+            subtype member, and returning a fresh object instead would leave the
+            caller holding a stale instance, since lazy loading is triggered
+            through attribute access on an award the caller already has.
+
+            The type decision itself is not duplicated here: it is delegated to
+            :func:`~usaspending.models.award_factory.create_award`, the same
+            factory the resource layer uses. This code only adopts the class the
+            factory chose. ``tests/test_characterization.py`` pins the upgrade
+            for both the ID-only and ``parent_award`` paths.
+
         Returns:
             Optional[Dict[str, Any]]: Award data dictionary or None if fetch fails.
         """
@@ -110,16 +137,14 @@ class Award(LazyRecord):
             full_award = self._client.awards.find_by_generated_id(award_id)
             full_data = full_award.raw
 
-            # If we're a base Award class and now have type information,
-            # convert to appropriate subclass
+            # The type code arrives only with the detail response, so adopt the
+            # subclass the factory picks. See the note in this method's docstring.
             if full_data and self.__class__ == Award:
                 from .award_factory import create_award
 
                 new_instance = create_award(full_data, self._client)
                 if new_instance.__class__ != Award:
-                    # Copy state from new instance to self
                     self.__class__ = new_instance.__class__
-                    # Merge the data
                     self._data.update(full_data)
                     return full_data
 
@@ -154,47 +179,6 @@ class Award(LazyRecord):
         # This cannot be lazy-loaded since it's required to fetch details
         return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
-    def _derived_award_identifier(self) -> str | None:
-        """Extract the award identifier (PIID, FAIN, or URI) from generated_unique_award_id.
-
-        Parses the generated ID format to extract the original identifier:
-        - CONT_AWD_<piid>_<agency>_<parent>_<ref> -> returns piid
-        - CONT_IDV_<piid>_<agency> -> returns piid
-        - ASST_NON_<fain>_<agency> -> returns fain
-        - ASST_AGG_<uri>_<agency> -> returns uri
-
-        Returns:
-            Optional[str]: The extracted identifier or None if not found or is "-NONE-".
-        """
-        gen_id = self.generated_unique_award_id
-        if not gen_id:
-            return None
-
-        parts = gen_id.split("_")
-
-        # Validate minimum parts based on format
-        if len(parts) < 3:
-            return None
-
-        prefix = "_".join(parts[:2])  # e.g., "CONT_AWD" or "ASST_NON"
-
-        # Validate expected number of parts for each format
-        if (
-            (prefix == "CONT_AWD" and len(parts) != 6)
-            or (prefix == "CONT_IDV" and len(parts) != 4)
-            or (prefix in ("ASST_NON", "ASST_AGG") and len(parts) != 4)
-            or prefix not in ("CONT_AWD", "CONT_IDV", "ASST_NON", "ASST_AGG")
-        ):
-            return None
-
-        identifier = parts[2]  # The actual ID is always the 3rd segment
-
-        # Don't return placeholder values
-        if identifier == "-NONE-" or not identifier:
-            return None
-
-        return identifier
-
     @property
     def award_identifier(self) -> str:
         """General-purpose award identifier, type-agnostic.
@@ -205,9 +189,7 @@ class Award(LazyRecord):
         Returns:
             str: The award identifier (PIID, FAIN, or URI), or empty string if not found.
         """
-        # Derive from generated_unique_award_id
-        derived_award_id = self._derived_award_identifier()
-        return derived_award_id if derived_award_id else ""
+        return parse_award_identifier(self.generated_unique_award_id) or ""
 
     @property
     def category(self) -> str:
@@ -225,9 +207,10 @@ class Award(LazyRecord):
         See `award_types.py` for all valid codes.
 
         Returns:
-            Optional[str]: The award subtype code.
+            Optional[str]: The award subtype code, or None when the award
+            reports none.
         """
-        return self._lazy_get("type", default="")
+        return self._lazy_get("type")
 
     @property
     def award_type_code(self) -> str | None:
@@ -243,9 +226,10 @@ class Award(LazyRecord):
         """Plain text description of the award type.
 
         Returns:
-            Optional[str]: The description of the award type, or empty string if not available.
+            Optional[str]: The description of the award type, or None when the
+            award reports none.
         """
-        return self._lazy_get("type_description", "Contract Award Type", "Award Type", default="")
+        return self._lazy_get("type_description", "Contract Award Type", "Award Type")
 
     @property
     def description(self) -> str:
@@ -256,20 +240,21 @@ class Award(LazyRecord):
         """
         desc = self._lazy_get("description", "Description")
         if isinstance(desc, str):
-            return smart_sentence_case(desc)
+            return TextFormatter.to_sentence_case(desc)
         return ""
 
     @property
-    def total_obligation(self) -> Decimal:
+    def total_obligation(self) -> Decimal | None:
         """The amount of money the government is obligated to pay for the award.
 
         This is a system generated element providing the sum of all the amounts
         entered in the "Action Obligation" field.
 
         Returns:
-            Decimal: The total obligated amount for the award or 0.00.
+            Optional[Decimal]: The total obligated amount, or None when the
+            award reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(self._lazy_get("total_obligation", "Award Amount")) or Decimal("0.00")
+        return to_decimal(self._lazy_get("total_obligation", "Award Amount"))
 
     @property
     def subaward_count(self) -> int:
@@ -278,7 +263,7 @@ class Award(LazyRecord):
         Returns:
             int: The count of subawards.
         """
-        return int(self._lazy_get("subaward_count", default=0))
+        return to_int(self._lazy_get("subaward_count", default=0)) or 0
 
     @property
     def total_subaward_amount(self) -> Decimal | None:
@@ -389,77 +374,79 @@ class Award(LazyRecord):
         return uei
 
     @property
-    def covid19_obligations(self) -> Decimal:
+    def covid19_obligations(self) -> Decimal | None:
         """COVID-19 related obligations amount.
 
         Returns:
-            Decimal: The COVID-19 obligations amount, or 0.00 if not available.
+            Optional[Decimal]: The COVID-19 obligations amount, or None when the
+            award reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(
-            self._lazy_get("covid19_obligations", "COVID-19 Obligations", default=0)
-        ) or Decimal("0.00")
+        return to_decimal(self._lazy_get("covid19_obligations", "COVID-19 Obligations"))
 
     @property
-    def covid19_outlays(self) -> Decimal:
+    def covid19_outlays(self) -> Decimal | None:
         """COVID-19 related outlays amount.
 
         Returns:
-            Decimal: The COVID-19 outlays amount, or 0.00 if not available.
+            Optional[Decimal]: The COVID-19 outlays amount, or None when the
+            award reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(
-            self._lazy_get("covid19_outlays", "COVID-19 Outlays", default=0)
-        ) or Decimal("0.00")
+        return to_decimal(self._lazy_get("covid19_outlays", "COVID-19 Outlays"))
 
     @property
-    def infrastructure_obligations(self) -> Decimal:
+    def infrastructure_obligations(self) -> Decimal | None:
         """Infrastructure related obligations amount.
 
         Returns:
-            Decimal: The infrastructure obligations amount, or 0.00 if not available.
+            Optional[Decimal]: The infrastructure obligations amount, or None
+            when the award reports none. A reported zero returns
+            ``Decimal("0.00")``.
         """
         return to_decimal(
-            self._lazy_get("infrastructure_obligations", "Infrastructure Obligations", default=0)
-        ) or Decimal("0.00")
+            self._lazy_get("infrastructure_obligations", "Infrastructure Obligations")
+        )
 
     @property
-    def infrastructure_outlays(self) -> Decimal:
+    def infrastructure_outlays(self) -> Decimal | None:
         """Infrastructure related outlays amount.
 
         Returns:
-            Decimal: The infrastructure outlays amount, or 0.00 if not available.
+            Optional[Decimal]: The infrastructure outlays amount, or None when
+            the award reports none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(
-            self._lazy_get("infrastructure_outlays", "Infrastructure Outlays", default=0)
-        ) or Decimal("0.00")
+        return to_decimal(self._lazy_get("infrastructure_outlays", "Infrastructure Outlays"))
 
     # Helper properties. These often map to field names returned by
     # the spending_by_award/Award Search results, or provide general access methods
     # that are common across award types.
 
     @property
-    def award_amount(self) -> Decimal:
+    def award_amount(self) -> Decimal | None:
         """General helper for total obligated or loaned amount.
 
         Returns:
-            Decimal: The total award amount, or 0.00 if not available.
+            Optional[Decimal]: The total award amount, or None when the award
+            reports none. A reported zero returns ``Decimal("0.00")``.
         """
         return to_decimal(
             self._lazy_get("Award Amount", "Loan Amount", "total_obligation", "total_funding")
-        ) or Decimal("0.00")
+        )
 
     @property
     def start_date(self) -> date | None:
         """Award start date from period of performance or obligation data.
 
+        Delegates rather than reading the flat keys again. Doing both is what let
+        the two disagree: this property ordered `Base Obligation Date` ahead of
+        `Period of Performance Start Date` where the period model orders them the
+        other way, and its end-date twin read a spelling nothing else in the
+        package uses.
+
         Returns:
             Optional[date]: The award start date, or None if not available.
         """
-        start_date = self.get_value(
-            ["Start Date", "Base Obligation Date", "Period of Performance Start Date"]
-        )
-        if not start_date and self.period_of_performance and self.period_of_performance.start_date:
-            start_date = self.period_of_performance.start_date
-        return to_date(start_date)
+        period = self.period_of_performance
+        return period.start_date if period else None
 
     @property
     def end_date(self) -> date | None:
@@ -468,10 +455,8 @@ class Award(LazyRecord):
         Returns:
             Optional[date]: The award end date, or None if not available.
         """
-        end_date = self.get_value(["End Date", "Period of Performance End Date"])
-        if not end_date and self.period_of_performance and self.period_of_performance.end_date:
-            end_date = self.period_of_performance.end_date
-        return to_date(end_date)
+        period = self.period_of_performance
+        return period.end_date if period else None
 
     @property
     def usa_spending_url(self) -> str:
@@ -519,26 +504,10 @@ class Award(LazyRecord):
         ):
             return PeriodOfPerformance(self.raw.get("period_of_performance"))
 
-        # Award search results return Period of Performance information in a flat structure
-        # We need to assign these values to a PeriodOfPerformance object
-        # to maintain consistency.
-        date_keys = ["Start Date", "End Date", "Last Modified Date"]
-        if any(k in self._data for k in date_keys):
-            return PeriodOfPerformance(
-                {
-                    "start_date": self.get_value(
-                        [
-                            "Start Date",
-                            "Base Obligation Date",
-                            "Period of Performance Start Date",
-                        ]
-                    ),
-                    "end_date": self.get_value(
-                        ["End Date", "Period of Performance Current End Date"]
-                    ),
-                    "last_modified_date": self.get_value("Last Modified Date"),
-                }
-            )
+        # Award search results report these dates as flat keys, which
+        # PeriodOfPerformance reads itself, so there is nothing to translate here.
+        if any(key in self._data for key in PeriodOfPerformance._SEARCH_KEYS):
+            return PeriodOfPerformance._from_search_result(self._data)
 
         # If no data, trigger fetch
         self._ensure_details()
@@ -572,22 +541,10 @@ class Award(LazyRecord):
         if "recipient" in self._data and isinstance(self._data["recipient"], dict):
             return Recipient(self._data["recipient"], self._client)
 
-        # Then, check for flat recipient fields from search results
-        recipient_keys = ["Recipient Name", "recipient_id", "Recipient Location"]
-        if any(key in self._data for key in recipient_keys):
-            recipient_data = {
-                "recipient_name": self._data.get("Recipient Name"),
-                "recipient_unique_id": self._data.get("Recipient DUNS Number"),
-                "recipient_id": self._data.get("recipient_id"),
-                "recipient_hash": self._data.get("recipient_hash"),
-                "recipient_uei": self._data.get("Recipient UEI"),
-            }
-            recipient = Recipient(recipient_data, self._client)
-            if "Recipient Location" in self._data and isinstance(
-                self._data["Recipient Location"], dict
-            ):
-                recipient.location = Location(self._data["Recipient Location"])
-            return recipient
+        # Then, check for flat recipient fields from search results. Recipient reads
+        # those spellings itself, so there is nothing to translate here.
+        if any(key in self._data for key in Recipient._SEARCH_KEYS):
+            return Recipient._from_search_result(self._data, self._client)
 
         # If no recipient data is available locally, trigger a fetch
         self._ensure_details()
@@ -603,47 +560,37 @@ class Award(LazyRecord):
             agency_type: Either "funding" or "awarding".
 
         Returns:
-            Optional[Dict[str, Any]]: Processed agency data dict or None if not available.
+            Optional[Dict[str, Any]]: Processed agency data dict, or None when
+            the award reports no agency record. Never returns a non-dict: the
+            IDV child-awards endpoint reuses the nested key for a bare agency
+            name string, which cannot be built into an agency.
+
+        Raises:
+            ValidationError: If agency_type is not "funding" or "awarding".
         """
-        if agency_type not in ["funding", "awarding"]:
-            raise ValueError(f"Invalid agency_type: {agency_type}")
+        validate_agency_type(agency_type)
 
-        # Define field mappings based on agency type
-        if agency_type == "funding":
-            nested_key = "funding_agency"
-            flat_keys = [
-                "Funding Agency",
-                "Funding Agency Code",
-                "Funding Sub Agency",
-                "Funding Sub Agency Code",
-            ]
-            name_key = "Funding Agency"
-            code_key = "Funding Agency Code"
-            sub_name_key = "Funding Sub Agency"
-            sub_code_key = "Funding Sub Agency Code"
-            # No funding_agency_id available in search results
-            id_key = None
-        else:  # awarding
-            nested_key = "awarding_agency"
-            flat_keys = [
-                "Awarding Agency",
-                "Awarding Agency Code",
-                "Awarding Sub Agency",
-                "Awarding Sub Agency Code",
-            ]
-            name_key = "Awarding Agency"
-            code_key = "Awarding Agency Code"
-            sub_name_key = "Awarding Sub Agency"
-            sub_code_key = "Awarding Sub Agency Code"
-            id_key = "awarding_agency_id"
+        # Detail responses nest the agency under a snake_case key, while search
+        # results flatten it into Title Case columns that differ only by this
+        # prefix, so both key sets derive from agency_type.
+        prefix = agency_type.capitalize()
+        nested_key = f"{agency_type}_agency"
+        name_key = f"{prefix} Agency"
+        code_key = f"{prefix} Agency Code"
+        sub_name_key = f"{prefix} Sub Agency"
+        sub_code_key = f"{prefix} Sub Agency Code"
+        flat_keys = [name_key, code_key, sub_name_key, sub_code_key]
 
-        # First check if we have nested agency data (from full award details)
-        if self.raw.get(nested_key):
-            return self.raw.get(nested_key)
+        # Nested agency data, from full award details. Only a dict is an agency
+        # record; /idvs/awards/ puts a plain agency-name string under this same
+        # key, so accepting anything truthy would hand a str to the builders.
+        nested = self.raw.get(nested_key)
+        if isinstance(nested, dict) and nested:
+            return nested
 
         # Then check for flat agency fields (from search results)
         if any(key in self.raw for key in flat_keys):
-            data = {
+            return {
                 "toptier_agency": {
                     "name": self.raw.get(name_key),
                     "code": self.raw.get(code_key),  # Agency code
@@ -654,14 +601,69 @@ class Award(LazyRecord):
                     "code": self.raw.get(sub_code_key),  # Subtier code
                     "abbreviation": self.raw.get(sub_code_key),
                 },
-                "id": self.raw.get(id_key) if id_key else None,
+                # spending_by_award results carry an awarding_agency_id but no
+                # funding equivalent.
+                "id": self.raw.get(f"{agency_type}_agency_id"),
                 "has_agency_page": False,  # Not available in search results
                 "office_agency_name": None,  # Not available in search results
             }
-            return data
 
-        # Finally try lazy loading
-        return self._lazy_get(nested_key)
+        # Finally try lazy loading. This cannot fetch past a key that is already
+        # present, so re-check the type rather than trusting the fetch.
+        fetched = self._lazy_get(nested_key)
+        return fetched if isinstance(fetched, dict) else None
+
+    def _build_agency(self, agency_type: str) -> Agency | None:
+        """Build the toptier Agency for one side of the award.
+
+        Args:
+            agency_type: Either "funding" or "awarding".
+
+        Returns:
+            Optional[Agency]: The agency, or None when the award reports none.
+        """
+        data = self._load_agency_data(agency_type)
+
+        if not data:
+            return None
+
+        # Merge the toptier fields (name, code, abbreviation, slug) up alongside
+        # the agency-level ones, which is the shape the Agency model expects.
+        agency_data = {
+            "agency_id": data.get("id"),
+            "has_agency_page": data.get("has_agency_page"),
+            "office_agency_name": data.get("office_agency_name"),
+            **data.get("toptier_agency", {}),
+        }
+
+        return Agency(agency_data, self._client)
+
+    def _build_subtier_agency(self, agency_type: str) -> SubTierAgency | None:
+        """Build the SubTierAgency for one side of the award.
+
+        Args:
+            agency_type: Either "funding" or "awarding".
+
+        Returns:
+            Optional[SubTierAgency]: The subtier agency, or None when the award
+            reports none.
+        """
+        data = self._load_agency_data(agency_type)
+
+        if not data:
+            return None
+
+        subtier_data = data.get("subtier_agency")
+        if not subtier_data:
+            return None
+
+        # The office name lives at the agency level, but belongs to the subtier.
+        subtier_data = subtier_data.copy()
+        office_name = data.get("office_agency_name")
+        if office_name:
+            subtier_data["office_agency_name"] = office_name
+
+        return SubTierAgency(subtier_data, self._client)
 
     @cached_property
     def funding_agency(self) -> Agency | None:
@@ -670,22 +672,7 @@ class Award(LazyRecord):
         Returns:
             Optional[Agency]: Agency object for the funding agency, or None.
         """
-        data = self._load_agency_data("funding")
-
-        if not data:
-            return None
-
-        # Extract toptier data and merge with top-level agency fields
-        toptier_data = data.get("toptier_agency", {})
-        agency_data = {
-            "agency_id": data.get("id"),
-            "has_agency_page": data.get("has_agency_page"),
-            "office_agency_name": data.get("office_agency_name"),
-            **toptier_data,  # Merge toptier fields (name, code, abbreviation, slug)
-        }
-
-        subtier_data = data.get("subtier_agency")
-        return Agency(agency_data, self._client, subtier_data)
+        return self._build_agency("funding")
 
     @cached_property
     def awarding_agency(self) -> Agency | None:
@@ -694,22 +681,7 @@ class Award(LazyRecord):
         Returns:
             Optional[Agency]: Agency object for the awarding agency, or None.
         """
-        data = self._load_agency_data("awarding")
-
-        if not data:
-            return None
-
-        # Extract toptier data and merge with top-level agency fields
-        toptier_data = data.get("toptier_agency", {})
-        agency_data = {
-            "agency_id": data.get("id"),
-            "has_agency_page": data.get("has_agency_page"),
-            "office_agency_name": data.get("office_agency_name"),
-            **toptier_data,  # Merge toptier fields (name, code, abbreviation, slug)
-        }
-
-        subtier_data = data.get("subtier_agency")
-        return Agency(agency_data, self._client, subtier_data)
+        return self._build_agency("awarding")
 
     @cached_property
     def funding_subtier_agency(self) -> SubTierAgency | None:
@@ -718,22 +690,7 @@ class Award(LazyRecord):
         Returns:
             Optional[SubTierAgency]: SubTierAgency object for the funding subtier, or None.
         """
-        data = self._load_agency_data("funding")
-
-        if not data:
-            return None
-
-        subtier_data = data.get("subtier_agency")
-        if not subtier_data:
-            return None
-
-        # Create a copy and add office_agency_name if available
-        enhanced_subtier_data = subtier_data.copy()
-        office_name = data.get("office_agency_name")
-        if office_name:
-            enhanced_subtier_data["office_agency_name"] = office_name
-
-        return SubTierAgency(enhanced_subtier_data, self._client)
+        return self._build_subtier_agency("funding")
 
     @cached_property
     def awarding_subtier_agency(self) -> SubTierAgency | None:
@@ -742,22 +699,7 @@ class Award(LazyRecord):
         Returns:
             Optional[SubTierAgency]: SubTierAgency object for the awarding subtier, or None.
         """
-        data = self._load_agency_data("awarding")
-
-        if not data:
-            return None
-
-        subtier_data = data.get("subtier_agency")
-        if not subtier_data:
-            return None
-
-        # Create a copy and add office_agency_name if available
-        enhanced_subtier_data = subtier_data.copy()
-        office_name = data.get("office_agency_name")
-        if office_name:
-            enhanced_subtier_data["office_agency_name"] = office_name
-
-        return SubTierAgency(enhanced_subtier_data, self._client)
+        return self._build_subtier_agency("awarding")
 
     @property
     def transactions(self) -> TransactionsSearch:
@@ -768,7 +710,7 @@ class Award(LazyRecord):
         Examples:
             >>> award.transactions.count()  # Get count without loading all data
             >>> award.transactions.limit(10).all()  # Get first 10 transactions
-            >>> list(award.transactions)  # Iterate through all transactions
+            >>> award.transactions.all()  # Every transaction, as a list
 
         Returns:
             TransactionsSearch: The query builder for transactions.
@@ -786,7 +728,7 @@ class Award(LazyRecord):
             >>> award.funding.order_by(
             ...     "fiscal_date", "asc"
             ... ).all()  # Get all funding records sorted by date
-            >>> list(award.funding.limit(10))  # Iterate through first 10 funding records
+            >>> award.funding.limit(10).all()  # The first 10 funding records, as a list
 
         Returns:
             FundingSearch: The query builder for funding.
@@ -802,7 +744,7 @@ class Award(LazyRecord):
 
         Examples:
             >>> award.accounts.count()  # Get count without loading all data
-            >>> list(award.accounts)  # Iterate through all accounts
+            >>> award.accounts.all()  # Every account, as a list
             >>> award.accounts.order_by("amount", "desc").all()  # Sort by amount
 
         Returns:
@@ -837,6 +779,13 @@ class Award(LazyRecord):
             raise NotImplementedError(
                 f"Download not supported for {self.__class__.__name__}. "
                 "Only Contract, Grant, and IDV awards support bulk downloads."
+            )
+        if self._download_type not in DOWNLOAD_TYPES:
+            # Guards the name-based dispatch in download(): DownloadResource has
+            # other public methods, so an unrecognized type must not reach it.
+            raise NotImplementedError(
+                f"{self.__class__.__name__} declares unknown download type "
+                f"{self._download_type!r}. Expected one of {sorted(DOWNLOAD_TYPES)}."
             )
         return self._download_type
 
@@ -875,19 +824,13 @@ class Award(LazyRecord):
                 "Cannot download award data without a 'generated_unique_award_id'. Ensure the award object is fully loaded."
             )
 
-        # Get download type (raises NotImplementedError if not supported)
+        # Each download type names the DownloadResource method that queues it, so
+        # no dispatch table is needed. download_type validates against
+        # DOWNLOAD_TYPES first, so the attribute is guaranteed to exist.
         download_type = self.download_type
+        queue_download = getattr(self._client.downloads, download_type)
 
-        # Access the DownloadManager via the client's download resource.
-        # We route the call through the appropriate method on the resource.
-        if download_type == "contract":
-            return self._client.downloads.contract(award_id, file_format, destination_dir)
-        elif download_type == "assistance":
-            return self._client.downloads.assistance(award_id, file_format, destination_dir)
-        elif download_type == "idv":
-            return self._client.downloads.idv(award_id, file_format, destination_dir)
-        else:
-            raise NotImplementedError
+        return queue_download(award_id, file_format, destination_dir)
 
     def __repr__(self) -> str:
         """String representation of Award.

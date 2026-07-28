@@ -8,6 +8,7 @@ from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.agency import Agency
 from ..models.subtier_agency import SubTierAgency
+from ..utils.validations import validate_agency_type
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
             agency_type: "funding" or "awarding" (defaults to "funding").
         """
         super().__init__(client)
-        self._agency_type = self._validate_agency_type(agency_type)
+        self._agency_type = validate_agency_type(agency_type)
         self._search_text = ""
         self._limit = 100  # Default limit
         # Filter: None, "toptier", "subtier", "office"
@@ -44,14 +45,14 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
     @property
     def _endpoint(self) -> str:
-        """API endpoint for agency autocomplete."""
-        if self._agency_type == "funding":
-            return "/autocomplete/funding_agency_office/"
-        if self._agency_type == "awarding":
-            return "/autocomplete/awarding_agency_office/"
-        raise ValidationError(
-            f"Invalid agency_type: {self._agency_type}. Must be 'funding' or 'awarding'."
-        )
+        """API endpoint for agency autocomplete.
+
+        Raises:
+            ValidationError: If the agency type is neither awarding nor funding,
+                which the constructor and :meth:`agency_type` both prevent.
+        """
+        validate_agency_type(self._agency_type)
+        return f"/autocomplete/{self._agency_type}_agency_office/"
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Build request payload."""
@@ -138,14 +139,12 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
         return None
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """Get total count of matching agencies/offices.
 
         Returns:
             Total number of matching results
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
         if not self._search_text:
             raise ValidationError("search_text is required. Use name() or search_text() method.")
 
@@ -155,10 +154,6 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
         count = len(results)
 
-        logger.info(
-            f"{self.__class__.__name__}.count() = {count} results "
-            f"for search text '{self._search_text}'"
-        )
         return count
 
     def search_text(self, search_text: str) -> AgenciesSearch:
@@ -198,26 +193,8 @@ class AgenciesSearch(QueryBuilder[Agency]):
             ValidationError: If agency_type is invalid
         """
         clone = self._clone()
-        clone._agency_type = self._validate_agency_type(agency_type)
+        clone._agency_type = validate_agency_type(agency_type)
         return clone
-
-    def _validate_agency_type(self, agency_type: str) -> str:
-        """Validate agency type values.
-
-        Args:
-            agency_type: "funding" or "awarding" string.
-
-        Returns:
-            The validated agency type string.
-
-        Raises:
-            ValidationError: If agency_type is invalid.
-        """
-        if agency_type not in ("funding", "awarding"):
-            raise ValidationError(
-                f"Invalid agency_type: {agency_type}. Must be 'funding' or 'awarding'."
-            )
-        return agency_type
 
     def toptier(self) -> AgenciesSearch:
         """Filter to only return toptier agency matches.

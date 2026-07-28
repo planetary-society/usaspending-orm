@@ -239,8 +239,14 @@ class TestAwardAccountsQueryCount:
 
         assert count == 2  # From page_metadata.count in fixture
 
-    def test_count_caches_result(self, mock_usa_client, load_fixture):
-        """Test count caches the result."""
+    def test_count_always_asks_the_api(self, mock_usa_client, load_fixture):
+        """count() reports fresh data on every call.
+
+        This matches the contract documented for every builder in
+        tests/queries/test_query_builder.py::TestCountCaching: the public count()
+        always calls the API, and the only count cache is the internal one
+        indexing uses.
+        """
         fixture = load_fixture("awards/accounts.json")
         mock_usa_client.set_response("/awards/accounts/", fixture)
 
@@ -248,8 +254,26 @@ class TestAwardAccountsQueryCount:
         count1 = query.count()
         count2 = query.count()
 
-        assert count1 == count2
-        assert query._cached_count == 2
+        assert count1 == count2 == 2
+        assert mock_usa_client.get_request_count() == 2
+
+    def test_indexing_agrees_with_a_later_count(self, mock_usa_client, load_fixture):
+        """Indexing and count() read one bounded figure, whichever runs first.
+
+        Indexing caches the count, and count() honors limit() as indexing does,
+        so the cached value is the one count() would report anyway. The API says
+        two here; the caller asked for one.
+        """
+        fixture = load_fixture("awards/accounts.json")
+        mock_usa_client.set_response("/awards/accounts/", fixture)
+
+        query = AwardAccountsQuery(mock_usa_client).award_id("CONT_AWD_123").limit(1)
+
+        query[0]  # populates the count cache
+
+        assert query.count() == 1
+        assert len(query) == 1
+        assert len(query.all()) == 1
 
     def test_count_requires_award_id(self, mock_usa_client):
         """Test count raises error without award_id."""

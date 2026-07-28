@@ -1,0 +1,35 @@
+{
+  "class": "Funding",
+  "properties": {
+    "account_title": "Space Operations, National Aeronautics and Space Administration",
+    "awarding_agency": {
+      "__type__": "Agency"
+    },
+    "awarding_agency_id": 862,
+    "awarding_agency_name": "National Aeronautics and Space Administration",
+    "awarding_agency_slug": "national-aeronautics-and-space-administration",
+    "awarding_toptier_agency_id": "72",
+    "disaster_emergency_fund_code": "Q",
+    "federal_account": {
+      "__type__": "FederalAccount"
+    },
+    "federal_account_code": "080-0115",
+    "funding_agency": {
+      "__type__": "Agency"
+    },
+    "funding_agency_id": 862,
+    "funding_agency_name": "National Aeronautics and Space Administration",
+    "funding_agency_slug": "national-aeronautics-and-space-administration",
+    "funding_toptier_agency_id": "72",
+    "gross_outlay_amount": "Decimal(-36426.75)",
+    "is_quarterly_submission": false,
+    "object_class": "25.5",
+    "object_class_name": "Research and development contracts",
+    "program_activity_code": null,
+    "program_activity_name": null,
+    "reporting_fiscal_month": 8,
+    "reporting_fiscal_quarter": 3,
+    "reporting_fiscal_year": 2026,
+    "transaction_obligated_amount": null
+  }
+}

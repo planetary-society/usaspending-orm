@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from .base_model import ClientAwareModel
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
     from ..queries.tas_codes_query import TASCodesQuery
+    from .treasury_account_symbol import TreasuryAccountSymbol
 
 
 class FederalAccount(ClientAwareModel):
@@ -27,6 +29,8 @@ class FederalAccount(ClientAwareModel):
         ancestors: List containing parent toptier_code
         count: Number of TAS codes under this account
     """
+
+    _REATTACH_INVALIDATES: ClassVar[tuple[str, ...]] = ("_tas_codes_level",)
 
     def __init__(
         self,
@@ -77,8 +81,14 @@ class FederalAccount(ClientAwareModel):
 
     @property
     def count(self) -> int:
-        """Number of TAS codes under this federal account."""
-        return self.get_value("count", default=self.tas_codes.count())
+        """Number of TAS codes under this federal account.
+
+        Counting the TAS codes costs an API request, so it is only used when the
+        filter tree omits the key. No cache is needed here: :attr:`tas_codes`
+        fetches its level once per account, so a repeated fallback is free.
+        """
+        count = self.get_value("count")
+        return self.tas_codes.count() if count is None else count
 
     @property
     def ancestors(self) -> list[str]:
@@ -98,6 +108,11 @@ class FederalAccount(ClientAwareModel):
         Returns a query-like object that supports iteration, filtering,
         ordering, and .count().
 
+        The level is fetched once per FederalAccount, so the reads below cost one
+        request between them rather than one each. The corollary is that a
+        long-lived account keeps reporting the codes it first saw; construct a
+        fresh one to pick up changes.
+
         Returns:
             TASCodesQuery: Lazy query for TAS codes.
 
@@ -114,17 +129,30 @@ class FederalAccount(ClientAwareModel):
             >>> no_year = account.tas_codes.availability_type_code("X").all()
             >>> fy2024 = account.tas_codes.fiscal_year(2024).all()
         """
-        from ..queries.tas_codes_query import TASCodesQuery
+        return self._new_tas_codes_query()._seed(lambda: self._tas_codes_level)
 
-        if not self._toptier_code or not self.federal_account_code:
-            # Return empty query if we don't have required codes
-            return TASCodesQuery(self._client, "", "")
+    def _new_tas_codes_query(self) -> TASCodesQuery:
+        """Build an unfetched query for this account's TAS codes.
+
+        An account that does not know its own codes yields an unscoped query,
+        which the base answers with an empty result set and no request.
+        """
+        from ..queries.tas_codes_query import TASCodesQuery
 
         return TASCodesQuery(
             self._client,
-            self._toptier_code,
-            self.federal_account_code,
+            self._toptier_code or "",
+            self.federal_account_code or "",
         )
+
+    @cached_property
+    def _tas_codes_level(self) -> list[TreasuryAccountSymbol]:
+        """Fetch this account's TAS codes once, as models rather than as a query.
+
+        See "Who caches what" in :mod:`usaspending.queries.filter_tree_query` for
+        why a model caches the models where a resource may cache the query.
+        """
+        return self._new_tas_codes_query().all()
 
     def __repr__(self) -> str:
         """String representation of FederalAccount."""

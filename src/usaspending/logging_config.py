@@ -145,27 +145,6 @@ class USASpendingLogger:
         return usaspending_logger.isEnabledFor(logging.DEBUG)
 
 
-def get_logger(name: str) -> logging.Logger:
-    """Convenience function to get a library logger.
-
-    This is a shortcut for USASpendingLogger.get_logger() that's commonly used
-    throughout the library codebase.
-
-    Args:
-        name: Logger name (typically __name__)
-
-    Returns:
-        Configured logger instance
-
-    Example:
-        from usaspending.logging_config import get_logger
-
-        logger = get_logger(__name__)
-        logger.info("Library message")
-    """
-    return USASpendingLogger.get_logger(name)
-
-
 def log_api_request(
     logger: logging.Logger,
     method: str,

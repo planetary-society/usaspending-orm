@@ -217,3 +217,33 @@ class TestTransaction:
         results = list(mock_usa_client.transactions.award_id("CONT_AWD_123").until("2025-06-10"))
 
         assert [tx.action_date for tx in results] == [date(2025, 6, 5)]
+
+
+class TestTransactionIdentity:
+    """Transactions compare by identity, not as equal-by-default records.
+
+    Transaction was declared ``@dataclass`` with no fields, which generated an
+    ``__eq__`` comparing empty tuples. Every Transaction therefore compared
+    equal to every other one regardless of its data, and ``__hash__`` was set
+    to None, making instances unhashable.
+    """
+
+    def test_transactions_with_different_data_are_not_equal(self):
+        """Two transactions holding different records must not compare equal."""
+        first = Transaction({"id": "1", "federal_action_obligation": 100})
+        second = Transaction({"id": "2", "federal_action_obligation": 999})
+
+        assert first != second
+
+    def test_transaction_equals_itself(self):
+        """Identity comparison still holds for the same instance."""
+        transaction = Transaction({"id": "1"})
+
+        assert transaction == transaction
+
+    def test_transactions_are_hashable(self):
+        """Instances can go in sets and dict keys."""
+        first = Transaction({"id": "1"})
+        second = Transaction({"id": "2"})
+
+        assert len({first, second}) == 2

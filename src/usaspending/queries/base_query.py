@@ -7,6 +7,7 @@ from collections.abc import Iterator
 from typing import Generic, TypeVar
 
 from ..exceptions import ValidationError
+from ..utils.validations import validate_sort_direction
 
 T = TypeVar("T")
 Q = TypeVar("Q", bound="BaseQuery[T]")
@@ -31,11 +32,37 @@ class BaseQuery(ABC, Generic[T]):
 
     @abstractmethod
     def count(self) -> int:
-        """Return the total number of matching results."""
+        """Return how many results the query yields, honoring its bounds."""
 
-    @abstractmethod
+    def _new_instance(self: Q) -> Q:
+        """Construct a fresh instance of this class, carrying no query state.
+
+        This is the seam for subclasses whose ``__init__`` takes more than the
+        defaults: override this rather than reimplementing :meth:`_clone`, so
+        base-class state is still copied by one shared implementation.
+
+        Returns:
+            BaseQuery: A new, empty instance of the same class.
+        """
+        raise NotImplementedError
+
     def _clone(self: Q) -> Q:
-        """Return an immutable clone of the query."""
+        """Return an immutable clone of the query.
+
+        Subclasses that add state override this, call ``super()._clone()``, and
+        copy their own fields onto the result. Subclasses whose ``__init__``
+        needs arguments override :meth:`_new_instance` instead.
+
+        Returns:
+            BaseQuery: A copy carrying the same query state.
+        """
+        clone = self._new_instance()
+        clone._page_size = self._page_size
+        clone._total_limit = self._total_limit
+        clone._max_pages = self._max_pages
+        clone._order_by = self._order_by
+        clone._order_direction = self._order_direction
+        return clone
 
     def limit(self: Q, num: int) -> Q:
         """Set the total number of items to return across all pages.
@@ -94,31 +121,93 @@ class BaseQuery(ABC, Generic[T]):
     def order_by(self: Q, field: str, direction: str = "desc") -> Q:
         """Set sort order for results.
 
+        The direction is validated here rather than only in the builders that
+        override this, so a builder that does not override it is covered too.
+        An unrecognized direction used to reach a client-side sort as a value that
+        is not "desc", which sorts ascending, so asking for the wrong word got the
+        opposite order and no error. Overriding builders may validate again; the
+        check is idempotent.
+
         Args:
             field (str): Field name to sort by.
             direction (str): Sort direction (asc or desc).
 
         Returns:
             BaseQuery: A new query instance with ordering applied.
+
+        Raises:
+            ValidationError: If direction is neither "asc" nor "desc".
         """
         clone = self._clone()
         clone._order_by = field
-        clone._order_direction = direction
+        clone._order_direction = validate_sort_direction(direction)
         return clone
 
     def first(self) -> T | None:
-        """Return the first result, or None if no results are available."""
-        for result in self.limit(1):
+        """Return the first result, or None if no results are available.
+
+        Returns:
+            T | None: The first result, or None if the query matches nothing.
+        """
+        for result in self._narrowed_to(1):
             return result
         return None
 
+    def _narrowed_to(self: Q, num: int) -> Q:
+        """Return a clone fetching at most `num` results, never more than asked.
+
+        The internal counterpart to :meth:`limit`, which *sets* the bound, since
+        that is what a caller chaining it means. Narrowing instead is what keeps
+        ``limit(0).first()`` empty without a special case: raising the caller's own
+        zero would hand back a row that :meth:`all` and :meth:`__len__` both report
+        as absent.
+
+        Args:
+            num: The most results to fetch.
+
+        Returns:
+            BaseQuery: A clone bounded by the smaller of `num` and any existing limit.
+        """
+        clone = self._clone()
+        clone._total_limit = num if self._total_limit is None else min(self._total_limit, num)
+        return clone
+
     def all(self) -> list[T]:
-        """Return all results as a list."""
-        return list(self)
+        """Return all results as a list.
+
+        Iterates rather than passing ``self`` to ``list()``, which asks for a
+        length hint and so calls :meth:`__len__`. For a paginated query that means
+        a request to the count endpoint whose answer is then discarded, making
+        every ``all()`` cost one request more than iterating the same query.
+        ``__length_hint__`` is not a way out: CPython consults ``__len__`` first
+        and only falls back to it when that raises, so a query cannot decline the
+        hint while ``len()`` still means something.
+
+        Anything that asks for the hint still pays it: ``list(query)``,
+        ``tuple(query)``, ``sorted(query)``, ``[*query]``, ``f(*query)``. Sets,
+        ``sum()``, ``in``, comprehensions and ``bool()`` do not. So this method, or
+        a plain loop, is the cheap way to read a query.
+
+        Returns:
+            list[T]: Every matching result.
+        """
+        return list(iter(self))
 
     def __len__(self) -> int:
-        """Return the effective number of items respecting limit/max_pages."""
-        return self._effective_count()
+        """Return how many results the query yields, honoring its bounds."""
+        return self.count()
+
+    def __bool__(self) -> bool:
+        """Report whether the query matches anything, by reading one row.
+
+        Defined so ``if query:`` does not fall back to :meth:`__len__`, which
+        spends a request on a count, and on the endpoints that report none walks
+        every page to settle a single bit.
+
+        Returns:
+            bool: True if the query matches at least one result.
+        """
+        return self.first() is not None
 
     def _get_effective_page_size(self) -> int:
         """Return the effective page size based on limit and page size."""
@@ -126,16 +215,25 @@ class BaseQuery(ABC, Generic[T]):
             return min(self._page_size, self._total_limit)
         return self._page_size
 
-    def _effective_count(self) -> int:
-        """Return count capped by limit() and max_pages() constraints.
+    def _cap(self, count: int) -> int:
+        """Return `count` held to whatever ``limit()`` and ``max_pages()`` allow.
+
+        Both :meth:`count` implementations end here, so the paginated and the
+        in-memory hierarchies cannot drift on what a bounded query reports.
+
+        Args:
+            count: Matching results before the caller's own bounds apply.
 
         Returns:
-            The smaller of the raw API count and any user-set constraints.
+            int: The smallest of `count` and every bound that is set.
         """
-        raw = self.count()
-        caps = [raw]
+        caps = [count]
         if self._total_limit is not None:
             caps.append(self._total_limit)
         if self._max_pages is not None:
             caps.append(self._max_pages * self._page_size)
         return min(caps)
+
+    def _yields_nothing(self) -> bool:
+        """Return True when the caller's bounds already forbid every result."""
+        return self._cap(1) <= 0

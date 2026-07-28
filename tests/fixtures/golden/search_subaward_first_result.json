@@ -1,0 +1,91 @@
+{
+  "class": "SubAward",
+  "properties": {
+    "CONTRACT_SUBAWARD_FIELDS": [
+      "Awarding Agency",
+      "Awarding Sub Agency",
+      "NAICS",
+      "Prime Award ID",
+      "prime_award_recipient_id",
+      "Prime Award Recipient UEI",
+      "Prime Recipient Name",
+      "PSC",
+      "Sub-Award Amount",
+      "Sub-Award Date",
+      "Sub-Award Description",
+      "Sub-Award ID",
+      "Sub-Award Primary Place of Performance",
+      "sub_award_recipient_id",
+      "Sub-Award Type",
+      "Sub-Awardee Name",
+      "Sub-Recipient Location",
+      "Sub-Recipient UEI",
+      "prime_award_generated_internal_id",
+      "prime_award_internal_id",
+      "internal_id",
+      "subaward_description_sorted"
+    ],
+    "GRANT_SUBAWARD_FIELDS": [
+      "Assistance Listing",
+      "Awarding Agency",
+      "Awarding Sub Agency",
+      "Prime Award ID",
+      "prime_award_recipient_id",
+      "Prime Award Recipient UEI",
+      "Prime Recipient Name",
+      "Sub-Award Amount",
+      "Sub-Award Date",
+      "Sub-Award Description",
+      "Sub-Award ID",
+      "Sub-Award Primary Place of Performance",
+      "sub_award_recipient_id",
+      "Sub-Award Type",
+      "Sub-Awardee Name",
+      "Sub-Recipient Location",
+      "Sub-Recipient UEI",
+      "prime_award_generated_internal_id",
+      "prime_award_internal_id",
+      "internal_id",
+      "subaward_description_sorted"
+    ],
+    "amount": "Decimal(261701216.00)",
+    "assistance_listing": null,
+    "award_date": "2020-04-01",
+    "awarding_agency": "National Aeronautics and Space Administration",
+    "awarding_sub_agency": "National Aeronautics and Space Administration",
+    "description": "Ssai and its subcontractors support NASA goddard space flight center through the Hydrosphere, Biosphere, and Geophysics (HBG) sciences support contract. Specifically, ssai and its subcontractors support satellite remote sensing instrument development as well as field and aircraft instruments and activities for measuring Earth, oceanic, biospheric, and atmospheric processes. Additionally, ssai and its subcontractors provide scientific and engineering support for the design, development and testing of remote sensors and sensor systems, including mechanical, electronic, optical, laser and electro-optical, and data system engineering. Through these support services, ssai and its subcontractors will address issues of importance to society, including water resources, land and ocean ecosystems, health, global and regional sea level change, natural hazards, changes in the earth\u00e3\u00af\u00e2\u00bf\u00e2\u00bds cryosphere, gravity field, magnetic field, solid Earth, topography, reference frames, and the effects of climate change on life on Earth.",
+    "id": null,
+    "naics": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "name": "Science Applications International Corporation",
+    "parent_award": {
+      "__type__": "Award"
+    },
+    "place_of_performance": {
+      "__type__": "Location"
+    },
+    "prime_award_generated_internal_id": "CONT_AWD_80GSFC20C0044_8000_-NONE-_-NONE-",
+    "prime_award_id": "80GSFC20C0044",
+    "prime_award_internal_id": null,
+    "prime_award_recipient_id": "58f27a06-8b13-db66-44e8-66fff87b6bb7-C",
+    "prime_award_recipient_uei": "PJ2SP76D3HJ3",
+    "prime_recipient_name": "Science Systems and Applications, Inc.",
+    "psc": {
+      "__type__": "dict",
+      "empty": false
+    },
+    "recipient": {
+      "__type__": "Recipient"
+    },
+    "sub_award_amount": "Decimal(261701216.00)",
+    "sub_award_date": "2020-04-01",
+    "sub_award_description": "Ssai and its subcontractors support NASA goddard space flight center through the Hydrosphere, Biosphere, and Geophysics (HBG) sciences support contract. Specifically, ssai and its subcontractors support satellite remote sensing instrument development as well as field and aircraft instruments and activities for measuring Earth, oceanic, biospheric, and atmospheric processes. Additionally, ssai and its subcontractors provide scientific and engineering support for the design, development and testing of remote sensors and sensor systems, including mechanical, electronic, optical, laser and electro-optical, and data system engineering. Through these support services, ssai and its subcontractors will address issues of importance to society, including water resources, land and ocean ecosystems, health, global and regional sea level change, natural hazards, changes in the earth\u00e3\u00af\u00e2\u00bf\u00e2\u00bds cryosphere, gravity field, magnetic field, solid Earth, topography, reference frames, and the effects of climate change on life on Earth.",
+    "sub_award_id": "22003-20-001",
+    "sub_award_type": "sub-contract",
+    "sub_awardee_name": "Science Applications International Corporation",
+    "sub_recipient_uei": "MMLKPW9JLX64",
+    "subaward_description_sorted": "SSAI AND ITS SUBCONTRACTORS SUPPORT NASA GODDARD SPACE FLIGHT CENTER THROUGH THE HYDROSPHERE, BIOSPHERE, AND GEOPHYSICS (HBG) SCIENCES SUPPORT CONTRACT. SPECIFICALLY, SSAI AND ITS SUBCONTRACTORS SUPPORT SATELLITE REMOTE SENSING INSTRUMENT DEVELOPMENT AS WELL AS FIELD AND AIRCRAFT INSTRUMENTS AND ACTIVITIES FOR MEASURING EARTH, OCEANIC, BIOSPHERIC, AND ATMOSPHERIC PROCESSES. ADDITIONALLY, SSAI AND ITS SUBCONTRACTORS PROVIDE SCIENTIFIC AND ENGINEERING SUPPORT FOR THE DESIGN, DEVELOPMENT AND TESTING OF REMOTE SENSORS AND SENSOR SYSTEMS, INCLUDING MECHANICAL, ELECTRONIC, OPTICAL, LASER AND ELECTRO-OPTICAL, AND DATA SYSTEM ENGINEERING. THROUGH THESE SUPPORT SERVICES, SSAI AND ITS SUBCONTRACTORS WILL ADDRESS ISSUES OF IMPORTANCE TO SOCIETY, INCLUDING WATER RESOURCES, LAND AND OCEAN ECOSYSTEMS, HEALTH, GLOBAL AND REGIONAL SEA LEVEL CHANGE, NATURAL HAZARDS, CHANGES IN THE EARTH\u00c3\u00af\u00c2\u00bf\u00c2\u00bdS CRYOSPHERE, GRAVITY FIELD, MAGNETIC FIELD, SOLID EARTH, TOPOGRAPHY, REFERENCE FRAMES, AND THE EFFECTS OF CLIMATE CHANGE ON LIFE ON EARTH."
+  }
+}

@@ -6,6 +6,118 @@ import pytest
 from usaspending.models.period_of_performance import PeriodOfPerformance
 
 
+class TestSearchResultKeys:
+    """The flat keys an award search result carries are read by this model.
+
+    An award search result reports these dates as flat, title-cased keys rather
+    than the nested object a detail response sends. Reading them here, rather than
+    having `Award` translate them on the way in, keeps one owner for the mapping.
+    """
+
+    def test_every_flat_key_is_read(self):
+        """Each documented flat spelling reaches the property that owns it."""
+        period = PeriodOfPerformance(
+            {
+                "Start Date": "2020-01-01",
+                "End Date": "2021-06-30",
+                "Last Modified Date": "2022-03-15",
+                "Period of Performance Potential End Date": "2023-09-30",
+            }
+        )
+
+        assert period.start_date == date(2020, 1, 1)
+        assert period.end_date == date(2021, 6, 30)
+        assert period.last_modified_date == date(2022, 3, 15)
+        assert period.potential_end_date == date(2023, 9, 30)
+
+    def test_base_obligation_date_backs_the_start_date(self):
+        """`Base Obligation Date` is the third spelling of a start date.
+
+        Award search results use it where others send `Start Date`. It was read by
+        `Award` and not by this model, which is why `Award` could not simply hand
+        its payload over.
+        """
+        assert PeriodOfPerformance({"Base Obligation Date": "2019-05-05"}).start_date == date(
+            2019, 5, 5
+        )
+
+    def test_an_explicit_start_date_wins_over_base_obligation_date(self):
+        """Order matters: the more specific spelling is preferred."""
+        period = PeriodOfPerformance(
+            {"Start Date": "2020-01-01", "Base Obligation Date": "2019-05-05"}
+        )
+
+        assert period.start_date == date(2020, 1, 1)
+
+    def test_an_award_delegates_rather_than_reading_the_keys_again(self, mock_usa_client):
+        """`Award.start_date` and `end_date` resolve through this model.
+
+        They used to read the flat keys themselves, with a third copy of the
+        mapping that had drifted: `Base Obligation Date` was ordered ahead of
+        `Period of Performance Start Date` there and behind it here, and the
+        end-date chain used a spelling nothing else in the package uses.
+        """
+        from usaspending.models import Award
+
+        award = Award(
+            {
+                "Base Obligation Date": "2019-01-01",
+                "Period of Performance Start Date": "2020-06-06",
+                "End Date": "2022-01-01",
+            },
+            mock_usa_client,
+        )
+
+        assert award.start_date == date(2020, 6, 6)
+        assert award.start_date == award.period_of_performance.start_date
+        assert award.end_date == award.period_of_performance.end_date
+
+    def test_every_key_the_properties_read_is_declared(self):
+        """`_SEARCH_KEYS` and the property chains must name the same flat keys.
+
+        The tuple is both the projection and the presence test an award uses to
+        decide whether it can build without fetching, so a spelling a property
+        reads but the tuple omits is a payload that answers from the network when
+        the answer was already in hand.
+        """
+        declared = set(PeriodOfPerformance._SEARCH_KEYS)
+        read = {
+            key
+            for chain in (
+                ["start_date", "Start Date", "Period of Performance Start Date"],
+                ["Base Obligation Date"],
+                ["end_date", "End Date", "Period of Performance Current End Date"],
+                ["last_modified_date", "Last Modified Date"],
+                ["potential_end_date", "Period of Performance Potential End Date"],
+            )
+            for key in chain
+            if key[0].isupper()
+        }
+
+        assert declared == read
+
+    def test_from_search_result_takes_only_its_own_keys(self):
+        """The projection is scoped, so `raw` describes a period and not an award.
+
+        It must also copy, not alias: `Award._fetch_details` replaces its payload
+        in place, and this model reads `last_modified_date` lazily, so a shared
+        reference would let a later fetch change an already-built object.
+        """
+        award_data = {
+            "Start Date": "2020-01-01",
+            "Last Modified Date": "2022-03-15",
+            "Award ID": "CONT_AWD_1",
+            "Recipient Name": "ACME",
+        }
+
+        period = PeriodOfPerformance._from_search_result(award_data)
+
+        assert set(period.raw) == {"Start Date", "Last Modified Date"}
+
+        award_data.clear()
+        assert period.last_modified_date == date(2022, 3, 15)
+
+
 class TestPeriodOfPerformance:
     """Test PeriodOfPerformance model"""
 
@@ -204,7 +316,7 @@ class TestPeriodOfPerformance:
         assert period.end_date is None
         assert period.last_modified_date is None
 
-    @patch("usaspending.utils.formatter.logger")
+    @patch("usaspending.utils.dates.logger")
     def test_date_parsing_warning(self, mock_logger):
         """Test that invalid dates log warnings"""
         invalid_data = {"start_date": "invalid-date-format"}

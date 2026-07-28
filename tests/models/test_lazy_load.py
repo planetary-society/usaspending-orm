@@ -2,9 +2,14 @@
 from unittest.mock import Mock
 
 import pytest
+import requests
 
+from tests.conftest import load_json_fixture
 from tests.mocks.mock_client import MockUSASpendingClient
+from usaspending.exceptions import DetachedInstanceError, HTTPError, RateLimitError
+from usaspending.models.agency import Agency
 from usaspending.models.lazy_record import LazyRecord
+from usaspending.models.recipient import Recipient
 
 
 class TestLazyRecord:
@@ -104,7 +109,9 @@ class TestLazyRecord:
         result = test_lazy_record._lazy_get("any_field", default="any_default")
 
         # Should use get_value with the provided default
-        test_lazy_record.get_value.assert_called_once_with(["any_field"], default="any_default")
+        # A tuple, not a list: _lazy_get passes its *keys through untouched, since
+        # get_value takes any iterable of keys.
+        test_lazy_record.get_value.assert_called_once_with(("any_field",), default="any_default")
         assert result == "mocked_value"
 
     def test_lazy_get_with_multiple_keys(self, test_lazy_record):
@@ -231,3 +238,156 @@ class TestLazyRecord:
         model._ensure_details.assert_not_called()
         assert model._details_fetched is False
         assert result == "default"
+
+
+class TestFailedFetchIsRetried:
+    """Only the API's answer that a record is absent may be recorded as absent.
+
+    `_ensure_details` latches on a return, so a model whose fetch reported a
+    server error, a dropped connection or a closed session as absent data would
+    answer None for every later read of every lazy property, for as long as it
+    lived. Those all raise instead, leaving the flag unset so the next access
+    tries again. A 404 or a rejected id still latches: asking again would not
+    change the answer.
+    """
+
+    def test_agency_retries_after_a_server_error(self, mock_usa_client):
+        """A 500 reaches the caller and leaves the agency ready to fetch again."""
+        endpoint = "/agency/080/"
+        mock_usa_client.set_error_response(endpoint, 500, error_message="Server Error")
+        agency = Agency({"code": "080"}, mock_usa_client)
+
+        with pytest.raises(HTTPError):
+            _ = agency.name
+
+        assert agency._details_fetched is False
+
+        mock_usa_client.clear_error_response(endpoint)
+        mock_usa_client.set_fixture_response(endpoint, "agency")
+
+        assert agency.name == "National Aeronautics and Space Administration"
+        assert agency._details_fetched is True
+        assert mock_usa_client.get_request_count(endpoint) == 2
+
+    def test_recipient_retries_after_a_server_error(self, mock_usa_client):
+        """A 503 reaches the caller and leaves the recipient ready to fetch again."""
+        fixture = load_json_fixture("recipient_university.json")
+        recipient_id = fixture["recipient_id"]
+        endpoint = f"/recipient/{recipient_id}/"
+        mock_usa_client.set_error_response(endpoint, 503, error_message="Service Unavailable")
+        recipient = Recipient({"recipient_id": recipient_id}, mock_usa_client)
+
+        with pytest.raises(HTTPError):
+            _ = recipient.uei
+
+        assert recipient._details_fetched is False
+
+        mock_usa_client.clear_error_response(endpoint)
+        mock_usa_client.set_fixture_response(endpoint, "recipient_university")
+
+        assert recipient.uei == fixture["uei"]
+        assert recipient._details_fetched is True
+        assert mock_usa_client.get_request_count(endpoint) == 2
+
+    def test_a_rate_limited_recipient_does_not_latch(self, mock_usa_client):
+        """A rate limit reaches the caller, whose option is to wait and ask again."""
+        fixture = load_json_fixture("recipient_university.json")
+        recipient_id = fixture["recipient_id"]
+        endpoint = f"/recipient/{recipient_id}/"
+        mock_usa_client.set_error_response(endpoint, 429, error_message="Rate limit exceeded")
+        recipient = Recipient({"recipient_id": recipient_id}, mock_usa_client)
+
+        with pytest.raises(RateLimitError):
+            _ = recipient.uei
+
+        assert recipient._details_fetched is False
+
+        mock_usa_client.clear_error_response(endpoint)
+        mock_usa_client.set_fixture_response(endpoint, "recipient_university")
+
+        assert recipient.uei == fixture["uei"]
+        assert mock_usa_client.get_request_count(endpoint) == 2
+
+    def test_recipient_retries_after_a_dropped_connection(self, mock_usa_client, monkeypatch):
+        """A request that never reached the API is not an answer about the record.
+
+        The client re-raises the transport's own exception rather than wrapping
+        it, so this arrives at the model as a `requests` error carrying no status.
+        """
+        fixture = load_json_fixture("recipient_university.json")
+        recipient_id = fixture["recipient_id"]
+        endpoint = f"/recipient/{recipient_id}/"
+        mock_usa_client.set_fixture_response(endpoint, "recipient_university")
+        recipient = Recipient({"recipient_id": recipient_id}, mock_usa_client)
+
+        answer_request = mock_usa_client._make_request
+        attempts = []
+
+        def drop_the_first_connection(*args, **kwargs):
+            attempts.append(args)
+            if len(attempts) == 1:
+                raise requests.exceptions.ConnectionError("connection reset by peer")
+            return answer_request(*args, **kwargs)
+
+        monkeypatch.setattr(mock_usa_client, "_make_request", drop_the_first_connection)
+
+        with pytest.raises(requests.exceptions.ConnectionError):
+            _ = recipient.uei
+
+        assert recipient._details_fetched is False
+
+        assert recipient.uei == fixture["uei"]
+        assert recipient._details_fetched is True
+        assert len(attempts) == 2
+
+    def test_a_detached_agency_does_not_latch(self, mock_usa_client):
+        """A closed session is the caller's to fix, so reattach() must still work."""
+        agency = Agency({"code": "080"}, mock_usa_client)
+        mock_usa_client.close()
+
+        with pytest.raises(DetachedInstanceError):
+            _ = agency.name
+
+        assert agency._details_fetched is False
+
+        new_client = MockUSASpendingClient()
+        new_client.set_fixture_response("/agency/080/", "agency")
+        agency.reattach(new_client)
+
+        assert agency.name == "National Aeronautics and Space Administration"
+        assert agency._details_fetched is True
+
+    def test_a_not_found_agency_latches(self, mock_usa_client):
+        """A 404 is the API's answer, so it stays absent data rather than an error."""
+        endpoint = "/agency/999/"
+        mock_usa_client.set_error_response(endpoint, 404, error_message="Agency not found")
+        agency = Agency({"code": "999"}, mock_usa_client)
+
+        assert agency.name is None
+        assert agency._details_fetched is True
+
+        assert agency.mission is None
+        assert mock_usa_client.get_request_count(endpoint) == 1
+
+    def test_a_rejected_recipient_id_latches(self, mock_usa_client):
+        """A 400 is the API's verdict on the id, so it does not retry either."""
+        endpoint = "/recipient/not-a-hash/"
+        mock_usa_client.set_error_response(endpoint, 400, detail="Invalid recipient_id")
+        recipient = Recipient({"recipient_id": "not-a-hash"}, mock_usa_client)
+
+        assert recipient.name is None
+        assert recipient._details_fetched is True
+
+        assert recipient.uei is None
+        assert mock_usa_client.get_request_count(endpoint) == 1
+
+    def test_a_recipient_without_an_id_latches_without_a_request(self, mock_usa_client):
+        """There is nothing to fetch with, so the model must not keep trying."""
+        recipient = Recipient({"Recipient Name": "ACME CORPORATION"}, mock_usa_client)
+
+        assert recipient.uei is None
+        assert recipient._details_fetched is True
+        assert mock_usa_client.get_request_count() == 0
+
+        assert recipient.duns is None
+        assert mock_usa_client.get_request_count() == 0

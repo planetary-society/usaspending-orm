@@ -114,6 +114,11 @@ tests/
 - Run integration tests: `uv run pytest -m integration`
 - Lint: `uv run ruff check src/ tests/`
 - Format: `uv run ruff format src/ tests/`
+- Format check (what CI runs): `uv run ruff format --check src/ tests/`
+- Coverage gate (what CI runs): `uv run pytest --cov=src/usaspending --cov-fail-under=80`
+- CI: `.github/workflows/test.yml` runs the unit suite on Python 3.9-3.14 plus the
+  checks above on every push to `main` and every PR; `integration.yml` runs the
+  live-API suite weekly and on demand
 - No Justfile in this project
 
 ## Implementation Patterns
@@ -132,15 +137,25 @@ tests/
 
 ### Query Builders
 
-- Hierarchy: `BaseQuery[T]` -> `QueryBuilder[T]` -> `SearchQueryBuilder[T]`; also `ClientSideQueryBuilder[T]` (extends `BaseQuery`)
-- `QueryBuilder[T]` handles paginated API queries; `ClientSideQueryBuilder[T]` handles client-side filtering
-- Implement abstract methods:
-  - `_endpoint()`: API endpoint
+- Hierarchy: `BaseQuery[T]` -> `QueryBuilder[T]` -> `SearchQueryBuilder[T]`; also
+  `ClientSideQueryBuilder[T]` (extends `BaseQuery`) -> `FilterTreeQuery[T]`
+- `QueryBuilder[T]` handles paginated API queries; `ClientSideQueryBuilder[T]` handles
+  client-side filtering; `FilterTreeQuery[T]` fetches one unpaginated filter-tree level
+  once and filters it in memory
+- A paginated builder implements:
+  - `_endpoint`: API endpoint (property)
   - `_build_payload()`: Request payload
   - `_transform_result()`: Result transformation
-  - `_clone()`: Return cloned instance
-  - `__iter__()`: Iterable interface
-- All filter methods return cloned instances
+  - `_compute_raw_count()`: How this endpoint reports its count. Use one of
+    `_count_via_endpoint`, `_count_via_page_metadata` or `_count_via_paging`
+  - `_new_instance()`: Only when `__init__` takes more than a client
+  - `_http_method`: Only for GET endpoints (payload is sent as query parameters)
+- A filter-tree query implements `_scope()`, `_build_model()` and `_new_instance()`
+- `_clone()` is inherited; override it only to carry subclass state, always via
+  `super()._clone()`. `count()` is inherited and should not be overridden
+- Shared slices of behavior live in `queries/mixins.py` (`AwardScopedQuery`,
+  `SortableQuery`); compose them ahead of the builder base
+- All filter methods return cloned instances, via `_with_filter()` where possible
 
 ### Caching
 
@@ -218,7 +233,7 @@ tests/
 ### Quality Gates
 
 - 100% public API documented
-- Type hints pass mypy
+- Type hints pass mypy (aspirational; not yet enforced, no CI job runs mypy)
 - Tests pass with >80% coverage
 - No TODO/FIXME in code
 

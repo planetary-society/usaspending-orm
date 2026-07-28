@@ -36,37 +36,8 @@ class TestAgencyNewStructure:
         assert agency.abbreviation == "NASA"
         assert agency.slug == "national-aeronautics-and-space-administration"
 
-        # Agency now represents toptier data directly
-        # No toptier_agency or subtier_agency properties needed
-
-    def test_agency_with_subtier_data(self, mock_usa_client):
-        """Test Agency with both toptier and subtier data."""
-        toptier_data = {
-            "id": 862,
-            "has_agency_page": True,
-            "office_agency_name": "NASA GODDARD SPACE FLIGHT CENTER",
-            "name": "National Aeronautics and Space Administration",
-            "code": "080",
-            "abbreviation": "NASA",
-            "slug": "national-aeronautics-and-space-administration",
-        }
-
-        subtier_data = {
-            "name": "National Aeronautics and Space Administration",
-            "code": "8000",
-            "abbreviation": "NASA",
-        }
-
-        agency = Agency(toptier_data, mock_usa_client, subtier_data)
-
-        # Test toptier data
-        assert agency.name == "National Aeronautics and Space Administration"
-        assert agency.code == "080"
-        assert agency.abbreviation == "NASA"
-
-        # With the new structure, Agency only handles toptier data directly
-        # Subtier data would be handled separately by SubTierAgency if needed
-        # The subtier data is passed to constructor but not exposed as a property
+        # Agency represents toptier data directly. Subtier data is a separate
+        # model, SubTierAgency, not a property here.
 
     def test_agency_with_minimal_required_data(self, mock_usa_client):
         """Test Agency with minimal required data."""
@@ -322,8 +293,12 @@ class TestAgencyErrorHandling:
         # The implementation does try to call _get_award_summary which logs an error
         # and then returns None
         assert agency.contract_obligations is None
-        # An API call is attempted but fails due to no code
-        assert mock_usa_client.get_request_count() >= 0
+        # One API call is attempted, the lazy detail load looking for the missing
+        # code, and it is the only one: the summary fetch gives up before asking.
+        # known: the codeless detail load builds /agency/None/, which is not a
+        # shape worth pinning, so the check is that the summary was not requested.
+        assert mock_usa_client.get_request_count() == 1
+        assert not mock_usa_client.get_last_request()["endpoint"].endswith("/awards/")
 
 
 class TestAgencyIntegrationWithFixtures:
@@ -343,8 +318,7 @@ class TestAgencyIntegrationWithFixtures:
             **toptier_data,
         }
 
-        subtier_data = award_agency_data.get("subtier_agency")
-        agency = Agency(agency_data, mock_usa_client, subtier_data)
+        agency = Agency(agency_data, mock_usa_client)
 
         # Test the data
         assert agency.agency_id == 862
@@ -355,9 +329,8 @@ class TestAgencyIntegrationWithFixtures:
         assert agency.slug == "national-aeronautics-and-space-administration"
         assert agency.office_agency_name == "NASA GODDARD SPACE FLIGHT CENTER"
 
-        # Agency now only handles toptier data directly
-        # Subtier data would need to be handled separately via SubTierAgency if needed
-        # The agency constructor received subtier_data but doesn't expose it as a property
+        # Agency only handles toptier data. The award's subtier_agency is a
+        # separate model, built by Award._build_subtier_agency.
 
     def test_agency_from_autocomplete_fixture(self, mock_usa_client, load_fixture):
         """Test creating Agency from autocomplete fixture."""

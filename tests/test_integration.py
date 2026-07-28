@@ -11,15 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from usaspending import USASpendingClient
-
 pytestmark = pytest.mark.integration
-
-
-@pytest.fixture(scope="module")
-def client():
-    """Real USASpending client for integration tests."""
-    return USASpendingClient()
 
 
 class TestAwardResourceIntegration:

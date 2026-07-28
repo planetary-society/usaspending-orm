@@ -55,7 +55,7 @@ contracts = (
 
 for contract in contracts:
     print(
-        f"{contract.recipient.name}: ${contract.award_amount:,.2f} ${contract.period_of_performance.last_modified_date}"
+        f"{contract.recipient.name}: ${contract.award_amount or 0:,.2f} ${contract.period_of_performance.last_modified_date}"
     )
 ```
 
@@ -121,22 +121,16 @@ from typing import Any
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger, log_query_execution
 from ..models import Award
-from ..models.award_factory import create_award
+from ..models.award_factory import create_award, model_for_name
 
 # Import award type codes from models
 # These are defined by USASpending.gov and represent different categories of awards
 from ..models.award_types import (
     ALL_AWARD_CODES,
-    AWARD_TYPE_GROUPS,
-    CONTRACT_CODES,
-    GRANT_CODES,
-    IDV_CODES,
-    LOAN_CODES,
+    categories_for_codes,
+    category_for_exclusive_codes,
 )
-from ..models.contract import Contract
-from ..models.grant import Grant
-from ..models.idv import IDV
-from ..models.loan import Loan
+from ..utils.validations import validate_sort_field
 from .filters import (
     SimpleListFilter,
 )
@@ -172,6 +166,28 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         """
         return "/search/spending_by_award/"
 
+    def _require_award_type_filters(self) -> dict[str, Any]:
+        """Aggregate the filters, requiring the award type the API mandates.
+
+        Both the search payload and the count request need the same aggregate
+        and enforce the same requirement, so they share this.
+
+        Returns:
+            dict[str, Any]: The aggregated filter payload.
+
+        Raises:
+            ValidationError: If no ``award_type_codes`` filter is set.
+        """
+        final_filters = self._aggregate_filters()
+
+        if "award_type_codes" not in final_filters:
+            raise ValidationError(
+                "A filter for 'award_type_codes' is required. "
+                "Use the .award_type_codes() method or a convenience method like .contracts()."
+            )
+
+        return final_filters
+
     def _build_payload(self, page: int) -> dict[str, Any]:
         """
         Construct the API request payload from filter objects.
@@ -186,14 +202,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             ValidationError: If required 'award_type_codes' filter is missing.
         """
 
-        final_filters = self._aggregate_filters()
-
-        # The 'award_type_codes' filter is required by the API.
-        if "award_type_codes" not in final_filters:
-            raise ValidationError(
-                "A filter for 'award_type_codes' is required. "
-                "Use the .award_type_codes() method or a convenience method like .contracts()."
-            )
+        final_filters = self._require_award_type_filters()
 
         payload = {
             "filters": final_filters,
@@ -222,21 +231,12 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         Returns:
             Award: An appropriate Award subclass instance (Contract, Grant, etc.).
         """
-        # Get award type codes from current filters
-        award_type_codes = self._get_award_type_codes()
-
         # If we're filtering for a single award type category, add it to the result
         # This ensures the correct Award subclass is created even when the API
         # response doesn't include explicit type information
-        if award_type_codes:
-            if award_type_codes.issubset(CONTRACT_CODES):
-                result["category"] = "contract"
-            elif award_type_codes.issubset(IDV_CODES):
-                result["category"] = "idv"
-            elif award_type_codes.issubset(GRANT_CODES):
-                result["category"] = "grant"
-            elif award_type_codes.issubset(LOAN_CODES):
-                result["category"] = "loan"
+        category = category_for_exclusive_codes(self._get_award_type_codes())
+        if category:
+            result["category"] = category.singular
 
         return create_award(result, self._client)
 
@@ -271,28 +271,17 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             >>> # This would raise ValidationError:
             >>> search.award_type_codes("A", "02")  # Contract + Grant
         """
-        existing_codes = self._get_award_type_codes()
-        all_codes = existing_codes | new_codes
+        all_codes = self._get_award_type_codes() | new_codes
+        categories = categories_for_codes(all_codes)
 
-        if not all_codes:
-            return
-
-        # Check how many categories are represented using the config mapping
-        categories_present = 0
-        category_names = []
-
-        for category_name, codes in AWARD_TYPE_GROUPS.items():
-            if all_codes & frozenset(codes.keys()):
-                categories_present += 1
-                category_names.append(category_name)
-
-        if categories_present > 1:
+        if len(categories) > 1:
+            category_names = [category.group for category in categories]
             raise ValidationError(
                 f"Cannot mix different award type categories: {', '.join(category_names)}. "
                 "Use separate queries for each award type category."
             )
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """
         Get the total count of results without fetching all items.
 
@@ -310,39 +299,24 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             >>> total = contracts.count()
             >>> print(f"Found {total} contracts in FY2024")
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
+        # Validate and aggregate once, then reuse for the count request.
+        final_filters = self._require_award_type_filters()
 
-        # Aggregate filters to prepare for the count request
-        final_filters = self._aggregate_filters()
+        results = self.count_awards_by_type(filters=final_filters)
+        category = self._get_award_type_category(self._get_award_type_codes())
 
-        # The 'award_type_codes' filter is required by the API.
-        if "award_type_codes" not in final_filters:
-            raise ValidationError(
-                "A filter for 'award_type_codes' is required. "
-                "Use the .award_type_codes() method or a convenience method like .contracts()."
-            )
+        return results.get(category, 0)
 
-        # Make the API call to count awards by type
-        results = self.count_awards_by_type()
-
-        # Get the award type codes to determine which category to count
-        award_type_codes = self._get_award_type_codes()
-
-        # Determine the category based on award type codes
-        category = self._get_award_type_category(award_type_codes)
-
-        # Extract the count for the specific category
-        total = results.get(category, 0)
-
-        logger.info(f"{self.__class__.__name__}.count() = {total} ({category})")
-        return total
-
-    def count_awards_by_type(self) -> dict[str, int]:
+    def count_awards_by_type(self, filters: dict[str, Any] | None = None) -> dict[str, int]:
         """
         Get counts of awards grouped by type category.
 
         This method calls the /search/spending_by_award_count/ endpoint to get
         counts for all award type categories matching the current filters.
+
+        Args:
+            filters: Pre-aggregated filter payload. Callers that already built
+                one pass it here rather than aggregating a second time.
 
         Returns:
             dict[str, int]: Dictionary mapping award type categories
@@ -354,7 +328,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             >>> print(counts)  # {'contracts': 1234, 'grants': 567, ...}
         """
         endpoint = "/search/spending_by_award_count/"
-        final_filters = self._aggregate_filters()
+        final_filters = self._aggregate_filters() if filters is None else filters
 
         payload = {
             "filters": final_filters,
@@ -387,19 +361,8 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         Raises:
             ValidationError: If no valid award type category is found.
         """
-        # Map config category names to API response names
-        category_mapping = {
-            "contracts": "contracts",
-            "idvs": "idvs",
-            "loans": "loans",
-            "grants": "grants",
-            "direct_payments": "direct_payments",
-            "other_assistance": "other",
-        }
-
-        for category_name, codes in AWARD_TYPE_GROUPS.items():
-            if award_type_codes & frozenset(codes.keys()):
-                return category_mapping[category_name]
+        for category in categories_for_codes(award_type_codes):
+            return category.api_count_key
 
         # Fail hard if no valid award type category is found
         raise ValidationError("No valid award type category found. ")
@@ -421,31 +384,13 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         # Start with base fields from Award model
         base_fields = Award.SEARCH_FIELDS.copy()
 
-        # Get award type codes from filters
-        award_types = self._get_award_type_codes()
+        # Each matching category names the model that owns its extra fields.
         additional_fields = []
-
-        # Check each category and add appropriate fields based on model
-        for category_name, codes in AWARD_TYPE_GROUPS.items():
-            if award_types & frozenset(codes.keys()):
-                if category_name == "contracts":
-                    # Use Contract.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend(
-                        [f for f in Contract.SEARCH_FIELDS if f not in base_fields]
-                    )
-                elif category_name == "idvs":
-                    # Use IDV.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend([f for f in IDV.SEARCH_FIELDS if f not in base_fields])
-                elif category_name == "loans":
-                    # Use Loan.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend(
-                        [f for f in Loan.SEARCH_FIELDS if f not in base_fields]
-                    )
-                elif category_name in ["grants", "direct_payments", "other_assistance"]:
-                    # Use Grant.SEARCH_FIELDS but exclude base fields
-                    additional_fields.extend(
-                        [f for f in Grant.SEARCH_FIELDS if f not in base_fields]
-                    )
+        for category in categories_for_codes(self._get_award_type_codes()):
+            model = model_for_name(category.search_fields_model)
+            additional_fields.extend(
+                field for field in model.SEARCH_FIELDS if field not in base_fields
+            )
 
         # Combine base fields with additional fields, removing duplicates
         all_fields = base_fields + additional_fields
@@ -504,28 +449,21 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         # Get the valid fields for the current award type configuration
         valid_fields = self._get_fields()
 
-        # Validate that the field is in the list of valid fields
+        # Tested twice on purpose: naming the categories is only worth doing on the
+        # way to raising, and the call below always raises once inside this branch.
         if field not in valid_fields:
-            # Build a helpful error message
             award_types = self._get_award_type_codes()
             if award_types:
-                # Determine which category we're searching
-                category_names = []
-                for category_name, codes in AWARD_TYPE_GROUPS.items():
-                    if award_types & frozenset(codes.keys()):
-                        category_names.append(category_name)
+                category_names = [category.group for category in categories_for_codes(award_types)]
                 category_str = (
                     ", ".join(category_names) if category_names else "selected award types"
                 )
             else:
                 category_str = "all award types (no type filter applied)"
 
-            raise ValidationError(
-                f"Invalid sort field '{field}' for {category_str}. "
-                f"Valid fields are: {', '.join(sorted(valid_fields))}"
-            )
+            validate_sort_field(field, valid_fields, category_str)
 
-        # Call the parent class order_by method
+        # The base validates the direction, so this passes it through unchecked.
         return super().order_by(field, direction)
 
     # ==========================================================================
@@ -579,8 +517,51 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
 
         self._validate_single_award_type_category(new_codes)
 
-        clone = self._clone()
-        clone._filter_objects.append(
-            SimpleListFilter(key="award_type_codes", values=list(award_codes))
+        return self._with_filter(SimpleListFilter(key="award_type_codes", values=list(award_codes)))
+
+    def object_classes(self, *object_classes: str) -> AwardsSearch:
+        """
+        Filter by federal object class codes.
+
+        Object classes categorize spending by the nature of the goods or services
+        purchased (for example personnel compensation, travel, or supplies), as
+        defined in Office of Management and Budget Circular A-11. Pass object class
+        codes, not names: two-digit major group codes such as "10" (Personnel
+        compensation and benefits) or "25" (Contractual services and supplies), or
+        more specific codes such as "252".
+
+        Args:
+            *object_classes: One or more object class codes as strings.
+
+        Returns:
+            AwardsSearch: A new instance with the object class filter applied.
+
+        Raises:
+            ValidationError: If no object class code is provided.
+
+        Note:
+            Multiple codes use OR logic (matches any specified code). This filter is
+            supported only by the award search endpoints and is not valid for subaward
+            searches, so ``SubAwardsSearch`` raises ``ValidationError`` if it is used.
+            The bulk download endpoint (``/download/search/``) ignores this filter, so
+            a download built from a query using it will not be narrowed by object class.
+
+        Example:
+            >>> # Find National Aeronautics and Space Administration contracts for
+            >>> # contractual services and supplies (major group "25")
+            >>> awards = (
+            ...     client.awards.search()
+            ...     .contracts()
+            ...     .agency("National Aeronautics and Space Administration")
+            ...     .object_classes("25")
+            ... )
+
+            >>> # Combine multiple object class codes (OR logic)
+            >>> awards = client.awards.search().contracts().object_classes("10", "252")
+        """
+        if not object_classes:
+            raise ValidationError("At least one object class code is required")
+
+        return self._with_filter(
+            SimpleListFilter(key="object_classes", values=list(object_classes))
         )
-        return clone

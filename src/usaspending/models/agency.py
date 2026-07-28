@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..logging_config import USASpendingLogger
-from ..utils.formatter import to_date, to_decimal, to_int
+from ..utils.dates import to_date
+from ..utils.numbers import to_decimal, to_int
 from .award_types import (
     CONTRACT_CODES,
     DIRECT_PAYMENT_CODES,
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
     from ..client import USASpendingClient
     from ..queries.awards_search import AwardsSearch
     from ..queries.federal_accounts_query import FederalAccountsQuery
+    from .federal_account import FederalAccount
     from .subtier_agency import SubTierAgency
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -59,19 +61,15 @@ class Agency(LazyRecord):
     For subtier agency information, use the SubTierAgency model separately.
     """
 
-    def __init__(
-        self,
-        data: dict[str, Any],
-        client: USASpendingClient,
-        subtier_data: dict[str, Any] | None = None,
-    ):
+    _REATTACH_INVALIDATES: ClassVar[tuple[str, ...]] = ("_federal_accounts_level",)
+
+    def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize Agency instance.
 
         Args:
             data: Toptier agency data merged with top-level agency fields.
                 Can be flat structure or nested with toptier_agency dict.
             client: USASpendingClient client instance.
-            subtier_data: Optional subtier agency data for subtier_agency property.
         """
         # Use the base validation method (dict-only)
         raw = self.validate_init_data(data, "Agency", allow_string_id=False)
@@ -88,15 +86,17 @@ class Agency(LazyRecord):
 
         super().__init__(raw, client)
 
-        # Store subtier data separately
-        self._subtier_data = subtier_data
-
     def _fetch_details(self) -> dict[str, Any] | None:
         """Fetch full agency details if we have a toptier_code and client.
 
         Returns:
-            Optional[Dict[str, Any]]: Full agency data from the API, or None
-            if unable to fetch due to missing toptier_code or API error.
+            Optional[Dict[str, Any]]: Full agency data from the API, or None if
+            the API has no such agency or rejected the code.
+
+        Raises:
+            USASpendingError: If the failure is not an answer about this agency,
+                such as a server error, a rate limit, or a closed client session.
+            requests.RequestException: If the request never reached the API.
         """
         # Try to get toptier_code from existing data
         toptier_code = None
@@ -117,7 +117,8 @@ class Agency(LazyRecord):
 
             return full_agency
         except Exception as e:
-            # Log but don't raise - lazy loading should fail gracefully
+            if not self._is_absent_record(e):
+                raise
             logger.debug(f"Could not fetch agency details for {toptier_code}: {e}")
             return None
 
@@ -491,6 +492,11 @@ class Agency(LazyRecord):
         Returns a query-like object that supports iteration, filtering,
         ordering, and .count().
 
+        The level is fetched once per Agency, so the reads below cost one request
+        between them rather than one each. The corollary is that a long-lived
+        Agency keeps reporting the accounts it first saw; construct a fresh one to
+        pick up changes.
+
         Returns:
             FederalAccountsQuery: Lazy query for federal accounts.
 
@@ -512,10 +518,22 @@ class Agency(LazyRecord):
             >>> for tas in account.tas_codes:
             ...     print(tas.id)
         """
+        return self._new_federal_accounts_query()._seed(lambda: self._federal_accounts_level)
+
+    def _new_federal_accounts_query(self) -> FederalAccountsQuery:
+        """Build an unfetched query for this agency's federal accounts."""
         from ..queries.federal_accounts_query import FederalAccountsQuery
 
-        toptier_code = self.code or ""
-        return FederalAccountsQuery(self._client, toptier_code)
+        return FederalAccountsQuery(self._client, self.code or "")
+
+    @cached_property
+    def _federal_accounts_level(self) -> list[FederalAccount]:
+        """Fetch this agency's accounts once, as models rather than as a query.
+
+        See "Who caches what" in :mod:`usaspending.queries.filter_tree_query` for
+        why a model caches the models where a resource may cache the query.
+        """
+        return self._new_federal_accounts_query().all()
 
     def get_obligations(
         self,
@@ -554,8 +572,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of contract obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(CONTRACT_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(CONTRACT_CODES))
 
     @cached_property
     def grant_obligations(self) -> Decimal | None:
@@ -565,8 +582,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of grant obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(GRANT_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(GRANT_CODES))
 
     @cached_property
     def idv_obligations(self) -> Decimal | None:
@@ -576,8 +592,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of IDV obligations
             for this agency in the current fiscal year, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(IDV_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(IDV_CODES))
 
     @cached_property
     def loan_obligations(self) -> Decimal | None:
@@ -587,8 +602,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of loan obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(LOAN_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(LOAN_CODES))
 
     @cached_property
     def direct_payment_obligations(self) -> Decimal | None:
@@ -598,8 +612,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of direct payment obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(DIRECT_PAYMENT_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(DIRECT_PAYMENT_CODES))
 
     @cached_property
     def other_obligations(self) -> Decimal | None:
@@ -609,8 +622,7 @@ class Agency(LazyRecord):
             Optional[Decimal]: The total dollar amount of other assistance obligations
             for this agency, or None if unavailable.
         """
-        summary = self._get_award_summary(award_type_codes=list(OTHER_CODES))
-        return to_decimal(summary.get("obligations")) if summary else None
+        return self.get_obligations(award_type_codes=list(OTHER_CODES))
 
     def get_transaction_count(
         self,

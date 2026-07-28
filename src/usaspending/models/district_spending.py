@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import ClassVar
 
 from .spending import Spending
-
-if TYPE_CHECKING:
-    from ..client import USASpendingClient
 
 
 class DistrictSpending(Spending):
@@ -17,14 +14,7 @@ class DistrictSpending(Spending):
     district-specific parsing and display logic.
     """
 
-    def __init__(self, data: dict, client: USASpendingClient | None = None):
-        """Initialize DistrictSpending model.
-
-        Args:
-            data: Raw district spending data from API.
-            client: USASpendingClient client instance.
-        """
-        super().__init__(data, client)
+    _UNKNOWN_NAME: ClassVar[str] = "Unknown District"
 
     @property
     def district_code(self) -> str | None:
@@ -76,13 +66,3 @@ class DistrictSpending(Spending):
         """
         district_num = self.district_number
         return district_num is not None and "MULTIPLE" in district_num.upper()
-
-    def __repr__(self) -> str:
-        """String representation of DistrictSpending.
-
-        Returns:
-            str: String containing district name and amount.
-        """
-        name = self.name or "Unknown District"
-        amount = self.amount or 0
-        return f"<DistrictSpending {name}: ${amount:,.2f}>"

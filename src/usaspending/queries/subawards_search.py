@@ -99,41 +99,21 @@ class SubAwardsSearch(AwardsSearch):
             fields.update(SubAward.GRANT_SUBAWARD_FIELDS)
             return list(fields)
 
-    def count(self) -> int:
+    def _compute_raw_count(self) -> int:
         """
         Get the total count of subawards.
 
         If filtering by a specific award, uses the efficient count endpoint.
         Otherwise falls back to parent implementation.
         """
-        logger.debug(f"{self.__class__.__name__}.count() called")
-
-        # If we have an award_id filter, use the efficient count endpoint
+        # Scoped to one award there is a dedicated count endpoint; a general
+        # subaward search has none, so iteration is the only option.
         if self._award_id:
-            endpoint = f"/awards/count/subaward/{self._award_id}/"
-
-            from ..logging_config import log_query_execution
-
-            log_query_execution(logger, "SubAwardsSearch.count", [], endpoint)
-
-            # Send the request to the count endpoint
-            response = self._client._make_request("GET", endpoint)
-
-            # Extract count from response
-            total = response.get("subawards", 0)
-
-            logger.info(
-                f"{self.__class__.__name__}.count() = {total} subawards for award {self._award_id}"
+            return self._count_via_endpoint(
+                f"/awards/count/subaward/{self._award_id}/", "subawards"
             )
-            return total
 
-        # Fall back to parent implementation for general subaward counting
-        # This is inefficient, but it's the only way to get the count
-        # without a dedicated endpoint for subaward searches.
-        count = 0
-        for _ in self:
-            count += 1
-        return count
+        return self._count_via_paging()
 
     def count_awards_by_type(self) -> dict[str, int]:
         """
@@ -179,7 +159,7 @@ class SubAwardsSearch(AwardsSearch):
         Example:
             >>> subawards = client.subawards.award_id("CONT_AWD_123...")
             >>> for sub in subawards:
-            ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount:,.2f}")
+            ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount or 0:,.2f}")
         """
         validated_id = validate_non_empty_string(award_id, "award_id")
 
@@ -249,4 +229,19 @@ class SubAwardsSearch(AwardsSearch):
             end_date=end_date,
             new_awards_only=False,
             date_type=date_type,
+        )
+
+    def object_classes(self, *object_classes: str) -> SubAwardsSearch:
+        """
+        Object class filtering is not supported for subaward searches.
+
+        The USASpending API accepts the ``object_classes`` filter for award searches
+        only, and returns HTTP 422 when it is combined with ``spending_level=subawards``.
+
+        Raises:
+            ValidationError: Always, because subaward searches do not support this filter.
+        """
+        raise ValidationError(
+            "object_classes is not supported for subaward searches. "
+            "This filter is only available for award searches."
         )

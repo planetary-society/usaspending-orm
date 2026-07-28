@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..logging_config import USASpendingLogger
+from ..models.award_types import category_for_api_count_key
 from .base_resource import BaseResource
 
 if TYPE_CHECKING:
@@ -72,30 +73,17 @@ class AwardResource(BaseResource):
         award_type, _ = matching_types[0]
         logger.info(f"Found 1 award of type {award_type} for ID {award_id}")
 
-        # Map API response keys to method names
-        method_mapping = {
-            "contracts": "contracts",
-            "grants": "grants",
-            "idvs": "idvs",
-            "loans": "loans",
-            "direct_payments": "direct_payments",
-            "other": "other_assistance",
-        }
-
-        method_name = method_mapping.get(award_type)
-        if not method_name:
+        # The count endpoint reports categories under its own keys, so resolve
+        # the matching category to get the type codes that select it.
+        category = category_for_api_count_key(award_type)
+        if category is None:
             logger.error(f"Unknown award type from API: {award_type}")
             return None
 
-        # Create search and apply the appropriate filter
-        awards_search = AwardsSearch(self._client)
-        if hasattr(awards_search, method_name):
-            logger.debug(f"Calling .{method_name}() method on AwardsSearch")
-            awards_search = getattr(awards_search, method_name)()
-            return awards_search.award_ids(award_id).first()
-        else:
-            logger.error(f"Method {method_name} not found on AwardsSearch")
-            return None
+        logger.debug(f"Searching {category.group} for award ID {award_id}")
+        return (
+            AwardsSearch(self._client).award_type_codes(*category.codes).award_ids(award_id).first()
+        )
 
     def search(self) -> AwardsSearch:
         """Create a new award search query builder.
@@ -104,11 +92,13 @@ class AwardResource(BaseResource):
             AwardSearch query builder for chaining filters
 
         Example:
-            >>> awards = client.awards.search()
+            >>> awards = (
+            ...     client.awards.search()
             ...     .agency("National Aeronautics and Space Administration")
             ...     .place_of_performance_locations({"state_code": "TX", "country_code": "USA"})
             ...     .fiscal_year(2024)
             ...     .limit(10)
+            ... )
         """
         logger.debug("Creating new AwardsSearch query builder")
         from ..queries.awards_search import AwardsSearch

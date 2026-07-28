@@ -85,7 +85,7 @@ class USASpendingClient:
         ...     .limit(10)
         ... )
         >>> for award in awards:
-        ...     print(f"{award.recipient_name}: ${award.amount:,.2f}")
+        ...     print(f"{award.recipient.name}: ${award.total_obligation or 0:,.2f}")
     """
 
     _make_cached_request: Any
@@ -261,7 +261,7 @@ class USASpendingClient:
             >>> # Get accounts for an award
             >>> award = client.awards.find_by_generated_id("CONT_AWD_123...")
             >>> for account in award.accounts:
-            ...     print(f"{account.code}: ${account.obligated_amount:,.2f}")
+            ...     print(f"{account.code}: ${account.obligated_amount or 0:,.2f}")
             >>>
             >>> # Or access directly
             >>> accounts = client.award_accounts.award_id("CONT_AWD_123...")

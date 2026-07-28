@@ -3,7 +3,7 @@
 from tests.utils import assert_decimal_equal
 from usaspending.models.agency import Agency
 from usaspending.models.subtier_agency import SubTierAgency
-from usaspending.utils.formatter import contracts_titlecase
+from usaspending.utils.textcase import titlecase_name
 
 
 class TestAgencySubagencies:
@@ -47,8 +47,8 @@ class TestAgencySubagencies:
         # Check first subagency against fixture data
         subagency = subagencies[0]
         expected_subagency = expected_results[0]
-        # Names are transformed by contracts_titlecase in the model
-        assert subagency.name == contracts_titlecase(expected_subagency["name"])
+        # Names are transformed by titlecase_name in the model
+        assert subagency.name == titlecase_name(expected_subagency["name"])
         assert subagency.abbreviation == expected_subagency["abbreviation"]
         assert_decimal_equal(subagency.total_obligations, expected_subagency["total_obligations"])
         assert subagency.transaction_count == expected_subagency["transaction_count"]
@@ -81,8 +81,8 @@ class TestAgencySubagencies:
         first_office = offices[0]
         expected_first_office = expected_children[0]
         assert first_office.code == expected_first_office["code"]
-        # Names are transformed by contracts_titlecase in the model
-        assert first_office.name == contracts_titlecase(expected_first_office["name"])
+        # Names are transformed by titlecase_name in the model
+        assert first_office.name == titlecase_name(expected_first_office["name"])
         assert_decimal_equal(
             first_office.total_obligations, expected_first_office["total_obligations"]
         )

@@ -69,7 +69,7 @@ class TestSubAgencyQueryFilters:
 
     def test_invalid_agency_type(self, mock_usa_client):
         """Test invalid agency_type raises error."""
-        with pytest.raises(ValidationError, match="agency_type must be"):
+        with pytest.raises(ValidationError, match="Invalid agency_type: invalid"):
             SubAgencyQuery(mock_usa_client, "080").agency_type("invalid")
 
     def test_award_type_codes(self, mock_usa_client):
@@ -90,7 +90,7 @@ class TestSubAgencyQueryFilters:
 
     def test_invalid_order_direction(self, mock_usa_client):
         """Test invalid sort direction raises error."""
-        with pytest.raises(ValidationError, match="direction must be"):
+        with pytest.raises(ValidationError, match="Invalid sort direction 'invalid'"):
             SubAgencyQuery(mock_usa_client, "080").order_by("name", "invalid")
 
 

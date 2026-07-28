@@ -213,7 +213,7 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         return clone
 
     def __iter__(self) -> Iterator[T]:
-        """Iterate over results after applying filters and ordering."""
+        """Iterate over results after applying filters, ordering, and limits."""
         items = self._materialize()
         items = self._apply_filters(items)
         items = self._apply_ordering(items)
@@ -233,32 +233,63 @@ class ClientSideQueryBuilder(BaseQuery[T]):
             IndexError: If index is out of bounds.
             TypeError: If key is not int or slice.
         """
-        items = self._apply_ordering(self._apply_filters(self._materialize()))
-
-        if isinstance(key, int):
-            return items[key]
-        if isinstance(key, slice):
-            return items[key]
-        raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
+        if not isinstance(key, (int, slice)):
+            raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
+        return self.all()[key]
 
     def count(self) -> int:
-        """Return the total number of matching results."""
-        return len(self._apply_filters(self._materialize()))
+        """Return how many results this query yields.
 
-    def _clone(self: Q) -> Q:
-        """Return a copy for method chaining."""
-        clone = self.__class__(
+        ``limit()`` and ``max_pages()`` apply here as they do to iteration, so
+        ``count()``, ``len()`` and ``len(all())`` always agree. For the total
+        under a set of filters, count before bounding the query.
+
+        Returns:
+            int: Matching items, held to whatever bounds are set.
+        """
+        # Bounds that forbid every result answer the question themselves, and
+        # materializing is a request for a filter-tree level not yet fetched.
+        if self._yields_nothing():
+            return 0
+
+        return self._cap(len(self._apply_filters(self._materialize())))
+
+    def __bool__(self) -> bool:
+        """Answer from the in-memory count, which is less work here than one row.
+
+        :meth:`BaseQuery.__bool__` reads a row via ``first()``, which is the cheap
+        question for a paginated query. It is the expensive one here: ``first()``
+        narrows onto a clone, and this hierarchy holds its rows rather than fetching
+        them per page, so the clone sorts the whole collection when ``order_by`` is
+        set and, for a filter-tree level, caches the fetch on itself and leaves this
+        query to request the level again. Counting touches neither.
+
+        Since the count honors ``limit()``, a zero-limit query is falsy without a
+        special case here, matching what it yields.
+
+        Returns:
+            bool: True if the query matches at least one result.
+        """
+        return self.count() > 0
+
+    def _new_instance(self: Q) -> Q:
+        """Construct an empty instance over the same source items."""
+        return self.__class__(
             self._items,
             transform=self._transform,
             keyword_fields=self._keyword_fields,
         )
+
+    def _clone(self: Q) -> Q:
+        """Copy the query, including both kinds of in-memory filter.
+
+        Returns:
+            ClientSideQueryBuilder: A copy carrying the same filters and
+            pagination state.
+        """
+        clone = super()._clone()
         clone._filter_objects = self._filter_objects.copy()
         clone._predicate_filters = self._predicate_filters.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
         return clone
 
     def _materialize(self) -> list[T]:
@@ -285,16 +316,8 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         return sorted(items, key=self._sort_key, reverse=reverse)
 
     def _apply_limits(self, items: list[T]) -> list[T]:
-        """Apply limit and max_pages constraints to the item list."""
-        max_items = len(items)
-
-        if self._max_pages is not None:
-            max_items = min(max_items, self._max_pages * self._page_size)
-
-        if self._total_limit is not None:
-            max_items = min(max_items, self._total_limit)
-
-        return items[:max_items]
+        """Truncate the item list to what limit() and max_pages() allow."""
+        return items[: self._cap(len(items))]
 
     def _sort_key(self, item: T) -> tuple[bool, Any]:
         """Build a stable sort key for the configured order field."""

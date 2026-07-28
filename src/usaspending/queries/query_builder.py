@@ -7,6 +7,8 @@ from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
+    Literal,
     TypeVar,
 )
 
@@ -25,10 +27,9 @@ from ..models.award_types import (
     LOAN_CODES,
     OTHER_CODES,
 )
-from ..utils.validations import parse_date_string, validate_non_empty_string
+from ..utils.validations import validate_non_empty_string
 from .base_query import BaseQuery
 from .filters import (
-    MIN_API_DATE,
     AgencyFilter,
     AwardAmountFilter,
     AwardDateType,
@@ -44,14 +45,21 @@ from .filters import (
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
     parse_agency_spec,
+    parse_api_date,
     parse_award_amount,
     parse_award_date_type,
     parse_fiscal_year,
     parse_location_scope,
     parse_location_spec,
+    validate_date_range,
 )
 
+# Element type produced by a query (an Award, a Transaction, ...).
 T = TypeVar("T")
+
+# Self type for chainable filter methods. Distinct from T: a filter returns
+# another builder of the same concrete class, not one of its result items.
+SQB = TypeVar("SQB", bound="SearchQueryBuilder[Any]")
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -68,10 +76,17 @@ class QueryBuilder(BaseQuery[T], ABC):
     - Use max_pages() to limit the number of API requests made
     """
 
+    #: HTTP method this endpoint expects. GET endpoints send their payload as
+    #: query parameters; POST sends a JSON body.
+    _http_method: ClassVar[Literal["GET", "POST"]] = "POST"
+
     def __init__(self, client: USASpendingClient) -> None:
         super().__init__()
         self._client = client
         self._filter_objects: list[BaseFilter] = []
+        # The result of count(), memoized for indexing so that walking pages does
+        # not re-count. count() deliberately does not read it, so that repeated
+        # calls observe fresh data.
         self._cached_count: int | None = None
 
     def __iter__(self) -> Iterator[T]:
@@ -131,7 +146,7 @@ class QueryBuilder(BaseQuery[T], ABC):
                     return
 
                 transformed = self._transform_result(item)
-                if transformed is not None:
+                if transformed is not None and self._row_passes(transformed):
                     yield transformed
                     items_yielded += 1
 
@@ -156,13 +171,14 @@ class QueryBuilder(BaseQuery[T], ABC):
         return results
 
     def _get_cached_count(self) -> int:
-        """Get the effective count, using cached value if available.
+        """Get the count, using the cached value if one is available.
 
-        Returns the count capped by limit() and max_pages() constraints.
-        This avoids redundant count API calls during indexing/slicing operations.
+        Holds what :meth:`count` reports, so it honors ``limit()`` and
+        ``max_pages()`` too. This avoids redundant count API calls during
+        indexing/slicing operations.
         """
         if self._cached_count is None:
-            self._cached_count = self._effective_count()
+            self._cached_count = self.count()
         return self._cached_count
 
     def __getitem__(self, key: int | slice) -> T | list[T]:
@@ -258,11 +274,6 @@ class QueryBuilder(BaseQuery[T], ABC):
         else:
             raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
 
-    @abstractmethod
-    def count(self) -> int:
-        """Get total count without fetching all results."""
-        pass
-
     @property
     @abstractmethod
     def _endpoint(self) -> str:
@@ -294,8 +305,12 @@ class QueryBuilder(BaseQuery[T], ABC):
         for f in self._filter_objects:
             f_dict = f.to_dict()
             for key, value in f_dict.items():
-                if key in final_filters and isinstance(final_filters[key], list):
-                    final_filters[key].extend(value)
+                if isinstance(value, list):
+                    # Copy: filters hand back their internal list and _clone()
+                    # shares filter objects between a query and its clones.
+                    value = list(value)
+                if isinstance(final_filters.get(key), list):
+                    final_filters[key] += value
                 # Skip keys with empty values to keep payload clean
                 elif value:
                     final_filters[key] = value
@@ -319,7 +334,12 @@ class QueryBuilder(BaseQuery[T], ABC):
         return self._aggregate_filters()
 
     def _execute_query(self, page: int) -> dict[str, Any]:
-        """Execute the query and return raw response."""
+        """Execute the query and return raw response.
+
+        Most of these endpoints take a POST body. A GET endpoint sets
+        ``_http_method`` and its payload is sent as query parameters instead,
+        which is the only thing that differed between them.
+        """
         query_type = self.__class__.__name__
         endpoint = self._endpoint
 
@@ -328,7 +348,9 @@ class QueryBuilder(BaseQuery[T], ABC):
         payload = self._build_payload(page)
         logger.debug(f"Query payload: {payload}")
 
-        response = self._client._make_request("POST", endpoint, json=payload)
+        # A GET carries its payload as query parameters; everything else as a body.
+        channel = {"params": payload} if self._http_method == "GET" else {"json": payload}
+        response = self._client._make_request(self._http_method, endpoint, **channel)
 
         if "page_metadata" in response:
             metadata = response["page_metadata"]
@@ -339,25 +361,195 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         return response
 
-    def _copy_base_state_into(self, clone: QueryBuilder[T]) -> None:
-        """Copy QueryBuilder-owned state into an already-constructed clone.
+    # ==========================================================================
+    # Counting
+    #
+    # count() is shared and not overridden: it owns the capping and the logging.
+    # Subclasses implement _compute_raw_count() and pick one of the mechanisms
+    # below, which cover everything these endpoints actually offer. Keeping the
+    # capping here is what stops some counts from honoring a bound and others not.
+    # ==========================================================================
 
-        Subclasses whose constructors require extra arguments (e.g., a
-        required ``award_id``) cannot call ``super()._clone()``. They build
-        the clone themselves and call this to inherit base-class state, so
-        base-class changes propagate without per-subclass edits.
+    def count(self) -> int:
+        """Return how many results this query yields.
+
+        ``limit()`` and ``max_pages()`` are the caller's own bounds, so they apply
+        here as they do to iteration: ``count()``, ``len()`` and ``len(all())``
+        always agree. For the server's total under a set of filters, count before
+        bounding the query. ``config.default_result_limit`` is deliberately not
+        applied; see :meth:`_count_via_paging`.
+
+        This always asks the API, so repeated calls observe fresh data. The only
+        count cache is :meth:`_get_cached_count`, which indexing uses to avoid
+        re-counting while walking pages.
+
+        Returns:
+            int: Matching results, held to whatever bounds are set.
         """
-        clone._filter_objects = self._filter_objects.copy()
-        clone._page_size = self._page_size
-        clone._total_limit = self._total_limit
-        clone._max_pages = self._max_pages
-        clone._order_by = self._order_by
-        clone._order_direction = self._order_direction
+        logger.debug(f"{self.__class__.__name__}.count() called")
+
+        # Bounds that forbid every result answer the question themselves, so the
+        # request is skipped rather than made and then discarded by the cap.
+        count = 0 if self._yields_nothing() else self._cap(self._compute_raw_count())
+        logger.info(f"{self.__class__.__name__}.count() = {count}")
+        return count
+
+    @abstractmethod
+    def _compute_raw_count(self) -> int:
+        """Return the matching total, before :meth:`count` applies the bounds.
+
+        Usually the API's own figure. A query that filters rows in memory must
+        instead report what it would yield, or :meth:`count` disagrees with
+        iteration.
+
+        Implement using one of the ``_count_*`` mechanisms below where possible.
+
+        Returns:
+            int: Total matching results.
+        """
+
+    def _count_via_endpoint(
+        self,
+        endpoint: str,
+        key: str,
+        method: str = "GET",
+        json: dict[str, Any] | None = None,
+    ) -> int:
+        """Count using a dedicated count endpoint.
+
+        Args:
+            endpoint: Count endpoint path.
+            key: Key in the response holding the count.
+            method: HTTP method the endpoint expects.
+            json: Request body, for endpoints that take one.
+
+        Returns:
+            int: The reported count.
+        """
+        # These endpoints derive their scope from the URL or the supplied body,
+        # so log the filters only when they are actually part of the request.
+        log_query_execution(
+            logger,
+            f"{self.__class__.__name__}.count",
+            self._filter_objects if json else [],
+            endpoint,
+        )
+        response = self._client._make_request(method, endpoint, json=json)
+        return response.get(key, 0)
+
+    def _count_via_page_metadata(self, key: str) -> int:
+        """Count from the page metadata of the first page of results.
+
+        Args:
+            key: Key within ``page_metadata`` holding the total.
+
+        Returns:
+            int: The reported count.
+        """
+        response = self._execute_query(1)
+        return response.get("page_metadata", {}).get(key, 0)
+
+    def _row_passes(self, item: T) -> bool:
+        """Report whether a fetched row belongs in the result set.
+
+        True for every row, unless a subclass filters in memory because the
+        endpoint offers no server-side equivalent. Consulted before the row is
+        yielded and before it counts toward ``limit()``, so such a filter narrows
+        the results rather than the fetch: ``limit(1)`` means one matching row, not
+        one row that may then be discarded. That is what lets :meth:`first` and
+        ``bool()`` agree with :meth:`__len__` on a filtered query.
+
+        A subclass that overrides this should also override :meth:`_countable_rows`
+        if it counts by paging, since the two answer for different layers: this one
+        decides what iteration yields, that one what the count reports.
+
+        Args:
+            item: A transformed row.
+
+        Returns:
+            bool: True if the row should be yielded.
+        """
+        return True
+
+    def _countable_rows(self, results: list[dict[str, Any]]) -> int:
+        """Return how many of one page's rows count toward the total.
+
+        Every row, since the default :meth:`_row_passes` keeps them all. A subclass
+        that filters in memory overrides this too, or its count reports rows that
+        iterating the same query never yields. Kept separate from
+        :meth:`_row_passes` so that counting stays cheap for the builders that do
+        not filter: this receives raw rows and need not build a model per row.
+
+        Args:
+            results: The raw rows from one page of the response.
+
+        Returns:
+            int: How many of them the caller would see.
+        """
+        return len(results)
+
+    def _count_via_paging(self) -> int:
+        """Count by walking pages and summing result lengths.
+
+        The only correct mechanism for endpoints that report no count at all.
+        Unlike iterating the query, this counts raw response rows, so by default it
+        does not build a model per row only to discard it, and it deliberately does
+        not apply ``config.default_result_limit`` -- that default exists to stop
+        unbounded *fetches*, and letting it cap a count would silently report
+        10,000 for any larger result set.
+
+        Explicit ``limit()`` and ``max_pages()`` are honored here as well as in
+        :meth:`count`, which is not redundant: stopping early is what keeps a
+        bounded query from paging the whole result set, and capping an already
+        bounded figure changes nothing.
+
+        Returns:
+            int: Number of matching rows.
+        """
+        total = 0
+        page = 1
+        pages_fetched = 0
+
+        while True:
+            if self._max_pages is not None and pages_fetched >= self._max_pages:
+                logger.debug(f"Max pages limit ({self._max_pages}) reached while counting")
+                break
+
+            response = self._execute_query(page)
+            results = response.get("results", [])
+
+            countable = self._countable_rows(results)
+            if self._total_limit is not None:
+                countable = min(countable, self._total_limit - total)
+            total += countable
+
+            if self._total_limit is not None and total >= self._total_limit:
+                logger.debug(f"Total limit of {self._total_limit} reached while counting")
+                break
+
+            if not results or not response.get("page_metadata", {}).get("hasNext", False):
+                break
+
+            page += 1
+            pages_fetched += 1
+
+        return total
+
+    def _new_instance(self) -> QueryBuilder[T]:
+        """Construct an empty instance bound to the same client."""
+        return self.__class__(self._client)
 
     def _clone(self) -> QueryBuilder[T]:
-        """Create a copy for method chaining."""
-        clone = self.__class__(self._client)
-        self._copy_base_state_into(clone)
+        """Copy the query, including its filters.
+
+        ``_cached_count`` is deliberately not carried over: the clone starts
+        fresh, and its filters may differ from this one's.
+
+        Returns:
+            QueryBuilder: A copy carrying the same filters and pagination state.
+        """
+        clone = super()._clone()
+        clone._filter_objects = self._filter_objects.copy()
         return clone
 
 
@@ -377,7 +569,24 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
     of filtering and should extend QueryBuilder directly instead.
     """
 
-    def keywords(self: T, *keywords: str) -> T:
+    def _with_filter(self: SQB, filter_obj: BaseFilter) -> SQB:
+        """Return a clone with one more filter applied.
+
+        Every filter method below reduces to this: validate the arguments, build
+        the filter object, and hand it here. Keeping the clone-and-append in one
+        place is what lets those methods stay a single expression.
+
+        Args:
+            filter_obj: The filter to add.
+
+        Returns:
+            A new instance of the same class with the filter appended.
+        """
+        clone = self._clone()
+        clone._filter_objects.append(filter_obj)
+        return clone
+
+    def keywords(self: SQB, *keywords: str) -> SQB:
         """
         Filter by keyword search.
 
@@ -398,17 +607,15 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .keywords("Jupiter", "Saturn", "Neptune", "Uranus")
             ... )
         """
-        clone = self._clone()
-        clone._filter_objects.append(KeywordsFilter(values=list(keywords)))
-        return clone
+        return self._with_filter(KeywordsFilter(values=list(keywords)))
 
     def time_period(
-        self: T,
+        self: SQB,
         start_date: datetime.date | str,
         end_date: datetime.date | str,
         new_awards_only: bool = False,
         date_type: str | None = None,
-    ) -> T:
+    ) -> SQB:
         """
         Filter by a specific date range.
 
@@ -471,25 +678,10 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             For subaward searches, only "action_date" and "last_modified_date"
             are supported. See SubAwardsSearch.time_period() for details.
         """
-        # Parse string dates if needed
-        start_date = parse_date_string(start_date, "start_date")
-        end_date = parse_date_string(end_date, "end_date")
-
-        # Validate minimum date (API only supports data from FY2008 onwards)
-        if start_date < MIN_API_DATE:
-            raise ValidationError(
-                f"start_date {start_date} is before the minimum supported date "
-                f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
-            )
-        if end_date < MIN_API_DATE:
-            raise ValidationError(
-                f"end_date {end_date} is before the minimum supported date "
-                f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
-            )
-        if end_date < start_date:
-            raise ValidationError(
-                f"end_date {end_date} must be on or after start_date {start_date}."
-            )
+        # Parse each bound and hold it to the API's floor, then check the range.
+        start_date = parse_api_date(start_date, "start_date")
+        end_date = parse_api_date(end_date, "end_date")
+        validate_date_range(start_date, end_date)
 
         # Convert string date_type to enum if needed
         date_type_enum = None
@@ -501,18 +693,16 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         if new_awards_only:
             date_type_enum = AwardDateType.NEW_AWARDS_ONLY
 
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             TimePeriodFilter(start_date=start_date, end_date=end_date, date_type=date_type_enum)
         )
-        return clone
 
     def fiscal_year(
-        self: T,
+        self: SQB,
         year: int,
         new_awards_only: bool = False,
         date_type: str | None = None,
-    ) -> T:
+    ) -> SQB:
         """
         Convenience method to apply a `time_period` filter for a U.S. government fiscal year
         by applying the appropriate start and end dates.
@@ -553,7 +743,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             date_type=date_type,
         )
 
-    def _add_scope_filter(self: T, key: str, scope: str) -> T:
+    def _add_scope_filter(self: SQB, key: str, scope: str) -> SQB:
         """Add a location scope filter (domestic/foreign).
 
         Args:
@@ -564,11 +754,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             A new instance with the scope filter applied.
         """
         location_scope = parse_location_scope(scope)
-        clone = self._clone()
-        clone._filter_objects.append(LocationScopeFilter(key=key, scope=location_scope))
-        return clone
+        return self._with_filter(LocationScopeFilter(key=key, scope=location_scope))
 
-    def _add_location_filter(self: T, key: str, locations: tuple[dict, ...]) -> T:
+    def _add_location_filter(self: SQB, key: str, locations: tuple[dict, ...]) -> SQB:
         """Add a location filter with parsed LocationSpec objects.
 
         Args:
@@ -579,11 +767,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             A new instance with the location filter applied.
         """
         location_specs = [parse_location_spec(loc) for loc in locations]
-        clone = self._clone()
-        clone._filter_objects.append(LocationFilter(key=key, locations=location_specs))
-        return clone
+        return self._with_filter(LocationFilter(key=key, locations=location_specs))
 
-    def place_of_performance_scope(self: T, scope: str) -> T:
+    def place_of_performance_scope(self: SQB, scope: str) -> SQB:
         """
         Filter by domestic or foreign place of performance.
 
@@ -601,7 +787,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self._add_scope_filter("place_of_performance_scope", scope)
 
-    def place_of_performance_locations(self: T, *locations: dict[str, str]) -> T:
+    def place_of_performance_locations(self: SQB, *locations: dict[str, str]) -> SQB:
         """
         Filter by specific geographic places of performance.
 
@@ -631,7 +817,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self._add_location_filter("place_of_performance_locations", locations)
 
-    def recipient_scope(self: T, scope: str) -> T:
+    def recipient_scope(self: SQB, scope: str) -> SQB:
         """
         Filter by domestic or foreign recipient location.
 
@@ -649,7 +835,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self._add_scope_filter("recipient_scope", scope)
 
-    def recipient_locations(self: T, *locations: dict[str, str]) -> T:
+    def recipient_locations(self: SQB, *locations: dict[str, str]) -> SQB:
         """
         Filter by specific recipient locations.
 
@@ -680,7 +866,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
     # Groups 3-6: Agency, Award, Code Filters, and Convenience Methods
     # ==========================================================================
 
-    def agencies(self: T, *agencies: dict[str, str]) -> T:
+    def agencies(self: SQB, *agencies: dict[str, str]) -> SQB:
         """
         Filter awards by one or more awarding or funding agencies.
 
@@ -768,17 +954,15 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         # Parse each agency dict into AgencySpec objects
         agency_specs = [parse_agency_spec(agency) for agency in agencies]
 
-        clone = self._clone()
-        clone._filter_objects.append(AgencyFilter(agencies=agency_specs))
-        return clone
+        return self._with_filter(AgencyFilter(agencies=agency_specs))
 
     def agency(
-        self,
+        self: SQB,
         name: str,
         agency_type: str = "awarding",
         tier: str = "toptier",
         toptier_name: str | None = None,
-    ) -> T:
+    ) -> SQB:
         """
         Helper method: Filter awards by a single agency (wraps agencies()).
 
@@ -814,7 +998,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             agency_dict["toptier_name"] = toptier_name
         return self.agencies(agency_dict)
 
-    def recipient_search_text(self: T, search_term: str) -> T:
+    def recipient_search_text(self: SQB, search_term: str) -> SQB:
         """
         Search for awards by recipient name, UEI, or DUNS.
 
@@ -846,13 +1030,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         validated_term = validate_non_empty_string(search_term, "recipient_search_text")
 
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             SimpleListFilter(key="recipient_search_text", values=[validated_term])
         )
-        return clone
 
-    def recipient_type_names(self: T, *type_names: str) -> T:
+    def recipient_type_names(self: SQB, *type_names: str) -> SQB:
         """
         Filter awards by recipient or business types.
 
@@ -947,13 +1129,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     )
             ... )
         """
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             SimpleListFilter(key="recipient_type_names", values=list(type_names))
         )
-        return clone
 
-    def award_ids(self: T, *award_ids: str) -> T:
+    def award_ids(self: SQB, *award_ids: str) -> SQB:
         """
         Filter by specific award IDs.
 
@@ -979,11 +1159,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             >>> # Search for a grant by FAIN
             >>> specific_grant = client.awards.search().grants().award_ids("1234567890ABCD")
         """
-        clone = self._clone()
-        clone._filter_objects.append(SimpleListFilter(key="award_ids", values=list(award_ids)))
-        return clone
+        return self._with_filter(SimpleListFilter(key="award_ids", values=list(award_ids)))
 
-    def award_amounts(self, *amounts: dict[str, float] | tuple[float | None, float | None]) -> T:
+    def award_amounts(
+        self: SQB, *amounts: dict[str, float] | tuple[float | None, float | None]
+    ) -> SQB:
         """
         Filter awards by amount ranges.
 
@@ -1022,11 +1202,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         # Convert various input formats to AwardAmount objects
         award_amounts = [parse_award_amount(amt) for amt in amounts]
 
-        clone = self._clone()
-        clone._filter_objects.append(AwardAmountFilter(amounts=award_amounts))
-        return clone
+        return self._with_filter(AwardAmountFilter(amounts=award_amounts))
 
-    def award_type_codes(self: T, *award_codes: str) -> T:
+    def award_type_codes(self: SQB, *award_codes: str) -> SQB:
         """
         Filter by one or more award type codes.
 
@@ -1090,13 +1268,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Reference:
             https://api.usaspending.gov/api/v2/references/filter_tree/psc/
         """
-        clone = self._clone()
-        clone._filter_objects.append(
-            SimpleListFilter(key="award_type_codes", values=list(award_codes))
-        )
-        return clone
+        return self._with_filter(SimpleListFilter(key="award_type_codes", values=list(award_codes)))
 
-    def contracts(self: T) -> T:
+    def contracts(self: SQB) -> SQB:
         """
         Filter to search for contract awards only.
 
@@ -1111,7 +1285,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*CONTRACT_CODES)
 
-    def idvs(self: T) -> T:
+    def idvs(self: SQB) -> SQB:
         """
         Filter to search for Indefinite Delivery Vehicle (IDV) awards only.
 
@@ -1127,7 +1301,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*IDV_CODES)
 
-    def loans(self: T) -> T:
+    def loans(self: SQB) -> SQB:
         """
         Filter to search for loan awards only.
 
@@ -1147,7 +1321,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*LOAN_CODES)
 
-    def grants(self: T) -> T:
+    def grants(self: SQB) -> SQB:
         """
         Filter to search for grant awards only.
 
@@ -1164,7 +1338,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*GRANT_CODES)
 
-    def direct_payments(self: T) -> T:
+    def direct_payments(self: SQB) -> SQB:
         """
         Filter to search for direct payment awards only.
 
@@ -1180,7 +1354,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*DIRECT_PAYMENT_CODES)
 
-    def other_assistance(self: T) -> T:
+    def other_assistance(self: SQB) -> SQB:
         """
         Filter to search for other assistance awards.
 
@@ -1196,7 +1370,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         return self.award_type_codes(*OTHER_CODES)
 
-    def program_numbers(self: T, *program_numbers: str) -> T:
+    def program_numbers(self: SQB, *program_numbers: str) -> SQB:
         """
         Filter by program numbers (CFDA/Assistance Listing numbers).
 
@@ -1219,17 +1393,15 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     client.awards.search().grants().program_numbers("10.001", "10.310", "10.902")
             ... )
         """
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             SimpleListFilter(key="program_numbers", values=list(program_numbers))
         )
-        return clone
 
     def naics_codes(
-        self,
+        self: SQB,
         require: list[str] | None = None,
         exclude: list[str] | None = None,
-    ) -> T:
+    ) -> SQB:
         """
         Filter by North American Industry Classification System (NAICS) codes.
 
@@ -1309,21 +1481,19 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             U.S. Census Bureau NAICS Codes
             https://www.census.gov/naics/
         """
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             NAICSFilter(
                 require=list(require) if require else [],
                 exclude=list(exclude) if exclude else [],
             )
         )
-        return clone
 
     def psc_codes(
-        self,
+        self: SQB,
         *codes: str,
         require: list[list[str]] | None = None,
         exclude: list[list[str]] | None = None,
-    ) -> T:
+    ) -> SQB:
         """
         Filter by Product and Service Codes (PSC).
 
@@ -1424,17 +1594,15 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                 "Use either psc_codes('1510', '1520') or psc_codes(require=[...], exclude=[...])."
             )
 
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             PSCFilter(
                 codes=list(codes) if codes else [],
                 require=require or [],
                 exclude=exclude or [],
             )
         )
-        return clone
 
-    def contract_pricing_type_codes(self: T, *type_codes: str) -> T:
+    def contract_pricing_type_codes(self: SQB, *type_codes: str) -> SQB:
         """
         Filter contracts by pricing type (FAR Part 16).
 
@@ -1492,13 +1660,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             FAR Part 16 - Types of Contracts
             https://www.acquisition.gov/far/part-16
         """
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             SimpleListFilter(key="contract_pricing_type_codes", values=list(type_codes))
         )
-        return clone
 
-    def set_aside_type_codes(self: T, *type_codes: str) -> T:
+    def set_aside_type_codes(self: SQB, *type_codes: str) -> SQB:
         """
         Filter contracts by set-aside type.
 
@@ -1567,13 +1733,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             FAR Part 19 - Small Business Programs
             https://www.acquisition.gov/far/part-19
         """
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             SimpleListFilter(key="set_aside_type_codes", values=list(type_codes))
         )
-        return clone
 
-    def extent_competed_type_codes(self: T, *type_codes: str) -> T:
+    def extent_competed_type_codes(self: SQB, *type_codes: str) -> SQB:
         """
         Filter contracts by extent of competition.
 
@@ -1619,17 +1783,15 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             FAR Part 6 - Competition Requirements
             https://www.acquisition.gov/far/part-6
         """
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             SimpleListFilter(key="extent_competed_type_codes", values=list(type_codes))
         )
-        return clone
 
     def tas_codes(
-        self,
+        self: SQB,
         require: list[list[str]] | None = None,
         exclude: list[list[str]] | None = None,
-    ) -> T:
+    ) -> SQB:
         """
         Filter by Treasury Account Symbols (TAS).
 
@@ -1649,17 +1811,15 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     client.awards.search().contracts().tas_codes(require=[["091"], ["097"]])
             ... )
         """
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             TieredCodeFilter(
                 key="tas_codes",
                 require=require or [],
                 exclude=exclude or [],
             )
         )
-        return clone
 
-    def treasury_account_components(self, *components: dict[str, str]) -> T:
+    def treasury_account_components(self: SQB, *components: dict[str, str]) -> SQB:
         """
         Filter by specific components of Treasury Accounts.
 
@@ -1689,11 +1849,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     )
             ... )
         """
-        clone = self._clone()
-        clone._filter_objects.append(TreasuryAccountComponentsFilter(components=list(components)))
-        return clone
+        return self._with_filter(TreasuryAccountComponentsFilter(components=list(components)))
 
-    def def_codes(self: T, *def_codes: str) -> T:
+    def def_codes(self: SQB, *def_codes: str) -> SQB:
         """
         Filter by Disaster Emergency Fund (DEF) codes.
 
@@ -1755,11 +1913,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             USASpending.gov COVID-19 Spending Profile
             https://www.usaspending.gov/disaster/covid-19
         """
-        clone = self._clone()
-        clone._filter_objects.append(SimpleListFilter(key="def_codes", values=list(def_codes)))
-        return clone
+        return self._with_filter(SimpleListFilter(key="def_codes", values=list(def_codes)))
 
-    def description(self: T, text: str) -> T:
+    def description(self: SQB, text: str) -> SQB:
         """
         Filter awards by description text.
 
@@ -1780,11 +1936,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         validated_text = validate_non_empty_string(text, "description")
 
-        clone = self._clone()
-        clone._filter_objects.append(SimpleStringFilter(key="description", value=validated_text))
-        return clone
+        return self._with_filter(SimpleStringFilter(key="description", value=validated_text))
 
-    def program_activity(self: T, *activity_codes: int) -> T:
+    def program_activity(self: SQB, *activity_codes: int) -> SQB:
         """
         Filter by program activity codes (deprecated).
 
@@ -1831,9 +1985,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         return self.program_activities(*[{"code": str(code)} for code in activity_codes])
 
     def program_activities(
-        self: T,
+        self: SQB,
         *activities: dict[str, str],
-    ) -> T:
+    ) -> SQB:
         """
         Filter by program activities using name or code.
 
@@ -1870,8 +2024,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                     "Each program activity must have at least a 'name' or 'code' field"
                 )
 
-        clone = self._clone()
-        clone._filter_objects.append(
+        return self._with_filter(
             SimpleListFilter(key="program_activities", values=list(activities))
         )
-        return clone

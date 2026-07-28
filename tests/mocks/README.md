@@ -59,8 +59,10 @@ def test_award_search(mock_usa_client):
         {"Award ID": "3"}
     ])
 
-    # Test execution
-    results = list(mock_usa_client.awards.search().award_type_codes("A"))
+    # Test execution. Read queries with all() where you assert on request
+    # counts: list() also consults __len__ for a size hint, which costs a
+    # count request a number of times that varies by Python version.
+    results = mock_usa_client.awards.search().award_type_codes("A").all()
     assert len(results) == 3
 
     # Built-in assertion
@@ -163,6 +165,28 @@ def test_request_tracking(mock_usa_client):
     )
 ```
 
+### Forbidding Requests
+
+When the subject of a test is that a model answered from data it already held, a
+configured response cannot show it: the model reads the answer either way, so the
+test passes whether or not it went to the network. `forbid_requests()` turns any
+further request into an `AssertionError` naming the method and endpoint, so the
+failure lands at the read that caused it.
+
+```python
+def test_a_search_row_answers_without_a_detail_fetch(mock_usa_client):
+    row = load_json_fixture("awards/search_results_contracts.json")["results"][0]
+    award = Award(row, mock_usa_client)
+    mock_usa_client.forbid_requests()
+
+    # Raises "no request allowed: GET /awards/..." if this lazy-loads
+    assert award.recipient.uei == "Z1H9VJS8NG16"
+```
+
+Call it after setup, so a fixture may still be served and only the reads under
+test are forbidden. Attempts are still recorded, so `get_request_count()` and
+`get_last_request()` keep working and `reset()` clears them as usual.
+
 ### Count Testing
 
 ```python
@@ -234,6 +258,8 @@ def test_rate_limiting(mock_usa_client):
 - `get_request_count(endpoint=None)`: Get number of requests made
 - `get_last_request(endpoint=None)`: Get last request data
 - `assert_called_with(endpoint, method, json, params)`: Assert specific request
+- `forbid_requests()`: Make every further request raise, for tests whose subject
+  is that a model answered without one
 
 #### Rate Limiting Simulation
 
@@ -308,7 +334,7 @@ python -m pytest tests/test_mock_client_example.py -v
 3. Execute your test logic:
 
    ```python
-   results = list(mock_usa_client.awards.search().award_type_codes("A"))
+   results = mock_usa_client.awards.search().award_type_codes("A").all()
    assert len(results) == 1
    ```
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from ..utils.formatter import round_to_millions, to_decimal
+from ..utils.numbers import round_to_millions, to_decimal, to_int
 from .base_model import ClientAwareModel
 
 if TYPE_CHECKING:
@@ -31,18 +31,20 @@ class Funding(ClientAwareModel):
         """Amount obligated for this funding record.
 
         Returns:
-            Optional[Decimal]: The transaction obligated amount, or 0.0.
+            Optional[Decimal]: The transaction obligated amount, or None when the record reports
+            none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(self.get_value("transaction_obligated_amount", default=0.0))
+        return to_decimal(self.get_value("transaction_obligated_amount"))
 
     @property
     def gross_outlay_amount(self) -> Decimal | None:
         """Gross outlay amount for this funding record.
 
         Returns:
-            Optional[Decimal]: The gross outlay amount, or 0.0.
+            Optional[Decimal]: The gross outlay amount, or None when the record reports
+            none. A reported zero returns ``Decimal("0.00")``.
         """
-        return to_decimal(self.get_value("gross_outlay_amount", default=0.0))
+        return to_decimal(self.get_value("gross_outlay_amount"))
 
     @property
     def disaster_emergency_fund_code(self) -> str | None:
@@ -116,8 +118,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The funding agency ID, or None.
         """
-        value = self.get_value("funding_agency_id")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("funding_agency_id"))
 
     @property
     def funding_toptier_agency_id(self) -> str | None:
@@ -179,8 +180,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The awarding agency ID, or None.
         """
-        value = self.get_value("awarding_agency_id")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("awarding_agency_id"))
 
     @property
     def awarding_toptier_agency_id(self) -> str | None:
@@ -269,8 +269,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The reporting fiscal year, or None.
         """
-        value = self.get_value("reporting_fiscal_year")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("reporting_fiscal_year"))
 
     @property
     def reporting_fiscal_quarter(self) -> int | None:
@@ -279,8 +278,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The reporting fiscal quarter, or None.
         """
-        value = self.get_value("reporting_fiscal_quarter")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("reporting_fiscal_quarter"))
 
     @property
     def reporting_fiscal_month(self) -> int | None:
@@ -289,8 +287,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[int]: The reporting fiscal month, or None.
         """
-        value = self.get_value("reporting_fiscal_month")
-        return int(value) if value is not None else None
+        return to_int(self.get_value("reporting_fiscal_month"))
 
     @property
     def is_quarterly_submission(self) -> bool | None:
