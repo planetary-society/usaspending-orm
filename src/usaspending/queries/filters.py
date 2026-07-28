@@ -118,7 +118,11 @@ class BaseFilter(ABC):
 
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:
-        """Converts the filter to its dictionary representation for the API."""
+        """Converts the filter to its dictionary representation for the API.
+
+        Returned collections may alias the filter's own state; callers must copy
+        before mutating.
+        """
         pass
 
 

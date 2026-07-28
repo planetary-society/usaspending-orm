@@ -304,8 +304,12 @@ class QueryBuilder(BaseQuery[T], ABC):
         for f in self._filter_objects:
             f_dict = f.to_dict()
             for key, value in f_dict.items():
-                if key in final_filters and isinstance(final_filters[key], list):
-                    final_filters[key].extend(value)
+                if isinstance(value, list):
+                    # Copy: filters hand back their internal list and _clone()
+                    # shares filter objects between a query and its clones.
+                    value = list(value)
+                if isinstance(final_filters.get(key), list):
+                    final_filters[key] += value
                 # Skip keys with empty values to keep payload clean
                 elif value:
                     final_filters[key] = value

@@ -4,10 +4,12 @@
 Tests cover:
 - Default result limit enforcement from config
 - Count caching to avoid redundant API calls
+- Filter aggregation isolation between a query and its clones
 """
 
 from __future__ import annotations
 
+import pytest
 from tests.mocks.mock_client import MockUSASpendingClient
 
 
@@ -157,3 +159,53 @@ class TestCountCaching:
             MockUSASpendingClient.Endpoints.AWARD_COUNT
         )
         assert request_count == 2
+
+
+# Filter methods whose values merge into a single list under a payload key equal
+# to the method name. Each case is (method name, first call args, second call args).
+# These are exactly the four filters whose to_dict() hands out internal lists by
+# reference, the hazard _aggregate_filters() must copy around.
+MERGEABLE_LIST_FILTERS = [
+    pytest.param("keywords", ("alpha", "gamma"), ("beta", "delta"), id="keywords"),
+    pytest.param("award_type_codes", ("A", "B"), ("C", "D"), id="award_type_codes"),
+    pytest.param("psc_codes", ("1510", "1520"), ("1530", "1540"), id="psc_codes"),
+    pytest.param(
+        "treasury_account_components",
+        ({"aid": "097", "main": "0100"}, {"aid": "080", "main": "0120"}),
+        ({"aid": "012", "main": "3500"}, {"aid": "021", "main": "2020"}),
+        id="treasury_account_components",
+    ),
+]
+
+
+@pytest.mark.parametrize(("method", "first", "second"), MERGEABLE_LIST_FILTERS)
+class TestFilterAggregationIsolation:
+    """Tests that _aggregate_filters() never mutates a filter's own list.
+
+    Filter objects return their internal lists by reference and `_clone()` shares
+    those objects between a query and its clones, so aggregation must copy rather
+    than extend in place.
+    """
+
+    def test_repeated_serialization_is_idempotent(self, mock_usa_client, method, first, second):
+        """Building the same payload repeatedly should give identical results."""
+        parent = getattr(mock_usa_client.awards.search(), method)(*first)
+        query = getattr(parent, method)(*second)
+
+        payloads = [query.to_filters_payload() for _ in range(3)]
+
+        assert payloads[0][method] == [*first, *second]
+        assert payloads[1] == payloads[0]
+        assert payloads[2] == payloads[0]
+
+    def test_siblings_and_parent_keep_independent_payloads(
+        self, mock_usa_client, method, first, second
+    ):
+        """Neither the parent nor a sibling should see a child's values."""
+        parent = getattr(mock_usa_client.awards.search(), method)(*first)
+        sibling_one = getattr(parent, method)(*second)
+        sibling_two = getattr(parent, method)(*first)
+
+        assert sibling_one.to_filters_payload()[method] == [*first, *second]
+        assert sibling_two.to_filters_payload()[method] == [*first, *first]
+        assert parent.to_filters_payload()[method] == list(first)
