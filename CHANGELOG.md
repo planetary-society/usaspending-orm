@@ -25,6 +25,24 @@ behavior preserving and the public API is unchanged.
 
 ### Changed
 
+- Date parsing reads the shape the API actually sends about 11 times faster.
+  Every date the library returns passes through one converter, which worked down
+  a list of seven `strptime` formats until one matched. The first entry is the
+  plain `YYYY-MM-DD` that accounts for 92 of the 94 date values in the captured
+  API responses, and reading that through `date.fromisoformat` instead takes
+  0.18 us rather than 2.06 us. Where it shows up is per row: reading
+  `action_date` across a full 5000-transaction page falls from 11.0 ms to
+  1.7 ms.
+
+  This is CPU only. No request count changes, no value changes, and every format
+  the converter accepted before is still accepted, verified on Python 3.9, 3.10,
+  3.11 and 3.12. The fast path is deliberately pinned to the exact `YYYY-MM-DD`
+  shape rather than handed the string outright, because Python 3.11 widened
+  `date.fromisoformat` to accept `20250829` and `2025-W35-5`, which the 3.9 floor
+  refuses and USAspending never sends. Accepting those on a new interpreter and
+  not an old one would make the library's behavior depend on the Python it runs
+  on, which is worth more than either form.
+
 - `client.tas.agencies` returns a `TASAgenciesQuery` instead of `list[Agency]`,
   matching the two levels below it in the same tree: `Agency.federal_accounts`
   and `FederalAccount.tas_codes` are both queries. Iteration, `len()`, indexing

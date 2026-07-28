@@ -1,9 +1,11 @@
-"""Tests for date parsing and fiscal-year helpers."""
+"""Tests for date parsing."""
 
 from __future__ import annotations
 
 from datetime import date, datetime
 from unittest.mock import patch
+
+import pytest
 
 from usaspending.utils.dates import to_date
 
@@ -76,8 +78,6 @@ class TestToDate:
         assert to_date("not-a-date") is None
         assert to_date("2025/08/29") is None  # Wrong separator
         assert to_date("08-29-2025") is None  # Wrong order
-        assert to_date("2025-13-01") is None  # Invalid month
-        assert to_date("2025-08-32") is None  # Invalid day
         assert to_date("abc-def-ghi") is None
         assert to_date("2025") is None  # Incomplete date
 
@@ -89,9 +89,6 @@ class TestToDate:
         assert result.year == 2024
         assert result.month == 2
         assert result.day == 29
-
-        # Non-leap year (should fail)
-        assert to_date("2023-02-29") is None
 
         # End of year - returns date only
         result = to_date("2025-12-31T23:59:59")
@@ -118,6 +115,108 @@ class TestToDate:
         assert result.year == 2026
         assert result.month == 3
         assert result.day == 31
+
+    def test_space_separated_datetime_with_microseconds(self):
+        """Test a space separator combined with microseconds - returns date only."""
+        result = to_date("2026-03-31 10:11:00.123456")
+        assert result == date(2026, 3, 31)
+
+    @patch("usaspending.utils.dates._DATE_FORMATS", ())
+    def test_a_date_only_value_parses_without_the_format_list(self):
+        """The fast path, not the format list, is what reads a plain YYYY-MM-DD.
+
+        With every strptime format removed the value still parses, which is only
+        possible through ``date.fromisoformat``. Nothing else catches the fast
+        path being disabled, since the format list accepts this shape too.
+
+        This and the test below are the only two places in the suite that patch a
+        private name, so the reason is worth stating rather than copying: the two
+        paths return equal dates for every value either accepts, so which one ran
+        is observable through no assertion on the result. Spying on the parser is
+        not available either, since ``date`` is an immutable C type and patching
+        the module's ``date`` name would break the isinstance checks above it.
+        """
+        assert to_date("2025-08-29") == date(2025, 8, 29)
+
+    @patch("usaspending.utils.dates._DATE_FORMATS", ())
+    def test_a_datetime_value_does_not_reach_the_fast_path(self):
+        """A value carrying a time is left to the format list.
+
+        Catches the fast path being switched to ``datetime.fromisoformat``, which
+        reads more shapes and so looks like a simplification, with the width
+        check loosened to let those shapes through. Either change alone is
+        harmless; together they take a time where none should be accepted.
+        """
+        assert to_date("2025-08-29T14:30:45") is None
+        assert to_date("2025-08-29 14:30:45") is None
+
+    def test_compact_timezone_offset(self):
+        """An offset written without a colon is accepted.
+
+        Only ``%z`` matches this shape, so it is the one supported format that
+        neither ``date.fromisoformat`` nor ``datetime.fromisoformat`` can parse on
+        every supported Python.
+        """
+        result = to_date("2025-08-29T14:30:45+0500")
+        assert result == date(2025, 8, 29)
+
+    def test_unpadded_month_and_day(self):
+        """A date written without zero padding is accepted.
+
+        ``%Y-%m-%d`` takes ``2025-8-9`` where ``date.fromisoformat`` requires the
+        padding, so this is why the fast path cannot replace that format outright.
+        """
+        result = to_date("2025-8-9")
+        assert result == date(2025, 8, 9)
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "2025-08-29GARBAGE",  # A valid date does not license trailing junk
+            "2025-08-29 99:99:99",  # An impossible time rejects the whole value
+            "2025-08-29 ",  # Trailing space
+            "2025-08-29T14:30",  # Time with no seconds
+            "2025-08-29Z",  # Zone designator with no time
+        ],
+    )
+    def test_a_leading_date_alone_is_not_enough(self, value):
+        """Reject a string whose first ten characters are a date but whose rest is not.
+
+        The whole string has to be a date the API could have sent. Reading only the
+        leading ten characters would take every one of these.
+        """
+        assert to_date(value) is None
+
+    @pytest.mark.parametrize("value", ["20250829", "2025-W35-5"])
+    def test_iso_forms_the_api_does_not_send_are_rejected(self, value):
+        """Reject the basic and week-date ISO forms on every supported Python.
+
+        Python 3.11 widened ``date.fromisoformat`` to accept both, so these fail
+        on 3.11 and later if the fast path stops excluding them.
+        """
+        assert to_date(value) is None
+
+    def test_earliest_representable_date(self):
+        """The minimum date parses, as a boundary on the year field."""
+        assert to_date("0001-01-01") == date(1, 1, 1)
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "2025-13-01",  # Invalid month
+            "2025-08-32",  # Invalid day
+            "2023-02-29",  # Not a leap year
+        ],
+    )
+    @patch("usaspending.utils.dates.logger")
+    def test_an_impossible_date_still_warns(self, mock_logger, value):
+        """A well-shaped but impossible date warns like any other failure.
+
+        These take the date-only path, so they would be the ones to lose the
+        warning if that path returned early instead of falling through.
+        """
+        assert to_date(value) is None
+        mock_logger.warning.assert_called_once()
 
     @patch("usaspending.utils.dates.logger")
     def test_logging_on_invalid_format(self, mock_logger):

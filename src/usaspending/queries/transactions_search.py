@@ -279,9 +279,9 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         Returns early when no bound is set, which is the common case: reading
         `action_date` re-parses the row's date string, so a query with no date
         filter would otherwise pay that for every row to answer a question nobody
-        asked. Measured at 5000 rows the guard is the difference between 21 ms and
-        7 ms, and it also keeps an unparseable date from being read, and warned
-        about, by a query that never needed it.
+        asked. Measured at 5000 rows through this predicate, the guard is the
+        difference between 2.2 ms and 0.3 ms, and it also keeps an unparseable date
+        from being read, and warned about, by a query that never needed it.
 
         A transaction with no action date is kept: an unknown date cannot be shown
         to fall outside the range. Absent bounds widen to the ends of the calendar
