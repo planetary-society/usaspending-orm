@@ -30,6 +30,13 @@ behavior preserving and the public API is unchanged.
   It is a relocation: it lived at `usaspending.utils.formatter.current_fiscal_year`,
   a deep path inside the module removed below, which stays gone.
 
+- `tests/test_public_api_surface.py` now records the shape of every public call,
+  constructors included, rather than its name alone, so a parameter that is
+  added, removed or made required fails the suite instead of passing unnoticed.
+  It also covers the `usaspending.utils` and `usaspending.download` exports and
+  pins the deep import paths callers are most likely to have written against
+  0.7.3.
+
 ### Changed
 
 - `count()` now honors `limit()` and `max_pages()` on every query, so `count()`,
