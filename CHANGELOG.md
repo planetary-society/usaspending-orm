@@ -25,6 +25,29 @@ behavior preserving and the public API is unchanged.
 
 ### Changed
 
+- `award.transactions.since()` and `until()` now reject a bound the API cannot
+  answer, instead of accepting it and quietly matching nothing useful. Two rules
+  that `time_period()` already enforced were missing here, and both failed
+  silently rather than loudly:
+
+  - A bound before FY2008 begins (2007-10-01) matched every row the API returned,
+    so `since("1999-01-01")` looked like a filter and did nothing.
+  - An inverted range yielded no rows at all, since the predicate is
+    `since <= action_date <= until`. `.since("2024-06-01").until("2024-01-01")`
+    returned an empty result that was indistinguishable from an award with no
+    transactions in range.
+
+  Both now raise `ValidationError`. **This is the one change here that can break
+  working code**: if you relied on an inverted range as a way to select nothing,
+  use `limit(0)` or skip the query. The range is checked by whichever of the two
+  calls comes second, so `.until(x).since(y)` is validated the same as
+  `.since(y).until(x)`.
+
+  Equal bounds still select that single day, and 2007-10-01 itself is still
+  valid. Internally both filters now share `parse_api_date` and
+  `validate_date_range`, so the two paths cannot drift apart again; the error
+  messages `time_period()` produced are unchanged.
+
 - Date parsing reads the shape the API actually sends about 11 times faster.
   Every date the library returns passes through one converter, which worked down
   a list of seven `strptime` formats until one matched. The first entry is the

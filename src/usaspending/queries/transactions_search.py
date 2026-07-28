@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.transaction import Transaction
-from ..utils.validations import parse_date_string
+from .filters import parse_api_date, validate_date_range
 from .mixins import AwardScopedQuery
 from .query_builder import QueryBuilder
 
@@ -175,13 +175,19 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             TransactionsSearch: A new instance with the date filter applied.
 
         Raises:
-            ValidationError: If date format is not YYYY-MM-DD.
+            ValidationError: If the date is unparseable, before FY2008 begins
+                (2007-10-01), or after a previously set :meth:`until` bound.
 
         Note:
             This filter is applied **client-side** because the /transactions/
             API endpoint doesn't support date filtering. All transactions are
             fetched and then filtered locally, which may be slower for awards
             with many transactions.
+
+            The bound is held to the same rules as
+            :meth:`~usaspending.queries.query_builder.QueryBuilder.time_period`,
+            and the range is checked by whichever of the two calls comes second,
+            so chaining order does not matter.
 
         Example:
             >>> # Get transactions from 2024 onwards
@@ -191,7 +197,8 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             >>> q1_2024 = award.transactions.since("2024-01-01").until("2024-03-31").all()
         """
         clone = self._clone()
-        clone._since = parse_date_string(date, "since_date")
+        clone._since = parse_api_date(date, "since_date")
+        validate_date_range(clone._since, clone._until, "since_date", "until_date")
         return clone
 
     def until(self, date: str | date) -> TransactionsSearch:
@@ -206,12 +213,18 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             TransactionsSearch: A new instance with the date filter applied.
 
         Raises:
-            ValidationError: If date format is not YYYY-MM-DD.
+            ValidationError: If the date is unparseable, before FY2008 begins
+                (2007-10-01), or before a previously set :meth:`since` bound.
 
         Note:
             This filter is applied **client-side** because the /transactions/
             API endpoint doesn't support date filtering. All transactions are
             fetched and then filtered locally.
+
+            The bound is held to the same rules as
+            :meth:`~usaspending.queries.query_builder.QueryBuilder.time_period`,
+            and the range is checked by whichever of the two calls comes second,
+            so chaining order does not matter.
 
         Example:
             >>> # Get historical transactions only
@@ -221,7 +234,8 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             >>> fy2024 = award.transactions.since("2023-10-01").until("2024-09-30").all()
         """
         clone = self._clone()
-        clone._until = parse_date_string(date, "until_date")
+        clone._until = parse_api_date(date, "until_date")
+        validate_date_range(clone._since, clone._until, "since_date", "until_date")
         return clone
 
     def order_by(self, field: str, direction: str = "desc") -> TransactionsSearch:

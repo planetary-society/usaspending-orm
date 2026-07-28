@@ -156,6 +156,76 @@ class TestDateFilterParsing:
             getattr(query, bound)("15/01/2024")
 
 
+class TestDateBoundValidation:
+    """since()/until() hold their bounds to the same rules as time_period()."""
+
+    @pytest.mark.parametrize("bound", ["since", "until"])
+    def test_a_bound_before_the_api_floor_is_rejected(self, mock_usa_client, bound):
+        """The API has no data before FY2008, so such a bound is a caller mistake.
+
+        Previously accepted, and it then matched everything the API returned,
+        which looks like a working filter that is silently doing nothing.
+        """
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        with pytest.raises(ValidationError, match="before the minimum supported date"):
+            getattr(query, bound)("2007-09-30")
+
+    @pytest.mark.parametrize("bound", ["since", "until"])
+    def test_the_first_day_of_fy2008_is_accepted(self, mock_usa_client, bound):
+        """The floor itself is valid, so the comparison cannot be exclusive."""
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        bounded = getattr(query, bound)("2007-10-01")
+
+        assert getattr(bounded, f"_{bound}") == date(2007, 10, 1)
+
+    def test_an_inverted_range_is_rejected(self, mock_usa_client):
+        """A range that cannot match is a mistake, not an empty result set.
+
+        The predicate is `since <= action_date <= until`, so this previously
+        yielded nothing while looking like a working query.
+        """
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        with pytest.raises(ValidationError, match="must be on or after"):
+            query.since("2024-06-01").until("2024-01-01")
+
+    def test_an_inverted_range_is_rejected_in_either_order(self, mock_usa_client):
+        """Chaining order must not decide whether the range is checked.
+
+        Each filter clones, so whichever call comes second is the only one that
+        can see both bounds. Checking in just one of them would leave
+        `.until(x).since(y)` unvalidated.
+        """
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        with pytest.raises(ValidationError, match="must be on or after"):
+            query.until("2024-01-01").since("2024-06-01")
+
+    def test_a_single_day_range_is_accepted(self, mock_usa_client):
+        """Equal bounds select one day, so the check cannot reject equality."""
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        bounded = query.since("2024-01-05").until("2024-01-05")
+
+        assert bounded._since == bounded._until == date(2024, 1, 5)
+
+    def test_replacing_a_bound_is_checked_against_the_new_value(self, mock_usa_client):
+        """Calling since() twice validates against the bound that survives.
+
+        The second call replaces the first, so an inverted range must be judged
+        on the replacement rather than on the value it displaced.
+        """
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        widened = query.since("2024-01-01").until("2024-03-01").since("2024-02-01")
+        assert widened._since == date(2024, 2, 1)
+
+        with pytest.raises(ValidationError, match="must be on or after"):
+            query.since("2024-01-01").until("2024-03-01").since("2024-06-01")
+
+
 class TestTransactionsSearchPageSize:
     """Test TransactionsSearch endpoint-specific page size caps."""
 

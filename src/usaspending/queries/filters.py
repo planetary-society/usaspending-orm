@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any, ClassVar, Literal
 
 from ..exceptions import ValidationError
-from ..utils.validations import parse_enum_value
+from ..utils.validations import parse_date_string, parse_enum_value
 
 # ==============================================================================
 # Constants
@@ -484,6 +484,77 @@ def parse_agency_spec(agency: dict[str, str]) -> AgencySpec:
         raise ValidationError(f"Agency tier must be 'toptier' or 'subtier', got: {agency['tier']}")
 
     return AgencySpec(**agency)
+
+
+def parse_api_date(value: str | datetime.date, field_name: str) -> datetime.date:
+    """Parse a date bound and hold it to the earliest date the API can answer.
+
+    The date counterpart to :func:`parse_fiscal_year`. USASpending.gov data begins
+    in fiscal year 2008, so an earlier bound cannot narrow anything: it matches
+    every row the API returns, which looks like a working filter that silently
+    does nothing.
+
+    Args:
+        value: Date string in YYYY-MM-DD format, or a date. A datetime is
+            narrowed to its date portion.
+        field_name: Name of the field, for error messages.
+
+    Returns:
+        datetime.date: The parsed bound.
+
+    Raises:
+        ValidationError: If the value is unparseable, or before FY2008 begins.
+
+    Example:
+        >>> parse_api_date("2024-01-15", "start_date")
+        datetime.date(2024, 1, 15)
+        >>> parse_api_date("2007-09-30", "start_date")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: start_date 2007-09-30 is before the minimum supported date 2007-10-01 (FY2008). USASpending.gov data begins in FY2008.
+    """
+    parsed = parse_date_string(value, field_name)
+    if parsed < MIN_API_DATE:
+        raise ValidationError(
+            f"{field_name} {parsed} is before the minimum supported date "
+            f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
+        )
+    return parsed
+
+
+def validate_date_range(
+    start: datetime.date | None,
+    end: datetime.date | None,
+    start_name: str = "start_date",
+    end_name: str = "end_date",
+) -> None:
+    """Reject a range whose end precedes its start.
+
+    Either bound may be None, since the two are set by separate chained calls on
+    some builders and only the later call sees both. That makes this safe to run
+    from each of them, which is what keeps the check independent of the order the
+    caller chains in.
+
+    Args:
+        start: Lower bound, or None if not set yet.
+        end: Upper bound, or None if not set yet.
+        start_name: Name of the lower bound, for error messages.
+        end_name: Name of the upper bound, for error messages.
+
+    Raises:
+        ValidationError: If both bounds are set and end precedes start.
+
+    Example:
+        >>> import datetime
+        >>> validate_date_range(datetime.date(2024, 1, 1), datetime.date(2024, 3, 1))
+        >>> validate_date_range(datetime.date(2024, 3, 1), None)
+        >>> validate_date_range(datetime.date(2024, 3, 1), datetime.date(2024, 1, 1))
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: end_date 2024-01-01 must be on or after start_date 2024-03-01.
+    """
+    if start is not None and end is not None and end < start:
+        raise ValidationError(f"{end_name} {end} must be on or after {start_name} {start}.")
 
 
 def parse_fiscal_year(year: int | str) -> int:

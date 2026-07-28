@@ -27,10 +27,9 @@ from ..models.award_types import (
     LOAN_CODES,
     OTHER_CODES,
 )
-from ..utils.validations import parse_date_string, validate_non_empty_string
+from ..utils.validations import validate_non_empty_string
 from .base_query import BaseQuery
 from .filters import (
-    MIN_API_DATE,
     AgencyFilter,
     AwardAmountFilter,
     AwardDateType,
@@ -46,11 +45,13 @@ from .filters import (
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
     parse_agency_spec,
+    parse_api_date,
     parse_award_amount,
     parse_award_date_type,
     parse_fiscal_year,
     parse_location_scope,
     parse_location_spec,
+    validate_date_range,
 )
 
 # Element type produced by a query (an Award, a Transaction, ...).
@@ -665,25 +666,10 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             For subaward searches, only "action_date" and "last_modified_date"
             are supported. See SubAwardsSearch.time_period() for details.
         """
-        # Parse string dates if needed
-        start_date = parse_date_string(start_date, "start_date")
-        end_date = parse_date_string(end_date, "end_date")
-
-        # Validate minimum date (API only supports data from FY2008 onwards)
-        if start_date < MIN_API_DATE:
-            raise ValidationError(
-                f"start_date {start_date} is before the minimum supported date "
-                f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
-            )
-        if end_date < MIN_API_DATE:
-            raise ValidationError(
-                f"end_date {end_date} is before the minimum supported date "
-                f"{MIN_API_DATE} (FY2008). USASpending.gov data begins in FY2008."
-            )
-        if end_date < start_date:
-            raise ValidationError(
-                f"end_date {end_date} must be on or after start_date {start_date}."
-            )
+        # Parse each bound and hold it to the API's floor, then check the range.
+        start_date = parse_api_date(start_date, "start_date")
+        end_date = parse_api_date(end_date, "end_date")
+        validate_date_range(start_date, end_date)
 
         # Convert string date_type to enum if needed
         date_type_enum = None
