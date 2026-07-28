@@ -11,7 +11,7 @@ from typing import Any
 
 from usaspending import USASpendingClient
 from usaspending.config import config
-from usaspending.exceptions import APIError, HTTPError
+from usaspending.exceptions import APIError, HTTPError, RateLimitError
 
 from .response_builder import ResponseBuilder
 
@@ -119,8 +119,9 @@ class MockUSASpendingClient(USASpendingClient):
             Mocked API response
 
         Raises:
-            APIError: For mocked 400 errors
-            HTTPError: For mocked non-400 errors
+            APIError: For mocked 400 and 422 errors
+            RateLimitError: For mocked 429 errors
+            HTTPError: For every other mocked error
         """
         # Track request
         request_data = {
@@ -147,6 +148,13 @@ class MockUSASpendingClient(USASpendingClient):
                     error_data.get("detail", error_data.get("error", f"HTTP {status_code} error")),
                     status_code=status_code,
                     response_body=error_data,
+                )
+            elif status_code == 429:
+                # The real client's retry handler exhausts its ladder and raises
+                # this rather than an HTTPError carrying the status.
+                raise RateLimitError(
+                    error_data.get("error", "Rate limit exceeded"),
+                    retry_after=error_data.get("retry_after"),
                 )
             else:
                 raise HTTPError(
@@ -336,6 +344,18 @@ class MockUSASpendingClient(USASpendingClient):
             count_endpoint = count_endpoint_mapping.get(endpoint)
             if count_endpoint:
                 self.set_response(count_endpoint, error_data, status_code=error_code)
+
+    def clear_error_response(self, endpoint: str) -> None:
+        """Stop simulating an error for an endpoint.
+
+        Lets a test model a failure that does not repeat: set an error, exercise
+        the failing call, clear it, then exercise the retry against a normal
+        response. Any response set for the endpoint is left in place.
+
+        Args:
+            endpoint: API endpoint to stop failing.
+        """
+        self._error_responses.pop(endpoint, None)
 
     def add_response_sequence(self, endpoint: str, responses: list[dict[str, Any]]) -> None:
         """Add multiple responses for sequential calls.

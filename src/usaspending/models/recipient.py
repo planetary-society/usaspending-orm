@@ -89,7 +89,14 @@ class Recipient(LazyRecord):
         """Fetch full recipient details from the API.
 
         Returns:
-            Optional[Dict[str, Any]]: The recipient details dictionary, or None.
+            Optional[Dict[str, Any]]: The recipient details dictionary, or None if
+            there is no id to fetch with, or the API has no such recipient or
+            rejected the id.
+
+        Raises:
+            USASpendingError: If the failure is not an answer about this recipient,
+                such as a server error, a rate limit, or a closed client session.
+            requests.RequestException: If the request never reached the API.
         """
         recipient_id = self.recipient_id
         if not recipient_id:
@@ -103,7 +110,8 @@ class Recipient(LazyRecord):
             response = self._client._make_request("GET", endpoint)
             return response
         except Exception as e:
-            # If fetch fails, return None to avoid breaking the application
+            if not self._is_absent_record(e):
+                raise
             logger.error(f"Failed to fetch recipient details for {recipient_id}: {e}")
             return None
 

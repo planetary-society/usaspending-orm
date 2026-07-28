@@ -196,6 +196,45 @@ is annotated `-> str`, so unlike `Location.zip5` there was no `Optional`
 annotation to reconcile it with, and changing it would be a break with no
 consistency argument behind it.
 
+- A lazy load that fails no longer turns a model into a permanent source of
+  `None`. `Agency` and `Recipient` reported every failure as absent data, and a
+  model is recorded as fetched the moment its fetch returns, so one 500, one
+  dropped connection or one read after `client.close()` during the first access
+  of `agency.mission` left every lazy property on that object answering `None`
+  for the rest of its life, with no way to ask again. Nothing in the response
+  said the agency had no mission, and nothing on the model said the data had
+  never arrived.
+
+  **This can break working code**, since a failure that used to be silent now
+  raises. Only the API's answer that there is no such record is still reported as
+  absent data: HTTP 400, 404 and 422 leave the model fetched and answering `None`,
+  as does a model built with no id to fetch with, each at a cost of one request at
+  most. Everything else now reaches the caller, including server errors, rate
+  limits, connection errors and timeouts that never reached the API, and the
+  `DetachedInstanceError` from a closed session. The model is left unfetched, so
+  the next property access sends the request again, and a model whose load failed
+  while detached now loads after `reattach()` rather than staying empty forever.
+  `Award` already raised rather than swallowing, so it is unchanged.
+
+**Migrating.** A caller who wants the old shape should force the load once and
+fall back to their own default if it fails, rather than guarding each property
+read:
+
+```python
+try:
+    agency.fetch_all_details()
+except (USASpendingError, requests.RequestException):
+    logger.warning("Agency details unavailable")
+    return None
+print(agency.mission)
+```
+
+Guarding each read instead is expensive now that a failed load is not remembered:
+every guarded read of a retryable failure pays the full retry ladder, which at
+default settings is up to about 88 seconds of backoff, where one
+`fetch_all_details()` pays it once. Reading a property after swallowing the
+failure re-sends the request, which is the point of the change.
+
 ### Fixed
 
 - The two date parsers now answer an unusable value the way their documented

@@ -90,8 +90,13 @@ class Agency(LazyRecord):
         """Fetch full agency details if we have a toptier_code and client.
 
         Returns:
-            Optional[Dict[str, Any]]: Full agency data from the API, or None
-            if unable to fetch due to missing toptier_code or API error.
+            Optional[Dict[str, Any]]: Full agency data from the API, or None if
+            the API has no such agency or rejected the code.
+
+        Raises:
+            USASpendingError: If the failure is not an answer about this agency,
+                such as a server error, a rate limit, or a closed client session.
+            requests.RequestException: If the request never reached the API.
         """
         # Try to get toptier_code from existing data
         toptier_code = None
@@ -112,7 +117,8 @@ class Agency(LazyRecord):
 
             return full_agency
         except Exception as e:
-            # Log but don't raise - lazy loading should fail gracefully
+            if not self._is_absent_record(e):
+                raise
             logger.debug(f"Could not fetch agency details for {toptier_code}: {e}")
             return None
 
