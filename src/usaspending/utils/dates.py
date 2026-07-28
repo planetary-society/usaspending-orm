@@ -24,8 +24,13 @@ logger = USASpendingLogger.get_logger(__name__)
 #: that matches nothing still pays it. Getting under the cache would mean
 #: normalizing the `T` separator to a space so the four datetime formats become
 #: two, which would also start accepting `2025-08-29 14:30:45Z`. Not done: the
-#: accept set is worth more than the cache. `%z` reads a `Z` as well as a
-#: numeric offset, which is why no separate format spells it.
+#: accept set is worth more than the cache.
+#:
+#: `%z` reads a `Z` as well as a numeric offset, which is why no separate format
+#: spells it. That trade is not free: a `Z` is now read by the larger `%z`
+#: pattern, which the overflow above recompiles each call, so that one shape is
+#: about 4% slower while numeric offsets are 11% faster. No recorded response
+#: carries either.
 _DATE_FORMATS: tuple[str, ...] = (
     "%Y-%m-%d",
     "%Y-%m-%d %H:%M:%S",
