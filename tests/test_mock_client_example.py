@@ -195,8 +195,10 @@ class TestMockClientExamples:
         )
 
         # Execute complex workflow
-        # 1. Search for awards
-        awards = list(mock_usa_client.awards.search().award_type_codes("A"))
+        # 1. Search for awards. all() rather than list(): list() consults
+        # __len__ for a size hint, which costs a count request a number of
+        # times that varies by Python version (twice on 3.9, once after).
+        awards = mock_usa_client.awards.search().award_type_codes("A").all()
         assert len(awards) == 1
 
         # 2. Get award detail
@@ -209,18 +211,19 @@ class TestMockClientExamples:
         # assert len(transactions) == 2
 
         # Verify all endpoints were called
-        # Expected: search count + search + detail = 3 total requests
-        assert mock_usa_client.get_request_count() == 3
+        # Expected: search + detail = 2 total requests
+        assert mock_usa_client.get_request_count() == 2
 
     def test_reset_functionality(self, mock_usa_client):
         """Test resetting mock state between tests."""
-        # Set up initial state
+        # Set up initial state. all() rather than list(): list() consults
+        # __len__ for a size hint, which costs a count request a number of
+        # times that varies by Python version (twice on 3.9, once after).
         mock_usa_client.mock_award_search([{"Award ID": "1"}])
-        list(mock_usa_client.awards.search().award_type_codes("A"))
+        mock_usa_client.awards.search().award_type_codes("A").all()
 
         # Verify state
-        # Expected: count + search = 2 total requests (list() calls both)
-        assert mock_usa_client.get_request_count() == 2
+        assert mock_usa_client.get_request_count() == 1
 
         # Reset
         mock_usa_client.reset()

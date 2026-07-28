@@ -59,8 +59,10 @@ def test_award_search(mock_usa_client):
         {"Award ID": "3"}
     ])
 
-    # Test execution
-    results = list(mock_usa_client.awards.search().award_type_codes("A"))
+    # Test execution. Read queries with all() where you assert on request
+    # counts: list() also consults __len__ for a size hint, which costs a
+    # count request a number of times that varies by Python version.
+    results = mock_usa_client.awards.search().award_type_codes("A").all()
     assert len(results) == 3
 
     # Built-in assertion
@@ -332,7 +334,7 @@ python -m pytest tests/test_mock_client_example.py -v
 3. Execute your test logic:
 
    ```python
-   results = list(mock_usa_client.awards.search().award_type_codes("A"))
+   results = mock_usa_client.awards.search().award_type_codes("A").all()
    assert len(results) == 1
    ```
 

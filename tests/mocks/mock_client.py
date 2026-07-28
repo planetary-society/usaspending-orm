@@ -474,6 +474,11 @@ class MockUSASpendingClient(USASpendingClient):
     def get_request_count(self, endpoint: str | None = None) -> int:
         """Get count of requests made.
 
+        When asserting on a total, read the query with ``all()`` rather than
+        ``list()``: ``list()`` also consults ``__len__`` for a size hint, which
+        costs a count request a number of times that varies by Python version
+        (twice on 3.9, once after).
+
         Args:
             endpoint: Specific endpoint to count, or None for total
 
