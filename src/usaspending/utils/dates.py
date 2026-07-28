@@ -4,6 +4,9 @@ Like the numeric coercers, :func:`to_date` answers a missing or unparseable valu
 with None rather than raising, so callers that require a date supply their own
 fallback. Unlike them it also logs a warning, since a date the API sent that will
 not parse is a shape surprise rather than the routine omission a missing number is.
+
+:func:`current_fiscal_year` sits alongside it as the one date question the library
+answers about today rather than about a value the API sent.
 """
 
 from __future__ import annotations
@@ -114,3 +117,23 @@ def to_date(date_string: str | date | None) -> date | None:
 
     logger.warning(f"Could not parse date string: {date_string}")
     return None
+
+
+def current_fiscal_year() -> int:
+    """Report the US federal fiscal year that today falls in.
+
+    The federal fiscal year runs from October 1 through September 30 and is named
+    for the calendar year it ends in, so October 1 2026 opens fiscal year 2027
+    while September 30 2026 is still fiscal year 2026.
+
+    Note the endpoints that document defaulting to the current fiscal year do so
+    server-side, so this is for callers building their own defaults rather than
+    something any query needs.
+
+    Returns:
+        int: The fiscal year containing today's date.
+    """
+    # Read the clock once: taking today's year and today's month from two calls
+    # can straddle midnight on December 31 and report a year that never was.
+    today = date.today()
+    return today.year + 1 if today.month >= 10 else today.year

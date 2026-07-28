@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from usaspending.utils.dates import to_date
+from usaspending.utils.dates import current_fiscal_year, to_date
 
 
 class TestToDate:
@@ -74,8 +74,11 @@ class TestToDate:
         private name, so the reason is worth stating rather than copying: the two
         paths return equal dates for every value either accepts, so which one ran
         is observable through no assertion on the result. Spying on the parser is
-        not available either, since ``date`` is an immutable C type and patching
-        the module's ``date`` name would break the isinstance checks above it.
+        not available either, since ``date`` is an immutable C type, and replacing
+        the module's ``date`` name with a plain stub would break the isinstance
+        checks above it. ``_freeze_today`` below does replace that name, which is
+        safe only because it substitutes a ``date`` subclass, leaving every
+        isinstance check satisfied.
         """
         assert to_date("2025-08-29") == date(2025, 8, 29)
 
@@ -231,3 +234,55 @@ class TestToDate:
 
         assert type(result) is date
         assert result == date(2025, 8, 29)
+
+
+def _freeze_today(monkeypatch: pytest.MonkeyPatch, frozen: date) -> None:
+    """Pin what ``date.today()`` answers inside ``usaspending.utils.dates``.
+
+    The module's ``date`` name is replaced rather than ``date.today`` itself,
+    which is unpatchable on an immutable C type. A subclass keeps every other use
+    of the name working, and the substitution lasts only for the test that asks
+    for it, so the isinstance checks in ``to_date`` never see it.
+
+    Args:
+        monkeypatch: The fixture that undoes the substitution afterwards.
+        frozen: The date ``today()`` should report.
+    """
+
+    class FrozenDate(date):
+        @classmethod
+        def today(cls) -> date:
+            return frozen
+
+    monkeypatch.setattr("usaspending.utils.dates.date", FrozenDate)
+
+
+class TestCurrentFiscalYear:
+    """The federal fiscal year rule: October 1 opens the year named for its end."""
+
+    @pytest.mark.parametrize(
+        ("today", "expected"),
+        [
+            # The boundary, from both sides. The two calendar-year edges below it
+            # are the sanity check that the halves are not swapped.
+            (date(2026, 9, 30), 2026),  # Last day of FY2026
+            (date(2026, 10, 1), 2027),  # First day of FY2027
+            (date(2026, 1, 1), 2026),
+            (date(2026, 12, 31), 2027),  # A December date belongs to the next year
+        ],
+    )
+    def test_the_fiscal_year_of_a_given_day(self, monkeypatch, today, expected):
+        _freeze_today(monkeypatch, today)
+
+        assert current_fiscal_year() == expected
+
+    def test_it_is_importable_from_the_utils_package(self):
+        """It is exported, unlike at 0.7.3 where it sat in a module now removed.
+
+        ``usaspending.utils.formatter`` is gone for good, so this is the only
+        supported import path and the one the changelog points at.
+        """
+        import usaspending.utils as utils
+
+        assert utils.current_fiscal_year is current_fiscal_year
+        assert "current_fiscal_year" in utils.__all__

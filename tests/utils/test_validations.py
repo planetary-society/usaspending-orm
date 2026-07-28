@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime
+import warnings
 from enum import Enum
 
 import pytest
@@ -162,6 +163,69 @@ class TestParseDateString:
         """Test that default format is YYYY-MM-DD."""
         result = parse_date_string("2024-12-25", "xmas")
         assert result == datetime.date(2024, 12, 25)
+
+
+class TestParseDateStringDeprecatedFormatStr:
+    """The 0.7.3 ``format_str`` parameter, restored as deprecated but working.
+
+    It was dropped outright, which broke any caller that passed one. It parses
+    again, warns, and is scheduled for removal; the supported call is untouched
+    and must stay that way, which is what the first test pins.
+    """
+
+    @pytest.mark.parametrize("kwargs", [{}, {"format_str": "%Y-%m-%d"}])
+    def test_the_supported_call_warns_about_nothing(self, kwargs):
+        """Omitting the parameter, or spelling out its default, costs nothing.
+
+        A caller who wrote ``format_str="%Y-%m-%d"`` asked for exactly what the
+        library still does, so there is as little to warn them about as there is
+        for the caller who passed nothing.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+
+            assert parse_date_string("2024-01-15", "start_date", **kwargs) == datetime.date(
+                2024, 1, 15
+            )
+
+    def test_a_non_default_format_parses_and_warns_against_the_caller_line(self):
+        """The deprecated path still reads what 0.7.3 read, and says so usefully.
+
+        The filename assertion is what pins the stacklevel: a deprecation reported
+        against a file inside the library tells the caller nothing about which of
+        their calls to change.
+        """
+        with pytest.warns(DeprecationWarning, match="format_str") as caught:
+            result = parse_date_string("15/01/2024", "start_date", format_str="%d/%m/%Y")
+
+        assert result == datetime.date(2024, 1, 15)
+        assert caught[0].filename == __file__
+
+    @pytest.mark.parametrize("value", ["2024-01-15", None])
+    def test_a_value_the_supplied_format_cannot_read_raises_validation_error(self, value):
+        """A parse failure keeps the documented exception, and quotes the caller's format.
+
+        ``None`` covers the TypeError that ``strptime`` raises for a non-string,
+        which the supported path stopped leaking. The pattern is echoed here where
+        it is not echoed on the supported path, since this one the caller supplied.
+        """
+        with (
+            pytest.warns(DeprecationWarning),
+            pytest.raises(ValidationError, match=r"Invalid my_field format: .*Expected '%d/%m/%Y'"),
+        ):
+            parse_date_string(value, "my_field", format_str="%d/%m/%Y")
+
+    @pytest.mark.parametrize(
+        "value",
+        [datetime.date(2024, 3, 20), datetime.datetime(2024, 3, 20, 14, 30, 45)],
+    )
+    def test_a_date_like_value_ignores_the_format_but_still_warns(self, value):
+        """The format is moot for a date, yet the parameter is still on its way out."""
+        with pytest.warns(DeprecationWarning, match="format_str"):
+            result = parse_date_string(value, "end_date", format_str="%d/%m/%Y")
+
+        assert type(result) is datetime.date
+        assert result == datetime.date(2024, 3, 20)
 
 
 # ==============================================================================

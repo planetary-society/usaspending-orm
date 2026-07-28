@@ -23,6 +23,13 @@ behavior preserving and the public API is unchanged.
   multi-level `"<hash>-['C', 'R']"` form is reduced, so an explicit suffix is
   the supported way to opt into a level other than the default.
 
+- `usaspending.utils.current_fiscal_year()`: the federal fiscal year today falls
+  in, as an int. October 1 opens the fiscal year named for the calendar year it
+  ends in, so it reports 2026 on 2026-09-30 and 2027 on 2026-10-01.
+
+  It is a relocation: it lived at `usaspending.utils.formatter.current_fiscal_year`,
+  a deep path inside the module removed below, which stays gone.
+
 ### Changed
 
 - `count()` now honors `limit()` and `max_pages()` on every query, so `count()`,
@@ -235,6 +242,15 @@ default settings is up to about 88 seconds of backoff, where one
 `fetch_all_details()` pays it once. Reading a property after swallowing the
 failure re-sends the request, which is the point of the change.
 
+### Deprecated
+
+- `parse_date_string`'s `format_str` parameter, which is scheduled for removal in
+  a future release. Passing anything other than `"%Y-%m-%d"` still parses with
+  that pattern and still raises `ValidationError` for a value it cannot read, and
+  now emits a `DeprecationWarning`. Only `YYYY-MM-DD` was ever accepted in
+  practice, and nothing in the library passes one. Omitting the parameter, or
+  passing its default, is unchanged and warns about nothing.
+
 ### Fixed
 
 - The two date parsers now answer an unusable value the way their documented
@@ -252,8 +268,8 @@ failure re-sends the request, which is the point of the change.
   promises `YYYY-MM-DD`, so a public error string leaked a strftime pattern the
   caller never supplied; it now quotes the documented form. And the offending
   value is shown with `repr`, so an empty or whitespace value is distinguishable
-  in the message. The parser's `format_str` parameter is gone, having had no
-  caller that ever passed one; only `YYYY-MM-DD` was ever accepted in practice.
+  in the message. The parser's `format_str` parameter is deprecated rather than
+  removed; see Deprecated above.
 
 - Passing a `datetime` where a date filter is documented to accept one no longer
   raises `TypeError`. `time_period()` publishes `datetime.date | str`, and
@@ -389,11 +405,8 @@ failure re-sends the request, which is the point of the change.
   held was internal, absent from `__all__` and from the README, so there is no
   compatibility shim; anything importing it directly was reaching past the public
   API. The casing machinery is now one cohesive module, which is the boundary a
-  future plugin would lift.
-- `current_fiscal_year()`, which had no callers. Nothing in the library used it,
-  it was not exported, and it had no test; the endpoints that document defaulting
-  to the current fiscal year are defaulted server-side. It briefly gained a fix in
-  this release for reading the clock twice, which was a fix to dead code.
+  future plugin would lift. Only `current_fiscal_year` gets a documented new
+  home, in `usaspending.utils`, as noted under Added.
 
 - `Agency.__init__`'s third parameter, `subtier_data`. It was stored on the
   instance and never read: `Agency` exposes no subtier property, and subtier

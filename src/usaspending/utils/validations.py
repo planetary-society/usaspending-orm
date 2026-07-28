@@ -10,6 +10,7 @@ can import them without pulling in the query layer.
 from __future__ import annotations
 
 import re
+import warnings
 from collections.abc import Collection
 from datetime import date, datetime
 from enum import Enum
@@ -18,6 +19,10 @@ from typing import Any, TypeVar
 from ..exceptions import ValidationError
 
 E = TypeVar("E", bound=Enum)
+
+#: The only format :func:`parse_date_string` documents, and the only value its
+#: deprecated ``format_str`` parameter can carry without warning.
+_ISO_DATE_FORMAT = "%Y-%m-%d"
 
 
 def validate_non_empty_string(
@@ -54,7 +59,11 @@ def validate_non_empty_string(
     return result
 
 
-def parse_date_string(value: str | date, field_name: str = "date") -> date:
+def parse_date_string(
+    value: str | date,
+    field_name: str = "date",
+    format_str: str = _ISO_DATE_FORMAT,
+) -> date:
     """Parse a date string, or narrow a date-like object to a date.
 
     The strict counterpart to :func:`usaspending.utils.dates.to_date`. That one
@@ -71,12 +80,19 @@ def parse_date_string(value: str | date, field_name: str = "date") -> date:
         value: Date string in YYYY-MM-DD format, or a date. A datetime is
             narrowed to its date portion.
         field_name: Name of the field for error messages.
+        format_str: Deprecated. A strptime pattern to read ``value`` with, kept
+            for callers written against 0.7.3. Any value other than
+            ``"%Y-%m-%d"`` emits a ``DeprecationWarning`` and is scheduled for
+            removal in a future release, after which only ``YYYY-MM-DD`` is
+            accepted. The default takes the supported path and warns about
+            nothing.
 
     Returns:
         Parsed date object.
 
     Raises:
-        ValidationError: If the value is not a YYYY-MM-DD string or a date.
+        ValidationError: If the value is not a YYYY-MM-DD string or a date, or
+            not readable with a deprecated ``format_str``.
 
     Example:
         >>> parse_date_string("2024-01-15", "start_date")
@@ -94,6 +110,22 @@ def parse_date_string(value: str | date, field_name: str = "date") -> date:
             ...
         usaspending.exceptions.ValidationError: Invalid start_date format: None. Expected 'YYYY-MM-DD'.
     """
+    # The supported call names the documented form in its error rather than the
+    # strftime pattern behind it; a deprecated one names the pattern the caller
+    # themselves supplied, which is the only thing that would explain the failure.
+    expected = "YYYY-MM-DD"
+    if format_str != _ISO_DATE_FORMAT:
+        # Warn for any deprecated call, including one whose value makes the
+        # format moot, since it is the parameter rather than the parsing that is
+        # going away.
+        warnings.warn(
+            "The format_str parameter of parse_date_string is deprecated and is "
+            "scheduled for removal in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        expected = format_str
+
     # datetime subclasses date, so narrow before the date check, not after. The
     # same pair guards `to_date` in utils/dates.py, which had this bug first.
     if isinstance(value, datetime):
@@ -104,10 +136,10 @@ def parse_date_string(value: str | date, field_name: str = "date") -> date:
         # A TypeError is a value of the wrong type entirely, such as the None a
         # caller gets from threading an Optional through. Both are the same
         # mistake to the caller, so both answer with the documented error.
-        return datetime.strptime(value, "%Y-%m-%d").date()
+        return datetime.strptime(value, format_str).date()
     except (TypeError, ValueError) as e:
         raise ValidationError(
-            f"Invalid {field_name} format: {value!r}. Expected 'YYYY-MM-DD'."
+            f"Invalid {field_name} format: {value!r}. Expected '{expected}'."
         ) from e
 
 
