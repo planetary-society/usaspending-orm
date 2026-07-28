@@ -185,21 +185,39 @@ class TestToDate:
         assert to_date(value) is None
         mock_logger.warning.assert_called_once()
 
-    def test_an_unusable_value_leaves_the_shared_strptime_cache_alone(self):
+    def test_a_value_with_no_date_shape_leaves_the_shared_strptime_cache_alone(self):
         """Rejecting a non-date must not evict regexes other callers rely on.
 
         CPython caches compiled strptime patterns in one process-global dict and
         clears the whole thing when it exceeds five entries. Walking the format
-        list to exhaustion therefore used to flush every entry in the process,
-        making the next `strptime` call anywhere in the application recompile,
-        so one bad API field charged its cost to unrelated code.
+        list to exhaustion therefore flushes every entry in the process, making
+        the next `strptime` call anywhere in the application recompile, so one bad
+        API field charges its cost to unrelated code. The shape check is what
+        keeps such a value out of the walk.
         """
-        datetime.strptime("2024-01-15", "%Y-%m-%d")
-        assert "%Y-%m-%d" in _strptime._regex_cache
+        datetime.strptime("15/01/2024", "%d/%m/%Y")
+        assert "%d/%m/%Y" in _strptime._regex_cache
 
         assert to_date("this is not a date at all") is None
 
-        assert "%Y-%m-%d" in _strptime._regex_cache
+        assert "%d/%m/%Y" in _strptime._regex_cache
+
+    def test_a_date_shaped_value_that_matches_nothing_still_evicts(self):
+        """The shape check narrows what reaches the walk; it does not shorten it.
+
+        Six formats is one more than the cache holds, so a value that passes the
+        shape check and then matches none of them still costs an unrelated caller
+        its compiled pattern. Pinned rather than fixed: closing it means folding
+        the four datetime formats into two by normalizing the `T` separator, which
+        would widen what parses. This documents the residual so the shape check is
+        not mistaken for a complete answer.
+        """
+        datetime.strptime("15/01/2024", "%d/%m/%Y")
+        assert "%d/%m/%Y" in _strptime._regex_cache
+
+        assert to_date("2025-08-29GARBAGE") is None
+
+        assert "%d/%m/%Y" not in _strptime._regex_cache
 
     def test_datetime_object_returns_date_portion(self):
         """datetime input is narrowed to its date() portion.

@@ -186,8 +186,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
 
             The bound is held to the same rules as
             :meth:`~usaspending.queries.query_builder.QueryBuilder.time_period`,
-            and the range is checked by whichever of the two calls comes second,
-            so chaining order does not matter.
+            whichever order the two are chained in.
 
         Example:
             >>> # Get transactions from 2024 onwards
@@ -223,8 +222,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
 
             The bound is held to the same rules as
             :meth:`~usaspending.queries.query_builder.QueryBuilder.time_period`,
-            and the range is checked by whichever of the two calls comes second,
-            so chaining order does not matter.
+            whichever order the two are chained in.
 
         Example:
             >>> # Get historical transactions only

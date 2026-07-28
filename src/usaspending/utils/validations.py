@@ -10,7 +10,7 @@ can import them without pulling in the query layer.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Collection
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, TypeVar
@@ -264,24 +264,28 @@ def normalize_recipient_id(recipient_id: Any) -> Any:
 
 def validate_sort_field(
     field: str,
-    valid_fields: Iterable[str],
+    valid_fields: Collection[str],
     context: str | None = None,
-) -> None:
+) -> str:
     """Validate that a sort field is allowed for the query type.
 
     Args:
         field: The sort field to validate.
-        valid_fields: The permitted sort field names.
+        valid_fields: The permitted sort field names. Read twice, once to test
+            membership and once to list them in the error, so a one-shot iterable
+            would report no valid fields at all.
         context: What the fields are valid *for*, named in the error when the same
-            field is accepted by one query and not another. Omit where the query
-            has one fixed set, so the message does not pad itself with a
-            restatement of the method the caller just called.
+            field is accepted by one query and not another.
+
+    Returns:
+        The field, unchanged.
 
     Raises:
         ValidationError: If field is not in valid_fields.
 
     Example:
         >>> validate_sort_field("Award Amount", {"Award Amount", "Award ID"})
+        'Award Amount'
         >>> validate_sort_field("Nope", {"Award ID"})
         Traceback (most recent call last):
             ...
@@ -297,6 +301,7 @@ def validate_sort_field(
             f"Invalid sort field '{field}'{where}. "
             f"Valid fields are: {', '.join(sorted(valid_fields))}"
         )
+    return field
 
 
 def validate_sort_direction(direction: str) -> str:
@@ -306,7 +311,7 @@ def validate_sort_direction(direction: str) -> str:
         direction: The direction to validate.
 
     Returns:
-        The direction, unchanged, so a caller can assign it in one expression.
+        The direction, unchanged.
 
     Raises:
         ValidationError: If direction is neither "asc" nor "desc".

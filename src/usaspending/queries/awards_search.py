@@ -130,7 +130,7 @@ from ..models.award_types import (
     categories_for_codes,
     category_for_exclusive_codes,
 )
-from ..utils.validations import validate_sort_direction, validate_sort_field
+from ..utils.validations import validate_sort_field
 from .filters import (
     SimpleListFilter,
 )
@@ -449,9 +449,9 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         # Get the valid fields for the current award type configuration
         valid_fields = self._get_fields()
 
-        # Validate that the field is in the list of valid fields
+        # Tested twice on purpose: naming the categories is only worth doing on the
+        # way to raising, and the call below always raises once inside this branch.
         if field not in valid_fields:
-            # Build a helpful error message
             award_types = self._get_award_type_codes()
             if award_types:
                 category_names = [category.group for category in categories_for_codes(award_types)]
@@ -463,8 +463,8 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
 
             validate_sort_field(field, valid_fields, category_str)
 
-        # Call the parent class order_by method
-        return super().order_by(field, validate_sort_direction(direction))
+        # The base validates the direction, so this passes it through unchecked.
+        return super().order_by(field, direction)
 
     # ==========================================================================
     # Filter Methods

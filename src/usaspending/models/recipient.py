@@ -27,17 +27,19 @@ class Recipient(LazyRecord):
     This class provides access to recipient details, including name, IDs,
     location, and business categories.
 
-    An award search result reports its recipient as flat, title-cased keys rather
-    than as the nested object a detail response sends. Both spellings are read
-    here, so an award holding a search result can hand its payload over via
-    :meth:`_from_search_result` rather than translating the keys itself.
+    An award search result reports its recipient as flat, title-cased keys where a
+    detail response sends a nested object. Both spellings are read here.
     """
 
-    #: The flat keys an award search result carries for its recipient. Every one is
-    #: read by a property below, and this is the projection
-    #: :meth:`_from_search_result` copies.
+    #: Every key of an award payload this model reads, which is both the projection
+    #: :meth:`_from_search_result` copies and the set an award tests to decide it
+    #: can build one of these without fetching. A key read by a property but
+    #: missing here is dropped on the way in, so `recipient_hash` belongs even
+    #: though no recorded search response carries it: it is the fallback identity
+    #: that :meth:`recipient_id` needs to lazy-load at all. A test pins the pair.
     _SEARCH_KEYS: ClassVar[tuple[str, ...]] = (
         "recipient_id",
+        "recipient_hash",
         "Recipient Name",
         "Recipient DUNS Number",
         "Recipient UEI",

@@ -529,9 +529,7 @@ def validate_date_range(
     """Reject a range whose end precedes its start.
 
     Either bound may be None, since the two are set by separate chained calls on
-    some builders and only the later call sees both. That makes this safe to run
-    from each of them, which is what keeps the check independent of the order the
-    caller chains in.
+    some builders and only the later call sees both.
 
     Args:
         start: Lower bound, or None if not set yet.

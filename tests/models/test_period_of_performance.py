@@ -49,6 +49,53 @@ class TestSearchResultKeys:
 
         assert period.start_date == date(2020, 1, 1)
 
+    def test_an_award_delegates_rather_than_reading_the_keys_again(self, mock_usa_client):
+        """`Award.start_date` and `end_date` resolve through this model.
+
+        They used to read the flat keys themselves, with a third copy of the
+        mapping that had drifted: `Base Obligation Date` was ordered ahead of
+        `Period of Performance Start Date` there and behind it here, and the
+        end-date chain used a spelling nothing else in the package uses.
+        """
+        from usaspending.models import Award
+
+        award = Award(
+            {
+                "Base Obligation Date": "2019-01-01",
+                "Period of Performance Start Date": "2020-06-06",
+                "End Date": "2022-01-01",
+            },
+            mock_usa_client,
+        )
+
+        assert award.start_date == date(2020, 6, 6)
+        assert award.start_date == award.period_of_performance.start_date
+        assert award.end_date == award.period_of_performance.end_date
+
+    def test_every_key_the_properties_read_is_declared(self):
+        """`_SEARCH_KEYS` and the property chains must name the same flat keys.
+
+        The tuple is both the projection and the presence test an award uses to
+        decide whether it can build without fetching, so a spelling a property
+        reads but the tuple omits is a payload that answers from the network when
+        the answer was already in hand.
+        """
+        declared = set(PeriodOfPerformance._SEARCH_KEYS)
+        read = {
+            key
+            for chain in (
+                ["start_date", "Start Date", "Period of Performance Start Date"],
+                ["Base Obligation Date"],
+                ["end_date", "End Date", "Period of Performance Current End Date"],
+                ["last_modified_date", "Last Modified Date"],
+                ["potential_end_date", "Period of Performance Potential End Date"],
+            )
+            for key in chain
+            if key[0].isupper()
+        }
+
+        assert declared == read
+
     def test_from_search_result_takes_only_its_own_keys(self):
         """The projection is scoped, so `raw` describes a period and not an award.
 

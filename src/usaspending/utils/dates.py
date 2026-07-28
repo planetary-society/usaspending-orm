@@ -17,11 +17,15 @@ logger = USASpendingLogger.get_logger(__name__)
 #: Every shape the API is known to report a date in, tried in order of likelihood.
 #: :func:`to_date` documents what each one is, and this tuple decides what parses.
 #:
-#: Keep this short. CPython caches compiled strptime patterns in one
-#: process-global dict and clears all of it once it holds more than five, so a
-#: list long enough to be walked past that point evicts the entries every other
-#: caller in the process depends on. `%z` reads a `Z` as well as a numeric
-#: offset, which is why no separate format is needed for it.
+#: Six, which is one more than CPython's process-global strptime regex cache
+#: holds: walking all of them evicts every entry, including those of unrelated
+#: callers, who then recompile. `_starts_like_a_date` keeps values that cannot
+#: match from reaching the walk, which is most of them, but a date-shaped value
+#: that matches nothing still pays it. Getting under the cache would mean
+#: normalizing the `T` separator to a space so the four datetime formats become
+#: two, which would also start accepting `2025-08-29 14:30:45Z`. Not done: the
+#: accept set is worth more than the cache. `%z` reads a `Z` as well as a
+#: numeric offset, which is why no separate format spells it.
 _DATE_FORMATS: tuple[str, ...] = (
     "%Y-%m-%d",
     "%Y-%m-%d %H:%M:%S",
@@ -31,19 +35,13 @@ _DATE_FORMATS: tuple[str, ...] = (
     "%Y-%m-%dT%H:%M:%S%z",
 )
 
-#: Shortest date the format list can read, an unpadded `YYYY-M-D`.
-_SHORTEST_DATE = 8
-
 
 def _starts_like_a_date(value: object) -> bool:
     """Report whether `value` could be one of the shapes in `_DATE_FORMATS`.
 
     Every format begins `%Y-%m-`, and `%Y` matches exactly four digits, so
-    anything the list can read starts with four digits and a dash. Checking that
-    first is what keeps a value that is not a date at all, such as the "N/A" the
-    API occasionally sends, from being walked against every format: that walk is
-    the expensive failure, and it is the one that overflows the shared strptime
-    cache.
+    anything the list can read starts with four digits and a dash, and runs to at
+    least the 8 of an unpadded `YYYY-M-D`.
 
     Args:
         value: Any value, including ones of the wrong type entirely.
@@ -51,12 +49,7 @@ def _starts_like_a_date(value: object) -> bool:
     Returns:
         bool: True if the value is a string whose start could begin a date.
     """
-    return (
-        isinstance(value, str)
-        and len(value) >= _SHORTEST_DATE
-        and value[:4].isdigit()
-        and value[4] == "-"
-    )
+    return isinstance(value, str) and len(value) >= 8 and value[:4].isdigit() and value[4] == "-"
 
 
 def to_date(date_string: str | date | None) -> date | None:

@@ -37,7 +37,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
             agency_type: "funding" or "awarding" (defaults to "funding").
         """
         super().__init__(client)
-        self._agency_type = self._validate_agency_type(agency_type)
+        self._agency_type = validate_agency_type(agency_type)
         self._search_text = ""
         self._limit = 100  # Default limit
         # Filter: None, "toptier", "subtier", "office"
@@ -49,9 +49,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
         Raises:
             ValidationError: If the agency type is neither awarding nor funding,
-                which the constructor and :meth:`agency_type` both prevent. The
-                check remains so a future way of setting the field cannot silently
-                produce a request to no endpoint at all.
+                which the constructor and :meth:`agency_type` both prevent.
         """
         validate_agency_type(self._agency_type)
         return f"/autocomplete/{self._agency_type}_agency_office/"
@@ -195,22 +193,8 @@ class AgenciesSearch(QueryBuilder[Agency]):
             ValidationError: If agency_type is invalid
         """
         clone = self._clone()
-        clone._agency_type = self._validate_agency_type(agency_type)
+        clone._agency_type = validate_agency_type(agency_type)
         return clone
-
-    def _validate_agency_type(self, agency_type: str) -> str:
-        """Validate agency type values.
-
-        Args:
-            agency_type: "funding" or "awarding" string.
-
-        Returns:
-            The validated agency type string.
-
-        Raises:
-            ValidationError: If agency_type is invalid.
-        """
-        return validate_agency_type(agency_type)
 
     def toptier(self) -> AgenciesSearch:
         """Filter to only return toptier agency matches.

@@ -7,6 +7,7 @@ from collections.abc import Iterator
 from typing import Generic, TypeVar
 
 from ..exceptions import ValidationError
+from ..utils.validations import validate_sort_direction
 
 T = TypeVar("T")
 Q = TypeVar("Q", bound="BaseQuery[T]")
@@ -120,16 +121,26 @@ class BaseQuery(ABC, Generic[T]):
     def order_by(self: Q, field: str, direction: str = "desc") -> Q:
         """Set sort order for results.
 
+        The direction is validated here rather than only in the builders that
+        override this, so a builder that does not override it is covered too.
+        An unrecognized direction used to reach a client-side sort as a value that
+        is not "desc", which sorts ascending, so asking for the wrong word got the
+        opposite order and no error. Overriding builders may validate again; the
+        check is idempotent.
+
         Args:
             field (str): Field name to sort by.
             direction (str): Sort direction (asc or desc).
 
         Returns:
             BaseQuery: A new query instance with ordering applied.
+
+        Raises:
+            ValidationError: If direction is neither "asc" nor "desc".
         """
         clone = self._clone()
         clone._order_by = field
-        clone._order_direction = direction
+        clone._order_direction = validate_sort_direction(direction)
         return clone
 
     def first(self) -> T | None:

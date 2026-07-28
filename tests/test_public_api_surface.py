@@ -25,7 +25,7 @@ import pytest
 
 import usaspending
 from tests.snapshot_support import load_snapshot
-from usaspending import queries, resources
+from usaspending import models, queries, resources
 
 SNAPSHOT_PATH = Path(__file__).parent / "fixtures" / "public_api_surface.json"
 REGEN_ENV_VAR = "USASPENDING_REGEN_API_SURFACE"
@@ -47,8 +47,14 @@ def _public_names(obj: object) -> list[str]:
 #: package does not re-export all of it. Resources are the most user-facing classes
 #: in the library, since every entry point runs through one, yet none is exported:
 #: they are reached as client properties, so walking ``usaspending.__all__`` alone
-#: covered none of them. Queries are re-exported only in part.
-_SURFACE_SUBPACKAGES = (queries, resources)
+#: covered none of them. Queries and models are re-exported only in part, and what
+#: models holds back includes ``BaseModel``, ``ClientAwareModel`` and ``LazyRecord``,
+#: which every user-facing model inherits from.
+#:
+#: ``utils`` and ``download`` also carry an ``__all__`` and are deliberately left
+#: out: nothing reaches them except through the classes above, so their names are
+#: implementation rather than surface.
+_SURFACE_SUBPACKAGES = {"models": models, "queries": queries, "resources": resources}
 
 
 def _collect_surface() -> dict[str, object]:
@@ -60,18 +66,11 @@ def _collect_surface() -> dict[str, object]:
         any of them exports.
     """
     exported = sorted(usaspending.__all__)
-
-    subpackages = {
-        module.__name__.rpartition(".")[2]: sorted(module.__all__)
-        for module in _SURFACE_SUBPACKAGES
-    }
+    subpackages = {name: sorted(mod.__all__) for name, mod in _SURFACE_SUBPACKAGES.items()}
 
     classes: dict[str, list[str]] = {}
-    for module, names in (
-        (usaspending, exported),
-        *zip(_SURFACE_SUBPACKAGES, subpackages.values()),
-    ):
-        for name in names:
+    for module in (usaspending, *_SURFACE_SUBPACKAGES.values()):
+        for name in module.__all__:
             attr = getattr(module, name)
             if inspect.isclass(attr):
                 # A class re-exported at the top level is the same object here, so
@@ -102,9 +101,7 @@ def test_exported_names_are_unchanged(current_surface, expected_surface):
     assert current_surface["__all__"] == expected_surface["__all__"]
 
 
-@pytest.mark.parametrize(
-    "subpackage", sorted(m.__name__.rpartition(".")[2] for m in _SURFACE_SUBPACKAGES)
-)
+@pytest.mark.parametrize("subpackage", sorted(_SURFACE_SUBPACKAGES))
 def test_subpackage_exports_are_unchanged(subpackage, current_surface, expected_surface):
     """A covered subpackage must not gain, lose, or rename an export.
 

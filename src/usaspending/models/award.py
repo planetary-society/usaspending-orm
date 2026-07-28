@@ -436,15 +436,17 @@ class Award(LazyRecord):
     def start_date(self) -> date | None:
         """Award start date from period of performance or obligation data.
 
+        Delegates rather than reading the flat keys again. Doing both is what let
+        the two disagree: this property ordered `Base Obligation Date` ahead of
+        `Period of Performance Start Date` where the period model orders them the
+        other way, and its end-date twin read a spelling nothing else in the
+        package uses.
+
         Returns:
             Optional[date]: The award start date, or None if not available.
         """
-        start_date = self.get_value(
-            ["Start Date", "Base Obligation Date", "Period of Performance Start Date"]
-        )
-        if not start_date and self.period_of_performance and self.period_of_performance.start_date:
-            start_date = self.period_of_performance.start_date
-        return to_date(start_date)
+        period = self.period_of_performance
+        return period.start_date if period else None
 
     @property
     def end_date(self) -> date | None:
@@ -453,10 +455,8 @@ class Award(LazyRecord):
         Returns:
             Optional[date]: The award end date, or None if not available.
         """
-        end_date = self.get_value(["End Date", "Period of Performance End Date"])
-        if not end_date and self.period_of_performance and self.period_of_performance.end_date:
-            end_date = self.period_of_performance.end_date
-        return to_date(end_date)
+        period = self.period_of_performance
+        return period.end_date if period else None
 
     @property
     def usa_spending_url(self) -> str:

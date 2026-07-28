@@ -191,6 +191,33 @@
       "usa_spending_url",
       "validate_init_data"
     ],
+    "AwardAccount": [
+      "account_title",
+      "ancestors",
+      "code",
+      "count",
+      "description",
+      "federal_account",
+      "federal_account_code",
+      "funding_agency",
+      "funding_agency_abbreviation",
+      "funding_agency_id",
+      "funding_agency_name",
+      "funding_agency_slug",
+      "funding_toptier_agency_id",
+      "get_value",
+      "id",
+      "name",
+      "obligated_amount",
+      "raw",
+      "reattach",
+      "tas_codes",
+      "title",
+      "to_dict",
+      "toptier_code",
+      "total_transaction_obligated_amount",
+      "validate_init_data"
+    ],
     "AwardAccountsQuery": [
       "SORT_FIELD_MAP",
       "all",
@@ -287,6 +314,12 @@
       "to_filters_payload",
       "treasury_account_components"
     ],
+    "BaseModel": [
+      "get_value",
+      "raw",
+      "to_dict",
+      "validate_init_data"
+    ],
     "BaseQuery": [
       "all",
       "count",
@@ -295,6 +328,13 @@
       "max_pages",
       "order_by",
       "page_size"
+    ],
+    "ClientAwareModel": [
+      "get_value",
+      "raw",
+      "reattach",
+      "to_dict",
+      "validate_init_data"
     ],
     "ClientSideQueryBuilder": [
       "all",
@@ -404,6 +444,23 @@
       "idv",
       "search",
       "status"
+    ],
+    "FederalAccount": [
+      "ancestors",
+      "code",
+      "count",
+      "description",
+      "federal_account_code",
+      "get_value",
+      "id",
+      "name",
+      "raw",
+      "reattach",
+      "tas_codes",
+      "title",
+      "to_dict",
+      "toptier_code",
+      "validate_init_data"
     ],
     "FederalAccountsQuery": [
       "CODE_KEY",
@@ -634,6 +691,14 @@
     "KeywordsFilter": [
       "key",
       "to_dict"
+    ],
+    "LazyRecord": [
+      "fetch_all_details",
+      "get_value",
+      "raw",
+      "reattach",
+      "to_dict",
+      "validate_init_data"
     ],
     "Loan": [
       "SEARCH_FIELDS",
@@ -1112,6 +1177,28 @@
       "key",
       "to_dict"
     ],
+    "TreasuryAccountSymbol": [
+      "aid",
+      "ancestors",
+      "availability_type_code",
+      "bpoa",
+      "count",
+      "description",
+      "epoa",
+      "federal_account_code",
+      "fiscal_year",
+      "get_value",
+      "id",
+      "main",
+      "name",
+      "raw",
+      "reattach",
+      "sub",
+      "tas_code",
+      "to_dict",
+      "toptier_code",
+      "validate_init_data"
+    ],
     "USASpendingClient": [
       "agencies",
       "award_accounts",
@@ -1138,6 +1225,44 @@
     ]
   },
   "subpackages": {
+    "models": [
+      "ALL_AWARD_CODES",
+      "AWARD_TYPE_DESCRIPTIONS",
+      "AWARD_TYPE_GROUPS",
+      "Agency",
+      "Award",
+      "AwardAccount",
+      "BaseModel",
+      "CONTRACT_CODES",
+      "ClientAwareModel",
+      "Contract",
+      "DIRECT_PAYMENT_CODES",
+      "DistrictSpending",
+      "FederalAccount",
+      "Funding",
+      "GRANT_CODES",
+      "Grant",
+      "IDV",
+      "IDV_CODES",
+      "LOAN_CODES",
+      "LazyRecord",
+      "Loan",
+      "Location",
+      "OTHER_CODES",
+      "PeriodOfPerformance",
+      "Recipient",
+      "RecipientSpending",
+      "Spending",
+      "StateSpending",
+      "SubAward",
+      "SubTierAgency",
+      "Transaction",
+      "TreasuryAccountSymbol",
+      "create_award",
+      "get_award_group",
+      "get_description",
+      "is_valid_award_type"
+    ],
     "queries": [
       "APIError",
       "AgenciesSearch",

@@ -13,18 +13,24 @@ class PeriodOfPerformance(BaseModel):
     Represents the time period during which the work of an award is expected
     to be performed or the funding is available for obligation.
 
-    An award search result reports these dates as flat, title-cased keys rather
-    than as the nested object a detail response sends. Both spellings are read
-    here, so an award holding a search result can hand its payload over via
-    :meth:`_from_search_result` rather than translating the keys itself.
+    A search result reports these dates as flat, title-cased keys where a detail
+    response sends a nested object. Both spellings are read here.
     """
 
-    #: The flat keys an award search result carries for its period of performance.
-    #: Every one is read by a property below, and this is the projection
-    #: :meth:`_from_search_result` copies.
+    #: Every flat spelling the properties below read, which is both the projection
+    #: :meth:`_from_search_result` copies and the set an award tests to decide it
+    #: can build one of these without fetching. The two uses are why this must name
+    #: exactly what the properties read: a spelling missing here is a payload that
+    #: goes to the network for an answer already in hand. A test pins the pair.
+    #:
+    #: Not all of them are keys a search result is known to send; the
+    #: `Period of Performance ...` forms appear in no documented field list and no
+    #: recorded response. They are the properties' existing fallbacks, kept because
+    #: they cost nothing and reading one is better than fetching.
     _SEARCH_KEYS: ClassVar[tuple[str, ...]] = (
         "Start Date",
         "Base Obligation Date",
+        "Period of Performance Start Date",
         "End Date",
         "Period of Performance Current End Date",
         "Period of Performance Potential End Date",

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Literal
 
 from ..logging_config import USASpendingLogger
+from ..utils.validations import validate_sort_direction
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
@@ -157,8 +158,11 @@ class RecipientsSearch(QueryBuilder["Recipient"]):
 
         Returns:
             A new RecipientsSearch instance with the sorting applied.
+
+        Raises:
+            ValidationError: If direction is neither "asc" nor "desc".
         """
         clone = self._clone()
         clone._sort_field = field
-        clone._sort_direction = direction
+        clone._sort_direction = validate_sort_direction(direction)
         return clone

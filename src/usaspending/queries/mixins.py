@@ -140,11 +140,9 @@ class SortableQuery:
 
         api_field = self.SORT_FIELD_MAP.get(field.lower(), field)
 
-        # Not `validate_sort_field`: what is accepted here is either a friendly
-        # name or the API name it maps to, so the set tested and the set worth
-        # showing a caller differ. The helper shows what it tests, which would
-        # mean listing API names in place of the names to pass.
-        if api_field not in set(self.SORT_FIELD_MAP.values()):
+        # Not `validate_sort_field`: tested against the API names, but the
+        # caller is shown the friendly ones.
+        if api_field not in self.SORT_FIELD_MAP.values():
             raise ValidationError(
                 f"Invalid sort field '{field}'. "
                 f"Valid fields are: {', '.join(sorted(self.SORT_FIELD_MAP))}"

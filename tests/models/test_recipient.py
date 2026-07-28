@@ -56,6 +56,19 @@ class TestSearchResultKeys:
         assert recipient.uei == "NESTED_UEI"
         assert recipient.location.state_code == "TX"
 
+    def test_a_hash_survives_the_projection(self, mock_usa_client):
+        """`recipient_hash` is the fallback identity, so it must not be filtered out.
+
+        `__init__` and `recipient_id` both read it, and it is what a record with no
+        `recipient_id` lazy-loads by. Dropping it in the projection would build a
+        recipient that cannot fetch its own details.
+        """
+        recipient = Recipient._from_search_result(
+            {"recipient_hash": "abc123", "Recipient Name": "ACME"}, mock_usa_client
+        )
+
+        assert recipient.recipient_id == "abc123"
+
     def test_from_search_result_takes_only_its_own_keys(self, mock_usa_client):
         """The projection is scoped, so `raw` describes a recipient and not an award.
 
