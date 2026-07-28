@@ -202,3 +202,47 @@ class TestTruthinessOnInMemoryQueries:
         mock_usa_client.set_response("/references/filter_tree/tas/", {"results": []})
 
         assert not mock_usa_client.tas.agencies
+
+
+class TestIndexingSeesTheSameCollectionAsIteration:
+    """Indexing reads the limited collection, not the source behind it."""
+
+    def test_full_slice_stops_at_the_limit(self, def_codes_query: DefCodesQuery) -> None:
+        """A bare slice is the whole query, so limit(3) makes it three rows."""
+        limited = def_codes_query.limit(3)
+
+        assert len(limited[:]) == 3
+        assert limited[:] == limited.all()
+
+    def test_full_slice_stops_at_max_pages(self, def_codes_query: DefCodesQuery) -> None:
+        """max_pages() caps indexing the same way limit() does."""
+        capped = def_codes_query.page_size(2).max_pages(2)
+
+        assert len(capped[:]) == 4
+        assert capped[:] == capped.all()
+
+    def test_index_past_the_limit_is_out_of_bounds(self, def_codes_query: DefCodesQuery) -> None:
+        """Row six exists in the source but not in a query limited to three."""
+        limited = def_codes_query.limit(3)
+
+        with pytest.raises(IndexError):
+            limited[5]
+
+    def test_negative_index_counts_back_from_the_limit(
+        self, def_codes_query: DefCodesQuery
+    ) -> None:
+        """The last row of a limited query is its third, not the source's last."""
+        limited = def_codes_query.limit(3)
+
+        assert limited[-1] == limited.all()[-1]
+
+    def test_a_filter_tree_level_slices_the_same_way(self, mock_usa_client, load_fixture) -> None:
+        """The subclass that fetches its rows honors the limit when indexed too."""
+        mock_usa_client.set_response(
+            "/references/filter_tree/tas/", load_fixture("tas_agencies.json")
+        )
+        limited = mock_usa_client.tas.agencies.limit(3)
+        codes = [agency.code for agency in limited.all()]
+
+        assert len(codes) == 3
+        assert [agency.code for agency in limited[:]] == codes

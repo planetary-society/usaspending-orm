@@ -213,7 +213,7 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         return clone
 
     def __iter__(self) -> Iterator[T]:
-        """Iterate over results after applying filters and ordering."""
+        """Iterate over results after applying filters, ordering, and limits."""
         items = self._materialize()
         items = self._apply_filters(items)
         items = self._apply_ordering(items)
@@ -233,13 +233,9 @@ class ClientSideQueryBuilder(BaseQuery[T]):
             IndexError: If index is out of bounds.
             TypeError: If key is not int or slice.
         """
-        items = self._apply_ordering(self._apply_filters(self._materialize()))
-
-        if isinstance(key, int):
-            return items[key]
-        if isinstance(key, slice):
-            return items[key]
-        raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
+        if not isinstance(key, (int, slice)):
+            raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
+        return self.all()[key]
 
     def count(self) -> int:
         """Return the total number of matching results."""
