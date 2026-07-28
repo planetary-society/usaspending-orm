@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any, ClassVar, Literal
 
 from ..exceptions import ValidationError
-from ..utils.validations import parse_date_string, parse_enum_value
+from ..utils.validations import parse_date_string, parse_enum_value, validate_agency_type
 
 # ==============================================================================
 # Constants
@@ -475,11 +475,9 @@ def parse_agency_spec(agency: dict[str, str]) -> AgencySpec:
         raise ValidationError("Agency specification must include 'tier' field")
 
     # Validate type and tier values
-    valid_types = {"awarding", "funding"}
     valid_tiers = {"toptier", "subtier"}
 
-    if agency["type"] not in valid_types:
-        raise ValidationError(f"Agency type must be 'awarding' or 'funding', got: {agency['type']}")
+    validate_agency_type(agency["type"])
     if agency["tier"] not in valid_tiers:
         raise ValidationError(f"Agency tier must be 'toptier' or 'subtier', got: {agency['tier']}")
 

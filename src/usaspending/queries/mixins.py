@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import ClassVar, TypeVar
 
 from ..exceptions import ValidationError
-from ..utils.validations import validate_non_empty_string
+from ..utils.validations import validate_non_empty_string, validate_sort_direction
 
 # Self types, so a chained call keeps the concrete builder's type rather than
 # widening to the mixin (or to Any) partway through the chain.
@@ -136,15 +136,18 @@ class SortableQuery:
         Raises:
             ValidationError: If the direction or field is not supported.
         """
-        if direction not in ("asc", "desc"):
-            raise ValidationError(f"Invalid sort direction: {direction}. Must be 'asc' or 'desc'.")
+        validate_sort_direction(direction)
 
         api_field = self.SORT_FIELD_MAP.get(field.lower(), field)
 
+        # Not `validate_sort_field`: what is accepted here is either a friendly
+        # name or the API name it maps to, so the set tested and the set worth
+        # showing a caller differ. The helper shows what it tests, which would
+        # mean listing API names in place of the names to pass.
         if api_field not in set(self.SORT_FIELD_MAP.values()):
             raise ValidationError(
-                f"Invalid sort field: {field}. "
-                f"Valid fields are: {', '.join(self.SORT_FIELD_MAP.keys())}"
+                f"Invalid sort field '{field}'. "
+                f"Valid fields are: {', '.join(sorted(self.SORT_FIELD_MAP))}"
             )
 
         clone = self._clone()

@@ -8,6 +8,7 @@ from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.agency import Agency
 from ..models.subtier_agency import SubTierAgency
+from ..utils.validations import validate_agency_type
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
@@ -44,14 +45,16 @@ class AgenciesSearch(QueryBuilder[Agency]):
 
     @property
     def _endpoint(self) -> str:
-        """API endpoint for agency autocomplete."""
-        if self._agency_type == "funding":
-            return "/autocomplete/funding_agency_office/"
-        if self._agency_type == "awarding":
-            return "/autocomplete/awarding_agency_office/"
-        raise ValidationError(
-            f"Invalid agency_type: {self._agency_type}. Must be 'funding' or 'awarding'."
-        )
+        """API endpoint for agency autocomplete.
+
+        Raises:
+            ValidationError: If the agency type is neither awarding nor funding,
+                which the constructor and :meth:`agency_type` both prevent. The
+                check remains so a future way of setting the field cannot silently
+                produce a request to no endpoint at all.
+        """
+        validate_agency_type(self._agency_type)
+        return f"/autocomplete/{self._agency_type}_agency_office/"
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """Build request payload."""
@@ -207,11 +210,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
         Raises:
             ValidationError: If agency_type is invalid.
         """
-        if agency_type not in ("funding", "awarding"):
-            raise ValidationError(
-                f"Invalid agency_type: {agency_type}. Must be 'funding' or 'awarding'."
-            )
-        return agency_type
+        return validate_agency_type(agency_type)
 
     def toptier(self) -> AgenciesSearch:
         """Filter to only return toptier agency matches.

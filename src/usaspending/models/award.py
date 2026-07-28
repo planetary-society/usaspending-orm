@@ -12,6 +12,7 @@ from ..logging_config import USASpendingLogger
 from ..utils.dates import to_date
 from ..utils.numbers import to_decimal, to_int
 from ..utils.textcase import TextFormatter
+from ..utils.validations import validate_agency_type
 from .agency import Agency
 from .award_identifier import parse_award_identifier
 from .award_types import DOWNLOAD_TYPES
@@ -595,10 +596,7 @@ class Award(LazyRecord):
         Raises:
             ValidationError: If agency_type is not "funding" or "awarding".
         """
-        if agency_type not in ["funding", "awarding"]:
-            raise ValidationError(
-                f"Invalid agency_type: {agency_type}. Must be 'funding' or 'awarding'."
-            )
+        validate_agency_type(agency_type)
 
         # Detail responses nest the agency under a snake_case key, while search
         # results flatten it into Title Case columns that differ only by this

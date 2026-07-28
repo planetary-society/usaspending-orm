@@ -10,6 +10,7 @@ can import them without pulling in the query layer.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, TypeVar
@@ -263,28 +264,88 @@ def normalize_recipient_id(recipient_id: Any) -> Any:
 
 def validate_sort_field(
     field: str,
-    valid_fields: set[str],
-    context: str = "query",
+    valid_fields: Iterable[str],
+    context: str | None = None,
 ) -> None:
     """Validate that a sort field is allowed for the query type.
 
     Args:
         field: The sort field to validate.
-        valid_fields: Set of valid sort field names.
-        context: Description of the query context for error messages.
+        valid_fields: The permitted sort field names.
+        context: What the fields are valid *for*, named in the error when the same
+            field is accepted by one query and not another. Omit where the query
+            has one fixed set, so the message does not pad itself with a
+            restatement of the method the caller just called.
 
     Raises:
         ValidationError: If field is not in valid_fields.
 
     Example:
-        >>> validate_sort_field("Award Amount", {"Award Amount", "Award ID"}, "awards search")
-        >>> validate_sort_field("Nope", {"Award ID"}, "awards search")
+        >>> validate_sort_field("Award Amount", {"Award Amount", "Award ID"})
+        >>> validate_sort_field("Nope", {"Award ID"})
         Traceback (most recent call last):
             ...
-        usaspending.exceptions.ValidationError: Invalid sort field 'Nope' for awards search. Valid fields: Award ID
+        usaspending.exceptions.ValidationError: Invalid sort field 'Nope'. Valid fields are: Award ID
+        >>> validate_sort_field("Loan Value", {"Award ID"}, "contracts")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid sort field 'Loan Value' for contracts. Valid fields are: Award ID
     """
     if field not in valid_fields:
-        sorted_fields = sorted(valid_fields)
+        where = f" for {context}" if context else ""
         raise ValidationError(
-            f"Invalid sort field '{field}' for {context}. Valid fields: {', '.join(sorted_fields)}"
+            f"Invalid sort field '{field}'{where}. "
+            f"Valid fields are: {', '.join(sorted(valid_fields))}"
         )
+
+
+def validate_sort_direction(direction: str) -> str:
+    """Validate a sort direction.
+
+    Args:
+        direction: The direction to validate.
+
+    Returns:
+        The direction, unchanged, so a caller can assign it in one expression.
+
+    Raises:
+        ValidationError: If direction is neither "asc" nor "desc".
+
+    Example:
+        >>> validate_sort_direction("asc")
+        'asc'
+        >>> validate_sort_direction("sideways")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid sort direction 'sideways'. Must be 'asc' or 'desc'.
+    """
+    if direction not in ("asc", "desc"):
+        raise ValidationError(f"Invalid sort direction '{direction}'. Must be 'asc' or 'desc'.")
+    return direction
+
+
+def validate_agency_type(agency_type: str) -> str:
+    """Validate an awarding/funding agency type.
+
+    Args:
+        agency_type: The agency type to validate.
+
+    Returns:
+        The agency type, unchanged.
+
+    Raises:
+        ValidationError: If agency_type is neither "awarding" nor "funding".
+
+    Example:
+        >>> validate_agency_type("awarding")
+        'awarding'
+        >>> validate_agency_type("neither")
+        Traceback (most recent call last):
+            ...
+        usaspending.exceptions.ValidationError: Invalid agency_type: neither. Must be 'awarding' or 'funding'.
+    """
+    if agency_type not in ("awarding", "funding"):
+        raise ValidationError(
+            f"Invalid agency_type: {agency_type}. Must be 'awarding' or 'funding'."
+        )
+    return agency_type

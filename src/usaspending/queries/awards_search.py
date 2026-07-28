@@ -130,6 +130,7 @@ from ..models.award_types import (
     categories_for_codes,
     category_for_exclusive_codes,
 )
+from ..utils.validations import validate_sort_direction, validate_sort_field
 from .filters import (
     SimpleListFilter,
 )
@@ -460,13 +461,10 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             else:
                 category_str = "all award types (no type filter applied)"
 
-            raise ValidationError(
-                f"Invalid sort field '{field}' for {category_str}. "
-                f"Valid fields are: {', '.join(sorted(valid_fields))}"
-            )
+            validate_sort_field(field, valid_fields, category_str)
 
         # Call the parent class order_by method
-        return super().order_by(field, direction)
+        return super().order_by(field, validate_sort_direction(direction))
 
     # ==========================================================================
     # Filter Methods

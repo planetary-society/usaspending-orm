@@ -5,9 +5,9 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING, Any
 
-from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.transaction import Transaction
+from ..utils.validations import validate_sort_direction, validate_sort_field
 from .filters import parse_api_date, validate_date_range
 from .mixins import AwardScopedQuery
 from .query_builder import QueryBuilder
@@ -275,18 +275,11 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             Loan-specific fields (face_value_loan_guarantee, original_loan_subsidy_cost)
             are only populated for loan award transactions.
         """
-        if field not in self.VALID_SORT_FIELDS:
-            raise ValidationError(
-                f"Invalid sort field '{field}'. "
-                f"Valid fields: {', '.join(sorted(self.VALID_SORT_FIELDS))}"
-            )
-
-        if direction not in ("asc", "desc"):
-            raise ValidationError(f"Invalid sort direction '{direction}'. Must be 'asc' or 'desc'.")
+        validate_sort_field(field, self.VALID_SORT_FIELDS)
 
         clone = self._clone()
         clone._order_by = field
-        clone._order_direction = direction
+        clone._order_direction = validate_sort_direction(direction)
         return clone
 
     def _row_passes(self, transaction: Transaction) -> bool:

@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.subtier_agency import SubTierAgency
-from ..utils.validations import validate_toptier_code
+from ..utils.validations import (
+    validate_agency_type,
+    validate_sort_direction,
+    validate_sort_field,
+    validate_toptier_code,
+)
 from .filters import parse_fiscal_year
 from .query_builder import QueryBuilder
 
@@ -128,8 +132,7 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         Returns:
             A new SubAgencyQuery instance with the filter applied.
         """
-        if type_val not in ("awarding", "funding"):
-            raise ValidationError("agency_type must be 'awarding' or 'funding'")
+        validate_agency_type(type_val)
 
         clone = self._clone()
         clone._agency_type = type_val
@@ -161,15 +164,9 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
         """
         valid_sorts = {"name", "total_obligations", "transaction_count", "new_award_count"}
 
-        if field not in valid_sorts:
-            raise ValidationError(
-                f"Invalid sort field: {field}. Valid fields are: {', '.join(sorted(valid_sorts))}"
-            )
-
-        if direction not in ("asc", "desc"):
-            raise ValidationError("direction must be 'asc' or 'desc'")
+        validate_sort_field(field, valid_sorts)
 
         clone = self._clone()
         clone._order_by = field
-        clone._order_direction = direction
+        clone._order_direction = validate_sort_direction(direction)
         return clone

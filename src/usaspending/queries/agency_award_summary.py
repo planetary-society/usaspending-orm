@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
-from ..utils.validations import validate_toptier_code
+from ..utils.validations import validate_agency_type, validate_toptier_code
 
 if TYPE_CHECKING:
     from ..client import USASpendingClient
@@ -69,11 +68,7 @@ class AgencyAwardSummary:
         """
         toptier_code = validate_toptier_code(toptier_code)
 
-        # Validate agency_type
-        if agency_type not in ["awarding", "funding"]:
-            raise ValidationError(
-                f"Invalid agency_type: {agency_type}. Must be 'awarding' or 'funding'"
-            )
+        validate_agency_type(agency_type)
 
         logger.debug(
             "Fetching award summary for toptier_code: %s, fiscal_year: %s, "
