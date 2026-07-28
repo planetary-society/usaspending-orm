@@ -293,8 +293,12 @@ class TestAgencyErrorHandling:
         # The implementation does try to call _get_award_summary which logs an error
         # and then returns None
         assert agency.contract_obligations is None
-        # An API call is attempted but fails due to no code
-        assert mock_usa_client.get_request_count() >= 0
+        # One API call is attempted, the lazy detail load looking for the missing
+        # code, and it is the only one: the summary fetch gives up before asking.
+        # known: the codeless detail load builds /agency/None/, which is not a
+        # shape worth pinning, so the check is that the summary was not requested.
+        assert mock_usa_client.get_request_count() == 1
+        assert not mock_usa_client.get_last_request()["endpoint"].endswith("/awards/")
 
 
 class TestAgencyIntegrationWithFixtures:

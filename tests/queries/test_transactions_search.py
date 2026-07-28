@@ -226,6 +226,95 @@ class TestDateBoundValidation:
             query.since("2024-01-01").until("2024-03-01").since("2024-06-01")
 
 
+def payload_sent_for(mock_usa_client, query):
+    """Run a query and return the JSON body the transactions endpoint received."""
+    mock_usa_client.set_paginated_response(MockUSASpendingClient.Endpoints.TRANSACTIONS, [])
+    mock_usa_client.set_response(
+        MockUSASpendingClient.Endpoints.TRANSACTION_COUNT.format(award_id="CONT_AWD_123"),
+        {"transactions": 0},
+    )
+    list(query)
+    return mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.TRANSACTIONS)["json"]
+
+
+class TestTransactionsSearchOrdering:
+    """order_by() validates both arguments and reaches the request payload."""
+
+    def test_the_sortable_fields_are_the_documented_ones(self):
+        """Written out rather than read off the constant, which is the thing under test.
+
+        Every other test here takes its field from VALID_SORT_FIELDS, so dropping
+        an entry would quietly shrink what they cover instead of failing.
+        """
+        assert TransactionsSearch.VALID_SORT_FIELDS == frozenset(
+            {
+                "modification_number",
+                "action_date",
+                "federal_action_obligation",
+                "face_value_loan_guarantee",
+                "original_loan_subsidy_cost",
+                "action_type_description",
+                "description",
+            }
+        )
+
+    @pytest.mark.parametrize("direction", ["sideways", "ASC"])
+    def test_an_unsupported_direction_is_rejected(self, mock_usa_client, direction):
+        """Only "asc" and "desc" are sortable directions the API understands."""
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        with pytest.raises(ValidationError, match="Invalid sort direction"):
+            query.order_by("action_date", direction)
+
+    def test_an_unsupported_field_is_rejected(self, mock_usa_client):
+        """The endpoint sorts on a fixed list, so anything else is a mistake."""
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        with pytest.raises(ValidationError, match="Invalid sort field 'recipient_name'"):
+            query.order_by("recipient_name")
+
+    def test_a_sort_reaches_the_payload(self, mock_usa_client):
+        """A sort the caller asked for must be sent, not just stored."""
+        query = (
+            TransactionsSearch(mock_usa_client)
+            .award_id("CONT_AWD_123")
+            .order_by("action_date", "asc")
+        )
+
+        payload = payload_sent_for(mock_usa_client, query)
+
+        assert payload["sort"] == "action_date"
+        assert payload["order"] == "asc"
+
+    def test_the_default_direction_is_descending(self, mock_usa_client):
+        """Omitting the direction must still send one, matching the signature."""
+        query = (
+            TransactionsSearch(mock_usa_client)
+            .award_id("CONT_AWD_123")
+            .order_by("federal_action_obligation")
+        )
+
+        assert payload_sent_for(mock_usa_client, query)["order"] == "desc"
+
+    def test_an_unsorted_query_sends_no_sort(self, mock_usa_client):
+        """The keys are optional, so an untouched query must not invent them."""
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        payload = payload_sent_for(mock_usa_client, query)
+
+        assert "sort" not in payload
+        assert "order" not in payload
+
+    def test_order_by_returns_a_new_instance(self, mock_usa_client):
+        """Every filter clones, so the receiver must be left unsorted."""
+        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+
+        sorted_query = query.order_by("action_date", "asc")
+
+        assert sorted_query is not query
+        assert query._order_by is None
+
+
 class TestTransactionsSearchPageSize:
     """Test TransactionsSearch endpoint-specific page size caps."""
 

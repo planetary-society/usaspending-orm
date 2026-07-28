@@ -255,10 +255,16 @@ class TestLoan(AwardTestingMixin):
         assert loan.uri is None
         assert_decimal_equal(loan.total_subsidy_cost, fixture_data["total_subsidy_cost"])
         assert_decimal_equal(loan.total_loan_value, fixture_data["total_loan_value"])
-        if loan.cfda_number:
-            assert loan.cfda_number == fixture_data["cfda_info"][0]["cfda_number"]
-        else:
-            assert loan.cfda_number is None
+        # Driven by the fixture, not by the property: branching on what
+        # cfda_number returned would let a property stuck at None assert only
+        # that it is None. This fixture is a detail response, which carries the
+        # CFDA data nested under cfda_info and sends no flat cfda_number, so the
+        # flat property is documented to report None here. Where Loan's override
+        # diverges from Grant's is pinned in
+        # tests/test_characterization.py::TestLoanCfdaNumberOverride.
+        assert fixture_data.get("cfda_info"), "the loan fixture should nest CFDA data"
+        assert "cfda_number" not in fixture_data
+        assert loan.cfda_number is None
 
     def test_cfda_info_from_fixture(self, mock_usa_client, fixture_data):
         """Test loan-specific CFDA properties using fixture data."""

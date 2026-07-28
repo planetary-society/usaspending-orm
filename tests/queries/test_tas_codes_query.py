@@ -258,7 +258,14 @@ class TestTASCodesQueryIntegration:
 
         query = TASCodesQuery(mock_usa_client, "080", "080-0120")
 
-        for tas in query:
+        results = query.all()
+
+        # Pinned against the fixture: a query yielding nothing would satisfy the
+        # loop below without ever reading a parent code. The fixture is checked
+        # non-empty first, so an emptied one cannot satisfy the comparison either.
+        assert fixture["results"]
+        assert len(results) == len(fixture["results"])
+        for tas in results:
             assert tas.toptier_code == "080"
             assert tas.federal_account_code == "080-0120"
 

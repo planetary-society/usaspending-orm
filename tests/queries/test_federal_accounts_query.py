@@ -195,7 +195,14 @@ class TestFederalAccountsQueryIntegration:
 
         query = FederalAccountsQuery(mock_usa_client, "080")
 
-        for account in query:
+        accounts = query.all()
+
+        # Pinned against the fixture: a query yielding nothing would satisfy the
+        # loop below without ever reading a toptier_code. The fixture is checked
+        # non-empty first, so an emptied one cannot satisfy the comparison either.
+        assert fixture["results"]
+        assert len(accounts) == len(fixture["results"])
+        for account in accounts:
             assert account.toptier_code == "080"
 
     def test_accounts_can_access_tas_codes(self, mock_usa_client, load_fixture):

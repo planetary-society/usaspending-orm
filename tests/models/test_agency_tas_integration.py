@@ -24,6 +24,26 @@ def seed_tas_tree(mock_usa_client, load_fixture) -> dict:
     return accounts
 
 
+def seeded_account_count(accounts_fixture: dict) -> int:
+    """Report how many accounts a seeded fixture holds, refusing an empty one.
+
+    Request-count claims are stated per seeded account, so they have to be
+    measured against the fixture rather than against the accounts the walk being
+    measured produced: a parser that dropped every row would otherwise satisfy
+    its own budget. An emptied fixture would make that comparison 0 == 0, so it
+    is rejected here, once, for every test that counts.
+
+    Args:
+        accounts_fixture: The account-level fixture ``seed_tas_tree`` returned.
+
+    Returns:
+        int: The number of accounts seeded, which is never zero.
+    """
+    count = len(accounts_fixture["results"])
+    assert count > 0, "the fixture must seed accounts for a per-account count to mean anything"
+    return count
+
+
 class TestAgencyFederalAccountsProperty:
     """Test Agency.federal_accounts property."""
 
@@ -192,12 +212,17 @@ class TestFederalAccountsFetchedOnce:
     """
 
     def _agency(self, mock_usa_client, load_fixture):
-        """An agency whose whole TAS subtree is answerable, with nothing fetched."""
-        seed_tas_tree(mock_usa_client, load_fixture)
-        return Agency({"toptier_code": "080"}, mock_usa_client)
+        """An agency whose whole TAS subtree is answerable, with nothing fetched.
+
+        Returns:
+            tuple: The agency, and the account-level fixture it was seeded from,
+            which is what the request-count expectations are measured against.
+        """
+        accounts_fixture = seed_tas_tree(mock_usa_client, load_fixture)
+        return Agency({"toptier_code": "080"}, mock_usa_client), accounts_fixture
 
     def test_repeated_reads_cost_one_request(self, mock_usa_client, load_fixture):
-        agency = self._agency(mock_usa_client, load_fixture)
+        agency, _ = self._agency(mock_usa_client, load_fixture)
         before = mock_usa_client.get_request_count()
 
         len(agency.federal_accounts)
@@ -208,7 +233,7 @@ class TestFederalAccountsFetchedOnce:
         assert mock_usa_client.get_request_count() - before == 1
 
     def test_each_read_returns_an_independent_query(self, mock_usa_client, load_fixture):
-        agency = self._agency(mock_usa_client, load_fixture)
+        agency, _ = self._agency(mock_usa_client, load_fixture)
 
         assert agency.federal_accounts is not agency.federal_accounts
 
@@ -219,7 +244,8 @@ class TestFederalAccountsFetchedOnce:
 
     def test_nested_walk_costs_one_request_per_level(self, mock_usa_client, load_fixture):
         """The docstring's own pattern: iterate accounts, read each one's codes."""
-        agency = self._agency(mock_usa_client, load_fixture)
+        agency, accounts_fixture = self._agency(mock_usa_client, load_fixture)
+        expected_accounts = seeded_account_count(accounts_fixture)
 
         before = mock_usa_client.get_request_count()
         accounts = list(agency.federal_accounts)
@@ -227,8 +253,9 @@ class TestFederalAccountsFetchedOnce:
             len(account.tas_codes)
             account.tas_codes.all()
 
+        assert len(accounts) == expected_accounts
         # One for the account level, one per account for its TAS level.
-        assert mock_usa_client.get_request_count() - before == 1 + len(accounts)
+        assert mock_usa_client.get_request_count() - before == 1 + expected_accounts
 
     def test_an_agency_without_a_code_makes_no_request(self, mock_usa_client):
         agency = Agency({"name": "Unknown"}, mock_usa_client)
@@ -245,7 +272,7 @@ class TestFederalAccountsFetchedOnce:
         the models to the query directly would evaluate the cache here, at
         property-access time, and fetch a level nobody has asked to see yet.
         """
-        agency = self._agency(mock_usa_client, load_fixture)
+        agency, _ = self._agency(mock_usa_client, load_fixture)
         before = mock_usa_client.get_request_count()
 
         query = agency.federal_accounts
@@ -263,7 +290,8 @@ class TestFederalAccountsFetchedOnce:
         Before the level was cached per model, every filter on every account
         re-fetched, and three years over 16 accounts cost ~51 requests.
         """
-        agency = self._agency(mock_usa_client, load_fixture)
+        agency, accounts_fixture = self._agency(mock_usa_client, load_fixture)
+        expected_accounts = seeded_account_count(accounts_fixture)
 
         before = mock_usa_client.get_request_count()
         accounts = agency.federal_accounts.all()
@@ -271,7 +299,8 @@ class TestFederalAccountsFetchedOnce:
             for year in (2023, 2024, 2025):
                 account.tas_codes.fiscal_year(year).all()
 
-        assert mock_usa_client.get_request_count() - before == 1 + len(accounts)
+        assert len(accounts) == expected_accounts
+        assert mock_usa_client.get_request_count() - before == 1 + expected_accounts
 
     def test_the_cross_level_filter_costs_one_request_per_level(
         self, mock_usa_client, load_fixture
@@ -282,8 +311,8 @@ class TestFederalAccountsFetchedOnce:
         its predicate crosses into the level below, so before the levels were cached
         per model it re-fetched every account's codes on every call.
         """
-        agency = self._agency(mock_usa_client, load_fixture)
-        accounts = len(load_fixture("tas_federal_accounts.json")["results"])
+        agency, accounts_fixture = self._agency(mock_usa_client, load_fixture)
+        accounts = seeded_account_count(accounts_fixture)
 
         before = mock_usa_client.get_request_count()
         for year in (2023, 2024, 2025):
