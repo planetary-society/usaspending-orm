@@ -26,7 +26,11 @@ it records values at the altitude the library is responsible for:
   object. Figures that move as data is ingested are free to change, while a
   type regression (``date`` becoming ``str``, ``Decimal`` becoming ``None``) is
   still caught. Deriving the tag at capture time rather than from the encoded
-  snapshot is what makes that check real.
+  snapshot is what makes that check real. A type tag alone would still pass a
+  wrong-but-well-typed value, so ``TestSameResponseVolatileFields`` compares
+  each of those values exactly against the response it came from, using the
+  tables in ``tests/volatile_fields.py`` that the unit suite runs against the
+  recorded fixtures. See that module for how the comparison stays drift-immune.
 * **Network-backed properties are recorded as such, not read.** Reading them
   during a snapshot would cost roughly ten extra requests per Agency to
   re-confirm they are still Decimals; one focused test covers them instead.
@@ -50,6 +54,7 @@ Only a phase that intentionally changes behavior should produce a diff.
 
 from __future__ import annotations
 
+import copy
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -57,7 +62,17 @@ from pathlib import Path
 import pytest
 
 from tests.snapshot_support import load_snapshot
+from tests.volatile_fields import (
+    AGENCY_FIELDS,
+    AWARD_FIELDS,
+    PERIOD_FIELDS,
+    RECIPIENT_FIELDS,
+    compare_volatile,
+)
+from usaspending.models.award_factory import create_award
 from usaspending.models.base_model import BaseModel
+from usaspending.models.period_of_performance import PeriodOfPerformance
+from usaspending.models.recipient import Recipient
 from usaspending.queries.base_query import BaseQuery
 
 pytestmark = pytest.mark.integration
@@ -320,6 +335,32 @@ def agency(client):
     return client.agencies.find_by_toptier_code(AGENCY_TOPTIER_CODE)
 
 
+@pytest.fixture(scope="module")
+def recipient(client):
+    """The anchor recipient, shared by the snapshot and the field comparison."""
+    return client.recipients.find_by_recipient_id(RECIPIENT_ID)
+
+
+@pytest.fixture(scope="module")
+def search_first_result(client):
+    """The first row of the anchor search, and a copy of its untouched payload.
+
+    One request serves both the snapshot, which reads the model and so pulls a
+    detail response into it, and the same-response tests, which build their own
+    awards from the copy taken before any property was read. Running the query
+    twice would cost a second request to answer the same question.
+    """
+    query = (
+        client.awards.search()
+        .contracts()
+        .fiscal_year(ANCHOR_FISCAL_YEAR)
+        .agency(ANCHOR_AGENCY)
+        .order_by("Award Amount", "desc")
+    )
+    award = query.first()
+    return award, copy.deepcopy(award.raw)
+
+
 class TestAwardGoldenMasters:
     """Every Award subtype, captured end to end from the live API."""
 
@@ -341,8 +382,8 @@ class TestAwardGoldenMasters:
 class TestRelatedModelGoldenMasters:
     """Models reached through an award, plus the standalone resources."""
 
-    def test_recipient_snapshot(self, client):
-        _verify("recipient", client.recipients.find_by_recipient_id(RECIPIENT_ID))
+    def test_recipient_snapshot(self, recipient):
+        _verify("recipient", recipient)
 
     def test_agency_snapshot(self, agency):
         _verify("agency", agency)
@@ -403,16 +444,10 @@ class TestQueryResultGoldenMasters:
     take no sort parameter, so a fixed fiscal year and agency is enough.
     """
 
-    def test_award_search_first_result(self, client):
+    def test_award_search_first_result(self, search_first_result):
         """Exercises AwardsSearch._transform_result and _get_fields."""
-        query = (
-            client.awards.search()
-            .contracts()
-            .fiscal_year(ANCHOR_FISCAL_YEAR)
-            .agency(ANCHOR_AGENCY)
-            .order_by("Award Amount", "desc")
-        )
-        _verify("search_contract_first_result", query.first())
+        award, _row = search_first_result
+        _verify("search_contract_first_result", award)
 
     def test_subaward_search_first_result(self, client):
         query = (
@@ -461,6 +496,181 @@ class TestQueryResultGoldenMasters:
         query = query.fiscal_year(ANCHOR_FISCAL_YEAR).agency(ANCHOR_AGENCY)
         rows = query.limit(2).all()
         _verify(name, rows[0] if rows else None)
+
+
+class TestSameResponseVolatileFields:
+    """Volatile figures, compared exactly against the response that produced them.
+
+    The snapshots above record a volatile property as a type tag, because its
+    value moves between runs. That leaves a real gap: a money property reading
+    the wrong key, or shifted by a cent, is still a Decimal and still passes, and
+    so is an ``end_date`` parsed from the wrong column.
+
+    ``tests/volatile_fields.py`` holds the tables and the comparison, which run
+    against the recorded fixtures in the unit suite as well. What these tests add
+    is today's payload: a response shape the fixtures predate, such as a column
+    the API has started or stopped sending, is caught here and only here.
+
+    Nothing in this class can fail on live data drift. Both sides of every
+    comparison come from one payload -- the model's own ``raw``, which is
+    literally the dict its properties read -- including a raw value that will not
+    coerce, which is reported as a mismatch rather than raised.
+    """
+
+    @pytest.fixture(scope="module")
+    def settled_anchors(self, award_anchors):
+        """The anchor awards, with their detail fetch already latched.
+
+        A money property whose key the payload lacks would otherwise trigger the
+        fetch mid-comparison, and the expectation would then have been read from
+        a payload one response older than the answer. Latching first makes
+        ``raw`` final, so every comparison here is against one response.
+
+        Free in a full run: an award detail response carries no COVID-19 or
+        Infrastructure keys, so snapshotting has already gone looking for them
+        and latched the flag. That saving is ordering-dependent, and this class
+        does not rely on it -- running these tests alone simply pays for the
+        fetch here instead.
+        """
+        for award in award_anchors.values():
+            award.fetch_all_details()
+        return award_anchors
+
+    @pytest.mark.parametrize(
+        "name",
+        ["award_contract", "award_idv", "award_grant", "award_loan"],
+    )
+    def test_award_money_and_counts_match_their_payload(self, settled_anchors, name):
+        pinned = compare_volatile(name, settled_anchors[name], AWARD_FIELDS)
+
+        # Only properties that compared a real figure are reported, so this
+        # cannot be satisfied by a run of None-equals-None.
+        assert {"award_amount", "total_obligation", "subaward_count"} <= pinned
+
+    @pytest.mark.parametrize(
+        "name",
+        ["award_contract", "award_idv", "award_grant", "award_loan"],
+    )
+    def test_award_dates_match_their_payload(self, settled_anchors, name):
+        award = settled_anchors[name]
+        period = award.period_of_performance
+
+        pinned = compare_volatile(f"{name} period", period, PERIOD_FIELDS)
+
+        assert "start_date" in pinned
+        # The award reads no date keys of its own; it delegates to the period.
+        assert award.start_date == period.start_date
+        assert award.end_date == period.end_date
+
+    def test_recipient_aggregates_match_their_payload(self, recipient):
+        """The finder's own response carries all four aggregates.
+
+        So no latching is needed, and the key set is asserted unchanged rather
+        than fetched again: ``fetch_all_details()`` here would be a second GET
+        for a payload already in hand.
+        """
+        before = set(recipient.raw)
+
+        pinned = compare_volatile("recipient", recipient, RECIPIENT_FIELDS)
+
+        assert "total_transactions" in pinned
+        assert set(recipient.raw) == before, "The recipient lazy-loaded mid-comparison"
+
+    def test_agency_counts_match_their_payload(self, agency):
+        """The agency detail response likewise carries what is compared here."""
+        before = set(agency.raw)
+
+        pinned = compare_volatile("agency", agency, AGENCY_FIELDS)
+
+        assert pinned == {"fiscal_year", "subtier_agency_count"}
+        assert set(agency.raw) == before, "The agency lazy-loaded mid-comparison"
+
+    def test_agency_messages_pass_through_unchanged(self, agency):
+        """``messages`` is a list the API sends and the model forwards."""
+        assert agency.messages == agency.raw.get("messages", [])
+
+    def test_agency_def_codes_carry_the_reported_codes(self, agency):
+        """Compares the codes only.
+
+        Each entry is rebuilt as a ``DefCode``, whose remaining fields are pinned
+        by ``tests/models/test_agency.py`` against a recorded response. What is
+        checked here is that the live list is neither reordered nor dropped.
+        """
+        reported = [entry["code"] for entry in agency.raw.get("def_codes", [])]
+
+        assert [code.code for code in agency.def_codes] == reported
+
+
+class TestSearchResultSameResponseFields:
+    """The same comparison for a search result, which reads a different key set.
+
+    A search row reports money as ``Award Amount`` and dates as ``Start Date``,
+    and hands its recipient and period keys to the two ``_from_search_result``
+    projections. The snapshots cannot cover any of that: reading every public
+    property in sorted order reaches ``award_type_code``, whose key no row
+    carries, long before ``recipient``, so a detail response is merged in and the
+    nested spellings win. Everything here is read from the row and nothing else.
+    """
+
+    @staticmethod
+    def _award(search_first_result, client):
+        """Build an award from a private copy of the captured row.
+
+        The row is copied per test because an award replaces its payload in place
+        when a detail fetch fires, which is the effect this class exists to rule
+        out.
+        """
+        return create_award(copy.deepcopy(search_first_result[1]), client)
+
+    def test_the_row_answers_from_itself(self, search_first_result, client):
+        """Money, dates and recipient all resolve from the row's own columns.
+
+        The money comparison is restricted to columns the row carries: reading
+        one it does not, such as ``total_account_obligation``, would send the
+        award for a detail response. That none of the reads did so is what the
+        two key-set assertions say, since a fetch merges its response in place.
+        """
+        row = search_first_result[1]
+        award = self._award(search_first_result, client)
+        recipient = award.recipient
+        before = set(award.raw)
+
+        compare_volatile("search row", award, AWARD_FIELDS, keys_present_only=True)
+        compare_volatile("search row period", award.period_of_performance, PERIOD_FIELDS)
+        # `name` is left out on purpose: it is title-cased on the way out, so
+        # comparing it against the row would either restate the casing rules or
+        # run the raw value through the same function under test. The snapshot
+        # pins the cased value exactly, which is the right place for it.
+        assert recipient.uei == row.get("Recipient UEI")
+        assert recipient.location.state_code == row["Recipient Location"]["state_code"]
+        # USASpending retired DUNS, so every recorded row sends it as null. The
+        # key is present, which is why reading it costs no request.
+        assert recipient.duns is None
+
+        assert set(award.raw) == before, (
+            "Reading the flat search keys pulled a detail response in. Every "
+            "value read above was already on the row."
+        )
+        assert set(recipient.raw) <= set(Recipient._SEARCH_KEYS), (
+            "The recipient fetched its own detail response rather than reading "
+            "the flat keys the row carries."
+        )
+
+    def test_the_row_comparison_covers_the_flat_spellings(self, search_first_result, client):
+        """Guards against a vacuous pass, and pins which projections ran.
+
+        Each name is a column only a search row sends, so a comparison that
+        quietly fell back to detail spellings would not report them.
+        """
+        award = self._award(search_first_result, client)
+
+        money = compare_volatile("search row", award, AWARD_FIELDS, keys_present_only=True)
+        dates = compare_volatile("search row period", award.period_of_performance, PERIOD_FIELDS)
+
+        assert {"award_amount", "total_obligation", "total_outlay"} <= money
+        assert {"start_date", "end_date"} <= dates
+        assert set(award.period_of_performance.raw) <= set(PeriodOfPerformance._SEARCH_KEYS)
+        assert set(award.recipient.raw) <= set(Recipient._SEARCH_KEYS)
 
 
 class TestCountMechanisms:

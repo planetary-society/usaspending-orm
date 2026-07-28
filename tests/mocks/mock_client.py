@@ -95,6 +95,9 @@ class MockUSASpendingClient(USASpendingClient):
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
 
+        # Set by forbid_requests() once a test has finished its setup.
+        self._requests_forbidden = False
+
         # Fixture directory
         self._fixture_dir = Path(__file__).parent.parent / "fixtures"
 
@@ -119,6 +122,8 @@ class MockUSASpendingClient(USASpendingClient):
             Mocked API response
 
         Raises:
+            AssertionError: If requests have been forbidden. See
+                :meth:`forbid_requests`.
             APIError: For mocked 400 and 422 errors
             RateLimitError: For mocked 429 errors
             HTTPError: For every other mocked error
@@ -133,6 +138,11 @@ class MockUSASpendingClient(USASpendingClient):
         }
         self._request_history.append(request_data)
         self._request_counts[endpoint] += 1
+
+        # Recorded before raising, so get_request_count() and get_last_request()
+        # still describe the attempt the failure is about.
+        if self._requests_forbidden:
+            raise AssertionError(f"no request allowed: {method} {endpoint}")
 
         # Simulate rate limiting if enabled
         if self._simulate_rate_limit:
@@ -398,6 +408,29 @@ class MockUSASpendingClient(USASpendingClient):
         """Disable rate limiting simulation."""
         self._simulate_rate_limit = False
         self._rate_limit_delay = 0.0
+
+    def forbid_requests(self) -> None:
+        """Make every further request a test failure.
+
+        For tests whose subject is that a model answered from data it already
+        held. A configured response cannot show that: the model reads the answer
+        either way, and the test passes whether or not it went to the network.
+        Once this is set, the attempt itself raises ``AssertionError`` naming the
+        method and endpoint, so the failure lands at the read that caused it
+        rather than in a request-count assertion at the end.
+
+        Call it after the test's setup, so a fixture may still be served and only
+        the reads under test are forbidden. Attempts are still recorded, so
+        :meth:`get_request_count` and :meth:`get_last_request` keep working, and
+        :meth:`reset` clears them as usual.
+
+        Example:
+            >>> mock_usa_client.set_response("/awards/A1/", recorded_payload)
+            >>> award = mock_usa_client.awards.find_by_generated_id("A1")
+            >>> mock_usa_client.forbid_requests()
+            >>> award.total_obligation  # raises if this reaches the network
+        """
+        self._requests_forbidden = True
 
     def _auto_setup_count_endpoint(self, search_endpoint: str, total_count: int) -> None:
         """Automatically set up count endpoint for a search endpoint.
