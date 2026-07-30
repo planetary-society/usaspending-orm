@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -449,6 +449,35 @@ class QueryBuilder(BaseQuery[T], ABC):
         response = self._execute_query(1)
         return response.get("page_metadata", {}).get(key, 0)
 
+    def _count_via_bucketed_endpoint(
+        self, endpoint: str, filters: dict[str, Any], keys: Iterable[str]
+    ) -> int:
+        """Count using an endpoint that reports one bucket per category.
+
+        POSTs the supplied filter payload and sums the buckets named by
+        ``keys`` from the response's ``results`` mapping. Exact rather than an
+        approximation: the count request carries the same filters as the
+        search, so an unselected category contributes nothing to its own
+        bucket either.
+
+        Args:
+            endpoint: Count endpoint path.
+            filters: Aggregated filter payload, matching the search request's.
+            keys: Bucket keys to sum, such as category count keys.
+
+        Returns:
+            int: The summed count across the requested buckets.
+        """
+        log_query_execution(
+            logger,
+            f"{self.__class__.__name__}.count",
+            self._filter_objects,
+            endpoint,
+        )
+        response = self._client._make_request("POST", endpoint, json={"filters": filters})
+        results = response.get("results", {})
+        return sum(results.get(key, 0) for key in keys)
+
     def _row_passes(self, item: T) -> bool:
         """Report whether a fetched row belongs in the result set.
 
@@ -586,11 +615,33 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         clone._filter_objects.append(filter_obj)
         return clone
 
+    def _require_award_type_filters(self) -> dict[str, Any]:
+        """Aggregate the filters, requiring the award type the API mandates.
+
+        Both the search payload and the count request need the same aggregate
+        and enforce the same requirement, so they share this.
+
+        Returns:
+            dict[str, Any]: The aggregated filter payload.
+
+        Raises:
+            ValidationError: If no ``award_type_codes`` filter is set.
+        """
+        final_filters = self._aggregate_filters()
+
+        if "award_type_codes" not in final_filters:
+            raise ValidationError(
+                "A filter for 'award_type_codes' is required. "
+                "Use the .award_type_codes() method or a convenience method like .contracts()."
+            )
+
+        return final_filters
+
     def keywords(self: SQB, *keywords: str) -> SQB:
         """
         Filter by keyword search.
 
-        Keywords are searched across multiple fields including award descriptions,
+        Keywords are searched across multiple fields including descriptions,
         recipient names, and other text fields.
 
         Args:
@@ -600,11 +651,21 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Returns:
             A new instance with the keyword filter applied.
 
+        Note:
+            Terms are alternatives rather than a phrase: a row matches when it
+            carries any one of them. Each term must be at least three
+            characters; the API rejects a shorter one rather than ignoring it.
+
         Example:
             >>> results = (
             ...     client.awards.search()
             ...     .contracts()
             ...     .keywords("Jupiter", "Saturn", "Neptune", "Uranus")
+            ... )
+
+            >>> # The same filter on the global transaction search
+            >>> transactions = (
+            ...     client.transactions.search().contracts().keywords("Jupiter", "Saturn")
             ... )
         """
         return self._with_filter(KeywordsFilter(values=list(keywords)))
@@ -677,6 +738,12 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Note:
             For subaward searches, only "action_date" and "last_modified_date"
             are supported. See SubAwardsSearch.time_period() for details.
+
+        Note:
+            For transaction searches the bounds apply to the transaction's own
+            dates rather than the parent award's. All four date types are valid
+            there: "action_date" (the default), "date_signed",
+            "last_modified_date" and "new_awards_only".
         """
         # Parse each bound and hold it to the API's floor, then check the range.
         start_date = parse_api_date(start_date, "start_date")
@@ -727,6 +794,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             >>> new_fy2023_grants = (
             ...     client.awards.search().grants().fiscal_year(2023, new_awards_only=True)
             ... )
+
+        Note:
+            Applies through time_period(), so the same date types are accepted.
+            For transaction searches the year bounds the transaction's own
+            dates, "action_date" unless another type is given.
         """
         # Validate fiscal year (must be >= 2008, earliest supported by USASpending.gov)
         year = parse_fiscal_year(year)
@@ -868,7 +940,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def agencies(self: SQB, *agencies: dict[str, str]) -> SQB:
         """
-        Filter awards by one or more awarding or funding agencies.
+        Filter by one or more awarding or funding agencies.
 
         Args:
             *agencies: Agency specification dictionaries with required and optional fields.
@@ -964,7 +1036,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         toptier_name: str | None = None,
     ) -> SQB:
         """
-        Helper method: Filter awards by a single agency (wraps agencies()).
+        Helper method: Filter by a single agency (wraps agencies()).
 
         This is a convenience wrapper around the agencies() method for improved readability
         when filtering by a single agency.
@@ -1000,7 +1072,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def recipient_search_text(self: SQB, search_term: str) -> SQB:
         """
-        Search for awards by recipient name, UEI, or DUNS.
+        Filter by recipient name, UEI, or DUNS.
 
         This performs a text search across recipient identifiers and names.
         Per API documentation, only a single search term is supported.
@@ -1036,7 +1108,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def recipient_type_names(self: SQB, *type_names: str) -> SQB:
         """
-        Filter awards by recipient or business types.
+        Filter by recipient or business types.
 
         Args:
             *type_names: One or more recipient type names (case-sensitive).
@@ -1198,6 +1270,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             ...     .grants()
             ...     .award_amounts({"upper_bound": 100000}, {"lower_bound": 1000000})
             ... )
+
+        Note:
+            The bounds always apply to the award's amount, transaction searches
+            included: a transaction matches when the award it belongs to falls
+            in range, not when its own amount does.
         """
         # Convert various input formats to AwardAmount objects
         award_amounts = [parse_award_amount(amt) for amt in amounts]
@@ -1253,10 +1330,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             T: A new instance with the award type filter applied.
 
         Note:
-            AwardsSearch overrides this method to add validation that prevents
-            mixing different award type categories (e.g., contracts and grants).
-            This is because different award types have different available fields
-            and filtering options.
+            AwardsSearch overrides this method to reject mixed award type
+            categories (e.g., contracts and grants), whose fields and filters
+            differ per category in that endpoint. TransactionsSearch overrides
+            it to validate codes while explicitly allowing mixed categories,
+            which its endpoint supports.
 
         Example:
             >>> # Search for specific contract types
@@ -1917,16 +1995,20 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
     def description(self: SQB, text: str) -> SQB:
         """
-        Filter awards by description text.
+        Filter by description text.
 
-        Unlike keywords(), this filter specifically searches the award
-        description field only, rather than multiple text fields.
+        Unlike keywords(), this filter specifically searches the description
+        field only, rather than multiple text fields.
 
         Args:
-            text: The text to search for in award descriptions.
+            text: The text to search for in descriptions.
 
         Returns:
             T: A new instance with the description filter applied.
+
+        Note:
+            For transaction searches this matches the transaction's own
+            description rather than the parent award's.
 
         Example:
             >>> # Find contracts with "climate" in description
@@ -2005,6 +2087,16 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
         Raises:
             ValidationError: If an activity has neither name nor code.
+
+        Note:
+            The ``/search/spending_by_transaction_count/`` endpoint does not
+            accept this filter, so with it set
+            :meth:`~usaspending.queries.transactions_search.TransactionsSearch.count`
+            and ``len()`` raise
+            :class:`~usaspending.exceptions.ValidationError`. Iteration and
+            ``all()`` still work; see
+            :class:`~usaspending.queries.transactions_search.TransactionsSearch`
+            for everything else that consults the count.
 
         Example:
             >>> # Filter by specific program activities

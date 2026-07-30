@@ -1,0 +1,210 @@
+{
+  "limit": 3,
+  "results": [
+    {
+      "Award ID": "W912GB09C0090",
+      "Mod": "P00006",
+      "Recipient Name": "MISCELLANEOUS FOREIGN AWARDEES",
+      "Recipient UEI": "LN9PU5M2YZN5",
+      "Action Date": "2013-09-26",
+      "Action Type": "D",
+      "Award Type": "DCA",
+      "Transaction Amount": 344733911303.88,
+      "Transaction Description": "FIELD MODIFICATION A00002, CR 002 CONVOY LIVE FIRE RANGE",
+      "Awarding Agency": "Department of Defense",
+      "Awarding Sub Agency": "Department of the Army",
+      "Funding Agency": "Department of Defense",
+      "Funding Sub Agency": "Department of the Army",
+      "Loan Value": 0.0,
+      "Subsidy Cost": 0.0,
+      "Issued Date": "2013-09-16",
+      "Last Date to Order": null,
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "VA",
+        "state_name": "Virginia",
+        "city_name": "ARLINGTON",
+        "county_code": null,
+        "county_name": null,
+        "address_line1": "2011 CRYSTAL DR STE 911",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "08",
+        "zip4": null,
+        "zip5": null,
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "DEU",
+        "country_name": "GERMANY",
+        "state_code": null,
+        "state_name": null,
+        "city_name": null,
+        "county_code": null,
+        "county_name": null,
+        "congressional_code": null,
+        "zip4": null,
+        "zip5": null
+      },
+      "NAICS": {
+        "code": "238990",
+        "description": "ALL OTHER SPECIALTY TRADE CONTRACTORS"
+      },
+      "PSC": {
+        "code": "Y112",
+        "description": "CONSTRUCT/CONF SPACE & FAC"
+      },
+      "Assistance Listing": {
+        "cfda_number": null,
+        "cfda_title": null
+      },
+      "recipient_id": null,
+      "def_codes": null,
+      "generated_internal_id": "CONT_AWD_W912GB09C0090_9700_-NONE-_-NONE-",
+      "internal_id": 349880912
+    },
+    {
+      "Award ID": "W31P4Q26C0013",
+      "Mod": "0",
+      "Recipient Name": "LOCKHEED MARTIN CORPORATION",
+      "Recipient UEI": "XFJMYSYFJEK4",
+      "Action Date": "2026-04-09",
+      "Action Type": null,
+      "Award Type": "DEFINITIVE CONTRACT",
+      "Transaction Amount": 4496040000.0,
+      "Transaction Description": "EXECUTE PHASED ARRAY TRACKING RADAR TO INTERCEPT ON TARGET (PATRIOT) ADVANCED CAPABILITY-3 (PAC-3) MISSILE PRODUCTION BY PROVIDING INCIDENTAL SERVICES, HARDWARE, FACILITIES, EQUIPMENT, AND TECHNICAL, PLANNING, MANAGEMENT, AND MANUFACTURING EFFORTS.",
+      "Awarding Agency": "Department of Defense",
+      "Awarding Sub Agency": "Department of the Army",
+      "Funding Agency": "Department of Defense",
+      "Funding Sub Agency": "Department of the Army",
+      "Loan Value": 0.0,
+      "Subsidy Cost": 0.0,
+      "Issued Date": "2026-04-09",
+      "Last Date to Order": null,
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "TX",
+        "state_name": "Texas",
+        "city_name": "GRAND PRAIRIE",
+        "county_code": "113",
+        "county_name": "DALLAS",
+        "address_line1": "1701 W MARSHALL DR",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "33",
+        "zip4": "2704",
+        "zip5": "75051",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "TX",
+        "state_name": "Texas",
+        "city_name": "GRAND PRAIRIE",
+        "county_code": "113",
+        "county_name": "DALLAS",
+        "congressional_code": "33",
+        "zip4": "2704",
+        "zip5": "75051"
+      },
+      "NAICS": {
+        "code": "336414",
+        "description": "GUIDED MISSILE AND SPACE VEHICLE MANUFACTURING"
+      },
+      "PSC": {
+        "code": "1410",
+        "description": "GUIDED MISSILES"
+      },
+      "Assistance Listing": {
+        "cfda_number": null,
+        "cfda_title": null
+      },
+      "recipient_id": "779b3e3e-364f-7cbc-28a4-a2b4484b86f4-C",
+      "def_codes": null,
+      "generated_internal_id": "CONT_AWD_W31P4Q26C0013_9700_-NONE-_-NONE-",
+      "internal_id": 360125933
+    },
+    {
+      "Award ID": "W31P4Q20C0023",
+      "Mod": "0",
+      "Recipient Name": "LOCKHEED MARTIN CORPORATION",
+      "Recipient UEI": "XFJMYSYFJEK4",
+      "Action Date": "2020-04-30",
+      "Action Type": null,
+      "Award Type": "DEFINITIVE CONTRACT",
+      "Transaction Amount": 3161854602.0,
+      "Transaction Description": "THE CONTRACT AWARD IS FOR THE FY21/FY22/FY23 BASE AND OPTION PRICING FOR PHASE ARRAY TRACKING RADAR TO INTERCEPT ON TARGET (PATRIOT) ADVANCED CAPABILITY-3 (PAC-3) PRODUCTION REQUIREMENTS FOR THE UNITED STATES (US) AND FOREIGN MILITARY SALES (FMS).",
+      "Awarding Agency": "Department of Defense",
+      "Awarding Sub Agency": "Department of the Army",
+      "Funding Agency": "Department of Defense",
+      "Funding Sub Agency": "Department of the Army",
+      "Loan Value": 0.0,
+      "Subsidy Cost": 0.0,
+      "Issued Date": "2020-04-30",
+      "Last Date to Order": null,
+      "Recipient Location": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "TX",
+        "state_name": "Texas",
+        "city_name": "GRAND PRAIRIE",
+        "county_code": "113",
+        "county_name": "DALLAS",
+        "address_line1": "1701 W MARSHALL DR",
+        "address_line2": null,
+        "address_line3": null,
+        "congressional_code": "33",
+        "zip4": "2704",
+        "zip5": "75051",
+        "foreign_postal_code": null,
+        "foreign_province": null
+      },
+      "Primary Place of Performance": {
+        "location_country_code": "USA",
+        "country_name": "UNITED STATES",
+        "state_code": "TX",
+        "state_name": "Texas",
+        "city_name": "GRAND PRAIRIE",
+        "county_code": "113",
+        "county_name": "DALLAS",
+        "congressional_code": "33",
+        "zip4": "2704",
+        "zip5": "75051"
+      },
+      "NAICS": {
+        "code": "336414",
+        "description": "GUIDED MISSILE AND SPACE VEHICLE MANUFACTURING"
+      },
+      "PSC": {
+        "code": "1410",
+        "description": "GUIDED MISSILES"
+      },
+      "Assistance Listing": {
+        "cfda_number": null,
+        "cfda_title": null
+      },
+      "recipient_id": "779b3e3e-364f-7cbc-28a4-a2b4484b86f4-C",
+      "def_codes": [
+        "Q"
+      ],
+      "generated_internal_id": "CONT_AWD_W31P4Q20C0023_9700_-NONE-_-NONE-",
+      "internal_id": 348949116
+    }
+  ],
+  "page_metadata": {
+    "page": 1,
+    "next": 2,
+    "previous": null,
+    "hasNext": true,
+    "hasPrevious": false
+  },
+  "messages": [
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+    "The following filters from the request were not used: {'keyword_search'}. See https://api.usaspending.gov/docs/endpoints for a list of appropriate filters"
+  ]
+}

@@ -475,3 +475,18 @@ class TestAwardTransactionsSearchIndexing:
 
         with pytest.raises(IndexError):
             _ = query[0]
+
+
+class TestAwardTransactionsSearchSortAliases:
+    """The model's flagship amount name sorts on this builder too."""
+
+    def test_transaction_amount_translates_to_the_api_field(self, mock_usa_client):
+        """order_by("transaction_amount") sends federal_action_obligation."""
+        query = (
+            AwardTransactionsSearch(mock_usa_client)
+            .award_id("CONT_AWD_123")
+            .order_by("transaction_amount", "asc")
+        )
+
+        assert query._order_by == "federal_action_obligation"
+        assert query._order_direction == "asc"

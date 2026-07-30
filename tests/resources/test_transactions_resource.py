@@ -53,6 +53,25 @@ class TestTransactionsResource:
         assert hasattr(query, "first")
         assert hasattr(query, "__iter__")
 
+    def test_search_creates_global_query_builder(self, mock_usa_client):
+        """Test that search() creates a TransactionsSearch bound to the client."""
+        resource = TransactionsResource(mock_usa_client)
+
+        query = resource.search()
+
+        assert query.__class__.__name__ == "TransactionsSearch"
+        assert query._client is mock_usa_client
+        assert query._filter_objects == []
+
+    def test_search_query_chaining(self, mock_usa_client):
+        """Test that the global search query builder chains filters."""
+        resource = TransactionsResource(mock_usa_client)
+
+        query = resource.search().contracts().keywords("space exploration").limit(10)
+
+        assert query.__class__.__name__ == "TransactionsSearch"
+        assert query._total_limit == 10
+
     def test_transactions_query_chaining(self, mock_usa_client):
         """Test that query builder methods can be chained."""
         resource = TransactionsResource(mock_usa_client)

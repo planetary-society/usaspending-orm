@@ -147,7 +147,8 @@ tests/
   - `_build_payload()`: Request payload
   - `_transform_result()`: Result transformation
   - `_compute_raw_count()`: How this endpoint reports its count. Use one of
-    `_count_via_endpoint`, `_count_via_page_metadata` or `_count_via_paging`
+    `_count_via_endpoint`, `_count_via_page_metadata`, `_count_via_bucketed_endpoint`
+    or `_count_via_paging`
   - `_new_instance()`: Only when `__init__` takes more than a client
   - `_http_method`: Only for GET endpoints (payload is sent as query parameters)
 - A filter-tree query implements `_scope()`, `_build_model()` and `_new_instance()`

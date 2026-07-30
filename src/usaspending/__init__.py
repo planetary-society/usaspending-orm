@@ -66,6 +66,7 @@ from .queries import (
     RecipientsSearch,
     SpendingSearch,
     SubAwardsSearch,
+    TransactionsSearch,
 )
 
 # Filter classes for building queries
@@ -132,6 +133,7 @@ __all__ = [
     "SubTierAgency",
     "TimePeriodFilter",
     "Transaction",
+    "TransactionsSearch",
     "TreasuryAccountComponentsFilter",
     # Core
     "USASpendingClient",

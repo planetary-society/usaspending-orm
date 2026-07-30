@@ -126,9 +126,9 @@ from ..models.award_factory import create_award, model_for_name
 # Import award type codes from models
 # These are defined by USASpending.gov and represent different categories of awards
 from ..models.award_types import (
-    ALL_AWARD_CODES,
     categories_for_codes,
     category_for_exclusive_codes,
+    validate_award_type_codes,
 )
 from ..utils.validations import validate_sort_field
 from .filters import (
@@ -165,28 +165,6 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             str: The endpoint path '/search/spending_by_award/'.
         """
         return "/search/spending_by_award/"
-
-    def _require_award_type_filters(self) -> dict[str, Any]:
-        """Aggregate the filters, requiring the award type the API mandates.
-
-        Both the search payload and the count request need the same aggregate
-        and enforce the same requirement, so they share this.
-
-        Returns:
-            dict[str, Any]: The aggregated filter payload.
-
-        Raises:
-            ValidationError: If no ``award_type_codes`` filter is set.
-        """
-        final_filters = self._aggregate_filters()
-
-        if "award_type_codes" not in final_filters:
-            raise ValidationError(
-                "A filter for 'award_type_codes' is required. "
-                "Use the .award_type_codes() method or a convenience method like .contracts()."
-            )
-
-        return final_filters
 
     def _build_payload(self, page: int) -> dict[str, Any]:
         """
@@ -243,6 +221,10 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
     def _get_award_type_codes(self) -> set[str]:
         """
         Extract award type codes from current filters.
+
+        Reads the first award-type filter object only, which is exact here
+        because this builder's single-category rule keeps every code in one
+        filter. Mixed-category builders must read the aggregated filters instead.
 
         Returns:
             set[str]: Set of award type codes from filters, or empty set if none.
@@ -507,14 +489,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         """
         new_codes = set(award_codes)
 
-        # Validate that all codes are valid award type codes
-        invalid_codes = [code for code in new_codes if code not in ALL_AWARD_CODES]
-        if invalid_codes:
-            raise ValidationError(
-                f"Invalid award type code(s): {', '.join(sorted(invalid_codes))}. "
-                f"Valid codes are: {', '.join(sorted(ALL_AWARD_CODES))}"
-            )
-
+        validate_award_type_codes(new_codes)
         self._validate_single_award_type_category(new_codes)
 
         return self._with_filter(SimpleListFilter(key="award_type_codes", values=list(award_codes)))

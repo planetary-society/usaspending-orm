@@ -41,7 +41,7 @@ _EXCLUSION_MARKERS: tuple[str, ...] = (
 # runnable and excluded sets. The exact match makes silent coverage drift
 # (a runnable example quietly falling out of the run set, or vice versa)
 # fail loudly instead.
-_EXPECTED_RUNNABLE_BLOCKS = 8
+_EXPECTED_RUNNABLE_BLOCKS = 10
 
 
 def _extract_python_blocks(text: str) -> list[str]:

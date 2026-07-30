@@ -93,6 +93,24 @@ These documentation links provide detailed information about request parameters,
 - **Purpose**: Return the number of transactions associated with a given award
 - **Corresponding Query Builder**: `src/usaspending/queries/award_transactions_search.py`
 
+### Transaction Search
+
+- **Endpoint**: `/api/v2/search/spending_by_transaction/`
+- **Method**: POST
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/search/spending_by_transaction.md
+- **Purpose**: Search transactions across all awards using the standard search filters
+- **Corresponding Query Builder**: `src/usaspending/queries/transactions_search.py`
+- **Note**: `filters.award_type_codes`, `fields`, `sort` and `order` are all required, and the sort field must be one of the requested `fields`. Unlike `/api/v2/search/spending_by_award/`, this endpoint accepts award type codes from more than one category in a single request. The API serves at most the first 50,000 matching rows and returns an error past that point.
+
+### Transaction Search Count
+
+- **Endpoint**: `/api/v2/search/spending_by_transaction_count/`
+- **Method**: POST
+- **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/search/spending_by_transaction_count.md
+- **Purpose**: Return transaction counts by award-type category for a set of search filters
+- **Corresponding Query Builder**: `src/usaspending/queries/transactions_search.py`
+- **Note**: The response reports one bucket per category (`contracts`, `idvs`, `grants`, `loans`, `direct_payments`, `other`), so a count for a query is the sum of the buckets its award type codes select. This endpoint's validator does not accept the `program_activities` filter, which the search endpoint does accept.
+
 ### Award funding history
 
 - **Endpoint**: `/api/v2/awards/funding/`

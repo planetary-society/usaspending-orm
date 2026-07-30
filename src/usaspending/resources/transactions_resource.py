@@ -9,6 +9,7 @@ from .base_resource import BaseResource
 
 if TYPE_CHECKING:
     from ..queries.award_transactions_search import AwardTransactionsSearch
+    from ..queries.transactions_search import TransactionsSearch
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -37,3 +38,26 @@ class TransactionsResource(BaseResource):
         from ..queries.award_transactions_search import AwardTransactionsSearch
 
         return AwardTransactionsSearch(self._client).award_id(award_id)
+
+    def search(self) -> TransactionsSearch:
+        """Create a transaction search query across all awards.
+
+        Unlike :meth:`award_id`, which lists the transactions of one award, this
+        searches every transaction the API holds, using the same rich filters
+        the award search offers. The API requires an award type filter, so a
+        query must set one before it can be run.
+
+        Returns:
+            TransactionsSearch query builder for chaining filters
+
+        Example:
+            >>> transactions = (
+            ...     client.transactions.search().contracts().keywords("space exploration").limit(10)
+            ... )
+            >>> for txn in transactions:
+            ...     print(f"{txn.action_date}: ${txn.amt or 0:,.2f}")
+        """
+        logger.debug("Creating global transactions search")
+        from ..queries.transactions_search import TransactionsSearch
+
+        return TransactionsSearch(self._client)

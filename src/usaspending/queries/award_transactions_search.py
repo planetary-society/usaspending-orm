@@ -1,4 +1,9 @@
-"""Transactions search query builder for USASpending data."""
+"""Award-scoped transactions listing for USASpending data.
+
+Lists the transactions of a single award via ``/transactions/``. For the
+global cross-award search over ``/search/spending_by_transaction/``, see
+:class:`~usaspending.queries.transactions_search.TransactionsSearch`.
+"""
 
 from __future__ import annotations
 
@@ -20,8 +25,9 @@ logger = USASpendingLogger.get_logger(__name__)
 
 class AwardTransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
     """
-    Builds and executes a transactions search query, allowing for filtering
-    on transaction data. This class follows a fluent interface pattern.
+    Lists and filters the transactions of a single award. This class follows
+    a fluent interface pattern and requires an award ID; to search
+    transactions across every award, use ``client.transactions.search()``.
     """
 
     _MAX_PAGE_SIZE: int = 5000
@@ -248,6 +254,7 @@ class AwardTransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             "modification_number": Transaction sequence/modification number
             "action_date": Date the transaction action occurred
             "federal_action_obligation": Dollar amount obligated
+            "transaction_amount": Accepted alias for "federal_action_obligation"
             "face_value_loan_guarantee": Face value of loan (loans only)
             "original_loan_subsidy_cost": Loan subsidy cost (loans only)
             "action_type_description": Description of the action type
@@ -273,6 +280,11 @@ class AwardTransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             Loan-specific fields (face_value_loan_guarantee, original_loan_subsidy_cost)
             are only populated for loan award transactions.
         """
+        # Accept the model's flagship amount name, so ordering by the property
+        # a caller reads works on both transaction builders.
+        if field == "transaction_amount":
+            field = "federal_action_obligation"
+
         validate_sort_field(field, self.VALID_SORT_FIELDS)
 
         clone = self._clone()

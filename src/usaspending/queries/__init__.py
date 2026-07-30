@@ -69,6 +69,7 @@ from .sub_agency_query import SubAgencyQuery
 from .subawards_search import SubAwardsSearch
 from .tas_agencies_query import TASAgenciesQuery
 from .tas_codes_query import TASCodesQuery
+from .transactions_search import TransactionsSearch
 
 __all__ = [
     "APIError",
@@ -98,6 +99,7 @@ __all__ = [
     "SubAwardsSearch",
     "TASAgenciesQuery",
     "TASCodesQuery",
+    "TransactionsSearch",
     "USASpendingError",
     "ValidationError",
 ]

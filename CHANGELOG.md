@@ -16,6 +16,73 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   `award.transactions` are unchanged in both behavior and return value; only the
   class and module names moved.
 
+- `Transaction.transaction_amount` and its alias `amt` now return the first
+  nonzero of `federal_action_obligation`, `face_value_loan_guarantee` and
+  `original_loan_subsidy_cost`, and return the zero when every figure the row
+  carries is zero. Previously a zero obligation read as no value at all, so a
+  genuine zero-dollar transaction was indistinguishable from a row carrying no
+  amount, and a loan row, which reports a zero obligation with the real figure
+  in the loan fields, reported nothing. Negative figures such as deobligations
+  are preserved rather than skipped over. `amt is None` used to be true for
+  every zero-dollar transaction and is now true only for a row carrying none of
+  the three fields, so an `is None` check standing in for "no money moved"
+  needs `not amt` instead, and loan rows now report their face value, which
+  changes any total taken over a loan result set. Note that USAspending.gov's
+  own internal "pragmatic obligation" convention uses the subsidy cost, not
+  the face value, as a loan transaction's budgetary figure; this library
+  reports the face value the website displays, and
+  `original_loan_subsidy_cost` remains directly readable for budgetary totals.
+
+### Added
+
+- `client.transactions.search()`, returning the new `TransactionsSearch` query
+  builder over `/search/spending_by_transaction/`. It searches every
+  transaction the API holds rather than the transactions of one award, and
+  takes the same fluent filters the award search takes: `keywords()`,
+  `agency()`, `time_period()` and `fiscal_year()`, the location, code and
+  amount filters, plus `order_by()` over the endpoint's sort fields. An
+  `award_type_codes` filter is required, and unlike the award search this
+  endpoint accepts codes from more than one category at once, so
+  `.contracts().grants()` is a single valid query where the same chain on
+  `client.awards.search()` raises `ValidationError`. `count()` and `len()` read
+  `/search/spending_by_transaction_count/`, summing the buckets of the
+  categories the query selected. `TransactionsSearch` is exported from
+  `usaspending` and `usaspending.queries`.
+
+- `Transaction` reads both row shapes the API sends: the snake_case keys of the
+  award-scoped `/transactions/` listing and the display-name keys of the global
+  search (`"Action Date"`, `"Transaction Amount"` and the rest). The existing
+  properties gained the second spelling, and the search rows carry fields the
+  award-scoped listing never had: `award_internal_id`,
+  `generated_unique_award_id`, `award_identifier`, `recipient_name`,
+  `recipient_uei`, `recipient_id`, the four agency-name properties,
+  `issued_date`, `last_date_to_order`, `naics_code`, `naics_description`,
+  `psc_code`, `psc_description`, `cfda_title`, `def_codes`,
+  `recipient_location` and `place_of_performance`. `id` is `None` for a global
+  search row, which identifies only the parent award, and
+  `transaction_description` is the preferred name for what `award_description`
+  has always returned. Every raw row key also has a getter under its
+  snake_cased name (`award_id`, `mod`, `award_type`, `loan_value`,
+  `subsidy_cost`, `description`, `primary_place_of_performance`, `amount`),
+  aliasing the normalized helpers, with the exceptions documented in the
+  model: agency names live under `*_agency_name`, dict-valued classifications
+  under their scalar helpers, and the server's award identifiers under
+  `award_internal_id` and `generated_unique_award_id`.
+
+### Known limitations
+
+- `TransactionsSearch` is bounded by the API's 50,000-row result window.
+  Iterating past that point raises `APIError` rather than truncating silently.
+  Narrow the filters, set `limit()`, or use `client.downloads` for larger
+  result sets; `count()` is not subject to the window.
+
+- With a `program_activities()` filter set, `TransactionsSearch.count()` and
+  `len()` raise `ValidationError`: the count endpoint silently ignores that
+  filter while the search endpoint honors it, so passing it through would
+  report a confidently wrong count. `list(query)`, indexing and slicing
+  consult the count and so raise too; iteration, `all()`, `first()` and
+  `bool()` need no count and work regardless.
+
 ## [0.8.0] - 2026-07-28
 
 Mostly refactoring internals to DRY the codebase and standardize the query interface.
@@ -274,7 +341,7 @@ truthiness agree under the bounds you set. Adding CI tests to verify compatabili
   `q1 = search().keywords("alpha")` followed by `q2 = q1.keywords("beta")`
   left `q1` sending `["alpha", "beta", "beta"]`. Affected chained `keywords`,
   `award_type_codes`, simple `psc_codes` and `treasury_account_components`
-  filters. 
+  filters.
 
 - `client.recipients.find_by_recipient_id()` no longer addresses the wrong
   record for a recipient ID carrying several levels, such as
@@ -286,7 +353,7 @@ truthiness agree under the bounds you set. Adding CI tests to verify compatabili
   pass the suffix yourself (see `Recipient.recipient_level` under Added).
   `client.spending.search().recipient_id()` also normalizes its argument now,
   so a multi-level ID copied out of `raw` produces a filter the API can
-  match. 
+  match.
 
 - `award.transactions` no longer reports a count that disagrees with what it
   yields. `since()` and `until()` filter in memory, but the count came from
@@ -294,7 +361,7 @@ truthiness agree under the bounds you set. Adding CI tests to verify compatabili
   and `len()` said three where iteration yielded two, slices disagreed with
   `len()`, and `query[-1]` raised `IndexError`. All of them now agree, and
   `limit(1)` means one matching row rather than one row that may then be
-  discarded. 
+  discarded.
 
 - A `Recipient` built directly from an award search result now reports its
   `uei` and `location`, which read only the nested spellings a detail
@@ -303,7 +370,7 @@ truthiness agree under the bounds you set. Adding CI tests to verify compatabili
   not. `PeriodOfPerformance` had the same gap for `"Base Obligation Date"`.
   Both models now read every spelling of their own fields, and `Award` hands
   its payload over rather than reproducing the mapping; nested spellings
-  still take precedence where a payload carries both. 
+  still take precedence where a payload carries both.
 
 - Indexing and slicing an in-memory query now read the limited collection:
   `agency.federal_accounts.limit(3)[:]` returned every account and
@@ -315,10 +382,10 @@ truthiness agree under the bounds you set. Adding CI tests to verify compatabili
   fieldless `@dataclass` declaration generated an `__eq__` comparing empty
   tuples, so any two transactions were equal and none was hashable. They now
   compare by identity, like every other model, and can be used in sets and as
-  dict keys. 
+  dict keys.
 
 - `Recipient.parents` returns a fresh list on each read, so sorting or
-  popping the result no longer corrupts the model. 
+  popping the result no longer corrupts the model.
 
 - Iterating `idv.child_awards` no longer raises
   `AttributeError: 'str' object has no attribute 'get'` when reading the four
@@ -356,7 +423,6 @@ truthiness agree under the bounds you set. Adding CI tests to verify compatabili
 - `FederalAccount.count` no longer fires an API request when the count is
   already in the response; the fallback was an eagerly evaluated default
   argument, so every access paid for a request whose result was discarded.
-  
 
 - `query.limit(0).first()` returned a row, contradicting `.all()` and
   `len()`. It now respects the zero, which is also what makes `__bool__`

@@ -169,6 +169,58 @@ class TestAwardTransactionsIntegration:
             assert transactions[0].action_date is not None
 
 
+class TestGlobalTransactionsIntegration:
+    """Integration tests for client.transactions.search()."""
+
+    def test_keyword_search(self, client):
+        """Smoke-test the global transaction search against the live API.
+
+        Asserts response shape, normalized types and transaction grain, never
+        exact identifiers, ordering or amounts, which shift as data loads.
+        """
+        from datetime import date
+        from decimal import Decimal
+
+        transactions = list(
+            client.transactions.search()
+            .contracts()
+            .grants()  # Mixed categories in one query, which award search forbids
+            .agency("National Aeronautics and Space Administration")
+            .keywords("Mars")
+            .fiscal_year(2024)
+            .limit(1)
+        )
+
+        assert len(transactions) == 1
+        transaction = transactions[0]
+
+        # Transaction grain: global rows identify the parent award, never the
+        # transaction itself
+        assert transaction.id is None
+        assert isinstance(transaction.award_internal_id, int)
+        assert transaction.generated_unique_award_id
+        assert transaction.award_identifier
+
+        # Normalized types from the display-name row shape
+        assert isinstance(transaction.action_date, date)
+        assert isinstance(transaction.transaction_amount, Decimal)
+        assert transaction.amt == transaction.transaction_amount
+        assert transaction.awarding_agency_name == ("National Aeronautics and Space Administration")
+
+    def test_count_matches_bucket_sum(self, client):
+        """The mixed-category count equals the sum of its per-category counts."""
+
+        def base(query):
+            return query.agency("National Aeronautics and Space Administration").fiscal_year(2024)
+
+        mixed = base(client.transactions.search().contracts().grants()).count()
+        contracts = base(client.transactions.search().contracts()).count()
+        grants = base(client.transactions.search().grants()).count()
+
+        assert mixed == contracts + grants
+        assert mixed > 0
+
+
 class TestAwardFundingIntegration:
     """Integration tests for award.funding property."""
 

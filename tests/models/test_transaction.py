@@ -1,5 +1,6 @@
 import json
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -94,6 +95,46 @@ class TestTransaction:
         transaction = Transaction(data)
         assert transaction.amt == 250000.0
 
+    def test_amt_zero_obligation_falls_through_to_loan_value(self):
+        # Loan rows report a zero obligation with the real figure in the loan
+        # fields, so a zero falls through to them (verified against live rows).
+        data = {
+            "federal_action_obligation": 0,
+            "face_value_loan_guarantee": 500000.0,
+            "original_loan_subsidy_cost": None,
+        }
+        transaction = Transaction(data)
+        assert transaction.amt == Decimal("500000.00")
+
+    def test_amt_all_zero_is_zero_not_none(self):
+        # Zero-preservation: when every present amount is zero, amt reports
+        # Decimal("0.00") rather than the None the old or-chain produced.
+        data = {
+            "federal_action_obligation": 0,
+            "face_value_loan_guarantee": 0.0,
+            "original_loan_subsidy_cost": None,
+        }
+        transaction = Transaction(data)
+        assert transaction.amt == Decimal("0.00")
+        assert transaction.amt is not None
+
+    def test_amt_negative_federal_action_obligation(self):
+        data = {
+            "federal_action_obligation": -25000.0,
+            "face_value_loan_guarantee": None,
+            "original_loan_subsidy_cost": None,
+        }
+        transaction = Transaction(data)
+        assert transaction.amt == Decimal("-25000.00")
+
+    def test_amt_loan_fallback_when_obligation_key_absent(self):
+        data = {
+            "face_value_loan_guarantee": 500000.0,
+            "original_loan_subsidy_cost": 12500.0,
+        }
+        transaction = Transaction(data)
+        assert transaction.amt == Decimal("500000.00")
+
     def test_amt_all_none(self):
         data = {
             "federal_action_obligation": None,
@@ -119,7 +160,7 @@ class TestTransaction:
     def test_repr_no_date(self):
         data = {"id": "test-id", "federal_action_obligation": 100000.0}
         transaction = Transaction(data)
-        expected = "<Txn test-id None 100000.00>"
+        expected = "<Txn test-id ? 100000.00>"
         assert repr(transaction) == expected
 
     def test_all_fixture_transactions(self, all_transaction_data):

@@ -23,10 +23,12 @@ missing, so the omission surfaces immediately.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from functools import cached_property
 from types import MappingProxyType
+
+from ..exceptions import ValidationError
 
 
 @dataclass(frozen=True)
@@ -306,6 +308,27 @@ def is_valid_award_type(code: str) -> bool:
     if not isinstance(code, str):
         return False
     return code in ALL_AWARD_CODES
+
+
+def validate_award_type_codes(codes: Iterable[str]) -> None:
+    """Raise if any supplied code is not a valid award type code.
+
+    The award-search and transaction-search builders both accept caller-supplied
+    codes and share this check, so the error message cannot drift between them.
+
+    Args:
+        codes: Award type codes to validate.
+
+    Raises:
+        ValidationError: If any code is not in :data:`ALL_AWARD_CODES`, naming
+            the offending codes and listing the valid ones.
+    """
+    invalid_codes = [code for code in codes if code not in ALL_AWARD_CODES]
+    if invalid_codes:
+        raise ValidationError(
+            f"Invalid award type code(s): {', '.join(sorted(invalid_codes))}. "
+            f"Valid codes are: {', '.join(sorted(ALL_AWARD_CODES))}"
+        )
 
 
 def get_description(code: str) -> str:

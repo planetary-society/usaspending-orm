@@ -139,6 +139,73 @@ with USASpendingClient() as client:
 
 ```
 
+### Searching Transactions Across Awards
+
+`award.transactions` lists the modifications of a single award. `client.transactions.search()` searches every transaction the API holds, takes the same fluent filters the award search takes, and returns one row per transaction rather than one row per award:
+
+```python
+with USASpendingClient() as client:
+
+    # Award-level keyword search: one row per matching award
+    awards = client.awards.search() \
+        .contracts() \
+        .agency("National Aeronautics and Space Administration") \
+        .keywords("Mars") \
+        .fiscal_year(2024)
+
+    print(awards.count())  # -> 106
+
+    # Transaction-level keyword search: one row per matching transaction,
+    # across every award rather than within one
+    transactions = client.transactions.search() \
+        .contracts() \
+        .agency("National Aeronautics and Space Administration") \
+        .keywords("Mars") \
+        .fiscal_year(2024) \
+        .order_by("transaction_amount", "desc")
+
+    print(transactions.count())  # -> 264
+
+    for transaction in transactions.limit(3):
+        print(f"{transaction.action_date} {transaction.award_identifier}: ${transaction.amount or 0:,.2f}")
+
+# 2023-12-15 80NM0021F0008: $45,874,344.00
+# 2023-11-01 80NM0021F0008: $39,011,361.00
+# 2024-04-12 80NM0021F0008: $36,306,819.00
+```
+
+An award type filter is required. Unlike the award search, this endpoint accepts codes from more than one category at once, so contracts and grants can be searched in a single query:
+
+```python
+with USASpendingClient() as client:
+
+    mixed = client.transactions.search() \
+        .contracts() \
+        .grants() \
+        .agency("National Aeronautics and Space Administration") \
+        .keywords("asteroid") \
+        .fiscal_year(2024) \
+        .order_by("action_date", "desc")
+
+    print(mixed.count())  # -> 115
+
+    for transaction in mixed.limit(5):
+        print(f"{transaction.action_date} {transaction.type_description}: ${transaction.amount or 0:,.2f}")
+
+# 2024-09-25 COOPERATIVE AGREEMENT (B): $319,834.00
+# 2024-09-23 PROJECT GRANT (B): $-0.26
+# 2024-09-19 COOPERATIVE AGREEMENT (B): $0.00
+# 2024-09-18 COOPERATIVE AGREEMENT (B): $0.00
+# 2024-09-18 DEFINITIVE CONTRACT: $3,815,000.00
+```
+
+The same chain on `client.awards.search()` raises `ValidationError`, because `spending_by_award` offers different fields and filters per category and so accepts only one at a time.
+
+Two limits are worth knowing:
+
+- The API serves at most the first 50,000 matching rows. Iterating past that point raises `APIError` rather than truncating silently, so narrow the filters, set a `limit()`, or use `client.downloads` for larger result sets. `count()` is not subject to the window.
+- `count()` reads the dedicated transaction count endpoint, which reports one bucket per award-type category, so the figure is the sum of the buckets the query selected. That endpoint does not accept the `program_activities` filter, so with one set `count()` and `len()` raise `ValidationError`; iterating the query and calling `.all()` work regardless, as neither needs a count.
+
 ### Example: Top National Aeronautics and Space Administration Contractors in Fiscal Year 2024
 
 Aggregation endpoints are available through `client.spending`. The same fluent filters
