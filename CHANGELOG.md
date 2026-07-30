@@ -4,6 +4,18 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+**Breaking changes**
+
+- `TransactionsSearch` is renamed to `AwardTransactionsSearch`. The freed name is
+  reused in this release for the new global `/search/spending_by_transaction/`
+  builder, so code importing `TransactionsSearch` directly keeps importing
+  cleanly but gets a different class rather than an `ImportError`. No
+  deprecation alias is provided. `client.transactions.award_id()` and
+  `award.transactions` are unchanged in both behavior and return value; only the
+  class and module names moved.
+
 ## [0.8.0] - 2026-07-28
 
 Mostly refactoring internals to DRY the codebase and standardize the query interface.

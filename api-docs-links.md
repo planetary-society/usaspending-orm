@@ -83,7 +83,7 @@ These documentation links provide detailed information about request parameters,
 - **Method**: POST
 - **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/transactions.md
 - **Purpose**: List obligations and modifications for a given award
-- **Corresponding Query Builder**: `src/usaspending/queries/transactions_search.py`
+- **Corresponding Query Builder**: `src/usaspending/queries/award_transactions_search.py`
 
 ### Award Transaction Count
 
@@ -91,7 +91,7 @@ These documentation links provide detailed information about request parameters,
 - **Method**: GET
 - **Documentation**: https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/awards/count/transaction/award_id.md
 - **Purpose**: Return the number of transactions associated with a given award
-- **Corresponding Query Builder**: `src/usaspending/queries/transactions_search.py`
+- **Corresponding Query Builder**: `src/usaspending/queries/award_transactions_search.py`
 
 ### Award funding history
 

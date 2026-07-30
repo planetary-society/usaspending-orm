@@ -188,7 +188,7 @@
     },
     "transaction_obligated_amount": "Decimal(104696575.47)",
     "transactions": {
-      "__type__": "TransactionsSearch"
+      "__type__": "AwardTransactionsSearch"
     },
     "type": "05",
     "type_description": "COOPERATIVE AGREEMENT (B)",

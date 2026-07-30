@@ -181,7 +181,7 @@
       "empty": false
     },
     "transactions": {
-      "__type__": "TransactionsSearch"
+      "__type__": "AwardTransactionsSearch"
     },
     "type": "IDV_B_B",
     "type_description": "INDEFINITE DELIVERY / INDEFINITE QUANTITY",

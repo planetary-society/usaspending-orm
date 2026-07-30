@@ -27,9 +27,9 @@ if TYPE_CHECKING:
     from ..client import USASpendingClient
     from ..download.job import DownloadJob
     from ..queries.award_accounts_query import AwardAccountsQuery
+    from ..queries.award_transactions_search import AwardTransactionsSearch
     from ..queries.funding_search import FundingSearch
     from ..queries.subawards_search import SubAwardsSearch
-    from ..queries.transactions_search import TransactionsSearch
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -488,7 +488,7 @@ class Award(LazyRecord):
     # - place_of_performance (Location object: location where the work is performed)
     #
     # Has Many (one-to-many relationships):
-    # - transactions (TransactionsSearch object: query builder for transactions associated with the award)
+    # - transactions (AwardTransactionsSearch object: query builder for transactions associated with the award)
     # - funding (FundingSearch object: query builder for treasury funding records (outlay and obligation) associated with the award)
     # - subawards (SubAwardsSearch object: query builder for subawards associated with the award)
 
@@ -702,10 +702,10 @@ class Award(LazyRecord):
         return self._build_subtier_agency("awarding")
 
     @property
-    def transactions(self) -> TransactionsSearch:
+    def transactions(self) -> AwardTransactionsSearch:
         """Get transactions query builder for this award.
 
-        Returns a TransactionsSearch object that can be further filtered and chained.
+        Returns an AwardTransactionsSearch object that can be further filtered and chained.
 
         Examples:
             >>> award.transactions.count()  # Get count without loading all data
@@ -713,7 +713,7 @@ class Award(LazyRecord):
             >>> award.transactions.all()  # Every transaction, as a list
 
         Returns:
-            TransactionsSearch: The query builder for transactions.
+            AwardTransactionsSearch: The query builder for transactions.
         """
         return self._client.transactions.award_id(self.generated_unique_award_id)
 

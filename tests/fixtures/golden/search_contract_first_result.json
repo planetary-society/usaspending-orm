@@ -181,7 +181,7 @@
       "empty": false
     },
     "transactions": {
-      "__type__": "TransactionsSearch"
+      "__type__": "AwardTransactionsSearch"
     },
     "type": "D",
     "type_description": "DEFINITIVE CONTRACT",

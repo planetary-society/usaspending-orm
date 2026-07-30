@@ -23,8 +23,8 @@ import pytest
 from tests.mocks.mock_client import MockUSASpendingClient
 
 from usaspending.queries.award_accounts_query import AwardAccountsQuery
+from usaspending.queries.award_transactions_search import AwardTransactionsSearch
 from usaspending.queries.base_query import BaseQuery
-from usaspending.queries.transactions_search import TransactionsSearch
 
 TAS_ENDPOINT = "/references/filter_tree/tas/"
 ACCOUNTS_ENDPOINT = "/awards/accounts/"
@@ -86,7 +86,7 @@ def _page_metadata(mock_usa_client, load_fixture) -> Mechanism:
 
 
 def _paging(mock_usa_client, load_fixture) -> Mechanism:
-    """A date-bounded TransactionsSearch, counting by walking pages.
+    """A date-bounded AwardTransactionsSearch, counting by walking pages.
 
     The endpoint has no date filter, so the bound is applied in memory and the
     count endpoint cannot answer for it. One of the 25 rows falls outside the
@@ -100,7 +100,7 @@ def _paging(mock_usa_client, load_fixture) -> Mechanism:
     )
     mock_usa_client.set_response(TRANSACTION_COUNT_ENDPOINT, {"transactions": len(rows)})
     return Mechanism(
-        query=TransactionsSearch(mock_usa_client).award_id(AWARD_ID).since("2024-01-01"),
+        query=AwardTransactionsSearch(mock_usa_client).award_id(AWARD_ID).since("2024-01-01"),
         total=24,
         two_pages=19,
     )
@@ -184,7 +184,7 @@ class TestCountRespectsBounds:
 class TestBoundedAndUnboundedTransactionsAgree:
     """One builder, two counting mechanisms, one answer under a limit.
 
-    TransactionsSearch counts by paging when a date bound is set and from the
+    AwardTransactionsSearch counts by paging when a date bound is set and from the
     count endpoint when one is not. The mechanism is an implementation detail;
     the caller's limit is not.
     """
@@ -199,7 +199,7 @@ class TestBoundedAndUnboundedTransactionsAgree:
             MockUSASpendingClient.Endpoints.TRANSACTIONS, self.ROWS, page_size=PAGE_SIZE
         )
         mock_usa_client.set_response(TRANSACTION_COUNT_ENDPOINT, {"transactions": len(self.ROWS)})
-        return TransactionsSearch(mock_usa_client).award_id(AWARD_ID).page_size(PAGE_SIZE)
+        return AwardTransactionsSearch(mock_usa_client).award_id(AWARD_ID).page_size(PAGE_SIZE)
 
     def test_both_paths_report_the_limit(self, query):
         """Every row matches the bound, so only the mechanism differs."""

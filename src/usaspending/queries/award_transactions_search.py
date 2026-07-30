@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 logger = USASpendingLogger.get_logger(__name__)
 
 
-class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
+class AwardTransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
     """
     Builds and executes a transactions search query, allowing for filtering
     on transaction data. This class follows a fluent interface pattern.
@@ -41,7 +41,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
 
     def __init__(self, client: USASpendingClient):
         """
-        Initializes the TransactionsSearch query builder.
+        Initializes the AwardTransactionsSearch query builder.
 
         Args:
             client: The USASpending client instance.
@@ -57,7 +57,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         """The API endpoint for this query."""
         return "/transactions/"
 
-    def _clone(self) -> TransactionsSearch:
+    def _clone(self) -> AwardTransactionsSearch:
         """Creates an immutable copy of the query builder."""
         clone = super()._clone()
         clone._since = self._since
@@ -163,7 +163,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
     # Filter Methods
     # ==========================================================================
 
-    def since(self, date: str | date) -> TransactionsSearch:
+    def since(self, date: str | date) -> AwardTransactionsSearch:
         """
         Filter transactions to those on or after the specified date.
 
@@ -172,7 +172,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
                 A datetime is narrowed to its date portion.
 
         Returns:
-            TransactionsSearch: A new instance with the date filter applied.
+            AwardTransactionsSearch: A new instance with the date filter applied.
 
         Raises:
             ValidationError: If the date is unparseable, before FY2008 begins
@@ -200,7 +200,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         validate_date_range(clone._since, clone._until, "since_date", "until_date")
         return clone
 
-    def until(self, date: str | date) -> TransactionsSearch:
+    def until(self, date: str | date) -> AwardTransactionsSearch:
         """
         Filter transactions to those on or before the specified date.
 
@@ -209,7 +209,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
                 A datetime is narrowed to its date portion.
 
         Returns:
-            TransactionsSearch: A new instance with the date filter applied.
+            AwardTransactionsSearch: A new instance with the date filter applied.
 
         Raises:
             ValidationError: If the date is unparseable, before FY2008 begins
@@ -236,7 +236,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
         validate_date_range(clone._since, clone._until, "since_date", "until_date")
         return clone
 
-    def order_by(self, field: str, direction: str = "desc") -> TransactionsSearch:
+    def order_by(self, field: str, direction: str = "desc") -> AwardTransactionsSearch:
         """
         Set the sort order for transaction results.
 
@@ -254,7 +254,7 @@ class TransactionsSearch(AwardScopedQuery, QueryBuilder["Transaction"]):
             "description": Transaction description text
 
         Returns:
-            TransactionsSearch: A new instance with the sort applied.
+            AwardTransactionsSearch: A new instance with the sort applied.
 
         Raises:
             ValidationError: If field is not in the valid list, or direction

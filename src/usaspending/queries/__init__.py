@@ -52,6 +52,7 @@ from .agency_award_summary import AgencyAwardSummary
 from .agency_query import AgencyQuery
 from .award_accounts_query import AwardAccountsQuery
 from .award_query import AwardQuery
+from .award_transactions_search import AwardTransactionsSearch
 from .awarding_agencies_search import AwardingAgenciesSearch
 from .awards_search import AwardsSearch
 from .base_query import BaseQuery
@@ -68,7 +69,6 @@ from .sub_agency_query import SubAgencyQuery
 from .subawards_search import SubAwardsSearch
 from .tas_agencies_query import TASAgenciesQuery
 from .tas_codes_query import TASCodesQuery
-from .transactions_search import TransactionsSearch
 
 __all__ = [
     "APIError",
@@ -77,6 +77,7 @@ __all__ = [
     "AgencyQuery",
     "AwardAccountsQuery",
     "AwardQuery",
+    "AwardTransactionsSearch",
     "AwardingAgenciesSearch",
     "AwardsSearch",
     # Core query classes
@@ -97,7 +98,6 @@ __all__ = [
     "SubAwardsSearch",
     "TASAgenciesQuery",
     "TASCodesQuery",
-    "TransactionsSearch",
     "USASpendingError",
     "ValidationError",
 ]

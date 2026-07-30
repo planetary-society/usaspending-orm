@@ -11,13 +11,13 @@ class TestTransactionsResource:
     """Test TransactionsResource functionality."""
 
     def test_for_award_creates_query_builder(self, mock_usa_client):
-        """Test that for_award creates a TransactionsSearch query builder."""
+        """Test that for_award creates an AwardTransactionsSearch query builder."""
         resource = TransactionsResource(mock_usa_client)
 
         query = resource.award_id("CONT_AWD_123")
 
-        # Should return a TransactionsSearch instance
-        assert query.__class__.__name__ == "TransactionsSearch"
+        # Should return an AwardTransactionsSearch instance
+        assert query.__class__.__name__ == "AwardTransactionsSearch"
         assert query._award_id == "CONT_AWD_123"
         assert query._client is mock_usa_client
 

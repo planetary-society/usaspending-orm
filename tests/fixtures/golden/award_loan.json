@@ -181,7 +181,7 @@
     },
     "transaction_obligated_amount": null,
     "transactions": {
-      "__type__": "TransactionsSearch"
+      "__type__": "AwardTransactionsSearch"
     },
     "type": "07",
     "type_description": "DIRECT LOAN (E)",

@@ -1,4 +1,4 @@
-"""Tests for TransactionsSearch query builder."""
+"""Tests for AwardTransactionsSearch query builder."""
 
 import logging
 from datetime import date, datetime
@@ -9,7 +9,7 @@ from tests.mocks.mock_client import MockUSASpendingClient
 
 from usaspending.exceptions import ValidationError
 from usaspending.models.transaction import Transaction
-from usaspending.queries.transactions_search import TransactionsSearch
+from usaspending.queries.award_transactions_search import AwardTransactionsSearch
 
 
 class TestFilteredCount:
@@ -32,7 +32,7 @@ class TestFilteredCount:
         mock_usa_client.set_response(
             "/awards/count/transaction/CONT_AWD_123/", {"transactions": len(self.ROWS)}
         )
-        return TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").since("2024-01-01")
+        return AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").since("2024-01-01")
 
     def test_count_matches_iteration(self, mock_usa_client):
         query = self._filtered(mock_usa_client)
@@ -87,7 +87,7 @@ class TestFilteredCount:
         """The cheap path must survive: no filter, no reason to page anything."""
         mock_usa_client.set_paginated_response("/transactions/", self.ROWS)
         mock_usa_client.set_response("/awards/count/transaction/CONT_AWD_123/", {"transactions": 3})
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         assert query.count() == 3
         assert mock_usa_client.get_request_count("/transactions/") == 0
@@ -98,7 +98,9 @@ class TestDateFilterParsing:
 
     def test_the_bound_is_stored_parsed(self, mock_usa_client):
         """Storing the string instead would leave every behavioral test green."""
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").since("2024-01-11")
+        query = (
+            AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").since("2024-01-11")
+        )
 
         assert query._since == date(2024, 1, 11)
         assert query._until is None
@@ -118,7 +120,7 @@ class TestDateFilterParsing:
             ],
         )
         query = (
-            TransactionsSearch(mock_usa_client)
+            AwardTransactionsSearch(mock_usa_client)
             .award_id("CONT_AWD_123")
             .since("2024-01-01")
             .until("2024-01-10")
@@ -140,7 +142,7 @@ class TestDateFilterParsing:
         mock_usa_client.set_paginated_response(
             "/transactions/", [{"id": "row", "action_date": "2024-01-05"}]
         )
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         bounded = getattr(query, bound)(datetime(2024, 1, 5, 14, 30))
 
@@ -150,7 +152,7 @@ class TestDateFilterParsing:
     @pytest.mark.parametrize("bound", ["since", "until"])
     def test_a_malformed_bound_is_rejected_at_filter_time(self, mock_usa_client, bound):
         """Not deferred to iteration, which is where the value is used."""
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with pytest.raises(ValidationError, match="Expected"):
             getattr(query, bound)("15/01/2024")
@@ -166,7 +168,7 @@ class TestDateBoundValidation:
         Previously accepted, and it then matched everything the API returned,
         which looks like a working filter that is silently doing nothing.
         """
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with pytest.raises(ValidationError, match="before the minimum supported date"):
             getattr(query, bound)("2007-09-30")
@@ -174,7 +176,7 @@ class TestDateBoundValidation:
     @pytest.mark.parametrize("bound", ["since", "until"])
     def test_the_first_day_of_fy2008_is_accepted(self, mock_usa_client, bound):
         """The floor itself is valid, so the comparison cannot be exclusive."""
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         bounded = getattr(query, bound)("2007-10-01")
 
@@ -186,7 +188,7 @@ class TestDateBoundValidation:
         The predicate is `since <= action_date <= until`, so this previously
         yielded nothing while looking like a working query.
         """
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with pytest.raises(ValidationError, match="must be on or after"):
             query.since("2024-06-01").until("2024-01-01")
@@ -198,14 +200,14 @@ class TestDateBoundValidation:
         can see both bounds. Checking in just one of them would leave
         `.until(x).since(y)` unvalidated.
         """
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with pytest.raises(ValidationError, match="must be on or after"):
             query.until("2024-01-01").since("2024-06-01")
 
     def test_a_single_day_range_is_accepted(self, mock_usa_client):
         """Equal bounds select one day, so the check cannot reject equality."""
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         bounded = query.since("2024-01-05").until("2024-01-05")
 
@@ -217,7 +219,7 @@ class TestDateBoundValidation:
         The second call replaces the first, so an inverted range must be judged
         on the replacement rather than on the value it displaced.
         """
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         widened = query.since("2024-01-01").until("2024-03-01").since("2024-02-01")
         assert widened._since == date(2024, 2, 1)
@@ -237,7 +239,7 @@ def payload_sent_for(mock_usa_client, query):
     return mock_usa_client.get_last_request(MockUSASpendingClient.Endpoints.TRANSACTIONS)["json"]
 
 
-class TestTransactionsSearchOrdering:
+class TestAwardTransactionsSearchOrdering:
     """order_by() validates both arguments and reaches the request payload."""
 
     def test_the_sortable_fields_are_the_documented_ones(self):
@@ -246,7 +248,7 @@ class TestTransactionsSearchOrdering:
         Every other test here takes its field from VALID_SORT_FIELDS, so dropping
         an entry would quietly shrink what they cover instead of failing.
         """
-        assert TransactionsSearch.VALID_SORT_FIELDS == frozenset(
+        assert AwardTransactionsSearch.VALID_SORT_FIELDS == frozenset(
             {
                 "modification_number",
                 "action_date",
@@ -261,14 +263,14 @@ class TestTransactionsSearchOrdering:
     @pytest.mark.parametrize("direction", ["sideways", "ASC"])
     def test_an_unsupported_direction_is_rejected(self, mock_usa_client, direction):
         """Only "asc" and "desc" are sortable directions the API understands."""
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with pytest.raises(ValidationError, match="Invalid sort direction"):
             query.order_by("action_date", direction)
 
     def test_an_unsupported_field_is_rejected(self, mock_usa_client):
         """The endpoint sorts on a fixed list, so anything else is a mistake."""
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with pytest.raises(ValidationError, match="Invalid sort field 'recipient_name'"):
             query.order_by("recipient_name")
@@ -276,7 +278,7 @@ class TestTransactionsSearchOrdering:
     def test_a_sort_reaches_the_payload(self, mock_usa_client):
         """A sort the caller asked for must be sent, not just stored."""
         query = (
-            TransactionsSearch(mock_usa_client)
+            AwardTransactionsSearch(mock_usa_client)
             .award_id("CONT_AWD_123")
             .order_by("action_date", "asc")
         )
@@ -289,7 +291,7 @@ class TestTransactionsSearchOrdering:
     def test_the_default_direction_is_descending(self, mock_usa_client):
         """Omitting the direction must still send one, matching the signature."""
         query = (
-            TransactionsSearch(mock_usa_client)
+            AwardTransactionsSearch(mock_usa_client)
             .award_id("CONT_AWD_123")
             .order_by("federal_action_obligation")
         )
@@ -298,7 +300,7 @@ class TestTransactionsSearchOrdering:
 
     def test_an_unsorted_query_sends_no_sort(self, mock_usa_client):
         """The keys are optional, so an untouched query must not invent them."""
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         payload = payload_sent_for(mock_usa_client, query)
 
@@ -307,7 +309,7 @@ class TestTransactionsSearchOrdering:
 
     def test_order_by_returns_a_new_instance(self, mock_usa_client):
         """Every filter clones, so the receiver must be left unsorted."""
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         sorted_query = query.order_by("action_date", "asc")
 
@@ -315,12 +317,12 @@ class TestTransactionsSearchOrdering:
         assert query._order_by is None
 
 
-class TestTransactionsSearchPageSize:
-    """Test TransactionsSearch endpoint-specific page size caps."""
+class TestAwardTransactionsSearchPageSize:
+    """Test AwardTransactionsSearch endpoint-specific page size caps."""
 
     def test_page_size_allows_up_to_5000(self, mock_usa_client):
-        """Test TransactionsSearch allows page_size up to 5000 in API payloads."""
-        search = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").page_size(5000)
+        """Test AwardTransactionsSearch allows page_size up to 5000 in API payloads."""
+        search = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123").page_size(5000)
         assert search._page_size == 5000
 
         # Prove it flows through to the actual API request payload
@@ -333,13 +335,13 @@ class TestTransactionsSearchPageSize:
         assert last_req["json"]["limit"] == 5000
 
     def test_page_size_caps_at_5000(self, mock_usa_client):
-        """Test TransactionsSearch caps page_size at 5000."""
-        search = TransactionsSearch(mock_usa_client).page_size(10000)
+        """Test AwardTransactionsSearch caps page_size at 5000."""
+        search = AwardTransactionsSearch(mock_usa_client).page_size(10000)
         assert search._page_size == 5000
 
 
-class TestTransactionsSearchIndexing:
-    """Test TransactionsSearch indexing and slicing support."""
+class TestAwardTransactionsSearchIndexing:
+    """Test AwardTransactionsSearch indexing and slicing support."""
 
     @pytest.fixture
     def transactions_data(self):
@@ -369,7 +371,7 @@ class TestTransactionsSearchIndexing:
 
     def test_getitem_index_no_client_filters(self, setup_client, transactions_data):
         """Test accessing by index without client filters (should use efficient paging)."""
-        query = TransactionsSearch(setup_client).award_id("CONT_AWD_123").page_size(5)
+        query = AwardTransactionsSearch(setup_client).award_id("CONT_AWD_123").page_size(5)
 
         # Access item at index 12 (should be in 3rd page)
         item = query[12]
@@ -385,7 +387,7 @@ class TestTransactionsSearchIndexing:
 
     def test_getitem_slice_no_client_filters(self, setup_client, transactions_data):
         """Test slicing without client filters."""
-        query = TransactionsSearch(setup_client).award_id("CONT_AWD_123").page_size(5)
+        query = AwardTransactionsSearch(setup_client).award_id("CONT_AWD_123").page_size(5)
 
         # Slice from 8 to 13
         items = query[8:13]
@@ -398,7 +400,7 @@ class TestTransactionsSearchIndexing:
         """Test accessing by index with client filters (forces iteration)."""
         # Filter: Transactions after Jan 10th (indices 10-19)
         query = (
-            TransactionsSearch(setup_client)
+            AwardTransactionsSearch(setup_client)
             .award_id("CONT_AWD_123")
             .since("2024-01-11")  # matches 2024-01-11 onwards (index 10+)
         )
@@ -413,7 +415,7 @@ class TestTransactionsSearchIndexing:
     def test_getitem_slice_with_client_filters(self, setup_client, transactions_data):
         """Test slicing with client filters."""
         # Filter: Transactions before Jan 10th (indices 0-9)
-        query = TransactionsSearch(setup_client).award_id("CONT_AWD_123").until("2024-01-10")
+        query = AwardTransactionsSearch(setup_client).award_id("CONT_AWD_123").until("2024-01-10")
 
         # Slice first 5 filtered items
         items = query[0:5]
@@ -433,7 +435,7 @@ class TestTransactionsSearchIndexing:
         mock_usa_client.set_paginated_response(
             "/transactions/", [{"id": "1", "action_date": "not a date"}]
         )
-        query = TransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
+        query = AwardTransactionsSearch(mock_usa_client).award_id("CONT_AWD_123")
 
         with caplog.at_level(logging.WARNING):
             assert [transaction.id for transaction in query] == ["1"]
@@ -455,7 +457,7 @@ class TestTransactionsSearchIndexing:
             ],
         )
         query = (
-            TransactionsSearch(mock_usa_client)
+            AwardTransactionsSearch(mock_usa_client)
             .award_id("CONT_AWD_123")
             .since("2024-01-05")
             .until("2024-01-06")
@@ -466,7 +468,7 @@ class TestTransactionsSearchIndexing:
     def test_getitem_out_of_bounds_with_filters(self, setup_client):
         """Test out of bounds access with filters."""
         query = (
-            TransactionsSearch(setup_client)
+            AwardTransactionsSearch(setup_client)
             .award_id("CONT_AWD_123")
             .since("2099-01-01")  # Matches nothing
         )

@@ -60,12 +60,12 @@ from .queries import (
     AgenciesSearch,
     AwardingAgenciesSearch,
     AwardsSearch,
+    AwardTransactionsSearch,
     FundingAgenciesSearch,
     FundingSearch,
     RecipientsSearch,
     SpendingSearch,
     SubAwardsSearch,
-    TransactionsSearch,
 )
 
 # Filter classes for building queries
@@ -98,6 +98,7 @@ __all__ = [
     "Award",
     "AwardAmountFilter",
     "AwardDateType",
+    "AwardTransactionsSearch",
     "AwardingAgenciesSearch",
     # Query builders
     "AwardsSearch",
@@ -131,7 +132,6 @@ __all__ = [
     "SubTierAgency",
     "TimePeriodFilter",
     "Transaction",
-    "TransactionsSearch",
     "TreasuryAccountComponentsFilter",
     # Core
     "USASpendingClient",

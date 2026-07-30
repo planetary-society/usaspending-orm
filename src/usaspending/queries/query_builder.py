@@ -565,7 +565,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
     This intermediate class provides common filter methods for search endpoints
     that support complex filter objects.
 
-    Some query builders (like TransactionsSearch) don't support this level
+    Some query builders (like AwardTransactionsSearch) don't support this level
     of filtering and should extend QueryBuilder directly instead.
     """
 

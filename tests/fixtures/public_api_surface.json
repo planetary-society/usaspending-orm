@@ -9,6 +9,7 @@
     "Award",
     "AwardAmountFilter",
     "AwardDateType",
+    "AwardTransactionsSearch",
     "AwardingAgenciesSearch",
     "AwardsSearch",
     "ConfigurationError",
@@ -42,7 +43,6 @@
     "SubTierAgency",
     "TimePeriodFilter",
     "Transaction",
-    "TransactionsSearch",
     "TreasuryAccountComponentsFilter",
     "USASpendingClient",
     "USASpendingError",
@@ -265,6 +265,21 @@
       "find_by_award_id": "find_by_award_id(self, award_id)",
       "find_by_generated_id": "find_by_generated_id(self, generated_award_id)",
       "search": "search(self)"
+    },
+    "AwardTransactionsSearch": {
+      "VALID_SORT_FIELDS": "VALID_SORT_FIELDS (attribute)",
+      "__init__": "__init__(self, client)",
+      "all": "all(self)",
+      "award_id": "award_id(self, award_id)",
+      "count": "count(self)",
+      "first": "first(self)",
+      "limit": "limit(self, num)",
+      "max_pages": "max_pages(self, num)",
+      "order_by": "order_by(self, field, direction='desc')",
+      "page_size": "page_size(self, num)",
+      "since": "since(self, date)",
+      "to_filters_payload": "to_filters_payload(self)",
+      "until": "until(self, date)"
     },
     "AwardingAgenciesSearch": {
       "__init__": "__init__(self, client, warn=True)",
@@ -1242,21 +1257,6 @@
       "award_id": "award_id(self, award_id)",
       "client": "client (property)"
     },
-    "TransactionsSearch": {
-      "VALID_SORT_FIELDS": "VALID_SORT_FIELDS (attribute)",
-      "__init__": "__init__(self, client)",
-      "all": "all(self)",
-      "award_id": "award_id(self, award_id)",
-      "count": "count(self)",
-      "first": "first(self)",
-      "limit": "limit(self, num)",
-      "max_pages": "max_pages(self, num)",
-      "order_by": "order_by(self, field, direction='desc')",
-      "page_size": "page_size(self, num)",
-      "since": "since(self, date)",
-      "to_filters_payload": "to_filters_payload(self)",
-      "until": "until(self, date)"
-    },
     "TreasuryAccountComponentsFilter": {
       "__init__": "__init__(self, components)",
       "key": "key (attribute)",
@@ -1365,6 +1365,7 @@
       "AgencyQuery",
       "AwardAccountsQuery",
       "AwardQuery",
+      "AwardTransactionsSearch",
       "AwardingAgenciesSearch",
       "AwardsSearch",
       "BaseQuery",
@@ -1384,7 +1385,6 @@
       "SubAwardsSearch",
       "TASAgenciesQuery",
       "TASCodesQuery",
-      "TransactionsSearch",
       "USASpendingError",
       "ValidationError"
     ],

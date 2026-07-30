@@ -8,7 +8,7 @@ from ..logging_config import USASpendingLogger
 from .base_resource import BaseResource
 
 if TYPE_CHECKING:
-    from ..queries.transactions_search import TransactionsSearch
+    from ..queries.award_transactions_search import AwardTransactionsSearch
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -19,14 +19,14 @@ class TransactionsResource(BaseResource):
     Provides access to transaction search and retrieval endpoints.
     """
 
-    def award_id(self, award_id: str) -> TransactionsSearch:
+    def award_id(self, award_id: str) -> AwardTransactionsSearch:
         """Create a transactions search query for a specific award.
 
         Args:
             award_id: Unique award identifier
 
         Returns:
-            TransactionsSearch query builder for chaining filters
+            AwardTransactionsSearch query builder for chaining filters
 
         Example:
             >>> transactions = client.transactions.award_id("CONT_AWD_123").limit(50)
@@ -34,6 +34,6 @@ class TransactionsResource(BaseResource):
             ...     print(f"{txn.action_date}: ${txn.federal_action_obligation or 0:,.2f}")
         """
         logger.debug(f"Creating transactions search for award: {award_id}")
-        from ..queries.transactions_search import TransactionsSearch
+        from ..queries.award_transactions_search import AwardTransactionsSearch
 
-        return TransactionsSearch(self._client).award_id(award_id)
+        return AwardTransactionsSearch(self._client).award_id(award_id)

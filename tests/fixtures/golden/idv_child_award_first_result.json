@@ -183,7 +183,7 @@
       "empty": false
     },
     "transactions": {
-      "__type__": "TransactionsSearch"
+      "__type__": "AwardTransactionsSearch"
     },
     "type": "C",
     "type_description": "DELIVERY ORDER",
