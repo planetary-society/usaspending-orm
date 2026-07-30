@@ -4,7 +4,12 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.9.0] - 2026-07-30
+
+Adds the global transaction search: `client.transactions.search()` covers the
+`/search/spending_by_transaction/` endpoint with the full fluent filter set,
+mixed award-type categories, exact bucketed counts, and a `Transaction` model
+that reads both of the API's row shapes.
 
 **Breaking changes**
 
