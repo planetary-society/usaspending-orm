@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from ..logging_config import USASpendingLogger
 from ..models.subtier_agency import SubTierAgency
+from ..utils.payloads import canonical_order
 from ..utils.validations import (
     validate_agency_type,
     validate_sort_direction,
@@ -148,7 +149,10 @@ class SubAgencyQuery(QueryBuilder[SubTierAgency]):
             A new SubAgencyQuery instance with the filter applied.
         """
         clone = self._clone()
-        clone._award_type_codes = list(codes)
+        # Canonically ordered for the same reason the filter objects are: these
+        # codes routinely arrive as a frozenset, and this builder puts them
+        # straight into the request without going through a filter.
+        clone._award_type_codes = canonical_order(codes)
         return clone
 
     def order_by(self, field: str, direction: str = "desc") -> SubAgencyQuery:

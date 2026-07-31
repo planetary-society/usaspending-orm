@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import time
+from types import TracebackType
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin, urlparse
 
@@ -637,7 +638,12 @@ class USASpendingClient:
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Exit context manager and cleanup resources.
 
         Args:

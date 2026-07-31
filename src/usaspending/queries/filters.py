@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any, ClassVar, Literal
 
 from ..exceptions import ValidationError
+from ..utils.payloads import canonical_order
 from ..utils.validations import parse_date_string, parse_enum_value, validate_agency_type
 
 # ==============================================================================
@@ -19,6 +20,7 @@ MIN_FISCAL_YEAR = 2008
 # Earliest date supported by USASpending.gov API (start of MIN_FISCAL_YEAR)
 # Fiscal years begin on October 1 of the prior calendar year
 MIN_API_DATE = datetime.date(MIN_FISCAL_YEAR - 1, 10, 1)
+
 
 # ==============================================================================
 # Helper Enums and Dataclasses
@@ -63,8 +65,10 @@ class LocationSpec:
     state_code: str | None = None
     county_code: str | None = None
     city_name: str | None = None
-    district_original: str | None = None  # Current congressional district (e.g. "IA-03")
-    district_current: str | None = None  # Congressional district when awarded (e.g. "WA-01")
+    # Two-character district codes, without the state prefix (e.g. "03", not "IA-03").
+    # The API rejects at most one of the two per location, never both.
+    district_original: str | None = None  # District as of the award
+    district_current: str | None = None  # District under current boundaries
     zip_code: str | None = None
 
     def to_dict(self) -> dict[str, str]:
@@ -139,7 +143,7 @@ class KeywordsFilter(BaseFilter):
     values: list[str]
 
     def to_dict(self) -> dict[str, list[str]]:
-        return {self.key: self.values}
+        return {self.key: canonical_order(self.values)}
 
 
 @dataclass(frozen=True)
@@ -202,7 +206,7 @@ class SimpleListFilter(BaseFilter):
     values: list[str]
 
     def to_dict(self) -> dict[str, list[str]]:
-        return {self.key: self.values}
+        return {self.key: canonical_order(self.values)}
 
 
 @dataclass(frozen=True)
@@ -259,9 +263,9 @@ class NAICSFilter(BaseFilter):
     def to_dict(self) -> dict[str, dict[str, list[str]]]:
         data: dict[str, list[str]] = {}
         if self.require:
-            data["require"] = self.require
+            data["require"] = canonical_order(self.require)
         if self.exclude:
-            data["exclude"] = self.exclude
+            data["exclude"] = canonical_order(self.exclude)
         return {self.key: data}
 
 
@@ -282,13 +286,13 @@ class PSCFilter(BaseFilter):
     def to_dict(self) -> dict[str, Any]:
         # If simple codes are provided, use simple list format
         if self.codes:
-            return {self.key: self.codes}
+            return {self.key: canonical_order(self.codes)}
         # Otherwise use hierarchical require/exclude format
         data: dict[str, list[list[str]]] = {}
         if self.require:
-            data["require"] = self.require
+            data["require"] = canonical_order(self.require)
         if self.exclude:
-            data["exclude"] = self.exclude
+            data["exclude"] = canonical_order(self.exclude)
         return {self.key: data}
 
 
@@ -303,9 +307,9 @@ class TieredCodeFilter(BaseFilter):
     def to_dict(self) -> dict[str, dict[str, list[list[str]]]]:
         data = {}
         if self.require:
-            data["require"] = self.require
+            data["require"] = canonical_order(self.require)
         if self.exclude:
-            data["exclude"] = self.exclude
+            data["exclude"] = canonical_order(self.exclude)
         return {self.key: data}
 
 

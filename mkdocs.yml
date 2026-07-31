@@ -1,0 +1,109 @@
+site_name: USASpending ORM
+site_description: A typed, ORM-style Python interface to the USAspending.gov API
+site_url:
+  !ENV [READTHEDOCS_CANONICAL_URL, "https://usaspending-orm.readthedocs.io/"]
+repo_url: https://github.com/planetary-society/usaspending-orm
+repo_name: planetary-society/usaspending-orm
+edit_uri: edit/main/docs/
+copyright: Copyright The Planetary Society
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths:
+            - src
+          options:
+            docstring_style: google
+            heading_level: 2
+            inherited_members: true
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            show_source: true
+            signature_crossrefs: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: warn
+  links:
+    not_found: warn
+    anchors: warn
+    absolute_links: warn
+    unrecognized_links: warn
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Core concepts: getting-started/core-concepts.md
+  - Guides:
+      - Search awards: guides/search-awards.md
+      - Search transactions: guides/search-transactions.md
+      - Navigate related data: guides/related-data.md
+      - Spending and downloads: guides/spending-and-downloads.md
+      - Production use: guides/production.md
+  - Explanation:
+      - Query execution: explanation/query-execution.md
+      - Caching: explanation/caching.md
+      - USAspending data model: explanation/data-model.md
+  - Python reference:
+      - Client and resources: reference/client.md
+      - Queries and filters: reference/queries.md
+      - Models: reference/models.md
+      - Configuration and errors: reference/configuration.md
+  - USAspending API context:
+      - Terminology: usaspending-api/terminology.md
+      - Endpoint mapping: usaspending-api/endpoint-mapping.md
+      - Limits and differences: usaspending-api/limitations.md
+  - Project:
+      - Changelog: https://github.com/planetary-society/usaspending-orm/blob/main/CHANGELOG.md

@@ -16,6 +16,7 @@ from usaspending.queries.filters import (
     AwardAmount,
     AwardAmountFilter,
     AwardDateType,
+    BaseFilter,
     KeywordsFilter,
     LocationFilter,
     LocationSpec,
@@ -184,7 +185,8 @@ def test_naics_filter_flat_array_format():
     )
     expected_dict = {
         "naics_codes": {
-            "require": ["33", "31", "32"],
+            # Canonical order, not insertion order: see _canonical.
+            "require": ["31", "32", "33"],
             "exclude": ["336411"],
         }
     }
@@ -283,7 +285,8 @@ def test_keywords_filter():
     """
     # Arrange
     keywords_filter = KeywordsFilter(values=["transport", "logistics"])
-    expected_dict = {"keywords": ["transport", "logistics"]}
+    # Serialized in canonical order, not insertion order: see _canonical.
+    expected_dict = {"keywords": ["logistics", "transport"]}
 
     # Act
     result_dict = keywords_filter.to_dict()
@@ -485,3 +488,85 @@ class TestLocationValidation:
         """Test that 'city' maps to 'city_name'."""
         location = parse_location_spec({"country": "USA", "city": "Portland"})
         assert location.city_name == "Portland"
+
+
+#: Filters whose payload lists can come from a Python set, and which therefore
+#: must serialize in canonical order. Each is exercised individually below.
+_CANONICALIZING_FILTERS = {
+    "KeywordsFilter",
+    "NAICSFilter",
+    "PSCFilter",
+    "SimpleListFilter",
+    "TieredCodeFilter",
+}
+
+#: Filters that need no canonical order, with the reason. Scalars have no order.
+#: The rest emit a list of dicts, and dicts are unhashable, so their values can
+#: never have come from a set; their order is whatever the caller passed.
+_ORDER_EXEMPT_FILTERS = {
+    "AgencyFilter": "list of dicts",
+    "AwardAmountFilter": "list of dicts",
+    "LocationFilter": "list of dicts",
+    "LocationScopeFilter": "scalar",
+    "SimpleStringFilter": "scalar",
+    "TimePeriodFilter": "single-element list",
+    "TreasuryAccountComponentsFilter": "list of dicts",
+}
+
+
+class TestFilterValueOrderIsCanonical:
+    """Filter payloads must not depend on the order values were supplied in.
+
+    A filter built from a set serializes in that set's iteration order, which
+    hash randomization varies between processes. The response cache keys on the
+    serialized payload, so without canonical ordering the same query produces a
+    different cache key in every run and the on-disk cache never hits.
+    """
+
+    def test_same_values_in_any_order_serialize_identically(self):
+        """Insertion order must not reach the payload."""
+        forward = SimpleListFilter(key="award_type_codes", values=["A", "B", "C", "D"])
+        shuffled = SimpleListFilter(key="award_type_codes", values=["C", "A", "D", "B"])
+
+        assert forward.to_dict() == shuffled.to_dict()
+
+    def test_keywords_order_does_not_reach_payload(self):
+        """KeywordsFilter is match-any upstream, so order carries no meaning."""
+        assert KeywordsFilter(values=["b", "a"]).to_dict() == (
+            KeywordsFilter(values=["a", "b"]).to_dict()
+        )
+
+    def test_naics_require_and_exclude_are_canonical(self):
+        """Both arms of the require/exclude structure are canonicalized."""
+        assert NAICSFilter(require=["33", "31"], exclude=["9", "1"]).to_dict() == {
+            "naics_codes": {"require": ["31", "33"], "exclude": ["1", "9"]}
+        }
+
+    def test_uncomparable_values_keep_their_order(self):
+        """Program activities are dicts, which do not sort; order is preserved."""
+        activities = [{"name": "b"}, {"name": "a"}]
+        result = SimpleListFilter(key="program_activities", values=activities)
+
+        assert result.to_dict() == {"program_activities": activities}
+
+    def test_every_filter_is_classified(self):
+        """A newly added filter must not silently reintroduce the bug.
+
+        The two sets above account for every filter that exists. Adding a
+        filter class fails this test until its author decides whether its
+        payload can come from a set, which is the decision that was missed the
+        first time around.
+        """
+        classified = _CANONICALIZING_FILTERS | set(_ORDER_EXEMPT_FILTERS)
+        defined = {subclass.__name__ for subclass in BaseFilter.__subclasses__()}
+
+        assert defined - classified == set(), (
+            f"Unclassified filters: {sorted(defined - classified)}. If the filter "
+            f"serializes a list whose values can come from a Python set, route them "
+            f"through utils.payloads.canonical_order and add it to "
+            f"_CANONICALIZING_FILTERS; otherwise add it to _ORDER_EXEMPT_FILTERS "
+            f"with the reason."
+        )
+        assert classified - defined == set(), (
+            f"These filters no longer exist: {sorted(classified - defined)}."
+        )

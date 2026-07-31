@@ -1,10 +1,10 @@
-"""Tests that execute the Python examples embedded in README.md.
+"""Tests that execute the Python quickstart embedded in README.md.
 
-Every runnable ``python`` code block in the README is extracted and executed
-verbatim against the live USAspending.gov API, so broken or rotted examples
-are caught mechanically. The live-execution tests are marked ``integration``
-and excluded by default (run with ``pytest -m integration``); the extraction
-guard needs no network and runs in the default suite.
+The README now serves as a concise project landing page, while detailed examples
+live under ``docs/`` and are compiled and executed by ``test_documentation.py``.
+Its runnable quickstart is still executed verbatim against the live
+USAspending.gov API so the primary first-use path cannot rot. The live test is
+marked ``integration`` and excluded by default.
 
 Sample-output values shown in README comments (counts, amounts, dates) are
 illustrative only. They drift as agencies report new spending, so this module
@@ -14,12 +14,11 @@ particular value.
 
 from __future__ import annotations
 
-import re
-import textwrap
 from pathlib import Path
 
 import pytest
 
+from tests.markdown_examples import execute_block, extract_blocks, is_runnable
 from usaspending import USASpendingClient
 
 # README.md lives at the repository root, one directory above ``tests/``.
@@ -41,19 +40,14 @@ _EXCLUSION_MARKERS: tuple[str, ...] = (
 # runnable and excluded sets. The exact match makes silent coverage drift
 # (a runnable example quietly falling out of the run set, or vice versa)
 # fail loudly instead.
-_EXPECTED_RUNNABLE_BLOCKS = 10
-
-
-def _extract_python_blocks(text: str) -> list[str]:
-    """Return the source of every fenced ``python`` block, in document order."""
-    return re.findall(r"```python\n(.*?)```", text, re.DOTALL)
+_EXPECTED_RUNNABLE_BLOCKS = 1
 
 
 def _is_runnable(block: str) -> bool:
     """Return True when a block exercises the client and hits no exclusion marker."""
     if "client." not in block:
         return False
-    return not any(marker in block for marker in _EXCLUSION_MARKERS)
+    return is_runnable(block, _EXCLUSION_MARKERS)
 
 
 def _block_id(index: int, block: str) -> str:
@@ -72,7 +66,7 @@ def _block_id(index: int, block: str) -> str:
 
 
 # Built at import time so pytest can collect one case per runnable README block.
-_ALL_BLOCKS = _extract_python_blocks(_README_TEXT)
+_ALL_BLOCKS = extract_blocks(_README_TEXT)
 _RUNNABLE_BLOCKS: list[tuple[int, str]] = [
     (index, block) for index, block in enumerate(_ALL_BLOCKS) if _is_runnable(block)
 ]
@@ -102,6 +96,5 @@ def test_readme_block_executes(index: int, block: str, client: USASpendingClient
     that open their own ``with USASpendingClient() as client:`` simply shadow
     it. Blocks are dedented so examples fenced inside Markdown lists compile.
     """
-    source = textwrap.dedent(block)
     namespace = {"USASpendingClient": USASpendingClient, "client": client}
-    exec(compile(source, f"README.md:block{index}", "exec"), namespace)
+    execute_block(block, f"README.md:block{index}", namespace)

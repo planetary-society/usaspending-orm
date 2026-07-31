@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ..logging_config import USASpendingLogger
+from ..utils.payloads import canonical_order
 from ..utils.validations import validate_agency_type, validate_toptier_code
 
 if TYPE_CHECKING:
@@ -86,10 +87,10 @@ class AgencyAwardSummary:
             params["fiscal_year"] = fiscal_year
 
         if award_type_codes:
-            # Convert to list if needed and filter out None/empty values
-            if isinstance(award_type_codes, (set, frozenset)):
-                award_type_codes = list(award_type_codes)
-            award_type_codes = [code for code in award_type_codes if code]
+            # Canonically ordered, not merely listed: these codes routinely
+            # arrive as a frozenset, whose order varies per process and would
+            # otherwise give this request a different cache key on every run.
+            award_type_codes = canonical_order(code for code in award_type_codes if code)
 
             if award_type_codes:
                 # API expects award_type_codes as array parameter

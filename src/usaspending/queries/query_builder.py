@@ -646,7 +646,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
 
         Args:
             *keywords: One or more keywords to search for. Multiple keywords
-            are combined with OR logic.
+                are combined with OR logic.
 
         Returns:
             A new instance with the keyword filter applied.
@@ -870,8 +870,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                 - state_code: State code (optional, e.g., "TX", "CA")
                 - county_code: County code (optional)
                 - city_name: City name (optional)
-                - district_original: Current congressional district (optional)
-                - district_current: Congressional district when awarded (optional)
+                - district_original: Two-character congressional district as of
+                  the award, without the state prefix (optional, e.g. "03")
+                - district_current: Two-character congressional district under
+                  current boundaries (optional, e.g. "01"). Mutually exclusive
+                  with district_original
                 - zip_code: ZIP code (optional)
 
         Returns:
@@ -918,8 +921,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                 - state_code: State code (optional)
                 - county_code: County code (optional)
                 - city_name: City name (optional)
-                - district_original: Current congressional district (optional)
-                - district_current: Congressional district when awarded (optional)
+                - district_original: Two-character congressional district as of
+                  the award, without the state prefix (optional, e.g. "03")
+                - district_current: Two-character congressional district under
+                  current boundaries (optional, e.g. "01"). Mutually exclusive
+                  with district_original
                 - zip_code: ZIP code (optional)
 
         Returns:

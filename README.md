@@ -1,557 +1,124 @@
 # USASpending ORM
 
-A python library that provides an object-relational mapping layer to the USAspending.gov API.
+[![Tests](https://github.com/planetary-society/usaspending-orm/actions/workflows/test.yml/badge.svg)](https://github.com/planetary-society/usaspending-orm/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/usaspending-orm.svg)](https://pypi.org/project/usaspending-orm/)
+[![Python](https://img.shields.io/pypi/pyversions/usaspending-orm.svg)](https://pypi.org/project/usaspending-orm/)
 
-## Why This Library?
+USASpending ORM is a typed, ORM-style Python interface to the
+[USAspending.gov API](https://api.usaspending.gov/). It provides fluent query
+builders and navigable models for federal awards, transactions, recipients,
+agencies, spending summaries, Treasury Account Symbols, and bulk downloads.
 
-[USASpending.gov](https://usaspending.gov) is the official federal database for tracking U.S. government spending, and provides extensive data on federal contracts, grants, and other awards since 2007-10-01, enabling citizens to track how federal money is spent.
+The library is maintained by [The Planetary Society](https://www.planetary.org/).
 
-The platform has a [comprehensive API](https://api.usaspending.gov) for querying the data, but the API is complex and can be cumbersome to work with. This library provides an abstraction layer and other quality-of-life improvements to enable rapid development of applications that consume USASpending data.
+## Why use it?
 
-## Key Features
+- Express complex USAspending searches through chainable Python methods.
+- Work with normalized models, `date` values, and exact `Decimal` amounts.
+- Navigate from awards to recipients, agencies, transactions, funding, accounts,
+  and subawards.
+- Retain the original API response through each model's `.raw` property.
+- Use built-in pagination, retries, rate limiting, optional caching, and result
+  safeguards.
 
-**🔗 ORM-Style Chained Interface** - Access related data through object associations (e.g., `award.recipient.location.city`) inspired by ActiveRecord and SQLAlchemy. Navigate related data without manual API calls.
-
-**🔎 Comprehensive Award Queries** - Build complex searches with chainable filters for agencies, award types, fiscal years, and more.
-
-**⚡️ Smart Caching & Rate Limiting** - Optional file-based caching to dramatically improve performance for repeated queries. Automatic rate limiting and retry logic handles API throttle limits during bulk operations.
-
-**🛡️ Data Normalization and Type Casting** - Consistent field naming across resources, with lazy-loading for nested data and automatic type conversion.
-
-**🥩 Raw API Output Preserved** - Access the original API JSON response via the `.raw` property on any resource object when you need the underlying data structure.
+No API key is required.
 
 ## Installation
 
-```bash
-pip install usaspending-orm
+```console
+python -m pip install usaspending-orm
 ```
 
-Requires Python 3.9 or higher. No API key required.
+Requires Python 3.9 or newer.
 
-## Usage
-
-The library provides a `USASpendingClient` class that manages the connection to the USASpending API and provides access to various resources such as awards, recipients, agencies, etc. This can be used as a context manager to ensure proper session management
-or can be instantiated directly.
-
-#### Load the client
+## Quickstart
 
 ```python
 from usaspending import USASpendingClient
-```
-
-#### Then load a specific award by its Award ID
-
-```python
-with USASpendingClient() as client:
-    award = client.awards.find_by_award_id("80GSFC18C0008")
-```
-
-#### Access related Award properties via chained object associations
-
-```python
-with USASpendingClient() as client:
-    award = client.awards.find_by_award_id("80GSFC18C0008")
-    award.recipient.name # -> "The University of Iowa"
-    award.recipient.location.formatted_address # -> "105 Jessup Hall\nIowa City, IA, 52242\nUnited States"
-    award.subawards.count() # -> 150
-    award.subawards[2].recipient.name # -> "Bison Aerospace, Inc"
-```
-
-Sample outputs throughout this document were validated against live USAspending data in July 2026. Counts, amounts, and dates will drift as agencies report new spending.
-
-#### Searching for Awards
-
-You can query awards data using the `search()` method on the `client.awards` object:
-
-```python
 
 with USASpendingClient() as client:
-    awards_query = client.awards.search()
-```
-
-Search parameters are outlined in the [spending_by_award](https://raw.githubusercontent.com/fedspendingtransparency/usaspending-api/refs/heads/master/usaspending_api/api_contracts/contracts/v2/search/spending_by_award.md) endpoint of the USASpending API. Every search parameter is applied via a matching "snake_case" method name. These methods can be chained together to build complex queries.
-
-```python
-awards_query = client.awards.search() \
-    .agencies({"name":"National Aeronautics and Space Administration", "type":"awarding", "tier":"toptier"}) \
-    .grants() \
-    .keywords("Perseverance","Mars")
-```
-
-This returns a query object that can be further refined or executed to return results.
-The methods `.all()`, `.first()`, `.count()` will trigger a query to the API, as will iterating over the query object and testing it with `if query:` (which reads a single row). Query objects also support the standard Python list interface, so `len(awards_query)` fires the corresponding count endpoint:
-
-```python
-len(client.awards.search()
-    .agency("National Aeronautics and Space Administration")
-    .grants()
-    .keywords("Mars")
-    .fiscal_year(2024))  # -> 404
-```
-
-Additional filters follow the same snake_case pattern. For example, `.object_classes("10", "252")` filters awards by object class codes (per Office of Management and Budget Circular A-11; pass codes, not names).
-
-### Example: Searching for National Aeronautics and Space Administration Contracts to SpaceX in 2023
-
-```python
-
-with USASpendingClient() as client:
-
-    # Create query object with chained filters
-    awards_query = client.awards.search() \
-        .agency("National Aeronautics and Space Administration") \
-        .recipient_search_text("Space Exploration Technologies") \
-        .contracts() \
-        .fiscal_year(2023) \
-        .order_by("Award Amount", "desc")
-
-    # -> <AwardQuery ...> object, no API call made yet
-
-    # Return results count without fetching all records
-    count = awards_query.count() # -> 8
-
-    # Fetch first result (query executes here)
-    top_spacex_award = awards_query.first()
-
-    # Returned value is an Award object with all properties mapped
-    # and properly typed. The top result is the Human Landing System contract.
-    top_spacex_award.total_obligation  # -> Decimal('3047851482.99')
-    top_spacex_award.category  # -> "contract"
-    top_spacex_award.description  # -> "Work required for the design, development, manufacture, test, launch..."
-
-    # Helper methods provide easy access to common fields without having to account for
-    # inconsistent naming or nested structures in the raw API response
-    top_spacex_award.award_identifier  # -> "80MSFC20C0034"
-    top_spacex_award.start_date  # -> datetime.date(2020, 5, 13)
-    top_spacex_award.end_date  # -> datetime.date(2027, 12, 6)
-
-    # The resulting object provides a normalized interface to the full Award record,
-    # and provides access to related data via chained associations
-
-    # Recipient information
-    top_spacex_award.recipient.name  # -> "Space Exploration Technologies Corp."
-    top_spacex_award.recipient.location.city  # -> "Hawthorne"
-
-    # Award Transactions
-    last_transaction = top_spacex_award.transactions.order_by("action_date", "desc").first()
-    last_transaction.action_date  # -> datetime.date(2026, 7, 1)
-    last_transaction.action_type_description  # -> "SUPPLEMENTAL AGREEMENT FOR WORK WITHIN SCOPE"
-
-```
-
-### Searching Transactions Across Awards
-
-`award.transactions` lists the modifications of a single award. `client.transactions.search()` searches every transaction the API holds, takes the same fluent filters the award search takes, and returns one row per transaction rather than one row per award:
-
-```python
-with USASpendingClient() as client:
-
-    # Award-level keyword search: one row per matching award
-    awards = client.awards.search() \
-        .contracts() \
-        .agency("National Aeronautics and Space Administration") \
-        .keywords("Mars") \
-        .fiscal_year(2024)
-
-    print(awards.count())  # -> 106
-
-    # Transaction-level keyword search: one row per matching transaction,
-    # across every award rather than within one
-    transactions = client.transactions.search() \
-        .contracts() \
-        .agency("National Aeronautics and Space Administration") \
-        .keywords("Mars") \
-        .fiscal_year(2024) \
-        .order_by("transaction_amount", "desc")
-
-    print(transactions.count())  # -> 264
-
-    for transaction in transactions.limit(3):
-        print(f"{transaction.action_date} {transaction.award_identifier}: ${transaction.amount or 0:,.2f}")
-
-# 2023-12-15 80NM0021F0008: $45,874,344.00
-# 2023-11-01 80NM0021F0008: $39,011,361.00
-# 2024-04-12 80NM0021F0008: $36,306,819.00
-```
-
-An award type filter is required. Unlike the award search, this endpoint accepts codes from more than one category at once, so contracts and grants can be searched in a single query:
-
-```python
-with USASpendingClient() as client:
-
-    mixed = client.transactions.search() \
-        .contracts() \
-        .grants() \
-        .agency("National Aeronautics and Space Administration") \
-        .keywords("asteroid") \
-        .fiscal_year(2024) \
-        .order_by("action_date", "desc")
-
-    print(mixed.count())  # -> 115
-
-    for transaction in mixed.limit(5):
-        print(f"{transaction.action_date} {transaction.type_description}: ${transaction.amount or 0:,.2f}")
-
-# 2024-09-25 COOPERATIVE AGREEMENT (B): $319,834.00
-# 2024-09-23 PROJECT GRANT (B): $-0.26
-# 2024-09-19 COOPERATIVE AGREEMENT (B): $0.00
-# 2024-09-18 COOPERATIVE AGREEMENT (B): $0.00
-# 2024-09-18 DEFINITIVE CONTRACT: $3,815,000.00
-```
-
-The same chain on `client.awards.search()` raises `ValidationError`, because `spending_by_award` offers different fields and filters per category and so accepts only one at a time.
-
-Two limits are worth knowing:
-
-- The API serves at most the first 50,000 matching rows. Iterating past that point raises `APIError` rather than truncating silently, so narrow the filters, set a `limit()`, or use `client.downloads` for larger result sets. `count()` is not subject to the window.
-- `count()` reads the dedicated transaction count endpoint, which reports one bucket per award-type category, so the figure is the sum of the buckets the query selected. That endpoint does not accept the `program_activities` filter, so with one set `count()` and `len()` raise `ValidationError`; iterating the query and calling `.all()` work regardless, as neither needs a count.
-
-### Example: Top National Aeronautics and Space Administration Contractors in Fiscal Year 2024
-
-Aggregation endpoints are available through `client.spending`. The same fluent filters
-build a category rollup instead of an award list, and iterating the query handles
-pagination automatically:
-
-```python
-with USASpendingClient() as client:
-    top_recipients = (
-        client.spending.search()
-        .by_recipient()
-        .agency("National Aeronautics and Space Administration")
+    awards = (
+        client.awards.search()
         .contracts()
+        .agency("National Aeronautics and Space Administration")
+        .recipient_search_text("Space Exploration Technologies")
         .fiscal_year(2024)
+        .order_by("Award Amount", "desc")
         .limit(5)
     )
 
-    for spending in top_recipients:
-        print(f"{spending.name}: ${spending.amount:,.0f}")
-
-# California Institute of Technology: $2,175,598,668
-# Space Exploration Technologies Corp.: $1,589,359,578
-# The Boeing Company: $1,123,735,127
-# Lockheed Martin Corp: $570,859,903
-# Blue Origin Washington, LLC: $502,942,297
-```
-
-Spending rollups can also be grouped geographically with `.by_district()` or `.by_state()`.
-
-### Downloading Bulk Data
-
-The `client.downloads` resource queues server-side download jobs and returns a `DownloadJob`
-you can poll. Single awards are downloaded by their generated award ID:
-
-```python
-job = client.downloads.contract("CONT_AWD_...")   # also .assistance(...) and .idv(...)
-status = job.wait_for_completion()
-```
-
-To download many awards at once, build an awards search and pass it to `client.downloads.search()`.
-The same fluent filters used for searching drive the download, which can combine award,
-transaction, and subaward data into a single zip archive:
-
-```python
-query = (
-    client.awards.search()
-    .contracts()
-    .agency("National Aeronautics and Space Administration")
-    .fiscal_year(2024)
-)
-
-# spending_level defaults to awards, transactions, and subawards when omitted.
-job = client.downloads.search(query, spending_level=["awards"], file_format="csv")
-status = job.wait_for_completion()
-```
-
-The `/api/v2/download/search/` endpoint does not accept every search filter. In particular, `object_classes` is ignored by the endpoint, so the library emits a `UserWarning` when a download query includes it.
-
-## Configuration
-
-### Session Management and Lazy-Loading
-
-The library uses lazy-loading to avoid unnecessary API calls. Missing award and Recipient properties will trigger an API call to fetch the missing data. This means models require an active client session to load missing data on demand.
-
-#### Session Lifecycle
-
-Use the client as a context manager (recommended) or explicitly call `close()`:
-
-```python
-with USASpendingClient() as client:
-    awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
     for award in awards:
-        # Access lazy-loaded properties inside the context
-        # Money getters return None when the award reports no figure
-        print(f"{award.recipient.name}: ${award.total_obligation or 0:,.2f}")
-        print(f"Subawards: {award.subaward_count}")
-# Session automatically closed here
-
-# Or explicitly manage session
-client = USASpendingClient()
-awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
-client.close()
+        amount = award.total_obligation or 0
+        print(f"{award.award_identifier}: {award.recipient.name} - ${amount:,.2f}")
 ```
 
-Accessing related properties after the client session closes raises a `DetachedInstanceError`:
+Queries are lazy. Building the chain makes no request; iteration, `.first()`,
+`.all()`, `.count()`, `len(query)`, indexing, and truth-value testing execute
+the appropriate USAspending operation.
 
-```python
-# This will raise DetachedInstanceError
-with USASpendingClient() as client:
-    awards = client.awards.search().all()
-# Client is closed here
+## Documentation
 
-# This will raise DetachedInstanceError
-print(awards[0].transactions.count())
+The full documentation covers:
+
+- [installation and core concepts](docs/getting-started/installation.md);
+- [award and transaction searches](docs/guides/search-awards.md);
+- [sessions, lazy loading, caching, and production use](docs/guides/production.md);
+- [generated Python API reference](docs/reference/client.md);
+- [mappings to canonical USAspending endpoints](docs/usaspending-api/endpoint-mapping.md);
+- [known upstream limits and contract differences](docs/usaspending-api/limitations.md).
+
+The repository includes Read the Docs configuration for the published site.
+
+## Development
+
+```console
+git clone https://github.com/planetary-society/usaspending-orm.git
+cd usaspending-orm
+uv sync --locked --group docs
+
+uv run pytest -q
+uv run ruff check src/ tests/
+uv run ruff format --check src/ tests/
+uv run --group docs mkdocs build --strict
 ```
 
-You can also reattach objects to a new session if needed:
+Integration tests make live USAspending requests and run separately:
 
-```python
-# Create objects in one session
-with USASpendingClient() as client:
-    award = client.awards.find_by_award_id("80GSFC18C0008")
-
-# Reattach to a new session to access related properties
-with USASpendingClient() as new_client:
-    # recursive=True is normally what you want: it also rebinds models already
-    # loaded from this one, such as award.recipient
-    award.reattach(new_client, recursive=True)
-    print(f"Subawards: {award.subawards.count()}")
-    print(f"Recipient: {award.recipient.name}")
+```console
+uv run pytest -m integration -q
 ```
 
-Without `recursive=True` only the award itself is rebound. That is enough for
-properties it loads afresh, but a nested model already loaded, such as
-`award.recipient`, keeps pointing at the old session and raises
-`DetachedInstanceError` once that session is gone.
-
-### Performance Considerations
-
-#### Lazy Loading and N+1 Queries
-
-The library uses lazy loading for related data (e.g., `award.transactions`, `award.recipient`). When iterating over awards and accessing lazy-loaded properties, each access triggers a separate API call. This is known as the N+1 query problem:
-
-```python
-# This triggers N+1 API calls (1 for search + N for details)
-for award in client.awards.search().contracts().limit(100):
-    print(award.recipient.name)  # Each access = 1 API call
-```
-
-This is a fundamental limitation of the USASpending API, which does not provide batch endpoints for fetching multiple award details in a single request.
-
-**Recommended patterns to minimize API calls:**
-
-1. **Access only search result properties** - Properties returned by the search endpoint don't trigger additional API calls:
-
-   ```python
-   for award in client.awards.search().contracts().limit(100):
-       # These properties are included in search results - no extra API calls
-       print(award.award_identifier, award.total_obligation, award.description)
-   ```
-
-2. **Enable caching** - Cache responses to avoid repeated fetches for the same data:
-
-   ```python
-   from usaspending import config as usaspending_config
-   usaspending_config.configure(cache_enabled=True)
-   ```
-
-3. **Use explicit limits** - Set a reasonable `limit()` to control the number of results:
-   ```python
-   # Fetch only what you need
-   top_awards = client.awards.search().contracts().limit(10).all()
-   ```
-
-#### Default Result Limits
-
-By default, queries without an explicit `limit()` will fetch up to 10,000 results to prevent unbounded API calls. You can customize this behavior:
-
-```python
-from usaspending import config as usaspending_config
-
-# Change the default limit
-usaspending_config.configure(default_result_limit=5000)
-
-# Disable the default limit (not recommended for production)
-usaspending_config.configure(default_result_limit=None)
-```
-
-### Performance & Caching
-
-By default, caching is **disabled**. However, enabling caching can dramatically improve performance and reduce API load for repeated queries, especially during development or when working with large datasets.
-
-To enable caching, load the configuration module and set `cache_enabled=True` before creating a client instance:
-
-```python
-from usaspending import config as usaspending_config, USASpendingClient
-
-# Enable with defaults (1 week TTL, file-based storage)
-usaspending_config.configure(cache_enabled=True)
-
-with USASpendingClient() as client:
-    # All queries will now be cached
-    awards = client.awards.search().agency("National Aeronautics and Space Administration").all()
-```
-
-Caching happens at the HTTP request layer. A cached response is reused only when the
-HTTP method, endpoint, query parameters, JSON payload, and `cache_namespace` are identical.
-
-This means:
-
-- Re-running the same query or lazy-loaded detail request can reuse a cached response, even across different `USASpendingClient` instances when they share the same cache namespace.
-- `.count()`, `.all()`, `.first()`, different filter chains, and different pagination pages are separate API calls and are cached separately.
-- Lazy-loaded associations such as `award.recipient` or `award.transactions` still make their first detail request. Caching only helps when that exact request is repeated later.
-- Download job creation and status checks intentionally bypass caching because those endpoints are time-sensitive.
-
-The library defaults to file-based caching with a 1-week TTL, but you can customize these settings as needed:
-
-```python
-usaspending_config.configure(
-    cache_enabled=True,           # Enable caching
-    cache_ttl=86400,              # Cache for 1 day (default: 1 week)
-    cache_backend="memory",         # "file" or "memory" (default: "file")
-)
-```
-
-**File-based caching** (default):
-
-- Persists between Python sessions
-- Stored in `~/.cache/usaspending` directory
-- Uses pickle for serialization
-- Best for production and development workflows
-
-Cache entries are namespaced using `cache_namespace` to avoid collisions with other
-applications. The default namespace is `usaspending-orm`. Override this if you need
-separate cache pools for different environments or applications.
-
-**Memory-based caching**:
-
-- Faster access, no disk I/O
-- Cleared when Python process ends
-- Best for single-session data exploration
-- Enable with `cache_backend="memory"`
-
-Changing cache settings with `config.configure(...)` updates subsequent requests. For the
-most predictable behavior, configure caching before issuing API calls from a client.
-
-### Customizable Settings
-
-The library applies some sensible defaults that work for most use cases:
-
-- Rate limiting: 1000 calls per 5 minutes (respecting USASpending API limits)
-- Caching: disabled by default (see Performance & Caching section above to enable)
-
-Customize these settings before creating a client instance if needed:
-
-```python
-from usaspending import config as usaspending_config
-
-# Configure settings before creating the client
-usaspending_config.configure(
-    # Cache settings (caching is disabled by default)
-    cache_enabled=True,           # Enable caching
-    # Set file-cache directory (default: ~/.cache/usaspending)
-    cache_dir="/tmp/usaspending_cache",
-    # Cache key namespace (default: "usaspending-orm")
-    cache_namespace="usaspending-orm",
-    # Set cache expiration time (default 1 week)
-    cache_ttl=86400,
-    # Set cache backend to be in-memory "memory" or "file" for file-based caching via pickle (default: "file")
-    cache_backend="memory",
-
-    # Set rate limiting parameters
-    # Set number of calls allowed within the rate limit period (default: 1000)
-    rate_limit_calls=500,
-    # Rate limit period (in seconds, default: 300)
-    rate_limit_period=60,
-
-    # Set HTTP request parameters (default: max_retries=3, timeout=30)
-    # Set number of retries for failed requests (default: 3)
-    max_retries=5,
-    # Set delay between retries in seconds (default: 10.0)
-    retry_delay=10.0,
-    # Set exponential backoff factor for retries (default: 2.0)
-    retry_backoff=2.0,
-    # Set request timeout in seconds (default: 30)
-    timeout=60  # Longer timeout for slow connections (default: 30)
-)
-
-```
-
-### Logging Configuration
-
-The library provides detailed logging, which you can configure in your application:
-
-```python
-import logging
-from usaspending import USASpendingClient
-
-# Configure root logger (affects all loggers)
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-```
-
-**Security Note:** When DEBUG logging is enabled, the library logs full API request payloads including query parameters and filter criteria. In a business context, this could expose search patterns or analysis focus areas. Use DEBUG logging only in development environments and ensure log files have appropriate access controls.
-
-### Cache Security
-
-When using file-based caching (the default), be aware of these security considerations:
-
-- **Pickle Serialization:** File-based caching uses Python's `pickle` module for serialization. If an attacker gains write access to your cache directory, they could potentially inject malicious serialized objects.
-- **Cache Directory Permissions:** The cache directory (`~/.cache/usaspending/` by default) should have appropriate permissions (e.g., 0700 on Unix systems).
-- **Shared Systems:** For shared or multi-tenant systems, consider using memory-based caching (`cache_backend="memory"`) or disabling caching entirely.
-
-## Project Status
-
-USASpending Python Wrapper is under active development. The API is stabilizing but may change as we refine the abstractions based on real-world usage. We welcome feedback on the interface design and feature priorities.
-
-## Testing
-
-The library includes both unit tests and integration tests.
-
-### Running Unit Tests
-
-Unit tests run against mocked API responses and do not require network access:
-
-```bash
-# Run all unit tests (default, excludes integration tests)
-pytest
-
-# Run with verbose output
-pytest -v
-```
-
-### Running Integration Tests
-
-Integration tests hit the real USASpending.gov API to verify end-to-end functionality. These are **excluded by default** to avoid network dependencies during normal development.
-
-```bash
-# Run only integration tests
-pytest -m integration
-
-# Run integration tests with verbose output
-pytest -m integration -v
-
-# Run all tests including integration
-pytest -m ""
-```
-
-Integration tests verify connectivity and response structure for all major resources including awards, recipients, agencies, spending, and award-related data (transactions, funding, subawards).
-
-## Contributing
-
-We welcome contributions to improve and expand the implementation and functionality.
-
-## About The Planetary Society
-
-This library was initially developed to serve the needs of The Planetary Society's Space Policy and Advocacy team in tracking and analyzing National Aeronautics and Space Administration contract data, and is in-use in our internal and external data tools.
-
-We have open-sourced the project to enable others to better use USASpending data.
-
-[The Planetary Society](https://planetary.org) is an independent nonprofit organization that empowers the world's citizens to advance space science and exploration. The organization is supported by individuals across the world, and does not accept government grants nor does it have major aerospace donations.
-
-Please consider supporting our work by [becoming a member](https://www.planetary.org/join).
+Preview the documentation site locally with `uv run --group docs mkdocs serve`.
+
+> **Note for contributors**
+>
+> Documentation examples are enforced, not just reviewed. `tests/test_documentation.py`
+> compiles every fenced `python` block under `docs/`, checks that method names cited in
+> prose exist on the public API, and executes most blocks against the live API under the
+> `integration` marker. Adding or removing an example changes the runnable count, so
+> update `_EXPECTED_RUNNABLE_BLOCKS` in the same change.
+>
+> The public API surface is snapshot-tested. When a deliberate change adds, removes, or
+> alters a public callable, regenerate the fixture and review the diff:
+>
+> ```console
+> USASPENDING_REGEN_API_SURFACE=1 uv run pytest tests/test_public_api_surface.py
+> ```
+>
+> The published site builds from `.readthedocs.yaml`. To activate hosting: import
+> `planetary-society/usaspending-orm` in Read the Docs, use `usaspending-orm` as the
+> project slug, and enable pull-request builds. Keep `latest` as the default until a
+> release tag contains the docs configuration, then make `stable` the default
+> user-facing version while retaining `latest` for `main`.
+
+## Project status
+
+The project is in beta. USAspending itself changes over time, and live federal
+data is revised as agencies submit corrections. Counts and values shown in
+examples should not be treated as permanent fixtures.
+
+See [CHANGELOG.md](CHANGELOG.md) for release history and compatibility notes.
 
 ## License
 
-MIT License
+USASpending ORM is released under the [MIT License](LICENSE).

@@ -38,7 +38,8 @@ class TestKeywordsFilter:
 
         # Check filter content
         filter_dict = result._filter_objects[0].to_dict()
-        assert filter_dict == {"keywords": ["NASA", "space", "research"]}
+        # Canonical order, not insertion order: see _canonical.
+        assert filter_dict == {"keywords": ["NASA", "research", "space"]}
 
 
 class TestTimePeriodFilter:
@@ -515,7 +516,8 @@ class TestClassificationCodeFilters:
 
         assert len(result._filter_objects) == 1
         filter_dict = result._filter_objects[0].to_dict()
-        assert filter_dict == {"set_aside_type_codes": ["SBA", "8AN"]}
+        # Canonical order, not insertion order: see _canonical.
+        assert filter_dict == {"set_aside_type_codes": ["8AN", "SBA"]}
 
     def test_extent_competed_type_codes(self, search_builder):
         """Test extent_competed_type_codes filter."""

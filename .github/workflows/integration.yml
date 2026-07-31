@@ -1,9 +1,10 @@
 name: integration
 
-# Hits the live USAspending API (about 50 requests), so this runs on a weekly
-# schedule and on demand rather than gating every push. The golden-master
-# suite inside it is the only check against live data shapes. Note GitHub
-# disables scheduled workflows after 60 days without repository activity.
+# Hits the live USAspending API and verifies upstream documentation links, so
+# this runs on a weekly schedule and on demand rather than gating every push.
+# The golden-master suite inside it is the only check against live data shapes.
+# Note GitHub disables scheduled workflows after 60 days without repository
+# activity.
 
 on:
   schedule:

@@ -6,7 +6,7 @@ USASpending ORM is a Python ORM library for the USAspending.gov API, providing a
 
 ## USASpending API Reference Documentation
 
-- See `api-docs-links.md` for official endpoint documentation links
+- See `docs/usaspending-api/endpoint-mapping.md` for official endpoint documentation links
 - Use `context7 MCP` to access the API documentation for the USASpending project and for any external libraries referenced in this codebase
 
 ## Architecture Principles
@@ -250,7 +250,7 @@ tests/
 - **Use full agency names and not acronyms in examples and docstrings. For example always use `National Aeronautics and Space Administration` instead of `NASA` when referencing the space agency.**
 - **This file is committed to the repository and so should never include any secrets.**
 - **Always read `README.md` before making changes.**
-- **Cross-reference:** Also read `api-docs-links.md` for detailed contributor guidelines.
+- **Cross-reference:** Also read `docs/usaspending-api/endpoint-mapping.md` for endpoint mappings.
 - **When adding new features, update all relevant docs, tests, and requirements files.**
 - **All code must be Python 3.9+ compatible.**
 - **When in doubt, prefer explicit, readable code over cleverness.**

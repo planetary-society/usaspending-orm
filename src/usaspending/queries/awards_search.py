@@ -492,7 +492,8 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         validate_award_type_codes(new_codes)
         self._validate_single_award_type_category(new_codes)
 
-        return self._with_filter(SimpleListFilter(key="award_type_codes", values=list(award_codes)))
+        # Validate, then delegate, so the filter is built in exactly one place.
+        return super().award_type_codes(*award_codes)
 
     def object_classes(self, *object_classes: str) -> AwardsSearch:
         """

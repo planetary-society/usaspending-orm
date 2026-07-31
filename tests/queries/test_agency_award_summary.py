@@ -173,11 +173,12 @@ class TestAgencyAwardSummaryExecution:
         award_codes = list(CONTRACT_CODES)
         result = query.get_awards_summary("080", award_type_codes=award_codes)
 
-        # Verify API call was made with award_type_codes
+        # Sent in canonical order, so the same request keys the response cache
+        # identically in every process. See utils.payloads.canonical_order.
         mock_usa_client.assert_called_with(
             "/agency/080/awards/",
             "GET",
-            params={"agency_type": "awarding", "award_type_codes": award_codes},
+            params={"agency_type": "awarding", "award_type_codes": sorted(award_codes)},
         )
 
         assert result is not None
@@ -192,11 +193,12 @@ class TestAgencyAwardSummaryExecution:
         award_codes = GRANT_CODES  # This is a frozenset
         result = query.get_awards_summary("080", award_type_codes=award_codes)
 
-        # Verify API call was made with converted list
+        # A frozenset has no inherent order, so it is sent sorted rather than in
+        # whatever order this process happened to iterate it.
         mock_usa_client.assert_called_with(
             "/agency/080/awards/",
             "GET",
-            params={"agency_type": "awarding", "award_type_codes": list(award_codes)},
+            params={"agency_type": "awarding", "award_type_codes": sorted(award_codes)},
         )
 
         assert result is not None

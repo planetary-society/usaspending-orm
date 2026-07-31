@@ -48,6 +48,19 @@ jobs:
       - name: Coverage floor
         run: uv run --no-sync pytest -q --cov=src/usaspending --cov-fail-under=80
 
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.13"
+      - name: Sync documentation environment
+        run: uv sync --locked --group docs
+      - name: Build documentation
+        run: uv run --no-sync mkdocs build --strict
+
   package:
     runs-on: ubuntu-latest
     timeout-minutes: 10
