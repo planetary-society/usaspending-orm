@@ -55,6 +55,7 @@ Only a phase that intentionally changes behavior should produce a diff.
 from __future__ import annotations
 
 import copy
+import typing
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -124,6 +125,7 @@ NETWORK_BACKED_PROPERTIES = frozenset(
 VOLATILE_PROPERTIES = frozenset(
     {
         "award_amount",
+        "award_internal_id",
         "base_and_all_options",
         "base_exercised_options",
         "covid19_obligations",
@@ -131,10 +133,14 @@ VOLATILE_PROPERTIES = frozenset(
         "def_codes",
         "end_date",
         "fiscal_year",
+        "generated_unique_award_id",
+        "gross_outlay_amount",
         "infrastructure_obligations",
         "infrastructure_outlays",
         "last_modified_date",
         "messages",
+        "obligated_amount",
+        "reporting_fiscal_month",
         "subaward_count",
         "subtier_agency_count",
         "total_account_obligation",
@@ -146,6 +152,7 @@ VOLATILE_PROPERTIES = frozenset(
         "total_outlays",
         "total_subaward_amount",
         "total_subsidy_cost",
+        "total_transaction_obligated_amount",
         # Recipient-side aggregates, the same class of server-computed total as
         # the award-side ones above. Missed when this list was first written, and
         # they drift for the same reason: USASpending revises transactions, so
@@ -156,6 +163,26 @@ VOLATILE_PROPERTIES = frozenset(
         "total_transactions",
     }
 )
+
+
+def _is_classvar_attr(obj: object, name: str) -> bool:
+    """Return True if name is annotated as ClassVar on the object's class hierarchy.
+
+    Args:
+        obj: The instance to check.
+        name: The attribute name to look up.
+
+    Returns:
+        bool: True if the attribute is a ClassVar, False otherwise.
+    """
+    for cls in type(obj).__mro__:
+        try:
+            hints = typing.get_type_hints(cls)
+        except Exception:
+            hints = getattr(cls, "__annotations__", {})
+        if name in hints:
+            return getattr(hints[name], "__origin__", None) is typing.ClassVar
+    return False
 
 
 def _is_scalar(value: object) -> bool:
@@ -228,6 +255,9 @@ def _snapshot_object(obj: object) -> dict[str, object]:
 
     for name in sorted(name for name in dir(obj) if not name.startswith("_")):
         if name in EXCLUDED_PROPERTIES:
+            continue
+
+        if _is_classvar_attr(obj, name):
             continue
 
         if name in NETWORK_BACKED_PROPERTIES and hasattr(type(obj), name):

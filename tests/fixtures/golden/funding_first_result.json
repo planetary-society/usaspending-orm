@@ -21,13 +21,19 @@
     "funding_agency_name": "National Aeronautics and Space Administration",
     "funding_agency_slug": "national-aeronautics-and-space-administration",
     "funding_toptier_agency_id": "72",
-    "gross_outlay_amount": "Decimal(-36426.75)",
+    "gross_outlay_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
     "is_quarterly_submission": false,
     "object_class": "25.5",
     "object_class_name": "Research and development contracts",
     "program_activity_code": null,
     "program_activity_name": null,
-    "reporting_fiscal_month": 8,
+    "reporting_fiscal_month": {
+      "__type__": "int",
+      "empty": false
+    },
     "reporting_fiscal_quarter": 3,
     "reporting_fiscal_year": 2026,
     "transaction_obligated_amount": null

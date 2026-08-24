@@ -51,6 +51,17 @@ KNOWN_UNCOVERED = frozenset(
         # NoneType, so the existing type tag is already exact and a row here
         # would assert nothing the snapshot does not.
         "total_outlays",
+        # Internal database IDs forwarded as-is from the API, not coerced
+        # financial aggregates. No key-to-value mapping to verify.
+        "award_internal_id",
+        "generated_unique_award_id",
+        # Funding model properties. The volatile_fields tables only cover
+        # Award-level properties; these are not presently exercised there.
+        "gross_outlay_amount",
+        "reporting_fiscal_month",
+        # AwardAccount model properties. Same reason as above.
+        "obligated_amount",
+        "total_transaction_obligated_amount",
     }
 )
 
