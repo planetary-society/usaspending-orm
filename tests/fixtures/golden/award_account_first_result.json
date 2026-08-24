@@ -18,12 +18,18 @@
     "funding_toptier_agency_id": "72",
     "id": "080-0124",
     "name": "Exploration, National Aeronautics and Space Administration",
-    "obligated_amount": "Decimal(563809504.66)",
+    "obligated_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    },
     "tas_codes": {
       "__type__": "TASCodesQuery"
     },
     "title": "Exploration, National Aeronautics and Space Administration",
     "toptier_code": "080",
-    "total_transaction_obligated_amount": "Decimal(563809504.66)"
+    "total_transaction_obligated_amount": {
+      "__type__": "Decimal",
+      "empty": false
+    }
   }
 }
