@@ -6,12 +6,17 @@ from unittest.mock import Mock
 
 import pytest
 
-from tests.conftest import load_json_fixture
 from tests.utils import assert_decimal_equal
 from usaspending.exceptions import ValidationError
 from usaspending.models.location import Location
 from usaspending.models.recipient import Recipient
 from usaspending.utils.textcase import titlecase_name
+
+
+@pytest.fixture
+def recipient_data(load_fixture):
+    """Load a fresh recorded recipient through the shared fixture factory."""
+    return load_fixture("recipient_university.json")
 
 
 class TestSearchResultKeys:
@@ -93,46 +98,43 @@ class TestSearchResultKeys:
 class TestRecipientInitialization:
     """Test Recipient model initialization."""
 
-    def test_init_with_dict_data(self, mock_usa_client):
+    def test_init_with_dict_data(self, mock_usa_client, recipient_data):
         """Test Recipient initialization with dictionary data."""
-        fixture_data = load_json_fixture("recipient_university.json")
         data = {
-            "recipient_id": fixture_data["recipient_id"],
-            "name": fixture_data["name"],
-            "duns": fixture_data["duns"],
-            "uei": fixture_data["uei"],
+            "recipient_id": recipient_data["recipient_id"],
+            "name": recipient_data["name"],
+            "duns": recipient_data["duns"],
+            "uei": recipient_data["uei"],
         }
         recipient = Recipient(data, mock_usa_client)
 
-        assert recipient._data["recipient_id"] == fixture_data["recipient_id"]
-        assert recipient._data["name"] == fixture_data["name"]
-        assert recipient._data["duns"] == fixture_data["duns"]
-        assert recipient._data["uei"] == fixture_data["uei"]
+        assert recipient._data["recipient_id"] == recipient_data["recipient_id"]
+        assert recipient._data["name"] == recipient_data["name"]
+        assert recipient._data["duns"] == recipient_data["duns"]
+        assert recipient._data["uei"] == recipient_data["uei"]
         assert recipient._client is not None
 
-    def test_init_with_string_id(self, mock_usa_client):
+    def test_init_with_string_id(self, mock_usa_client, recipient_data):
         """Test Recipient initialization with string recipient ID."""
-        fixture_data = load_json_fixture("recipient_university.json")
-        recipient_id = fixture_data["recipient_id"]
+        recipient_id = recipient_data["recipient_id"]
         recipient = Recipient(recipient_id, mock_usa_client)
 
         assert recipient._data["recipient_id"] == recipient_id
         assert recipient._client is not None
 
-    def test_init_with_hash_field(self, mock_usa_client):
+    def test_init_with_hash_field(self, mock_usa_client, recipient_data):
         """Test Recipient initialization when dict has recipient_hash instead of recipient_id."""
-        fixture_data = load_json_fixture("recipient_university.json")
         data = {
-            "recipient_hash": fixture_data["recipient_id"],
+            "recipient_hash": recipient_data["recipient_id"],
             "name": "Test Recipient",
         }
         recipient = Recipient(data, mock_usa_client)
 
         # Should normalize to recipient_id
-        assert recipient._data["recipient_id"] == fixture_data["recipient_id"]
+        assert recipient._data["recipient_id"] == recipient_data["recipient_id"]
         assert (
             "recipient_hash" not in recipient._data
-            or recipient._data.get("recipient_hash") == fixture_data["recipient_id"]
+            or recipient._data.get("recipient_hash") == recipient_data["recipient_id"]
         )
 
     def test_init_with_invalid_type_raises_error(self, mock_usa_client):
@@ -143,11 +145,10 @@ class TestRecipientInitialization:
         with pytest.raises(ValidationError, match="Recipient expects dict or string, got list"):
             Recipient([], mock_usa_client)
 
-    def test_init_copies_data_dict(self, mock_usa_client):
+    def test_init_copies_data_dict(self, mock_usa_client, recipient_data):
         """Test that Recipient initialization copies the data dictionary."""
-        fixture_data = load_json_fixture("recipient_university.json")
         original_data = {
-            "recipient_id": fixture_data["recipient_id"],
+            "recipient_id": recipient_data["recipient_id"],
             "name": "Test Recipient",
         }
         recipient = Recipient(original_data, mock_usa_client)
@@ -160,10 +161,9 @@ class TestRecipientInitialization:
         assert "new_field" not in recipient._data
         assert recipient._data["name"] == "Test Recipient"
 
-    def test_init_cleans_recipient_id(self, mock_usa_client):
+    def test_init_cleans_recipient_id(self, mock_usa_client, recipient_data):
         """Test that recipient IDs are cleaned during initialization."""
-        fixture_data = load_json_fixture("recipient_university.json")
-        base_id = fixture_data["recipient_id"].split("-")[0]  # Get base part before dash
+        base_id = recipient_data["recipient_id"].split("-")[0]  # Get base part before dash
 
         # Test with list-annotated ID: the first level listed wins
         data = {"recipient_id": f"{base_id}-['C','R']"}
@@ -255,11 +255,6 @@ class TestRecipientLevel:
 class TestRecipientProperties:
     """Test recipient property accessors."""
 
-    @pytest.fixture
-    def recipient_data(self):
-        """Load recipient fixture data."""
-        return load_json_fixture("recipient_university.json")
-
     def test_recipient_id_property(self, mock_usa_client, recipient_data):
         """Test recipient_id property with various data."""
         recipient = Recipient(recipient_data, mock_usa_client)
@@ -335,11 +330,6 @@ class TestRecipientProperties:
 
 class TestRecipientParentRelationships:
     """Test recipient parent relationship functionality."""
-
-    @pytest.fixture
-    def recipient_data(self):
-        """Load recipient fixture data."""
-        return load_json_fixture("recipient_university.json")
 
     def test_parent_property(self, mock_usa_client, recipient_data):
         """Test parent property creates Recipient instance."""
@@ -417,11 +407,6 @@ class TestRecipientParentRelationships:
 class TestRecipientLocation:
     """Test recipient location functionality."""
 
-    @pytest.fixture
-    def recipient_data(self):
-        """Load recipient fixture data."""
-        return load_json_fixture("recipient_university.json")
-
     def test_location_property(self, mock_usa_client, recipient_data):
         """Test location property creates Location instance."""
         recipient = Recipient(recipient_data, mock_usa_client)
@@ -447,11 +432,6 @@ class TestRecipientLocation:
 
 class TestRecipientTotals:
     """Test recipient total amount properties."""
-
-    @pytest.fixture
-    def recipient_data(self):
-        """Load recipient fixture data."""
-        return load_json_fixture("recipient_university.json")
 
     def test_total_transaction_amount(self, mock_usa_client, recipient_data):
         """Test total transaction amount property."""
@@ -484,11 +464,6 @@ class TestRecipientTotals:
 
 class TestRecipientLazyLoading:
     """Test recipient lazy loading functionality."""
-
-    @pytest.fixture
-    def recipient_data(self):
-        """Load recipient fixture data."""
-        return load_json_fixture("recipient_university.json")
 
     def test_lazy_load_on_missing_field(self, mock_usa_client, recipient_data):
         """Test that accessing missing fields triggers lazy load."""

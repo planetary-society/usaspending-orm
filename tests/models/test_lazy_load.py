@@ -4,7 +4,6 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from tests.conftest import load_json_fixture
 from tests.mocks.mock_client import MockUSASpendingClient
 from usaspending.exceptions import DetachedInstanceError, HTTPError, RateLimitError
 from usaspending.models.agency import Agency
@@ -251,11 +250,12 @@ class TestFailedFetchIsRetried:
     change the answer.
     """
 
-    def test_agency_retries_after_a_server_error(self, mock_usa_client):
+    def test_agency_retries_after_a_server_error(self, mock_usa_client, load_fixture):
         """A 500 reaches the caller and leaves the agency ready to fetch again."""
-        endpoint = "/agency/080/"
+        agency_data = load_fixture("agency.json")
+        endpoint = f"/agency/{agency_data['toptier_code']}/"
         mock_usa_client.set_error_response(endpoint, 500, error_message="Server Error")
-        agency = Agency({"code": "080"}, mock_usa_client)
+        agency = Agency({"code": agency_data["toptier_code"]}, mock_usa_client)
 
         with pytest.raises(HTTPError):
             _ = agency.name
@@ -265,13 +265,13 @@ class TestFailedFetchIsRetried:
         mock_usa_client.clear_error_response(endpoint)
         mock_usa_client.set_fixture_response(endpoint, "agency")
 
-        assert agency.name == "National Aeronautics and Space Administration"
+        assert agency.name == agency_data["name"]
         assert agency._details_fetched is True
         assert mock_usa_client.get_request_count(endpoint) == 2
 
-    def test_recipient_retries_after_a_server_error(self, mock_usa_client):
+    def test_recipient_retries_after_a_server_error(self, mock_usa_client, load_fixture):
         """A 503 reaches the caller and leaves the recipient ready to fetch again."""
-        fixture = load_json_fixture("recipient_university.json")
+        fixture = load_fixture("recipient_university.json")
         recipient_id = fixture["recipient_id"]
         endpoint = f"/recipient/{recipient_id}/"
         mock_usa_client.set_error_response(endpoint, 503, error_message="Service Unavailable")
@@ -289,9 +289,9 @@ class TestFailedFetchIsRetried:
         assert recipient._details_fetched is True
         assert mock_usa_client.get_request_count(endpoint) == 2
 
-    def test_a_rate_limited_recipient_does_not_latch(self, mock_usa_client):
+    def test_a_rate_limited_recipient_does_not_latch(self, mock_usa_client, load_fixture):
         """A rate limit reaches the caller, whose option is to wait and ask again."""
-        fixture = load_json_fixture("recipient_university.json")
+        fixture = load_fixture("recipient_university.json")
         recipient_id = fixture["recipient_id"]
         endpoint = f"/recipient/{recipient_id}/"
         mock_usa_client.set_error_response(endpoint, 429, error_message="Rate limit exceeded")
@@ -308,13 +308,15 @@ class TestFailedFetchIsRetried:
         assert recipient.uei == fixture["uei"]
         assert mock_usa_client.get_request_count(endpoint) == 2
 
-    def test_recipient_retries_after_a_dropped_connection(self, mock_usa_client, monkeypatch):
+    def test_recipient_retries_after_a_dropped_connection(
+        self, mock_usa_client, monkeypatch, load_fixture
+    ):
         """A request that never reached the API is not an answer about the record.
 
         The client re-raises the transport's own exception rather than wrapping
         it, so this arrives at the model as a `requests` error carrying no status.
         """
-        fixture = load_json_fixture("recipient_university.json")
+        fixture = load_fixture("recipient_university.json")
         recipient_id = fixture["recipient_id"]
         endpoint = f"/recipient/{recipient_id}/"
         mock_usa_client.set_fixture_response(endpoint, "recipient_university")
@@ -340,9 +342,11 @@ class TestFailedFetchIsRetried:
         assert recipient._details_fetched is True
         assert len(attempts) == 2
 
-    def test_a_detached_agency_does_not_latch(self, mock_usa_client):
+    def test_a_detached_agency_does_not_latch(self, mock_usa_client, load_fixture):
         """A closed session is the caller's to fix, so reattach() must still work."""
-        agency = Agency({"code": "080"}, mock_usa_client)
+        agency_data = load_fixture("agency.json")
+        agency_code = agency_data["toptier_code"]
+        agency = Agency({"code": agency_code}, mock_usa_client)
         mock_usa_client.close()
 
         with pytest.raises(DetachedInstanceError):
@@ -351,10 +355,10 @@ class TestFailedFetchIsRetried:
         assert agency._details_fetched is False
 
         new_client = MockUSASpendingClient()
-        new_client.set_fixture_response("/agency/080/", "agency")
+        new_client.set_fixture_response(f"/agency/{agency_code}/", "agency")
         agency.reattach(new_client)
 
-        assert agency.name == "National Aeronautics and Space Administration"
+        assert agency.name == agency_data["name"]
         assert agency._details_fetched is True
 
     def test_a_not_found_agency_latches(self, mock_usa_client):

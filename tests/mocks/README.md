@@ -174,13 +174,13 @@ further request into an `AssertionError` naming the method and endpoint, so the
 failure lands at the read that caused it.
 
 ```python
-def test_a_search_row_answers_without_a_detail_fetch(mock_usa_client):
-    row = load_json_fixture("awards/search_results_contracts.json")["results"][0]
+def test_a_search_row_answers_without_a_detail_fetch(mock_usa_client, load_fixture):
+    row = load_fixture("awards/search_results_contracts.json")["results"][0]
     award = Award(row, mock_usa_client)
     mock_usa_client.forbid_requests()
 
     # Raises "no request allowed: GET /awards/..." if this lazy-loads
-    assert award.recipient.uei == "Z1H9VJS8NG16"
+    assert award.recipient.uei == row["Recipient UEI"]
 ```
 
 Call it after setup, so a fixture may still be served and only the reads under

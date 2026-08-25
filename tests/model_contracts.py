@@ -1,23 +1,14 @@
-"""Which raw key every volatile figure is meant to read, and a check that it does.
+"""Response-derived model contracts shared by offline and live tests.
 
-A *volatile* property is one whose value moves as USASpending ingests and revises
-data: money, server-computed totals, counts, and the dates of an award that is
-still running. Snapshot suites cannot pin such a value, so they record its type,
-which passes a wrong-but-well-typed answer. A money property reading the wrong
-key, or shifted by a cent, is still a Decimal.
+Each contract identifies which raw response key a model property reads and
+applies an independent test-side coercion. Expected values therefore come from
+the fixture or live response used to build the model, never from hard-coded
+output snapshots. Upstream values may change freely while wrong keys and
+conversions still fail.
 
-:func:`compare_volatile` closes that gap without pinning a moving figure. It
-reads the model's expected value out of the model's *own* ``raw`` -- the same
-dict the property reads -- so what it asserts is the mapping from raw key to
-property value. That mapping is fixed by the library rather than by what the API
-reported this morning, so ingest cannot fail it while a wrong key, a dropped
-cent or a count read as a string all do.
-
-The tables live here rather than in either suite because both run them:
-``tests/models/test_volatile_field_mapping.py`` against the recorded fixtures, so
-a mapping regression fails at commit time, and
-``tests/test_golden_master_integration.py`` against today's live responses, so a
-shape the fixtures predate is still caught.
+The tables run against recorded inputs in
+``tests/models/test_model_field_contracts.py`` and against current API responses
+in ``tests/test_live_contract_integration.py``.
 
 The coercions are restated here rather than imported from ``usaspending.utils``.
 A comparison that ran the raw value through the very function it is checking
@@ -60,8 +51,8 @@ def expected_date(value: Any) -> date:
     return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
 
 
-class VolatileField(NamedTuple):
-    """One volatile property, and the raw keys it is meant to be reading.
+class FieldContract(NamedTuple):
+    """One model property and the raw response keys it is meant to read.
 
     Attributes:
         prop: The property name on the model.
@@ -84,43 +75,43 @@ class VolatileField(NamedTuple):
 
 #: Money and count properties on an award. A property the class in hand does not
 #: define is skipped, so this one table covers Award and all four subtypes.
-AWARD_FIELDS: tuple[VolatileField, ...] = (
-    VolatileField(
+AWARD_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract(
         "award_amount",
         ("Award Amount", "Loan Amount", "total_obligation", "total_funding"),
         expected_money,
     ),
-    VolatileField("base_and_all_options", ("base_and_all_options",), expected_money),
-    VolatileField("base_exercised_options", ("base_exercised_options",), expected_money),
-    VolatileField(
+    FieldContract("base_and_all_options", ("base_and_all_options",), expected_money),
+    FieldContract("base_exercised_options", ("base_exercised_options",), expected_money),
+    FieldContract(
         "covid19_obligations", ("covid19_obligations", "COVID-19 Obligations"), expected_money
     ),
-    VolatileField("covid19_outlays", ("covid19_outlays", "COVID-19 Outlays"), expected_money),
-    VolatileField(
+    FieldContract("covid19_outlays", ("covid19_outlays", "COVID-19 Outlays"), expected_money),
+    FieldContract(
         "infrastructure_obligations",
         ("infrastructure_obligations", "Infrastructure Obligations"),
         expected_money,
     ),
-    VolatileField(
+    FieldContract(
         "infrastructure_outlays",
         ("infrastructure_outlays", "Infrastructure Outlays"),
         expected_money,
     ),
     # The one property here that answers a figure rather than None when the award
     # reports nothing.
-    VolatileField("subaward_count", ("subaward_count",), int, default=0),
-    VolatileField("total_account_obligation", ("total_account_obligation",), expected_money),
-    VolatileField("total_account_outlay", ("total_account_outlay",), expected_money),
-    VolatileField("total_funding", ("total_funding",), expected_money),
-    VolatileField("total_loan_value", ("Loan Value", "total_loan_value"), expected_money),
-    VolatileField("total_obligation", ("total_obligation", "Award Amount"), expected_money),
-    VolatileField("total_outlay", ("total_outlay", "Total Outlays"), expected_money),
-    VolatileField("total_subaward_amount", ("total_subaward_amount",), expected_money),
+    FieldContract("subaward_count", ("subaward_count",), int, default=0),
+    FieldContract("total_account_obligation", ("total_account_obligation",), expected_money),
+    FieldContract("total_account_outlay", ("total_account_outlay",), expected_money),
+    FieldContract("total_funding", ("total_funding",), expected_money),
+    FieldContract("total_loan_value", ("Loan Value", "total_loan_value"), expected_money),
+    FieldContract("total_obligation", ("total_obligation", "Award Amount"), expected_money),
+    FieldContract("total_outlay", ("total_outlay", "Total Outlays"), expected_money),
+    FieldContract("total_subaward_amount", ("total_subaward_amount",), expected_money),
     # Loan overrides the property it inherits to prefer the flat search spelling,
     # which Grant does not read. Listed as two entries rather than one merged
     # chain, which would hide the difference on a row carrying "Subsidy Cost".
-    VolatileField("total_subsidy_cost", ("total_subsidy_cost",), expected_money, owner=Grant),
-    VolatileField(
+    FieldContract("total_subsidy_cost", ("total_subsidy_cost",), expected_money, owner=Grant),
+    FieldContract(
         "total_subsidy_cost", ("Subsidy Cost", "total_subsidy_cost"), expected_money, owner=Loan
     ),
 )
@@ -128,46 +119,112 @@ AWARD_FIELDS: tuple[VolatileField, ...] = (
 #: Dates on a period of performance. Run against the period model rather than the
 #: award, so ``raw`` is the payload the dates are actually read from: the nested
 #: object from a detail response, or the projection taken from a search row.
-PERIOD_FIELDS: tuple[VolatileField, ...] = (
-    VolatileField(
+PERIOD_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract(
         "start_date",
         ("start_date", "Start Date", "Period of Performance Start Date", "Base Obligation Date"),
         expected_date,
     ),
-    VolatileField(
+    FieldContract(
         "end_date",
         ("end_date", "End Date", "Period of Performance Current End Date"),
         expected_date,
     ),
-    VolatileField(
+    FieldContract(
         "last_modified_date", ("last_modified_date", "Last Modified Date"), expected_date
     ),
 )
 
 #: The recipient-side aggregates, which the API computes and revises.
-RECIPIENT_FIELDS: tuple[VolatileField, ...] = (
-    VolatileField(
+RECIPIENT_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract(
         "total_face_value_loan_amount", ("total_face_value_loan_amount",), expected_money
     ),
-    VolatileField(
+    FieldContract(
         "total_face_value_loan_transactions", ("total_face_value_loan_transactions",), int
     ),
-    VolatileField("total_transaction_amount", ("total_transaction_amount",), expected_money),
-    VolatileField("total_transactions", ("total_transactions",), int),
+    FieldContract("total_transaction_amount", ("total_transaction_amount",), expected_money),
+    FieldContract("total_transactions", ("total_transactions",), int),
 )
 
 #: Agency figures that move with each ingest.
-AGENCY_FIELDS: tuple[VolatileField, ...] = (
-    VolatileField("fiscal_year", ("fiscal_year",), int),
-    VolatileField("subtier_agency_count", ("subtier_agency_count",), int),
+AGENCY_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract("fiscal_year", ("fiscal_year",), int),
+    FieldContract("subtier_agency_count", ("subtier_agency_count",), int),
 )
 
-#: Every volatile property the tables above cover, for the test that ties them to
-#: the golden master's own list.
-COVERED_PROPERTIES = frozenset(
-    field.prop
-    for table in (AWARD_FIELDS, PERIOD_FIELDS, RECIPIENT_FIELDS, AGENCY_FIELDS)
-    for field in table
+TRANSACTION_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract("id", ("id",), str),
+    FieldContract("award_internal_id", ("internal_id",), int),
+    FieldContract(
+        "generated_unique_award_id",
+        ("generated_unique_award_id", "generated_internal_id"),
+        str,
+    ),
+    FieldContract("award_identifier", ("Award ID",), str),
+    FieldContract("award_id", ("Award ID",), str),
+    FieldContract("action_date", ("action_date", "Action Date"), expected_date),
+    FieldContract("action_type", ("action_type", "Action Type"), str),
+    FieldContract("type_description", ("type_description", "Award Type"), str),
+    FieldContract("modification_number", ("modification_number", "Mod"), str),
+    FieldContract(
+        "federal_action_obligation",
+        ("federal_action_obligation", "Transaction Amount"),
+        expected_money,
+    ),
+    FieldContract(
+        "face_value_loan_guarantee",
+        ("face_value_loan_guarantee", "Loan Value"),
+        expected_money,
+    ),
+    FieldContract(
+        "original_loan_subsidy_cost",
+        ("original_loan_subsidy_cost", "Subsidy Cost"),
+        expected_money,
+    ),
+)
+
+AWARD_ACCOUNT_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract(
+        "total_transaction_obligated_amount",
+        ("total_transaction_obligated_amount",),
+        expected_money,
+    ),
+    FieldContract(
+        "obligated_amount",
+        ("total_transaction_obligated_amount",),
+        expected_money,
+    ),
+    FieldContract("funding_agency_id", ("funding_agency_id",), int),
+    FieldContract("funding_toptier_agency_id", ("funding_toptier_agency_id",), str),
+)
+
+FUNDING_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract(
+        "transaction_obligated_amount", ("transaction_obligated_amount",), expected_money
+    ),
+    FieldContract("gross_outlay_amount", ("gross_outlay_amount",), expected_money),
+    FieldContract("funding_agency_id", ("funding_agency_id",), int),
+    FieldContract("funding_toptier_agency_id", ("funding_toptier_agency_id",), str),
+    FieldContract("awarding_agency_id", ("awarding_agency_id",), int),
+    FieldContract("awarding_toptier_agency_id", ("awarding_toptier_agency_id",), str),
+    FieldContract("reporting_fiscal_year", ("reporting_fiscal_year",), int),
+    FieldContract("reporting_fiscal_quarter", ("reporting_fiscal_quarter",), int),
+    FieldContract("reporting_fiscal_month", ("reporting_fiscal_month",), int),
+)
+
+SUBAWARD_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract("id", ("internal_id",), str),
+    FieldContract("sub_award_id", ("Sub-Award ID",), str),
+    FieldContract("sub_award_date", ("Sub-Award Date",), expected_date),
+    FieldContract("sub_award_amount", ("Sub-Award Amount",), expected_money),
+)
+
+SPENDING_FIELDS: tuple[FieldContract, ...] = (
+    FieldContract("code", ("code",), str),
+    FieldContract("amount", ("amount",), expected_money),
+    FieldContract("total_outlays", ("total_outlays",), expected_money),
+    FieldContract("spending_level", ("spending_level",), str),
 )
 
 
@@ -191,7 +248,7 @@ def raw_value(raw: dict[str, Any], keys: tuple[str, ...]) -> Any:
     return None
 
 
-def _fields_for(obj: object, fields: tuple[VolatileField, ...]) -> list[VolatileField]:
+def _fields_for(obj: object, fields: tuple[FieldContract, ...]) -> list[FieldContract]:
     """Select the entry describing each property the object actually has.
 
     Where two entries name the same property, the one whose ``owner`` is the most
@@ -203,9 +260,9 @@ def _fields_for(obj: object, fields: tuple[VolatileField, ...]) -> list[Volatile
         fields: The table to select from.
 
     Returns:
-        list[VolatileField]: One entry per applicable property, in table order.
+        list[FieldContract]: One entry per applicable property, in table order.
     """
-    chosen: dict[str, VolatileField] = {}
+    chosen: dict[str, FieldContract] = {}
 
     for field in fields:
         if not hasattr(type(obj), field.prop):
@@ -223,13 +280,13 @@ def _fields_for(obj: object, fields: tuple[VolatileField, ...]) -> list[Volatile
     return list(chosen.values())
 
 
-def compare_volatile(
+def compare_fields(
     name: str,
     obj: object,
-    fields: tuple[VolatileField, ...],
+    fields: tuple[FieldContract, ...],
     keys_present_only: bool = False,
 ) -> set[str]:
-    """Assert every volatile property matches the payload the model holds.
+    """Assert every contracted property matches the payload the model holds.
 
     Args:
         name: Label used in the failure message.
@@ -286,7 +343,7 @@ def compare_volatile(
             }
 
     assert mismatches == {}, (
-        f"{name}: {len(mismatches)} volatile propert(ies) disagree with the "
+        f"{name}: {len(mismatches)} contracted propert(ies) disagree with the "
         f"response they were built from. Both sides come from one payload, so "
         f"this is a mapping defect and not live data drift. {mismatches}"
     )

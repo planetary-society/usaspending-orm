@@ -38,6 +38,11 @@ from usaspending.queries.awards_search import AwardsSearch
 ALL_CATEGORIES = pytest.mark.parametrize(
     "category", AWARD_CATEGORIES, ids=lambda category: category.group
 )
+DOWNLOAD_CATEGORIES = pytest.mark.parametrize(
+    "category",
+    tuple(category for category in AWARD_CATEGORIES if category.download_type is not None),
+    ids=lambda category: category.group,
+)
 
 
 class TestRegistryShape:
@@ -127,14 +132,11 @@ class TestCouplingsToOtherLayers:
         assert model is not Award, f"Unknown search_fields_model {category.search_fields_model!r}"
         assert isinstance(model.SEARCH_FIELDS, list)
 
-    @ALL_CATEGORIES
+    @DOWNLOAD_CATEGORIES
     def test_download_type_names_a_download_resource_method(
         self, category: AwardCategory, mock_usa_client
     ):
         """Award.download() resolves its resource method from download_type."""
-        if category.download_type is None:
-            pytest.skip(f"{category.group} does not support downloads")
-
         assert callable(getattr(mock_usa_client.downloads, category.download_type, None)), (
             f"DownloadResource has no {category.download_type}() for {category.group}"
         )

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 from datetime import date
-from pathlib import Path
 
 import pytest
 
@@ -20,14 +18,9 @@ class TestSubAwardModel:
     """Test SubAward model functionality."""
 
     @pytest.fixture
-    def subaward_data(self):
+    def subaward_data(self, load_fixture):
         """Load subaward fixture data."""
-        fixture_path = (
-            Path(__file__).parent.parent / "fixtures" / "awards" / "search_results_subawards.json"
-        )
-        with open(fixture_path) as f:
-            data = json.load(f)
-        return data["results"][0]  # First subaward from the fixture
+        return load_fixture("awards/search_results_subawards.json")["results"][0]
 
     def test_subaward_initialization(self, subaward_data, mock_usa_client):
         """Test SubAward can be initialized with data."""

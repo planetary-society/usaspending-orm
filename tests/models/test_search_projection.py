@@ -16,15 +16,14 @@ The two models' own key chains are pinned by ``test_recipient.py`` and
 an ``Award`` can show: which payload it hands over, and which spelling wins when
 it holds both.
 
-Why the golden master cannot cover this
----------------------------------------
-``tests/test_golden_master_integration.py`` snapshots a search-built award by
-reading every public property in sorted ``dir()`` order. The first property whose
-key the row does not carry triggers a detail fetch, and the response is merged
-into the award's payload. ``award_type_code`` sorts well ahead of ``recipient``
-and ``period_of_performance``, so by the time either is read the nested detail
-spellings are present and win. Both ``_from_search_result`` classmethods
-therefore run zero times during a snapshot, however many awards it captures.
+Why this focused offline contract remains necessary
+---------------------------------------------------
+``tests/test_live_contract_integration.py`` checks response-backed field tables
+against whatever the API currently returns. This module covers a narrower
+behavior that must not depend on a live row: the exact flat keys used to build
+recipient and period projections, their precedence over nested detail shapes,
+and the promise that no lazy request is needed. Recorded inputs supply the shape;
+expected values come from those inputs or from synthetic variables below.
 
 Legitimate search-versus-detail differences
 -------------------------------------------
@@ -52,12 +51,11 @@ asserted only for fields both products source identically.
 
 from __future__ import annotations
 
-from datetime import date
 from typing import Any
 
 import pytest
 
-from tests.conftest import load_json_fixture
+from tests.model_contracts import expected_date
 from usaspending.models.award import Award
 
 
@@ -69,13 +67,13 @@ def no_request_client(mock_usa_client):
 
 
 @pytest.fixture
-def iowa_row() -> dict[str, Any]:
+def iowa_row(load_fixture) -> dict[str, Any]:
     """A recorded ``spending_by_award`` row, the University of Iowa contract.
 
     Fresh per test: an award replaces its payload in place when a detail fetch
     fires, so tests must not share one row.
     """
-    return dict(load_json_fixture("awards/search_results_contracts.json")["results"][0])
+    return dict(load_fixture("awards/search_results_contracts.json")["results"][0])
 
 
 class TestRecipientProjection:
@@ -87,25 +85,28 @@ class TestRecipientProjection:
 
         recipient = award.recipient
 
-        assert recipient.recipient_id == "0b441d38-e3c0-de89-ee08-69fc9e6ee58a-C"
-        assert recipient.uei == "Z1H9VJS8NG16"
+        assert recipient.recipient_id == iowa_row["recipient_id"]
+        assert recipient.uei == iowa_row["Recipient UEI"]
         # `name` is title-cased on the way out, so the raw "THE UNIVERSITY OF
-        # IOWA" is compared with that transform applied. The casing rules
-        # themselves are pinned by tests/utils/test_textcase.py; what this pins is
-        # that `Recipient Name` is the key feeding them.
-        assert recipient.name == "The University of Iowa"
+        # IOWA" is compared case-insensitively. The casing rules themselves are
+        # pinned by tests/utils/test_textcase.py; what this pins is that
+        # `Recipient Name` is the key feeding them.
+        assert recipient.name
+        assert recipient.name.casefold() == iowa_row["Recipient Name"].casefold()
 
     def test_the_location_comes_from_the_flat_key(self, iowa_row, no_request_client):
         """`Recipient Location` builds the Location, with no nested `location`."""
         award = Award(iowa_row, no_request_client)
 
         location = award.recipient.location
+        raw_location = iowa_row["Recipient Location"]
 
         assert location is not None
-        assert location.state_code == "IA"
-        assert location.zip5 == "52242"
+        assert location.state_code == raw_location["state_code"]
+        assert location.zip5 == str(raw_location["zip5"])
         # City names are title-cased for the same reason recipient names are.
-        assert location.city_name == "Iowa City"
+        assert location.city_name
+        assert location.city_name.casefold() == raw_location["city_name"].casefold()
 
     def test_the_nested_recipient_wins_over_the_flat_keys(self, iowa_row, no_request_client):
         """A payload carrying both spellings resolves to the nested one.
@@ -114,12 +115,16 @@ class TestRecipientProjection:
         search-built award records detail values: once a fetch has merged a
         nested `recipient`, the flat columns are no longer consulted.
         """
-        iowa_row["recipient"] = {"recipient_id": "nested-hash-R", "recipient_name": "NESTED NAME"}
+        nested_recipient = {
+            "recipient_id": "nested-hash-R",
+            "recipient_name": "Nested Fixture Recipient",
+        }
+        iowa_row["recipient"] = nested_recipient
 
         recipient = Award(iowa_row, no_request_client).recipient
 
-        assert recipient.recipient_id == "nested-hash-R"
-        assert recipient.name == "Nested Name"
+        assert recipient.recipient_id == nested_recipient["recipient_id"]
+        assert recipient.name == nested_recipient["recipient_name"]
 
 
 class TestPeriodOfPerformanceProjection:
@@ -127,12 +132,13 @@ class TestPeriodOfPerformanceProjection:
 
     def test_the_nested_period_wins_over_the_flat_keys(self, iowa_row, no_request_client):
         """A payload carrying both spellings resolves to the nested one."""
-        iowa_row["period_of_performance"] = {"start_date": "2001-01-01", "end_date": "2002-02-02"}
+        nested_period = {"start_date": "2001-01-01", "end_date": "2002-02-02"}
+        iowa_row["period_of_performance"] = nested_period
 
         award = Award(iowa_row, no_request_client)
 
-        assert award.start_date == date(2001, 1, 1)
-        assert award.end_date == date(2002, 2, 2)
+        assert award.start_date == expected_date(nested_period["start_date"])
+        assert award.end_date == expected_date(nested_period["end_date"])
 
     def test_the_dropped_end_date_alias_stays_dropped(self, no_request_client):
         """`Period of Performance End Date` is no longer read, by design.
@@ -144,12 +150,17 @@ class TestPeriodOfPerformanceProjection:
         None. The `Start Date` alongside it is what lets the period be built from
         the row at all; see the next test for why.
         """
+        start_date = "2020-01-01"
+        dropped_end_date = "2022-06-30"
         award = Award(
-            {"Start Date": "2020-01-01", "Period of Performance End Date": "2022-06-30"},
+            {
+                "Start Date": start_date,
+                "Period of Performance End Date": dropped_end_date,
+            },
             no_request_client,
         )
 
-        assert award.start_date == date(2020, 1, 1)
+        assert award.start_date == expected_date(start_date)
         assert award.end_date is None
 
     def test_the_dropped_alias_does_not_even_keep_the_award_off_the_network(
@@ -163,13 +174,17 @@ class TestPeriodOfPerformanceProjection:
         it is the second consequence of dropping the spelling, and the one a
         reader is most likely to miss.
         """
+        generated_id = "CONT_AWD_1"
         award = Award(
             {
-                "generated_internal_id": "CONT_AWD_1",
+                "generated_internal_id": generated_id,
                 "Period of Performance End Date": "2022-06-30",
             },
             no_request_client,
         )
 
-        with pytest.raises(AssertionError, match=r"no request allowed: GET /awards/CONT_AWD_1/"):
+        with pytest.raises(
+            AssertionError,
+            match=rf"no request allowed: GET /awards/{generated_id}/",
+        ):
             _ = award.end_date

@@ -66,9 +66,9 @@ class Loan(Grant):
     # primary_cfda_info, then cfda_info[0], then this same flat key, so it is a
     # strict superset -- this override can only find less. On a detail response,
     # which reports CFDA data nested under cfda_info and leaves the flat key
-    # null, it returns None where the inherited version returns the number;
-    # tests/fixtures/golden/award_loan.json records exactly that. Kept only to
-    # preserve current behavior. Removing it is a behavior change, tracked
+    # null, it returns None where the inherited version returns the number. The
+    # response-derived contract tests preserve that mapping without snapshotting
+    # a particular API value. Removing it is a behavior change, tracked
     # separately, not an oversight.
     @property
     def cfda_number(self) -> str | None:

@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 from tests.mocks.mock_client import MockUSASpendingClient
 
@@ -18,13 +15,9 @@ class TestSubAwardsSearch:
     """Test SubAwardsSearch query builder functionality."""
 
     @pytest.fixture
-    def subawards_response(self):
+    def subawards_response(self, load_fixture):
         """Load subawards fixture data."""
-        fixture_path = (
-            Path(__file__).parent.parent / "fixtures" / "awards" / "search_results_subawards.json"
-        )
-        with open(fixture_path) as f:
-            return json.load(f)
+        return load_fixture("awards/search_results_subawards.json")
 
     def test_subawards_search_initialization(self, mock_usa_client):
         """Test SubAwardsSearch can be initialized."""

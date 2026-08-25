@@ -46,12 +46,14 @@ class TestAwardResourceIntegration:
 class TestAwardFiltersIntegration:
     """Integration tests for award search filters."""
 
-    def test_program_activity_filter(self, client):
-        """Test program_activity filter with integer codes."""
-        # Search for awards with a specific program activity code
-        # Using common program activity codes that should have results
+    def test_program_activities_code_filter(self, client):
+        """Test program_activities with a code dictionary."""
         results = list(
-            client.awards.search().grants().fiscal_year(2024).program_activity(1).limit(3)
+            client.awards.search()
+            .grants()
+            .fiscal_year(2024)
+            .program_activities({"code": "1"})
+            .limit(3)
         )
         # May or may not have results depending on data availability
         assert isinstance(results, list)

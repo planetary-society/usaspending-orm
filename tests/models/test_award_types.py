@@ -7,6 +7,8 @@ unique to that award type.
 
 from __future__ import annotations
 
+import pytest
+
 from tests.mocks.mock_client import MockUSASpendingClient
 from tests.utils import assert_decimal_equal
 from usaspending.models import IDV, Contract, Grant, Loan
@@ -194,6 +196,13 @@ class TestIDV(AwardTestingMixin):
     AWARD_MODEL = IDV
     FIXTURE_NAME = "idv_fixture_data"
     FIXTURE_PATH = "awards/idv"
+
+    def test_subawards_property(self, mock_usa_client, fixture_data):
+        """IDVs expose child awards rather than a subaward search."""
+        idv = self.AWARD_MODEL(fixture_data, mock_usa_client)
+
+        with pytest.raises(NotImplementedError):
+            _ = idv.subawards
 
     def test_type_fields_defined(self):
         """Test that IDV has the correct TYPE_FIELDS defined."""

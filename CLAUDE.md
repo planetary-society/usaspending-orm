@@ -30,6 +30,9 @@ USASpending ORM is a Python ORM library for the USAspending.gov API, providing a
 - Chainable, immutable query construction via `_clone()` method
 - Lazy evaluation - queries execute only when iterated
 - Standard python List-like interface for results will fire relevant API calls (e.g. `len(client.awards)` fires off an API call to a `count` endpoint, for example)
+- Keep equivalent operations consistent across resources: use the same method names,
+  chaining and immutability behavior, return shapes, pagination semantics, and error
+  handling unless an upstream API contract requires a documented exception
 
 ### Resource Organization
 
@@ -102,11 +105,26 @@ tests/
 
 ### Testing Principles
 
-- Use `pytest` for test framework and implement pytest best practices
-- Always integrate fixture data from `tests/fixtures/` into tests
-- Aim for >80% test coverage
-- Mock API client using the `mock_usa_client()` method and other helps in `tests/mocks/`
-- Use helper methods to load fixtures and the mock client object in `tests/conftest.py`
+- Use `pytest` and follow the existing test patterns
+- Use JSON fixtures from `tests/fixtures/` when a test needs a representative upstream
+  response shape or independent verification against recorded input. Minimal,
+  deterministic unit tests may define synthetic input inline.
+- Test functions and modules should request the shared `load_fixture` pytest fixture;
+  do not import or call the low-level `load_json_fixture` helper directly. Test support
+  code in `conftest.py` and `tests/mocks/` may use low-level loading internally.
+- Derive fixture-backed expectations from the loaded JSON instead of duplicating its
+  values as expected literals. When testing a conversion, compute the expected value
+  independently rather than invoking the production function under test.
+- Maintain at least 80% test coverage
+- Mock API calls with the `mock_usa_client` pytest fixture and the helpers in
+  `tests/mocks/`
+- In live integration tests, assert response presence, types, requested constraints,
+  mappings, and relational invariants. Do not pin dynamic identifiers, amounts,
+  counts, dates, ordering winners, or complete response payloads. Stable,
+  fixture-derived identifiers may seed a query but are inputs, not expected outputs.
+- Exact expected literals are appropriate for stable protocol or public API contracts
+  and for deterministic synthetic edge cases. Keep each literal tied to the test input
+  that establishes it.
 
 ## Quick Commands
 

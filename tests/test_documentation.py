@@ -19,6 +19,7 @@ import builtins
 import inspect
 import re
 import textwrap
+from http import HTTPStatus
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -203,9 +204,43 @@ def _upstream_documentation_links() -> list[str]:
     return sorted(links)
 
 
+def _is_transient_link_failure(status_code: int) -> bool:
+    """Distinguish an upstream outage or rate limit from a permanently stale link."""
+    return (
+        status_code == HTTPStatus.TOO_MANY_REQUESTS
+        or status_code >= HTTPStatus.INTERNAL_SERVER_ERROR
+    )
+
+
+@pytest.mark.parametrize(
+    ("status_code", "expected"),
+    [
+        (HTTPStatus.OK, False),
+        (HTTPStatus.NOT_FOUND, False),
+        (HTTPStatus.TOO_MANY_REQUESTS, True),
+        (HTTPStatus.INTERNAL_SERVER_ERROR, True),
+        (HTTPStatus.SERVICE_UNAVAILABLE, True),
+    ],
+)
+def test_transient_link_failure_classification(status_code, expected) -> None:
+    """Only rate limits and server failures are treated as environmental."""
+    assert _is_transient_link_failure(status_code) is expected
+
+
 @pytest.mark.integration
 @pytest.mark.parametrize("url", _upstream_documentation_links())
 def test_upstream_documentation_link_resolves(url: str) -> None:
-    """Canonical upstream references should not silently rot."""
-    with requests.get(url, timeout=20, stream=True) as response:
-        assert response.status_code < 400, f"{response.status_code} from {url}"
+    """Canonical references should resolve without mistaking outages for link rot."""
+    attempts = 2
+    response = None
+    for _attempt in range(attempts):
+        response = requests.get(url, timeout=20, stream=True)
+        if not _is_transient_link_failure(response.status_code):
+            break
+        response.close()
+
+    assert response is not None
+    with response:
+        if _is_transient_link_failure(response.status_code):
+            pytest.skip(f"Transient {response.status_code} from {url} after {attempts} attempts")
+        assert response.status_code < HTTPStatus.BAD_REQUEST, f"{response.status_code} from {url}"

@@ -143,11 +143,7 @@ class AwardTestingMixin:
     def test_subawards_property(self, mock_usa_client, fixture_data):
         """Test that the subawards property returns a query builder that can be iterated."""
         award = self.AWARD_MODEL(fixture_data, mock_usa_client)
-
-        try:
-            subawards_query = award.subawards
-        except NotImplementedError:
-            pytest.skip(f"Subawards not implemented for {self.AWARD_MODEL.__name__}")
+        subawards_query = award.subawards
 
         award_id = fixture_data["generated_unique_award_id"]
 

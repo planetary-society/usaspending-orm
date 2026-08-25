@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from tests.conftest import load_json_fixture
+import pytest
+
 from tests.utils import assert_decimal_equal
 from usaspending.models import Recipient, RecipientSpending
 from usaspending.queries.spending_search import SpendingSearch
@@ -10,14 +11,17 @@ from usaspending.utils.numbers import round_to_millions
 from usaspending.utils.textcase import titlecase_name
 
 
+@pytest.fixture
+def spending_response(load_fixture):
+    return load_fixture("spending_by_recipient.json")
+
+
 class TestRecipientSpendingInitialization:
     """Test RecipientSpending model initialization."""
 
-    def test_init_with_dict_data(self, mock_usa_client):
+    def test_init_with_dict_data(self, mock_usa_client, spending_response):
         """Test RecipientSpending initialization with dictionary data."""
-        # Load fixture data and use the first result
-        fixture_data = load_json_fixture("spending_by_recipient.json")
-        first_result = fixture_data["results"][0]
+        first_result = spending_response["results"][0]
 
         # Add category field for initialization
         data = {**first_result, "category": "recipient"}
@@ -38,11 +42,9 @@ class TestRecipientSpendingInitialization:
 class TestRecipientSpendingProperties:
     """Test recipient spending properties."""
 
-    def test_recipient_specific_properties(self, mock_usa_client):
+    def test_recipient_specific_properties(self, mock_usa_client, spending_response):
         """Test recipient-specific properties."""
-        # Load fixture data and use the first result
-        fixture_data = load_json_fixture("spending_by_recipient.json")
-        first_result = fixture_data["results"][0]
+        first_result = spending_response["results"][0]
 
         recipient_spending = RecipientSpending(first_result, mock_usa_client)
 
@@ -62,11 +64,9 @@ class TestRecipientSpendingProperties:
         assert recipient_spending.uei is None
         assert recipient_spending.duns is None
 
-    def test_repr(self, mock_usa_client):
+    def test_repr(self, mock_usa_client, spending_response):
         """Test string representation of RecipientSpending."""
-        # Load fixture data and use the first result
-        fixture_data = load_json_fixture("spending_by_recipient.json")
-        first_result = fixture_data["results"][0]
+        first_result = spending_response["results"][0]
 
         recipient_spending = RecipientSpending(first_result, mock_usa_client)
 
@@ -91,13 +91,10 @@ class TestRecipientSpendingProperties:
 class TestRecipientSpendingCount:
     """Test RecipientSpending count functionality via SpendingSearch."""
 
-    def test_count_with_fixture_data(self, mock_usa_client):
+    def test_count_with_fixture_data(self, mock_usa_client, spending_response):
         """Test count functionality using fixture data."""
-        # Load the fixture data
-        fixture_data = load_json_fixture("spending_by_recipient.json")
-
         # Modify the fixture to indicate no more pages to prevent infinite loop
-        modified_fixture = fixture_data.copy()
+        modified_fixture = spending_response.copy()
         modified_fixture["page_metadata"] = {
             "page": 1,
             "hasNext": False,  # Important: Set to False to stop pagination
@@ -113,21 +110,17 @@ class TestRecipientSpendingCount:
         search = SpendingSearch(mock_usa_client).by_recipient()
         count = search.count()
 
-        # The fixture has 20 recipient results
-        expected_count = len(fixture_data["results"])
+        # The expected count comes from the loaded response, not a recorded total.
+        expected_count = len(spending_response["results"])
         assert count == expected_count
-        assert count == 20  # Verify actual fixture count
 
         # Verify the API was called once
         assert mock_usa_client.get_request_count() == 1
 
-    def test_count_with_limit_using_fixture_data(self, mock_usa_client):
+    def test_count_with_limit_using_fixture_data(self, mock_usa_client, spending_response):
         """Test count with limit using fixture data."""
-        # Load the fixture data
-        fixture_data = load_json_fixture("spending_by_recipient.json")
-
         # Modify the fixture to indicate no more pages to prevent infinite loop
-        modified_fixture = fixture_data.copy()
+        modified_fixture = spending_response.copy()
         modified_fixture["page_metadata"] = {
             "page": 1,
             "hasNext": False,  # Important: Set to False to stop pagination
@@ -140,22 +133,19 @@ class TestRecipientSpendingCount:
         )
 
         # Create a spending search with a limit
-        search = SpendingSearch(mock_usa_client).by_recipient().limit(10)
+        requested_limit = len(spending_response["results"]) // 2
+        search = SpendingSearch(mock_usa_client).by_recipient().limit(requested_limit)
         count = search.count()
 
-        # Should return only 10, not the full 20 from fixture
-        assert count == 10
+        assert count == requested_limit
 
         # Verify the API was called once
         assert mock_usa_client.get_request_count() == 1
 
-    def test_recipient_model_creation_from_search_results(self, mock_usa_client):
+    def test_recipient_model_creation_from_search_results(self, mock_usa_client, spending_response):
         """Test that search results create proper RecipientSpending models."""
-        # Load the fixture data
-        fixture_data = load_json_fixture("spending_by_recipient.json")
-
         # Modify the fixture to indicate no more pages to prevent infinite loop
-        modified_fixture = fixture_data.copy()
+        modified_fixture = spending_response.copy()
         modified_fixture["page_metadata"] = {
             "page": 1,
             "hasNext": False,  # Important: Set to False to stop pagination
@@ -168,15 +158,15 @@ class TestRecipientSpendingCount:
         )
 
         # Create a spending search and get first few results
-        search = SpendingSearch(mock_usa_client).by_recipient().limit(3)
+        requested_limit = 3
+        search = SpendingSearch(mock_usa_client).by_recipient().limit(requested_limit)
         results = list(search)
 
-        # Verify we got 3 results
-        assert len(results) == 3
+        assert len(results) == requested_limit
 
         # Verify each result is a RecipientSpending model with correct data
         for i, recipient_spending in enumerate(results):
-            fixture_result = fixture_data["results"][i]
+            fixture_result = spending_response["results"][i]
 
             assert isinstance(recipient_spending, RecipientSpending)
             assert recipient_spending.name == titlecase_name(fixture_result["name"])

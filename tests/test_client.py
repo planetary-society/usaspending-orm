@@ -159,13 +159,6 @@ class TestClient:
         api_messages = [msg for msg in info_messages if msg.startswith("API Message:")]
         assert len(api_messages) == 0
 
-    def test_non_200_response_with_messages_not_logged(self, mock_usa_client, caplog):
-        """Test that messages in non-200 responses are not logged as API messages."""
-        # Note: This test can't easily simulate non-200 success responses with mock_usa_client
-        # since it's designed to mock 200 responses. This test would need real HTTP mocking
-        # to properly test status code 201. For now, we'll skip this specific scenario.
-        pytest.skip("MockUSASpendingClient doesn't support non-200 success responses")
-
 
 class TestClientSessionManagement:
     """Test session management functionality in USASpendingClient."""

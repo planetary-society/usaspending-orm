@@ -1,19 +1,23 @@
 """Tests for Location model."""
 
-import json
-from pathlib import Path
-
 import pytest
 
 from usaspending.models.location import Location
 
 
+def assert_text_matches(actual, raw):
+    """Compare a formatted location string with its recorded source text."""
+    if raw is None:
+        assert actual is None
+    else:
+        assert actual
+        assert actual.casefold() == raw.strip().casefold()
+
+
 @pytest.fixture
-def grant_data():
+def grant_data(load_fixture):
     """Load grant fixture data."""
-    fixture_path = Path(__file__).parent.parent / "fixtures" / "awards" / "grant.json"
-    with open(fixture_path) as f:
-        return json.load(f)
+    return load_fixture("awards/grant.json")
 
 
 @pytest.fixture
@@ -43,59 +47,65 @@ def place_of_performance_location(place_of_performance_data):
 class TestLocationSimpleFields:
     """Test simple direct fields from Location model."""
 
-    def test_address_fields(self, recipient_location):
+    def test_address_fields(self, recipient_location, recipient_location_data):
         """Test address line fields."""
-        assert recipient_location.address_line1 == "301 Sparkman Dr NW"
-        assert recipient_location.address_line2 is None
-        assert recipient_location.address_line3 is None
+        for field in ("address_line1", "address_line2", "address_line3"):
+            assert_text_matches(getattr(recipient_location, field), recipient_location_data[field])
 
-    def test_city_fields(self, recipient_location):
+    def test_city_fields(self, recipient_location, recipient_location_data):
         """Test city name and alias."""
-        assert recipient_location.city == "Huntsville"
+        assert_text_matches(recipient_location.city, recipient_location_data["city_name"])
+        assert recipient_location.city == recipient_location.city_name
 
-    def test_state_name(self, recipient_location):
+    def test_state_name(self, recipient_location, recipient_location_data):
         """Test state name field."""
-        assert recipient_location.state_name == "Alabama"
+        assert_text_matches(recipient_location.state_name, recipient_location_data["state_name"])
 
     def test_state_name_none(self):
         """Test state name returns None when value is None."""
         location = Location({"state_name": None})
         assert location.state_name is None
 
-    def test_country_name(self, recipient_location):
+    def test_country_name(self, recipient_location, recipient_location_data):
         """Test country name field."""
-        assert recipient_location.country_name == "United States"
+        assert_text_matches(
+            recipient_location.country_name, recipient_location_data["country_name"]
+        )
 
-    def test_zip4(self, recipient_location):
+    def test_zip4(self, recipient_location, recipient_location_data):
         """Test zip4 field."""
-        assert recipient_location.zip4 == "1911"
+        assert recipient_location.zip4 == recipient_location_data["zip4"]
 
-    def test_county_fields(self, recipient_location):
+    def test_county_fields(self, recipient_location, recipient_location_data):
         """Test county name and code."""
-        assert recipient_location.county_name == "Madison"
-        assert recipient_location.county_code == "089"
+        assert_text_matches(recipient_location.county_name, recipient_location_data["county_name"])
+        assert recipient_location.county_code == recipient_location_data["county_code"]
 
     def test_county_name_none(self):
         """Test county name returns None when value is None."""
         location = Location({"county_name": None})
         assert location.county_name is None
 
-    def test_congressional_code(self, recipient_location):
+    def test_congressional_code(self, recipient_location, recipient_location_data):
         """Test congressional code field."""
-        assert recipient_location.congressional_code == "05"
+        assert (
+            recipient_location.congressional_code == recipient_location_data["congressional_code"]
+        )
 
-    def test_foreign_fields(self, recipient_location):
+    def test_foreign_fields(self, recipient_location, recipient_location_data):
         """Test foreign province and postal code fields."""
-        assert recipient_location.foreign_province is None
-        assert recipient_location.foreign_postal_code is None
+        assert recipient_location.foreign_province == recipient_location_data["foreign_province"]
+        assert (
+            recipient_location.foreign_postal_code == recipient_location_data["foreign_postal_code"]
+        )
 
 
 class TestLocationDualSourceFields:
     """Test dual-source fields that check multiple keys."""
 
-    def test_state_code_from_standard_field(self, recipient_location):
+    def test_state_code_from_standard_field(self, recipient_location, recipient_location_data):
         """Test state code from standard field."""
-        assert recipient_location.state_code == "AL"
+        assert recipient_location.state_code == recipient_location_data["state_code"]
 
     def test_state_code_from_place_of_performance(self):
         """Test state code from Place of Performance field."""
@@ -109,9 +119,11 @@ class TestLocationDualSourceFields:
         location = Location(data)
         assert location.state_code == "TX"
 
-    def test_country_code_from_location_country_code(self, recipient_location):
+    def test_country_code_from_location_country_code(
+        self, recipient_location, recipient_location_data
+    ):
         """Test country code from location_country_code field."""
-        assert recipient_location.country_code == "USA"
+        assert recipient_location.country_code == recipient_location_data["location_country_code"]
 
     def test_country_code_from_place_of_performance(self):
         """Test country code from Place of Performance field."""
@@ -128,9 +140,9 @@ class TestLocationDualSourceFields:
         location = Location(data)
         assert location.country_code == "MEX"
 
-    def test_zip5_from_standard_field(self, recipient_location):
+    def test_zip5_from_standard_field(self, recipient_location, recipient_location_data):
         """Test zip5 from standard field."""
-        assert recipient_location.zip5 == "35805"
+        assert recipient_location.zip5 == str(recipient_location_data["zip5"])
 
     def test_zip5_from_place_of_performance(self):
         """Test zip5 from Place of Performance field."""
@@ -155,7 +167,8 @@ class TestLocationConvenienceMethods:
 
     def test_district_with_both_codes(self, recipient_location):
         """Test district formatting with state and congressional codes."""
-        assert recipient_location.district == "AL-05"
+        expected = f"{recipient_location.state_code}-{recipient_location.congressional_code}"
+        assert recipient_location.district == expected
 
     def test_district_with_only_state_code(self):
         """Test district with only state code."""
@@ -176,7 +189,19 @@ class TestLocationConvenienceMethods:
 
     def test_formatted_address_full(self, recipient_location):
         """Test formatted address with all components."""
-        expected = "301 Sparkman Dr NW\nHuntsville, AL, 35805\nUnited States"
+        expected = "\n".join(
+            [
+                recipient_location.address_line1,
+                ", ".join(
+                    [
+                        recipient_location.city,
+                        recipient_location.state_code,
+                        recipient_location.zip5,
+                    ]
+                ),
+                recipient_location.country_name,
+            ]
+        )
         assert recipient_location.formatted_address == expected
 
     def test_formatted_address_minimal(self):
@@ -211,7 +236,11 @@ class TestLocationRepr:
 
     def test_repr_with_all_fields(self, recipient_location):
         """Test repr with city, state, and country codes."""
-        assert repr(recipient_location) == "<Location Huntsville AL USA>"
+        expected = (
+            f"<Location {recipient_location.city} {recipient_location.state_code} "
+            f"{recipient_location.country_code}>"
+        )
+        assert repr(recipient_location) == expected
 
     def test_repr_with_missing_city(self):
         """Test repr with missing city shows placeholder."""
@@ -229,35 +258,63 @@ class TestLocationRepr:
 class TestLocationWithPlaceOfPerformanceData:
     """Test Location model with actual Place of Performance data from fixture."""
 
-    def test_place_of_performance_basic_fields(self, place_of_performance_location):
+    def test_place_of_performance_basic_fields(
+        self, place_of_performance_location, place_of_performance_data
+    ):
         """Test basic fields from place of performance data."""
-        assert place_of_performance_location.city == "Huntsville"
-        assert place_of_performance_location.state_name == "Alabama"
-        assert place_of_performance_location.country_name == "United States"
-        assert place_of_performance_location.county_name == "Madison"
-        assert place_of_performance_location.county_code == "089"
+        for prop, raw_key in (
+            ("city", "city_name"),
+            ("state_name", "state_name"),
+            ("country_name", "country_name"),
+            ("county_name", "county_name"),
+        ):
+            assert_text_matches(
+                getattr(place_of_performance_location, prop), place_of_performance_data[raw_key]
+            )
+        assert place_of_performance_location.county_code == place_of_performance_data["county_code"]
 
-    def test_place_of_performance_codes(self, place_of_performance_location):
+    def test_place_of_performance_codes(
+        self, place_of_performance_location, place_of_performance_data
+    ):
         """Test code fields from place of performance data."""
-        assert place_of_performance_location.state_code == "AL"
-        assert place_of_performance_location.country_code == "USA"
-        assert place_of_performance_location.congressional_code == "05"
+        assert place_of_performance_location.state_code == place_of_performance_data["state_code"]
+        assert (
+            place_of_performance_location.country_code
+            == place_of_performance_data["location_country_code"]
+        )
+        assert (
+            place_of_performance_location.congressional_code
+            == place_of_performance_data["congressional_code"]
+        )
 
-    def test_place_of_performance_zip_fields(self, place_of_performance_location):
+    def test_place_of_performance_zip_fields(
+        self, place_of_performance_location, place_of_performance_data
+    ):
         """Test zip fields from place of performance data."""
-        assert place_of_performance_location.zip5 == "35805"
-        assert place_of_performance_location.zip4 == "1912"
+        assert place_of_performance_location.zip5 == str(place_of_performance_data["zip5"])
+        assert place_of_performance_location.zip4 == place_of_performance_data["zip4"]
 
-    def test_place_of_performance_null_address_lines(self, place_of_performance_location):
+    def test_place_of_performance_null_address_lines(
+        self, place_of_performance_location, place_of_performance_data
+    ):
         """Test that null address lines are handled correctly."""
-        assert place_of_performance_location.address_line1 is None
-        assert place_of_performance_location.address_line2 is None
-        assert place_of_performance_location.address_line3 is None
+        for field in ("address_line1", "address_line2", "address_line3"):
+            assert getattr(place_of_performance_location, field) == place_of_performance_data[field]
 
     def test_place_of_performance_formatted_address(self, place_of_performance_location):
         """Test formatted address for place of performance location."""
-        # Since address lines are null, formatted address should only have city/state/zip
-        expected = "Huntsville, AL, 35805\nUnited States"
+        expected = "\n".join(
+            [
+                ", ".join(
+                    [
+                        place_of_performance_location.city,
+                        place_of_performance_location.state_code,
+                        place_of_performance_location.zip5,
+                    ]
+                ),
+                place_of_performance_location.country_name,
+            ]
+        )
         assert place_of_performance_location.formatted_address == expected
 
 

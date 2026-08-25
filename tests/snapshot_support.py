@@ -1,10 +1,8 @@
-"""Shared snapshot (golden-file) support for the refactor safety-net tests.
+"""Snapshot support for the deliberate public-API compatibility baseline.
 
-Two suites record a JSON snapshot and compare later runs against it:
-``tests/test_public_api_surface.py`` and
-``tests/test_golden_master_integration.py``. Both need the same lifecycle, so
-it lives here rather than being implemented twice and drifting apart on the one
-behavior that makes them trustworthy.
+Live API values are verified from their own responses and are never snapshotted.
+Only ``tests/test_public_api_surface.py`` records a baseline, because exported
+names and call signatures are stable library contracts rather than upstream data.
 
 The lifecycle is deliberately strict: a missing snapshot is a failure, not an
 invitation to self-heal. Auto-creating would make a suite vacuously green

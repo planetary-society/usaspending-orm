@@ -102,7 +102,7 @@ def load_json_fixture(relative_path):
         return json.load(f)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def load_fixture():
     """General fixture loader that returns a function to load any fixture file."""
 
@@ -113,90 +113,90 @@ def load_fixture():
 
 
 @pytest.fixture
-def award_fixture_data():
+def award_fixture_data(load_fixture):
     """Load the award fixture data."""
-    return load_json_fixture("awards/contract.json")
+    return load_fixture("awards/contract.json")
 
 
 @pytest.fixture
-def contract_fixture_data():
+def contract_fixture_data(load_fixture):
     """Load the award fixture data."""
-    return load_json_fixture("awards/contract.json")
+    return load_fixture("awards/contract.json")
 
 
 @pytest.fixture
-def idv_fixture_data():
+def idv_fixture_data(load_fixture):
     """Load the award fixture data."""
-    return load_json_fixture("awards/idv.json")
+    return load_fixture("awards/idv.json")
 
 
 @pytest.fixture
-def grant_fixture_data():
+def grant_fixture_data(load_fixture):
     """Load the award fixture data."""
-    return load_json_fixture("awards/grant.json")
+    return load_fixture("awards/grant.json")
 
 
 @pytest.fixture
-def loan_fixture_data():
+def loan_fixture_data(load_fixture):
     """Load the loan fixture data."""
-    return load_json_fixture("awards/loan.json")
+    return load_fixture("awards/loan.json")
 
 
 @pytest.fixture
-def top_recipients_response():
+def top_recipients_response(load_fixture):
     """Load the top recipients response fixture."""
-    return load_json_fixture("top_recipients_response.json")
+    return load_fixture("top_recipients_response.json")
 
 
 @pytest.fixture
-def download_search_fixture_data():
+def download_search_fixture_data(load_fixture):
     """Load the search download queue response fixture."""
-    return load_json_fixture("download_search.json")
+    return load_fixture("download_search.json")
 
 
 @pytest.fixture
-def search_results_contracts_data():
+def search_results_contracts_data(load_fixture):
     """Load the search results fixture data for contracts."""
-    return load_json_fixture("awards/search_results_contracts.json")["results"]
+    return load_fixture("awards/search_results_contracts.json")["results"]
 
 
 @pytest.fixture
-def search_results_grants_data():
+def search_results_grants_data(load_fixture):
     """Load the search results fixture data for grants."""
-    return load_json_fixture("awards/search_results_grants.json")["results"]
+    return load_fixture("awards/search_results_grants.json")["results"]
 
 
 @pytest.fixture
-def search_results_idvs_data():
+def search_results_idvs_data(load_fixture):
     """Load the search results fixture data for IDVs."""
-    return load_json_fixture("awards/search_results_idvs.json")["results"]
+    return load_fixture("awards/search_results_idvs.json")["results"]
 
 
 @pytest.fixture
-def agency_fixture_data():
+def agency_fixture_data(load_fixture):
     """Load the agency fixture data."""
-    return load_json_fixture("agency.json")
+    return load_fixture("agency.json")
 
 
 @pytest.fixture
-def agency_award_summary_fixture_data():
+def agency_award_summary_fixture_data(load_fixture):
     """Load the agency award summary fixture data."""
-    return load_json_fixture("agency_award_summary.json")
+    return load_fixture("agency_award_summary.json")
 
 
 @pytest.fixture
-def agency_subagencies_fixture_data():
+def agency_subagencies_fixture_data(load_fixture):
     """Load the agency sub-agencies fixture data."""
-    return load_json_fixture("agency_subagencies.json")
+    return load_fixture("agency_subagencies.json")
 
 
 @pytest.fixture
-def agency_autocomplete_fixture():
+def agency_autocomplete_fixture(load_fixture):
     """Load agency autocomplete fixture data."""
-    return load_json_fixture("agency_autocomplete.json")
+    return load_fixture("agency_autocomplete.json")
 
 
 @pytest.fixture
-def recipients_search_fixture_data():
+def recipients_search_fixture_data(load_fixture):
     """Load the recipients search fixture data."""
-    return load_json_fixture("recipients_search.json")
+    return load_fixture("recipients_search.json")
