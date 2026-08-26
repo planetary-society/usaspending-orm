@@ -44,6 +44,8 @@ from .filters import (
     TieredCodeFilter,
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
+    _validate_filter_tree,
+    _validate_total_code_count,
     parse_agency_spec,
     parse_api_date,
     parse_award_amount,
@@ -1564,11 +1566,18 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Reference:
             U.S. Census Bureau NAICS Codes
             https://www.census.gov/naics/
+
+        As reviewed on 2026-08-25, the API currently enforces a maximum
+        of 200 combined ``require`` and ``exclude`` codes.
         """
+        required_codes = list(require) if require else []
+        excluded_codes = list(exclude) if exclude else []
+        _validate_total_code_count("naics_codes", required_codes, excluded_codes)
+
         return self._with_filter(
             NAICSFilter(
-                require=list(require) if require else [],
-                exclude=list(exclude) if exclude else [],
+                require=required_codes,
+                exclude=excluded_codes,
             )
         )
 
@@ -1670,6 +1679,11 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Reference:
             GSA PSC Manual
             https://www.acquisition.gov/psc-manual
+
+        As reviewed on 2026-08-25, the API currently accepts at most 200
+        simple codes. Hierarchical filters accept at most 100 raw paths per
+        side, then 200 combined paths and 10 levels per path after the API
+        expands or removes PSC Tier-1 group names.
         """
         # Validate that user doesn't mix formats
         if codes and (require or exclude):
@@ -1678,11 +1692,24 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                 "Use either psc_codes('1510', '1520') or psc_codes(require=[...], exclude=[...])."
             )
 
+        simple_codes = list(codes)
+        required_paths = [list(path) for path in require] if require else []
+        excluded_paths = [list(path) for path in exclude] if exclude else []
+        if simple_codes:
+            _validate_total_code_count("psc_codes", simple_codes)
+        else:
+            _validate_filter_tree(
+                "psc_codes",
+                required_paths,
+                excluded_paths,
+                normalize_psc_tier_one=True,
+            )
+
         return self._with_filter(
             PSCFilter(
-                codes=list(codes) if codes else [],
-                require=require or [],
-                exclude=exclude or [],
+                codes=simple_codes,
+                require=required_paths,
+                exclude=excluded_paths,
             )
         )
 
@@ -1894,12 +1921,19 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             >>> tas_filtered = (
             ...     client.awards.search().contracts().tas_codes(require=[["091"], ["097"]])
             ... )
+
+        As reviewed on 2026-08-25, the API currently accepts at most 100
+        paths per side, 200 combined paths, and 10 levels per path.
         """
+        required_paths = [list(path) for path in require] if require else []
+        excluded_paths = [list(path) for path in exclude] if exclude else []
+        _validate_filter_tree("tas_codes", required_paths, excluded_paths)
+
         return self._with_filter(
             TieredCodeFilter(
                 key="tas_codes",
-                require=require or [],
-                exclude=exclude or [],
+                require=required_paths,
+                exclude=excluded_paths,
             )
         )
 

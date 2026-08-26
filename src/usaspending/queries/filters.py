@@ -21,6 +21,72 @@ MIN_FISCAL_YEAR = 2008
 # Fiscal years begin on October 1 of the prior calendar year
 MIN_API_DATE = datetime.date(MIN_FISCAL_YEAR - 1, 10, 1)
 
+# As reviewed against upstream on 2026-08-25, these are the API's hard-coded
+# complexity bounds for NAICS, PSC, and TAS search filters.
+_MAX_CODE_FILTER_ITEMS = 200
+_MAX_FILTER_TREE_ITEMS_PER_SIDE = 100
+_MAX_FILTER_TREE_DEPTH = 10
+_PSC_TIER_ONE_EXPANSION_COUNTS = {
+    "Research and Development": 1,
+    "Service": 25,
+    "Product": 10,
+}
+
+
+def _validate_total_code_count(filter_name: str, *groups: list[Any]) -> None:
+    """Reject code filters that exceed the API's combined item bound."""
+    total = sum(len(group) for group in groups)
+    if total > _MAX_CODE_FILTER_ITEMS:
+        raise ValidationError(
+            f"{filter_name} contains {total} total items; maximum is {_MAX_CODE_FILTER_ITEMS}"
+        )
+
+
+def _normalize_psc_paths_for_complexity(paths: list[list[str]]) -> list[list[str]]:
+    """Mirror upstream Tier-1 handling for PSC complexity measurements."""
+    normalized: list[list[str]] = []
+    for path in paths:
+        tier_one = path[0] if path and isinstance(path[0], str) else None
+        expansion_count = _PSC_TIER_ONE_EXPANSION_COUNTS.get(tier_one)
+        if expansion_count is None:
+            normalized.append(path)
+        elif len(path) == 1:
+            normalized.extend([list(path) for _ in range(expansion_count)])
+        else:
+            normalized.append(path[1:])
+    return normalized
+
+
+def _validate_filter_tree(
+    filter_name: str,
+    require: list[list[str]],
+    exclude: list[list[str]],
+    *,
+    normalize_psc_tier_one: bool = False,
+) -> None:
+    """Reject hierarchical filters that exceed the API's size or depth bounds."""
+    for side_name, paths in (("require", require), ("exclude", exclude)):
+        count = len(paths)
+        if count > _MAX_FILTER_TREE_ITEMS_PER_SIDE:
+            raise ValidationError(
+                f"{filter_name}.{side_name} contains {count} paths; "
+                f"maximum is {_MAX_FILTER_TREE_ITEMS_PER_SIDE}"
+            )
+
+    complexity_require = require
+    complexity_exclude = exclude
+    if normalize_psc_tier_one:
+        complexity_require = _normalize_psc_paths_for_complexity(require)
+        complexity_exclude = _normalize_psc_paths_for_complexity(exclude)
+
+    _validate_total_code_count(filter_name, complexity_require, complexity_exclude)
+
+    depth = max((len(path) for path in complexity_require + complexity_exclude), default=0)
+    if depth > _MAX_FILTER_TREE_DEPTH:
+        raise ValidationError(
+            f"{filter_name} path depth is {depth}; maximum is {_MAX_FILTER_TREE_DEPTH}"
+        )
+
 
 # ==============================================================================
 # Helper Enums and Dataclasses
