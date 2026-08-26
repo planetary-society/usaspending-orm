@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
@@ -16,14 +16,21 @@ if TYPE_CHECKING:
 
 logger = USASpendingLogger.get_logger(__name__)
 
+_AgencySearchResult = Union[Agency, SubTierAgency]
 
-class AgenciesSearch(QueryBuilder[Agency]):
+
+class AgenciesSearch(QueryBuilder[_AgencySearchResult]):
     """Search for funding or awarding agencies and offices by name using autocomplete.
 
     This query builder uses the /v2/autocomplete/funding_agency_office/ or
     /v2/autocomplete/awarding_agency_office/ endpoint depending on agency type.
-    Results can be filtered by type (toptier, subtier, or office).
+    Results can be filtered by type (toptier, subtier, or office). The upstream
+    ``limit`` applies independently to each of those three buckets, so
+    ``page_size(n)`` can receive up to ``3n`` raw rows. ``limit(n)`` remains the
+    client-wide bound on the flattened result.
     """
+
+    _MAX_PAGE_SIZE = 500
 
     def __init__(
         self,
@@ -39,7 +46,6 @@ class AgenciesSearch(QueryBuilder[Agency]):
         super().__init__(client)
         self._agency_type = validate_agency_type(agency_type)
         self._search_text = ""
-        self._limit = 100  # Default limit
         # Filter: None, "toptier", "subtier", "office"
         self._result_type: str | None = None
 
@@ -59,7 +65,10 @@ class AgenciesSearch(QueryBuilder[Agency]):
         if not self._search_text:
             raise ValidationError("search_text is required. Use name() or search_text() method.")
 
-        return {"search_text": self._search_text, "limit": self._limit}
+        return {
+            "search_text": self._search_text,
+            "limit": self._get_effective_page_size(),
+        }
 
     def _execute_query(self, page: int) -> dict[str, Any]:
         """Execute the autocomplete query.
@@ -112,7 +121,7 @@ class AgenciesSearch(QueryBuilder[Agency]):
             "messages": response.get("messages", []),
         }
 
-    def _transform_result(self, result: dict[str, Any]) -> Agency:
+    def _transform_result(self, result: dict[str, Any]) -> _AgencySearchResult | None:
         """Transform result into Agency object based on type."""
         if not result:
             return None
@@ -138,6 +147,21 @@ class AgenciesSearch(QueryBuilder[Agency]):
             return SubTierAgency(data, self._client)
 
         return None
+
+    def _cap(self, count: int) -> int:
+        """Apply row bounds for this single-request, multi-bucket endpoint."""
+        caps = [count]
+        if self._total_limit is not None:
+            caps.append(self._total_limit)
+        if self._max_pages == 0:
+            caps.append(0)
+        return min(caps)
+
+    def __getitem__(self, key: int | slice) -> _AgencySearchResult | list[_AgencySearchResult]:
+        """Index the flattened single response without inventing API pages."""
+        if not isinstance(key, (int, slice)):
+            raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
+        return self.all()[key]
 
     def _compute_raw_count(self) -> int:
         """Get total count of matching agencies/offices.
@@ -231,6 +255,5 @@ class AgenciesSearch(QueryBuilder[Agency]):
         clone = super()._clone()
         clone._agency_type = self._agency_type
         clone._search_text = self._search_text
-        clone._limit = self._limit
         clone._result_type = self._result_type
         return clone
