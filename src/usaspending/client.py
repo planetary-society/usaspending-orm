@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from .resources.download_resource import DownloadResource
     from .resources.funding_resource import FundingResource
     from .resources.recipients_resource import RecipientsResource
+    from .resources.references_resource import ReferencesResource
     from .resources.spending_resource import SpendingResource
     from .resources.subawards_resource import SubAwardsResource
     from .resources.tas_resource import TASResource
@@ -182,6 +183,15 @@ class USASpendingClient:
 
             self._resources["recipients"] = RecipientsResource(self)
         return self._resources["recipients"]
+
+    @property
+    def references(self) -> ReferencesResource:
+        """Access USAspending reference-data endpoints."""
+        if "references" not in self._resources:
+            from .resources.references_resource import ReferencesResource
+
+            self._resources["references"] = ReferencesResource(self)
+        return self._resources["references"]
 
     @property
     def transactions(self) -> TransactionsResource:

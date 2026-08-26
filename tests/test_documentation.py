@@ -106,7 +106,7 @@ _EXCLUSION_MARKERS: tuple[str, ...] = (
 # the runnable and excluded sets. The exact match makes silent coverage drift
 # (a runnable example quietly falling out of the run set, or vice versa) fail
 # loudly instead.
-_EXPECTED_RUNNABLE_BLOCKS = 25
+_EXPECTED_RUNNABLE_BLOCKS = 26
 
 
 # Built at import time so pytest can collect one case per runnable block.

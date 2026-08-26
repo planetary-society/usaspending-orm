@@ -28,6 +28,7 @@ from .award_types import (
 # Base classes
 from .base_model import BaseModel, ClientAwareModel
 from .contract import Contract
+from .def_code import DefCode
 from .district_spending import DistrictSpending
 from .federal_account import FederalAccount
 from .funding import Funding
@@ -68,6 +69,7 @@ __all__ = [
     "BaseModel",
     "ClientAwareModel",
     "Contract",
+    "DefCode",
     "DistrictSpending",
     "FederalAccount",
     "Funding",

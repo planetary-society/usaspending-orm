@@ -142,6 +142,19 @@ with USASpendingClient() as client:
     )
 ```
 
+DEF codes are reference data and can change as legislation is enacted. Discover
+the API's current codes instead of maintaining a local list:
+
+```python
+with USASpendingClient() as client:
+    def_codes = client.references.def_codes()
+    for def_code in def_codes:
+        print(def_code.code, def_code.title)
+```
+
+Pass the selected values to `.def_codes(...)`; constructing that search filter
+does not perform another reference lookup.
+
 Consult the [query reference](../reference/queries.md) for exact signatures and
 the [upstream mapping](../usaspending-api/endpoint-mapping.md) for API context.
 

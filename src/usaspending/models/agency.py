@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from functools import cached_property
@@ -19,6 +18,7 @@ from .award_types import (
     LOAN_CODES,
     OTHER_CODES,
 )
+from .def_code import DefCode
 from .lazy_record import LazyRecord
 
 if TYPE_CHECKING:
@@ -29,29 +29,6 @@ if TYPE_CHECKING:
     from .subtier_agency import SubTierAgency
 
 logger = USASpendingLogger.get_logger(__name__)
-
-
-# Create data class for def_codes
-@dataclass
-class DefCode:
-    """Disaster Emergency Fund Code (DEFC) data structure.
-
-    Represents a disaster emergency fund code associated with an agency,
-    containing legislative and reference information.
-
-    Attributes:
-        code: The DEFC code identifier.
-        public_law: Associated public law reference.
-        title: Optional descriptive title of the fund.
-        urls: Optional list of related URLs for additional information.
-        disaster: Optional disaster category or description.
-    """
-
-    code: str
-    public_law: str
-    title: str | None = None
-    urls: list[str] | None = None
-    disaster: str | None = None
 
 
 class Agency(LazyRecord):
@@ -322,21 +299,7 @@ class Agency(LazyRecord):
         result = []
         for code_data in def_codes_data:
             if isinstance(code_data, dict):
-                # Handle the case where urls might be a string or list
-                urls = code_data.get("urls")
-                if isinstance(urls, str):
-                    urls = [urls] if urls else None
-                elif urls and not isinstance(urls, list):
-                    urls = None
-
-                def_code = DefCode(
-                    code=code_data.get("code", ""),
-                    public_law=code_data.get("public_law", ""),
-                    title=code_data.get("title"),
-                    urls=urls,
-                    disaster=code_data.get("disaster"),
-                )
-                result.append(def_code)
+                result.append(DefCode._from_api_data(code_data))
 
         return result
 

@@ -444,6 +444,12 @@
       "usa_spending_url": "usa_spending_url (property)",
       "validate_init_data": "validate_init_data(data_or_id, model_name, id_field=None, allow_string_id=False)"
     },
+    "DefCode": {
+      "__init__": "__init__(self, code, public_law, title=None, urls=None, disaster=None)",
+      "disaster": "disaster (attribute)",
+      "title": "title (attribute)",
+      "urls": "urls (attribute)"
+    },
     "DetachedInstanceError": {},
     "DistrictSpending": {
       "__init__": "__init__(self, data, client=None)",
@@ -985,6 +991,11 @@
       "page_size": "page_size(self, num)",
       "to_filters_payload": "to_filters_payload(self)"
     },
+    "ReferencesResource": {
+      "__init__": "__init__(self, client)",
+      "client": "client (property)",
+      "def_codes": "def_codes(self)"
+    },
     "RetryHandler": {
       "RETRYABLE_EXCEPTIONS": "RETRYABLE_EXCEPTIONS (attribute)",
       "RETRYABLE_STATUS_CODES": "RETRYABLE_STATUS_CODES (attribute)",
@@ -1372,6 +1383,7 @@
       "funding": "funding (property)",
       "rate_limiter": "rate_limiter (property)",
       "recipients": "recipients (property)",
+      "references": "references (property)",
       "reset_session": "reset_session(self)",
       "retry_handler": "retry_handler (property)",
       "spending": "spending (property)",
@@ -1409,6 +1421,7 @@
       "ClientAwareModel",
       "Contract",
       "DIRECT_PAYMENT_CODES",
+      "DefCode",
       "DistrictSpending",
       "FederalAccount",
       "Funding",
@@ -1473,6 +1486,7 @@
       "DownloadResource",
       "FundingResource",
       "RecipientsResource",
+      "ReferencesResource",
       "SpendingResource",
       "TASResource",
       "TransactionsResource"

@@ -23,6 +23,7 @@ Client properties group related upstream operations:
 | `client.subawards`    | Search subawards                                   |
 | `client.recipients`   | Find and search recipient organizations            |
 | `client.agencies`     | Agency summaries, subagencies, and office searches |
+| `client.references`   | Current API reference data, including DEF codes    |
 | `client.spending`     | Aggregated spending by recipient or geography      |
 | `client.tas`          | Treasury Account Symbol hierarchy                  |
 | `client.downloads`    | Queue server-side bulk exports                     |

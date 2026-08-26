@@ -1,0 +1,29 @@
+{
+  "codes": [
+    {
+      "code": "A",
+      "public_law": "Emergency P.L. 115-56",
+      "title": "Supplemental Appropriations for Disaster Relief Requirements Act, 2017",
+      "urls": [
+        "https://www.congress.gov/example-a"
+      ],
+      "disaster": null
+    },
+    {
+      "code": "L",
+      "public_law": "Emergency P.L. 116-123",
+      "title": "Coronavirus Preparedness and Response Supplemental Appropriations Act, 2020",
+      "urls": [
+        "https://www.congress.gov/example-l"
+      ],
+      "disaster": "covid_19"
+    },
+    {
+      "code": "Q",
+      "public_law": "Excluded from tracking",
+      "title": null,
+      "urls": null,
+      "disaster": null
+    }
+  ]
+}

@@ -6,6 +6,7 @@ from .award_resource import AwardResource
 from .download_resource import DownloadResource
 from .funding_resource import FundingResource
 from .recipients_resource import RecipientsResource
+from .references_resource import ReferencesResource
 from .spending_resource import SpendingResource
 from .tas_resource import TASResource
 from .transactions_resource import TransactionsResource
@@ -17,6 +18,7 @@ __all__ = [
     "DownloadResource",
     "FundingResource",
     "RecipientsResource",
+    "ReferencesResource",
     "SpendingResource",
     "TASResource",
     "TransactionsResource",

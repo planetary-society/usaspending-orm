@@ -4,7 +4,7 @@ This page maps public library workflows to the canonical USAspending API
 contracts. It intentionally lists the supported subset rather than mirroring
 USAspending's complete endpoint catalog.
 
-Last reviewed against the upstream contracts: **July 30, 2026**.
+Last reviewed against the upstream contracts: **August 25, 2026**.
 
 ## Search and detail operations
 
@@ -34,6 +34,7 @@ Last reviewed against the upstream contracts: **July 30, 2026**.
 | `agency.subagencies`                                      | `GET /api/v2/agency/{toptier_code}/sub_agency/`                      | Returns sub-tier agencies and offices.                                                                                                                                |
 | `client.agencies.search().agency_type("awarding")`        | `POST /api/v2/autocomplete/awarding_agency_office/`                  | [Contract](https://github.com/fedspendingtransparency/usaspending-api/blob/master/usaspending_api/api_contracts/contracts/v2/autocomplete/awarding_agency_office.md). |
 | `client.agencies.search().agency_type("funding")`         | `POST /api/v2/autocomplete/funding_agency_office/`                   | [Contract](https://github.com/fedspendingtransparency/usaspending-api/blob/master/usaspending_api/api_contracts/contracts/v2/autocomplete/funding_agency_office.md).  |
+| `client.references.def_codes()`                           | `GET /api/v2/references/def_codes/`                                  | Returns the API's current Disaster Emergency Fund Code reference data as `DefCode` models.                                                                           |
 | `client.tas.agencies`                                     | `GET /api/v2/references/filter_tree/tas/`                            | [Contract](https://github.com/fedspendingtransparency/usaspending-api/blob/master/usaspending_api/api_contracts/contracts/v2/references/filter_tree/tas.md).          |
 | `agency.federal_accounts`                                 | `GET /api/v2/references/filter_tree/tas/{agency}/`                   | Returns federal accounts under an agency.                                                                                                                             |
 | `federal_account.tas_codes`                               | `GET /api/v2/references/filter_tree/tas/{agency}/{federal_account}/` | Returns Treasury Account Symbols under a federal account.                                                                                                             |

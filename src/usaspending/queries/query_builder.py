@@ -1980,35 +1980,6 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Args:
             *def_codes: One or more DEF codes.
 
-        Valid DEF Codes:
-            COVID-19 Relief (2020-2021):
-                "L": Coronavirus Preparedness and Response Supplemental
-                     (P.L. 116-123, March 2020)
-                "M": Families First Coronavirus Response Act
-                     (P.L. 116-127, March 2020)
-                "N": CARES Act - Coronavirus Aid, Relief, and Economic Security
-                     (P.L. 116-136, March 2020)
-                "O": Paycheck Protection Program and Health Care Enhancement
-                     (P.L. 116-139, April 2020)
-                "P": Coronavirus Response and Relief Supplemental
-                     (P.L. 116-260, December 2020)
-                "U": American Rescue Plan Act
-                     (P.L. 117-2, March 2021)
-
-            Infrastructure (2021+):
-                "Z": Infrastructure Investment and Jobs Act (IIJA)
-                     (P.L. 117-58, November 2021)
-
-            Inflation Reduction Act (2022+):
-                "1": IRA - Climate and Energy (P.L. 117-169)
-                "2": IRA - Healthcare (P.L. 117-169)
-
-            Legacy Disaster Codes:
-                "A": Disaster Relief - General
-                "B": Disaster Relief (Hurricane Sandy, etc.)
-                "C": Disaster Relief (legacy)
-                "D": Disaster Relief (legacy)
-
         Returns:
             T: A new instance with the DEF code filter applied.
 
@@ -2016,6 +1987,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             Multiple codes use OR logic (matches any specified code).
             DEF codes are assigned at the transaction level, so awards may
             have multiple funding sources with different DEF codes.
+            Codes are maintained by USAspending and can change. Use
+            ``client.references.def_codes()`` to discover the current values;
+            this filter itself remains network-free.
 
         Example:
             >>> # Find all COVID-19 relief spending

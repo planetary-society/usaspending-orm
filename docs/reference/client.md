@@ -24,6 +24,10 @@ builders and lazy models.
 
 ::: usaspending.resources.AgencyResource
 
+## Reference-data resource
+
+::: usaspending.resources.ReferencesResource
+
 ## Spending resource
 
 ::: usaspending.resources.SpendingResource
