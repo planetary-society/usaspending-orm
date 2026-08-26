@@ -318,7 +318,7 @@ def test_download_status_failed(mock_usa_client):
     status = mock_usa_client.downloads.status(file_name)
 
     assert status.api_status == DownloadState.FAILED
-    assert status.message == "Download failed: Internal server error"
+    assert status.message == "An error occurred."
     assert status.file_url is None
 
 
@@ -624,17 +624,70 @@ class TestDownloadErrorHandling:
     """Tests for download error handling and edge cases."""
 
     def test_job_failed_state_sets_error_message(self, mock_usa_client):
-        """Test that failed job state captures error message."""
+        """A generic server message passes through every failure surface."""
         mock_usa_client.mock_download_queue("contract", "FAIL_123")
         job = mock_usa_client.downloads.contract("FAIL_123")
 
-        # Mock status as failed
         mock_usa_client.mock_download_status(job.file_name, status="failed")
         job.refresh_status()
 
         assert job.state == DownloadState.FAILED
-        assert job.error_message is not None
+        assert job.status_details is not None
+        assert job.status_details.message == "An error occurred."
+        assert job.error_message == "An error occurred."
         assert job.is_complete
+
+        with pytest.raises(DownloadError) as exc_info:
+            job.wait_for_completion()
+
+        assert str(exc_info.value) == "Download job failed: An error occurred."
+
+    def test_arbitrary_server_message_passes_through_unchanged(self, mock_usa_client):
+        """Server text stays opaque from status through the raised exception."""
+        message = "Reference token 7f3: contact the data operations team."
+        mock_usa_client.mock_download_queue("contract", "ARBITRARY_MESSAGE")
+        job = mock_usa_client.downloads.contract("ARBITRARY_MESSAGE")
+        mock_usa_client.mock_download_status(
+            job.file_name,
+            custom_data={
+                "status": "failed",
+                "file_name": job.file_name,
+                "message": message,
+                "file_url": None,
+            },
+        )
+
+        job.refresh_status()
+
+        assert job.status_details is not None
+        assert job.status_details.message == message
+        assert job.error_message == message
+        with pytest.raises(DownloadError) as exc_info:
+            job.wait_for_completion()
+        assert str(exc_info.value) == f"Download job failed: {message}"
+
+    def test_failed_job_without_message_uses_fallback(self, mock_usa_client):
+        """An absent server message retains the stable client fallback."""
+        mock_usa_client.mock_download_queue("contract", "NO_MESSAGE")
+        job = mock_usa_client.downloads.contract("NO_MESSAGE")
+        mock_usa_client.mock_download_status(
+            job.file_name,
+            custom_data={
+                "status": "failed",
+                "file_name": job.file_name,
+                "message": None,
+                "file_url": None,
+            },
+        )
+
+        job.refresh_status()
+
+        assert job.status_details is not None
+        assert job.status_details.message is None
+        assert job.error_message == "API reported failure."
+        with pytest.raises(DownloadError) as exc_info:
+            job.wait_for_completion()
+        assert str(exc_info.value) == "Download job failed: API reported failure."
 
     def test_download_status_pending_state(self, mock_usa_client):
         """Test checking status of pending download."""

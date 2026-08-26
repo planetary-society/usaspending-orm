@@ -39,10 +39,14 @@ class DownloadStatus(BaseModel):
 
     @property
     def message(self) -> str | None:
-        """Error message if the status is failed.
+        """Opaque server message supplied when a download fails.
+
+        The text may be generic and can change without notice. Applications
+        should use :attr:`api_status` for control flow and must not parse this
+        message or rely on it for diagnosis.
 
         Returns:
-            Optional[str]: A human readable error message, or None.
+            Optional[str]: The server-provided text, or None.
         """
         return self.get_value("message")
 

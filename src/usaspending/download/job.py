@@ -45,9 +45,11 @@ class DownloadJob:
                                                    the latest detailed status information
                                                    retrieved from the API. This is a
                                                    read-only property.
-        error_message (Optional[str]): A message describing the error if the job
-                                       transitions to a FAILED state. This is a
-                                       read-only property.
+        error_message (Optional[str]): Opaque server-provided failure text, or a
+                                       client fallback when no text is supplied.
+                                       It may be generic or unstable and must
+                                       not drive application control flow. This
+                                       is a read-only property.
         result_files (Optional[List[str]]): A list of absolute paths to the files
                                             extracted from the downloaded zip archive
                                             upon successful completion. This is a
@@ -89,6 +91,12 @@ class DownloadJob:
 
     @property
     def error_message(self) -> str | None:
+        """Return opaque failure text for display or logging.
+
+        Server-supplied text may be generic and can change without notice. Use
+        :attr:`state` for control flow; do not parse this value or rely on it
+        for diagnosis.
+        """
         return self._error_message
 
     @property

@@ -699,7 +699,7 @@ class MockUSASpendingClient(USASpendingClient):
                 response_data["total_columns"] = None
                 response_data["total_rows"] = None
             elif status == "failed":
-                response_data["message"] = "Download failed: Internal server error"
+                response_data["message"] = "An error occurred."
                 response_data["file_url"] = None
                 response_data["seconds_elapsed"] = "10.456"
                 response_data["total_size"] = None

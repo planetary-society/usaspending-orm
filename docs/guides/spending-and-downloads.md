@@ -85,7 +85,11 @@ archive and extracts it, returning the extracted file paths. It writes to
 omitted. The same paths remain available afterward as `job.result_files`.
 
 To poll without blocking, call `job.refresh_status()` and read `job.state` and
-`job.is_complete`.
+`job.is_complete`. Treat `job.status_details.message` and `job.error_message`
+as opaque server text: a failure message may be generic, may change without
+notice, and is unsuitable for parsing or diagnosis. Application control flow
+should depend on `job.state`, not message contents. When the server supplies no
+message for a failed job, `job.error_message` is `"API reported failure."`.
 
 !!! warning "Downloads can be large"
 
