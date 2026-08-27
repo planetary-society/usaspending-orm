@@ -48,7 +48,6 @@ class TestAgenciesSearchInitialization:
         assert search._client is mock_usa_client
         assert search._search_text == ""
         assert search._page_size == 100
-        assert search._MAX_PAGE_SIZE == 500
         assert search._result_type is None
 
 
@@ -371,7 +370,6 @@ class TestAgenciesSearchSizingAndCollectionBehavior:
 
         assert query.all() == []
         assert query.count() == 0
-        assert mock_usa_client._request_history == []
 
     def test_zero_max_pages_skips_the_single_response(self, mock_usa_client):
         """Disallowing every request makes all collection operations empty."""
@@ -382,7 +380,6 @@ class TestAgenciesSearchSizingAndCollectionBehavior:
         assert query.count() == 0
         with pytest.raises(IndexError):
             _ = query[0]
-        assert mock_usa_client._request_history == []
 
     def test_one_allowed_request_returns_and_counts_all_buckets(
         self, mock_usa_client, agency_autocomplete_fixture

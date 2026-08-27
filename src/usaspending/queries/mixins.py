@@ -17,7 +17,7 @@ propagates state and skipping it fails silently rather than loudly.
 
 from __future__ import annotations
 
-from typing import ClassVar, TypeVar
+from typing import ClassVar, Generic, TypeVar
 
 from ..exceptions import ValidationError
 from ..utils.validations import validate_non_empty_string, validate_sort_direction
@@ -26,6 +26,37 @@ from ..utils.validations import validate_non_empty_string, validate_sort_directi
 # widening to the mixin (or to Any) partway through the chain.
 ASQ = TypeVar("ASQ", bound="AwardScopedQuery")
 SQ = TypeVar("SQ", bound="SortableQuery")
+
+# Item type for MaterializedIndexingQuery, so indexing keeps the concrete
+# builder's item type.
+MI = TypeVar("MI")
+
+
+class MaterializedIndexingQuery(Generic[MI]):
+    """List-like indexing for queries that answer from one materialized result.
+
+    For builders whose full result comes from a single request or an in-memory
+    collection, an index or slice addresses the materialized list directly;
+    translating indices into page arithmetic would invent pages the source
+    does not have.
+    """
+
+    def __getitem__(self, key: int | slice) -> MI | list[MI]:
+        """Support list-like indexing and slicing.
+
+        Args:
+            key (Union[int, slice]): Integer index or slice object.
+
+        Returns:
+            Union[MI, list[MI]]: Single item for integer index, list for slice.
+
+        Raises:
+            IndexError: If index is out of bounds.
+            TypeError: If key is not int or slice.
+        """
+        if not isinstance(key, (int, slice)):
+            raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
+        return self.all()[key]
 
 
 class AwardScopedQuery:

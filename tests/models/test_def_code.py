@@ -2,7 +2,7 @@
 
 import pytest
 
-from usaspending.models.agency import DefCode
+from usaspending.models import DefCode
 
 
 @pytest.mark.parametrize(

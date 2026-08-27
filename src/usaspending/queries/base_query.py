@@ -215,6 +215,17 @@ class BaseQuery(ABC, Generic[T]):
             return min(self._page_size, self._total_limit)
         return self._page_size
 
+    def _max_rows_per_page(self) -> int:
+        """Return the most rows one request may yield, for ``max_pages`` bounds.
+
+        Endpoints whose single request can return more than ``page_size`` rows,
+        such as multi-bucket autocomplete responses, override this.
+
+        Returns:
+            int: The row bound one request implies.
+        """
+        return self._page_size
+
     def _cap(self, count: int) -> int:
         """Return `count` held to whatever ``limit()`` and ``max_pages()`` allow.
 
@@ -231,7 +242,7 @@ class BaseQuery(ABC, Generic[T]):
         if self._total_limit is not None:
             caps.append(self._total_limit)
         if self._max_pages is not None:
-            caps.append(self._max_pages * self._page_size)
+            caps.append(self._max_pages * self._max_rows_per_page())
         return min(caps)
 
     def _yields_nothing(self) -> bool:

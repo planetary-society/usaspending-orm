@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import itertools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
@@ -51,7 +52,8 @@ def _normalize_psc_paths_for_complexity(paths: list[list[str]]) -> list[list[str
         if expansion_count is None:
             normalized.append(path)
         elif len(path) == 1:
-            normalized.extend([list(path) for _ in range(expansion_count)])
+            # Measurement-only output, so repeating the reference is safe.
+            normalized.extend([path] * expansion_count)
         else:
             normalized.append(path[1:])
     return normalized
@@ -81,7 +83,10 @@ def _validate_filter_tree(
 
     _validate_total_code_count(filter_name, complexity_require, complexity_exclude)
 
-    depth = max((len(path) for path in complexity_require + complexity_exclude), default=0)
+    depth = max(
+        (len(path) for path in itertools.chain(complexity_require, complexity_exclude)),
+        default=0,
+    )
     if depth > _MAX_FILTER_TREE_DEPTH:
         raise ValidationError(
             f"{filter_name} path depth is {depth}; maximum is {_MAX_FILTER_TREE_DEPTH}"

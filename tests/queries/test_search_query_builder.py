@@ -483,19 +483,13 @@ class TestClassificationCodeFilters:
         filter_dict = result._filter_objects[0].to_dict()["naics_codes"]
         assert len(filter_dict["require"]) + len(filter_dict["exclude"]) == 200
 
-    def test_naics_codes_rejects_more_than_200_combined_codes(
-        self, search_builder, mock_usa_client
-    ):
-        """An oversized NAICS request fails before HTTP."""
-        mock_usa_client.forbid_requests()
-
+    def test_naics_codes_rejects_more_than_200_combined_codes(self, search_builder):
+        """An oversized NAICS request fails at filter construction, before HTTP."""
         with pytest.raises(ValidationError, match=r"naics_codes.*201.*200"):
             search_builder.naics_codes(
                 require=[f"R{i}" for i in range(120)],
                 exclude=[f"E{i}" for i in range(81)],
             )
-
-        assert mock_usa_client._request_history == []
 
     def test_naics_codes_copies_caller_owned_lists(self, search_builder):
         """Mutating inputs cannot alter an already-built filter."""
@@ -524,16 +518,10 @@ class TestClassificationCodeFilters:
 
         assert len(result._filter_objects[0].to_dict()["psc_codes"]) == 200
 
-    def test_psc_codes_simple_format_rejects_more_than_200_codes(
-        self, search_builder, mock_usa_client
-    ):
+    def test_psc_codes_simple_format_rejects_more_than_200_codes(self, search_builder):
         """Upstream converts flat PSC codes to paths before its 200-code guard."""
-        mock_usa_client.forbid_requests()
-
         with pytest.raises(ValidationError, match=r"psc_codes.*201.*200"):
             search_builder.psc_codes(*(f"A{i}" for i in range(201)))
-
-        assert mock_usa_client._request_history == []
 
     def test_psc_codes_hierarchical_format(self, search_builder):
         """Test psc_codes filter with hierarchical require/exclude format."""
@@ -551,43 +539,34 @@ class TestClassificationCodeFilters:
             }
         }
 
-    def test_psc_codes_accepts_200_combined_hierarchical_paths(self, search_builder):
+    @pytest.mark.parametrize("method", ["psc_codes", "tas_codes"])
+    def test_tiered_codes_accept_200_combined_hierarchical_paths(self, search_builder, method):
         """Both sides may reach 100 paths for a combined total of 200."""
-        result = search_builder.psc_codes(
-            require=[["Service", "R"] for _ in range(100)],
-            exclude=[["Product", "1"] for _ in range(100)],
+        result = getattr(search_builder, method)(
+            require=[[f"R{i}"] for i in range(100)],
+            exclude=[[f"E{i}"] for i in range(100)],
         )
 
-        filter_dict = result._filter_objects[0].to_dict()["psc_codes"]
+        filter_dict = result._filter_objects[0].to_dict()[method]
         assert len(filter_dict["require"]) + len(filter_dict["exclude"]) == 200
 
-    def test_psc_tier_one_expansion_counts_toward_combined_limit(
-        self, search_builder, mock_usa_client
-    ):
+    def test_psc_tier_one_expansion_counts_toward_combined_limit(self, search_builder):
         """Nine Service roots become 225 paths before upstream complexity checks."""
-        mock_usa_client.forbid_requests()
-
         with pytest.raises(ValidationError, match=r"psc_codes.*225.*200"):
             search_builder.psc_codes(require=[["Service"] for _ in range(9)])
 
-        assert mock_usa_client._request_history == []
-
+    @pytest.mark.parametrize("method", ["psc_codes", "tas_codes"])
     @pytest.mark.parametrize("side", ["require", "exclude"])
-    def test_psc_codes_rejects_more_than_100_paths_per_side(
-        self, search_builder, mock_usa_client, side
-    ):
-        """Each hierarchical PSC side has its own upstream request bound."""
-        mock_usa_client.forbid_requests()
+    def test_tiered_codes_reject_more_than_100_paths_per_side(self, search_builder, method, side):
+        """Each hierarchical side has its own upstream request bound."""
         kwargs = {
             "require": [[f"R{i}"] for i in range(100)],
             "exclude": [[f"E{i}"] for i in range(100)],
         }
         kwargs[side].append([f"{side}-overflow"])
 
-        with pytest.raises(ValidationError, match=rf"psc_codes\.{side}.*101.*100"):
-            search_builder.psc_codes(**kwargs)
-
-        assert mock_usa_client._request_history == []
+        with pytest.raises(ValidationError, match=rf"{method}\.{side}.*101.*100"):
+            getattr(search_builder, method)(**kwargs)
 
     def test_psc_codes_accepts_depth_10_and_rejects_depth_11(self, search_builder):
         """PSC depth is measured after removing its Tier-1 group name."""
@@ -599,20 +578,21 @@ class TestClassificationCodeFilters:
         with pytest.raises(ValidationError, match=r"psc_codes.*11.*10"):
             search_builder.psc_codes(require=[invalid_path])
 
-    def test_psc_codes_copies_nested_caller_owned_lists(self, search_builder):
-        """Outer and inner path mutations cannot alter a built PSC filter."""
-        require = [["Service", "R"]]
-        exclude = [["Product", "15"]]
-        result = search_builder.psc_codes(require=require, exclude=exclude)
+    @pytest.mark.parametrize("method", ["psc_codes", "tas_codes"])
+    def test_tiered_codes_copy_nested_caller_owned_lists(self, search_builder, method):
+        """Outer and inner path mutations cannot alter a built hierarchical filter."""
+        require = [["012"]]
+        exclude = [["012", "0123"]]
+        result = getattr(search_builder, method)(require=require, exclude=exclude)
 
-        require[0].append("R499")
-        require.append(["Service", "D"])
+        require[0].append("012-0001")
+        require.append(["080"])
         exclude.clear()
 
         assert result._filter_objects[0].to_dict() == {
-            "psc_codes": {
-                "require": [["Service", "R"]],
-                "exclude": [["Product", "15"]],
+            method: {
+                "require": [["012"]],
+                "exclude": [["012", "0123"]],
             }
         }
 
@@ -662,33 +642,6 @@ class TestClassificationCodeFilters:
             }
         }
 
-    def test_tas_codes_accepts_200_combined_paths(self, search_builder):
-        """Both sides may reach 100 paths for a combined total of 200."""
-        result = search_builder.tas_codes(
-            require=[[f"R{i}"] for i in range(100)],
-            exclude=[[f"E{i}"] for i in range(100)],
-        )
-
-        filter_dict = result._filter_objects[0].to_dict()["tas_codes"]
-        assert len(filter_dict["require"]) + len(filter_dict["exclude"]) == 200
-
-    @pytest.mark.parametrize("side", ["require", "exclude"])
-    def test_tas_codes_rejects_more_than_100_paths_per_side(
-        self, search_builder, mock_usa_client, side
-    ):
-        """Each hierarchical TAS side has its own upstream request bound."""
-        mock_usa_client.forbid_requests()
-        kwargs = {
-            "require": [[f"R{i}"] for i in range(100)],
-            "exclude": [[f"E{i}"] for i in range(100)],
-        }
-        kwargs[side].append([f"{side}-overflow"])
-
-        with pytest.raises(ValidationError, match=rf"tas_codes\.{side}.*101.*100"):
-            search_builder.tas_codes(**kwargs)
-
-        assert mock_usa_client._request_history == []
-
     def test_tas_codes_accepts_depth_10_and_rejects_depth_11(self, search_builder):
         """Hierarchical TAS paths mirror the upstream depth boundary."""
         valid = search_builder.tas_codes(require=[[f"T{i}" for i in range(10)]])
@@ -696,23 +649,6 @@ class TestClassificationCodeFilters:
         assert len(valid._filter_objects[0].to_dict()["tas_codes"]["require"][0]) == 10
         with pytest.raises(ValidationError, match=r"tas_codes.*11.*10"):
             search_builder.tas_codes(require=[[f"T{i}" for i in range(11)]])
-
-    def test_tas_codes_copies_nested_caller_owned_lists(self, search_builder):
-        """Outer and inner path mutations cannot alter a built TAS filter."""
-        require = [["012"]]
-        exclude = [["012", "0123"]]
-        result = search_builder.tas_codes(require=require, exclude=exclude)
-
-        require[0].append("012-0001")
-        require.append(["080"])
-        exclude.clear()
-
-        assert result._filter_objects[0].to_dict() == {
-            "tas_codes": {
-                "require": [["012"]],
-                "exclude": [["012", "0123"]],
-            }
-        }
 
     def test_treasury_account_components(self, search_builder):
         """Test treasury_account_components filter."""

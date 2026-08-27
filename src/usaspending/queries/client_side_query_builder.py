@@ -12,6 +12,7 @@ from typing import (
 
 from .base_query import BaseQuery
 from .filters import BaseFilter, KeywordsFilter, SimpleListFilter, SimpleStringFilter
+from .mixins import MaterializedIndexingQuery
 
 T = TypeVar("T")
 Q = TypeVar("Q", bound="ClientSideQueryBuilder[T]")
@@ -117,7 +118,7 @@ class FilterAdapter:
         return predicate
 
 
-class ClientSideQueryBuilder(BaseQuery[T]):
+class ClientSideQueryBuilder(MaterializedIndexingQuery[T], BaseQuery[T]):
     """Query builder that filters and sorts data in memory.
 
     This class provides a consistent interface for one-to-many relationships
@@ -219,23 +220,6 @@ class ClientSideQueryBuilder(BaseQuery[T]):
         items = self._apply_ordering(items)
         items = self._apply_limits(items)
         yield from items
-
-    def __getitem__(self, key: int | slice) -> T | list[T]:
-        """Support list-like indexing and slicing.
-
-        Args:
-            key (Union[int, slice]): Integer index or slice object.
-
-        Returns:
-            Union[T, list[T]]: Single item for integer index, list for slice.
-
-        Raises:
-            IndexError: If index is out of bounds.
-            TypeError: If key is not int or slice.
-        """
-        if not isinstance(key, (int, slice)):
-            raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
-        return self.all()[key]
 
     def count(self) -> int:
         """Return how many results this query yields.

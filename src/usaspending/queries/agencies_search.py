@@ -9,6 +9,7 @@ from ..logging_config import USASpendingLogger
 from ..models.agency import Agency
 from ..models.subtier_agency import SubTierAgency
 from ..utils.validations import validate_agency_type
+from .mixins import MaterializedIndexingQuery
 from .query_builder import QueryBuilder
 
 if TYPE_CHECKING:
@@ -19,7 +20,9 @@ logger = USASpendingLogger.get_logger(__name__)
 _AgencySearchResult = Union[Agency, SubTierAgency]
 
 
-class AgenciesSearch(QueryBuilder[_AgencySearchResult]):
+class AgenciesSearch(
+    MaterializedIndexingQuery[_AgencySearchResult], QueryBuilder[_AgencySearchResult]
+):
     """Search for funding or awarding agencies and offices by name using autocomplete.
 
     This query builder uses the /v2/autocomplete/funding_agency_office/ or
@@ -148,20 +151,13 @@ class AgenciesSearch(QueryBuilder[_AgencySearchResult]):
 
         return None
 
-    def _cap(self, count: int) -> int:
-        """Apply row bounds for this single-request, multi-bucket endpoint."""
-        caps = [count]
-        if self._total_limit is not None:
-            caps.append(self._total_limit)
-        if self._max_pages == 0:
-            caps.append(0)
-        return min(caps)
+    def _max_rows_per_page(self) -> int:
+        """Return the row bound of one request: three buckets, each capped at page size.
 
-    def __getitem__(self, key: int | slice) -> _AgencySearchResult | list[_AgencySearchResult]:
-        """Index the flattened single response without inventing API pages."""
-        if not isinstance(key, (int, slice)):
-            raise TypeError(f"indices must be integers or slices, not {type(key).__name__}")
-        return self.all()[key]
+        Returns:
+            int: The most flattened rows the single autocomplete response may hold.
+        """
+        return 3 * self._page_size
 
     def _compute_raw_count(self) -> int:
         """Get total count of matching agencies/offices.
