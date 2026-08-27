@@ -4,6 +4,53 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.1] - 2026-08-27
+
+### Added
+
+- `client.references.def_codes()`: fetches the API's current Disaster Emergency
+  Fund Code reference data from `/api/v2/references/def_codes/` as `DefCode`
+  models. DEF codes change as legislation is enacted, so discover them at
+  runtime instead of maintaining a local list; the `def_codes(...)` search
+  filter itself remains network-free, and its docstring no longer carries a
+  hardcoded code list. `DefCode` moved to `usaspending/models/def_code.py` and
+  is exported from `usaspending.models`; the legacy
+  `usaspending.models.agency.DefCode` import path still resolves to the same
+  class.
+- Client-side validation of classification-filter complexity, mirroring the
+  API's hard-coded bounds as reviewed against upstream on 2026-08-25.
+  `naics_codes()` rejects more than 200 combined require/exclude codes.
+  `psc_codes()` rejects more than 200 simple codes, more than 100 hierarchical
+  paths per side, more than 200 combined paths after upstream's PSC Tier-1
+  group expansion, and paths deeper than 10 levels. `tas_codes()` enforces the
+  same per-side, combined, and depth bounds. Oversized filters now raise
+  `ValidationError` at construction instead of failing at the API.
+- MkDocs documentation site (getting-started guides, API reference, and the
+  upstream endpoint mapping) with Read the Docs configuration.
+
+### Changed
+
+- `client.agencies.search()` now follows the shared collection semantics.
+  `page_size(n)` maps to the endpoint's `limit` parameter (default 100, capped
+  at 500) instead of a fixed internal limit of 100; the upstream limit applies
+  independently to the toptier, subtier, and office buckets, so one request can
+  return up to `3n` rows. `limit(n)` bounds the flattened result consistently
+  across `all()`, `count()`, `len()`, indexing, and slicing, and indexing reads
+  the single flattened response rather than translating indices into pages the
+  endpoint does not have. Zero bounds (`limit(0)`, `max_pages(0)`) resolve
+  without a request.
+- `naics_codes()`, `psc_codes()`, and `tas_codes()` copy their inputs, so
+  mutating a caller-owned list after building a query no longer alters the
+  filter.
+
+### Documentation
+
+- Download failure text (`job.error_message`, `DownloadStatus.message`) is
+  documented as opaque server-provided text: it may be generic and can change
+  without notice, so application control flow should depend on `job.state`.
+  When a failed job carries no server message, `job.error_message` is
+  `"API reported failure."`.
+
 ## [0.9.0] - 2026-07-30
 
 Adds the global transaction search: `client.transactions.search()` covers the
