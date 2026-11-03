@@ -26,6 +26,7 @@ class MockUSASpendingClient(USASpendingClient):
         AWARDING_AGENCY_AUTOCOMPLETE = "/autocomplete/awarding_agency_office/"
         AWARD_SEARCH = "/search/spending_by_award/"
         AWARD_COUNT = "/search/spending_by_award_count/"
+        SUBAWARD_SUMMARY = "/search/spending_by_subaward_grouped/"
         AWARD_DETAIL = "/awards/{award_id}/"
         AWARD_FUNDING = "/awards/funding/"
         SUBWARD_COUNT = "/awards/count/subaward/{award_id}/"

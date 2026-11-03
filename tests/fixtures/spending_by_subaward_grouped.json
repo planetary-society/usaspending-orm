@@ -1,0 +1,26 @@
+{
+  "_source": {
+    "endpoint": "/api/v2/search/spending_by_subaward_grouped/",
+    "recorded": "2026-11-03",
+    "note": "Live NASA grants in FY2024, sorted by subaward_count descending, page 1, limit 1."
+  },
+  "limit": 1,
+  "results": [
+    {
+      "award_id": "80NSSC20M0027",
+      "subaward_count": 792,
+      "subaward_obligation": 41584357.42,
+      "award_obligation": 6756953.0,
+      "subaward_to_award_ratio": 6.15430615,
+      "award_generated_internal_id": "ASST_NON_80NSSC20M0027_080"
+    }
+  ],
+  "page_metadata": {
+    "page": 1,
+    "hasNext": false
+  },
+  "messages": [
+    "This endpoint is under active development and subject to change",
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. "
+  ]
+}

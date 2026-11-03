@@ -51,6 +51,7 @@ from .models import (
     Spending,
     StateSpending,
     SubAward,
+    SubAwardSummary,
     SubTierAgency,
     Transaction,
 )
@@ -66,6 +67,7 @@ from .queries import (
     RecipientsSearch,
     SpendingSearch,
     SubAwardsSearch,
+    SubAwardSummarySearch,
     TransactionsSearch,
 )
 
@@ -129,6 +131,8 @@ __all__ = [
     "SpendingSearch",
     "StateSpending",
     "SubAward",
+    "SubAwardSummary",
+    "SubAwardSummarySearch",
     "SubAwardsSearch",
     "SubTierAgency",
     "TimePeriodFilter",

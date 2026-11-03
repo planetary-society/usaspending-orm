@@ -20,6 +20,10 @@ for the behavioral model.
 
 ::: usaspending.SubAwardsSearch
 
+## Subaward summaries by prime award
+
+::: usaspending.SubAwardSummarySearch
+
 ## Recipient search
 
 ::: usaspending.RecipientsSearch

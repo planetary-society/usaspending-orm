@@ -24,6 +24,8 @@ simple dataclasses containing the API's reference fields.
 
 ::: usaspending.SubAward
 
+::: usaspending.SubAwardSummary
+
 ## Organizations
 
 ::: usaspending.Recipient

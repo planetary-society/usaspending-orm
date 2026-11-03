@@ -18,7 +18,7 @@ Client properties group related upstream operations:
 
 | Resource              | Typical purpose                                    |
 | --------------------- | -------------------------------------------------- |
-| `client.awards`       | Find and search prime awards                       |
+| `client.awards`       | Find/search prime awards and summarize subawards   |
 | `client.transactions` | Search transactions globally or for one award      |
 | `client.subawards`    | Search subawards                                   |
 | `client.recipients`   | Find and search recipient organizations            |

@@ -47,6 +47,7 @@ from .spending import Spending
 from .state import State
 from .state_spending import StateSpending
 from .subaward import SubAward
+from .subaward_summary import SubAwardSummary
 from .subtier_agency import SubTierAgency
 from .transaction import Transaction
 from .treasury_account_symbol import TreasuryAccountSymbol
@@ -88,6 +89,7 @@ __all__ = [
     "State",
     "StateSpending",
     "SubAward",
+    "SubAwardSummary",
     "SubTierAgency",
     "Transaction",
     "TreasuryAccountSymbol",

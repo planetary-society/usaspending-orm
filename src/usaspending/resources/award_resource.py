@@ -11,6 +11,7 @@ from .base_resource import BaseResource
 if TYPE_CHECKING:
     from ..models.award import Award
     from ..queries.awards_search import AwardsSearch
+    from ..queries.subaward_summary_search import SubAwardSummarySearch
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -104,3 +105,15 @@ class AwardResource(BaseResource):
         from ..queries.awards_search import AwardsSearch
 
         return AwardsSearch(self._client)
+
+    def subaward_summary(self) -> SubAwardSummarySearch:
+        """Search prime awards and retrieve their stored subaward totals.
+
+        Returns:
+            A fresh lazy query supporting prime-award filters and mixed award
+            categories. Totals cover the whole award, including subawards
+            outside the query's date range.
+        """
+        from ..queries.subaward_summary_search import SubAwardSummarySearch
+
+        return SubAwardSummarySearch(self._client)

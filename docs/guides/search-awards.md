@@ -155,6 +155,56 @@ with USASpendingClient() as client:
 Pass the selected values to `.def_codes(...)`; constructing that search filter
 does not perform another reference lookup.
 
+## Subaward summaries by prime award
+
+`client.awards.subaward_summary()` returns one `SubAwardSummary` per matching
+prime award, including awards with no subawards. Award-type filters are optional
+and may combine categories, such as `.contracts().grants()`.
+
+```python
+with USASpendingClient() as client:
+    summaries = (
+        client.awards.subaward_summary()
+        .grants()
+        .agency("National Aeronautics and Space Administration")
+        .fiscal_year(2024)
+        .order_by("subaward_count")
+        .limit(5)
+    )
+    for row in summaries:
+        print(row.award_id, row.subaward_count, row.subaward_obligation)
+```
+
+Recipient, location, agency, and date filters select **prime awards**. The
+reported count and obligations cover each whole award; date filters do not
+recalculate totals for subawards in that period. For individual subaward rows,
+use `client.subawards.search()` instead. `program_activities()` and
+`object_classes()` raise `ValidationError` here because the grouped endpoint
+silently ignores them; accepting them could broaden results or make counts
+disagree with rows.
+
+Each summary exposes `award_id` (display ID), `award_generated_internal_id`,
+`subaward_count`, `subaward_obligation`, `award_obligation`, and
+`subaward_to_award_ratio`. Identifiers may be null; the API reports numeric
+zeros for absent amounts. For loans, `award_obligation` is subsidy cost. The
+server supplies a zero ratio for a zero or missing denominator; other ratios
+can exceed one. The wrapper preserves the reported ratio as a `Decimal`
+without money rounding or recalculation.
+
+Use `.award_id(generated_id)` for one exact generated prime-award identifier;
+the inherited `.award_ids(...)` filter searches display IDs. Default ordering
+uses `award_generated_internal_id` descending to avoid ambiguous display IDs.
+Supported sort fields are `award_id`, `award_generated_internal_id`,
+`subaward_count`, `subaward_obligation`, and `subaward_to_award_ratio`.
+
+Counting uses one award-count request rather than walking summary pages, so
+it can report more than 50,000 matches. Counts still honor `.limit()` and
+`.max_pages()`; the configured default result limit applies only to iteration.
+Row retrieval is subject to the upstream **50,000-row window**, and deep-page
+errors propagate; narrow the filters before iterating a large search. Pages contain at most 100
+rows. A full final page may require one additional empty-page request because
+the API's continuation metadata is unreliable.
+
 Consult the [query reference](../reference/queries.md) for exact signatures and
 the [upstream mapping](../usaspending-api/endpoint-mapping.md) for API context.
 

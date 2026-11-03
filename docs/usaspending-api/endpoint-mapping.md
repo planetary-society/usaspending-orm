@@ -23,6 +23,13 @@ Last reviewed against the upstream contracts: **November 3, 2026**.
 | `award.accounts`                                  | `POST /api/v2/awards/accounts/`                      | [Contract](https://github.com/fedspendingtransparency/usaspending-api/blob/master/usaspending_api/api_contracts/contracts/v2/awards/accounts.md).                                                                                     |
 | `idv.child_awards`                                | `POST /api/v2/idvs/awards/`                          | [Contract](https://github.com/fedspendingtransparency/usaspending-api/blob/master/usaspending_api/api_contracts/contracts/v2/idvs/awards.md).                                                                                         |
 
+## Subaward summary search
+
+| Library workflow | USAspending endpoint | Contract and wrapper notes |
+| --- | --- | --- |
+| `client.awards.subaward_summary()` | `POST /api/v2/search/spending_by_subaward_grouped/` | [Contract](https://github.com/fedspendingtransparency/usaspending-api/blob/master/usaspending_api/api_contracts/contracts/v2/search/spending_by_subaward_grouped.md). Prime-award filters select whole-award subaward totals, including zero-subaward rows; mixed award categories are supported. |
+| `client.awards.subaward_summary().count()` | `POST /api/v2/search/spending_by_award_count/` | Sums all six category buckets using the same filters. Counting does not page through the summary endpoint. |
+
 ## Recipients, agencies, and accounts
 
 | Library workflow                                          | USAspending endpoint                                                 | Contract and wrapper notes                                                                                                                                            |

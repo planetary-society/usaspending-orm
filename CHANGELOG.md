@@ -8,6 +8,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `client.awards.subaward_summary()` returns lazy `SubAwardSummarySearch`
+  queries over prime awards and their whole-award subaward counts, obligations,
+  and ratios. Supports empty filters, mixed award categories, generated-ID
+  lookup, and descending generated-ID ordering by default. Counts use one
+  award-count request; pagination compensates for incorrect upstream
+  continuation metadata. Program activity and object class filters raise
+  `ValidationError` because this endpoint silently ignores them. Row retrieval
+  remains subject to the API's 50,000-row window.
 - `client.references.countries()` and `.states()` return fresh lazy
   `CountriesQuery` and `StatesQuery` objects with in-memory `code()`, `codes()`,
   and `description()` filtering. Their `Country` and `State` dataclasses

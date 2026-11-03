@@ -69,6 +69,7 @@ from .recipients_search import RecipientsSearch
 from .spending_search import SpendingSearch
 from .states_query import StatesQuery
 from .sub_agency_query import SubAgencyQuery
+from .subaward_summary_search import SubAwardSummarySearch
 from .subawards_search import SubAwardsSearch
 from .tas_agencies_query import TASAgenciesQuery
 from .tas_codes_query import TASCodesQuery
@@ -102,6 +103,7 @@ __all__ = [
     "SpendingSearch",
     "StatesQuery",
     "SubAgencyQuery",
+    "SubAwardSummarySearch",
     "SubAwardsSearch",
     "TASAgenciesQuery",
     "TASCodesQuery",
