@@ -282,6 +282,10 @@ class Transaction(BaseModel):
     def action_type(self) -> str | None:
         """Action type code.
 
+        Assistance uses GSDM 1.2 codes, which may contain multiple characters;
+        historical assistance codes are backfilled by the API. Contract action
+        codes are unchanged. Treat the code as an opaque string.
+
         Returns:
             Optional[str]: The action type code, or None.
         """

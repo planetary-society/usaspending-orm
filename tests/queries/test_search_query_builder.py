@@ -664,8 +664,9 @@ class TestClassificationCodeFilters:
         filter_dict = result._filter_objects[0].to_dict()
         assert filter_dict == {"treasury_account_components": [{"aid": "012", "main": "0100"}]}
 
-    def test_def_codes(self, search_builder):
+    def test_def_codes(self, search_builder, mock_usa_client):
         """Test def_codes filter (Disaster Emergency Fund codes)."""
+        mock_usa_client.forbid_requests()
         result = search_builder.def_codes("L", "M", "N")
 
         assert len(result._filter_objects) == 1

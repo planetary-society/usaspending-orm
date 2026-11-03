@@ -97,6 +97,47 @@ message for a failed job, `job.error_message` is `"API reported failure."`.
     not bound the export; pass `limit=` to `downloads.search()` for that, or
     narrow the filters before queueing a broad search.
 
+When supplied, `limit=` must be in the API's current range of **1–500,000**.
+Validation remains server-side, including support for numeric strings such as
+`"100"`. Filenames reflect the requested `spending_level` values, and the server
+deduplicates repeated levels. Use the paths returned by the job rather than
+constructing filenames yourself.
+
+## Export assistance basis fields
+
+The four amount/recipient basis columns are available in assistance transaction
+exports. They are export-only fields, not `Transaction` properties or search
+projections. Restrict the query to assistance, for example grants:
+
+```python
+with USASpendingClient() as client:
+    query = (
+        client.awards.search()
+        .grants()
+        .agency("National Aeronautics and Space Administration")
+        .fiscal_year(2024)
+    )
+    job = client.downloads.search(
+        query,
+        spending_level=["transactions"],
+        columns=[
+            "assistance_transaction_unique_key",
+            "assistance_award_unique_key",
+            "award_amount_basis_code",
+            "award_amount_basis_name",
+            "award_recipient_basis_code",
+            "award_recipient_basis_name",
+        ],
+        limit=100,
+        destination_dir="./exports",
+    )
+    files = job.wait_for_completion()
+```
+
+`columns` **replaces** the default columns, so include the identifiers needed to
+join the exported rows. An unknown or misspelled column may fail during file
+generation even when queueing succeeds; check the job's final state.
+
 ## Download one award
 
 ```python

@@ -52,5 +52,23 @@ Last reviewed against the upstream contracts: **November 3, 2026**.
 | `award.download()`                                                | `POST /api/v2/download/contract/`, `/assistance/`, or `/idv/` | Chooses the endpoint from the award type.                                                                                                                                     |
 | `DownloadJob.refresh_status()` and `client.downloads.status(...)` | `GET /api/v2/download/status/`                                | Polls an asynchronous export job.                                                                                                                                             |
 
+## Reviewed upstream behavior
+
+The August 3–November 3, 2026 review also covered these server changes. They
+require no wrapper code:
+
+- Award funding and account endpoints omit submissions until their reveal
+  dates. Related totals can change when submissions become public
+  ([upstream change](https://github.com/fedspendingtransparency/usaspending-api/commit/b4595d9)).
+- `award_ids` matching now escapes regex metacharacters such as `.` and `@`
+  more strictly, so identifiers containing them may match fewer awards
+  ([upstream change](https://github.com/fedspendingtransparency/usaspending-api/commit/54e2019)).
+- Search-download filenames vary with `spending_level`, and repeated levels
+  are deduplicated by the server. The wrapper already uses server-provided
+  filenames ([filename change](https://github.com/fedspendingtransparency/usaspending-api/commit/6e06506),
+  [deduplication change](https://github.com/fedspendingtransparency/usaspending-api/commit/281c978)).
+- LLM integration remains deferred: its endpoint requires an API key, and it
+  does not change any endpoint this library wraps.
+
 For the complete federal endpoint catalog, use the
 [USAspending endpoint index](https://api.usaspending.gov/docs/endpoints).

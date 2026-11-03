@@ -94,7 +94,7 @@ class TestIdentity:
         """`type` reads only the award-scoped key, unlike `type_description`.
 
         The global row's `Award Type` carries the description ("DELIVERY ORDER"),
-        not the one-letter code, so there is no code for `type` to report.
+        not the award-type code, so there is no code for `type` to report.
         """
         assert clipper.type is None
         assert clipper.type_description == "DELIVERY ORDER"
@@ -109,7 +109,7 @@ class TestDisplayNameAliases:
         assert isinstance(clipper.action_date, date)
 
     def test_action_type(self, clipper):
-        """`Action Type` carries the one-letter action code."""
+        """`Action Type` carries the action code as reported by the API."""
         assert clipper.action_type == "C"
 
     def test_type_description_reads_award_type(self, clipper):

@@ -2002,14 +2002,13 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             this filter itself remains network-free.
 
         Example:
-            >>> # Find all COVID-19 relief spending
-            >>> covid = client.awards.search().contracts().def_codes("L", "M", "N", "O", "P", "U")
+            >>> # Find COVID-19 relief contracts
+            >>> covid = (
+            ...     client.awards.search().contracts().def_codes("L", "M", "N", "O", "P", "U", "V")
+            ... )
 
             >>> # Find Infrastructure Investment and Jobs Act awards
-            >>> infrastructure = client.awards.search().contracts().def_codes("Z")
-
-            >>> # Find Inflation Reduction Act climate investments
-            >>> ira_climate = client.awards.search().grants().def_codes("1")
+            >>> infrastructure = client.awards.search().contracts().def_codes("1", "Z")
 
         Reference:
             USASpending.gov COVID-19 Spending Profile

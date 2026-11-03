@@ -109,8 +109,11 @@ class DownloadResource(BaseResource):
             file_format: Format of the file(s) in the zip (csv, tsv, pstxt).
             spending_level: Datasets to include; any of "awards", "transactions", and
                 "subawards". When None, the API includes all three.
-            columns: Specific columns to include. When None, the API returns its default set.
-            limit: Maximum number of records to include. When None, the API default applies.
+            columns: Columns to include, replacing the default set. When None,
+                the API returns its default set. Unknown names may fail during
+                file generation after the job has been queued successfully.
+            limit: Maximum number of records to include. The API validates the
+                current range of 1 through 500,000. When None, its default applies.
             destination_dir: Directory where the file will be saved (defaults to CWD).
 
         Returns:

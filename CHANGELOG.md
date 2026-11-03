@@ -45,6 +45,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   because the values are not mutually comparable. Previously the fallback
   could return an empty list after sorting had consumed the iterator.
 
+### Documentation
+
+- Assistance transaction action codes follow GSDM 1.2, can contain multiple
+  characters, and are backfilled for historical records. Contract codes are
+  unchanged; the existing getter preserves either response shape.
+- Added a grants-only transaction export example for amount/recipient basis
+  columns, including row identifiers. Clarified that custom columns replace
+  defaults and unknown names may fail after queueing, during file generation.
+  Download limits remain server-validated in the current 1–500,000 range,
+  preserving numeric-string compatibility.
+- Corrected DEFC examples: COVID relief includes `V`; IIJA uses `1` and `Z`.
+  Removed the incorrect IRA example. Filter construction remains network-free.
+- Reviewed upstream reveal-date filtering for funding/accounts, narrower
+  award-ID regex matching, spending-level-dependent filenames and server-side
+  level deduplication; no wrapper changes are needed. LLM integration remains
+  deferred because it requires an API key and affects no wrapped endpoint.
+
 ## [0.9.1] - 2026-08-27
 
 ### Added
