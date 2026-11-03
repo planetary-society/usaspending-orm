@@ -65,6 +65,9 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
     #: wherever the model exposes its code under another name.
     CODE_KEY: ClassVar[str] = "id"
 
+    #: Response key holding the level's rows.
+    RESULTS_KEY: ClassVar[str] = "results"
+
     def __init__(self, client: USASpendingClient) -> None:
         """Initialize the query.
 
@@ -151,11 +154,10 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         logger.debug("Fetching %s from %s", type(self).__name__, endpoint)
 
         response = self._client._make_request("GET", endpoint)
-        results = [
-            self._build_model(data)
-            for data in response.get("results", [])
-            if isinstance(data, dict)
-        ]
+        rows = response.get(self.RESULTS_KEY)
+        if not isinstance(rows, list):
+            rows = []
+        results = [self._build_model(data) for data in rows if isinstance(data, dict)]
 
         logger.debug("Fetched %d results", len(results))
 

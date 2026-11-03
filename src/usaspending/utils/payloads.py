@@ -28,7 +28,9 @@ def canonical_order(values: Any) -> list[Any]:
         not mutually comparable (program activities, for instance, are dicts,
         which never come from a set and so are already deterministic).
     """
+    # Materialize first: sorting a generator consumes it before any TypeError.
+    items = list(values)
     try:
-        return sorted(values)
+        return sorted(items)
     except TypeError:
-        return list(values)
+        return items

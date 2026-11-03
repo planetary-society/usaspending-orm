@@ -30,10 +30,13 @@ class AgenciesSearch(
     Results can be filtered by type (toptier, subtier, or office). The upstream
     ``limit`` applies independently to each of those three buckets, so
     ``page_size(n)`` can receive up to ``3n`` raw rows. ``limit(n)`` remains the
-    client-wide bound on the flattened result.
+    client-wide bound on the flattened result. Because the endpoint has no
+    further pages, a set ``limit(n)`` also sizes the one request (capped at
+    500), and ``config.default_result_limit`` does not apply.
     """
 
     _MAX_PAGE_SIZE = 500
+    _applies_default_result_limit = False
 
     def __init__(
         self,
@@ -151,13 +154,26 @@ class AgenciesSearch(
 
         return None
 
+    def _get_effective_page_size(self) -> int:
+        """Return the request's per-bucket ``limit``.
+
+        There is only one request, so a set ``limit()`` sizes it directly rather
+        than being clipped to ``page_size``, which no later page could make up.
+
+        Returns:
+            int: ``limit()`` capped at the endpoint maximum, else ``page_size``.
+        """
+        if self._total_limit is not None:
+            return min(self._total_limit, self._MAX_PAGE_SIZE)
+        return self._page_size
+
     def _max_rows_per_page(self) -> int:
-        """Return the row bound of one request: three buckets, each capped at page size.
+        """Return the row bound of one request: three buckets, each capped at its limit.
 
         Returns:
             int: The most flattened rows the single autocomplete response may hold.
         """
-        return 3 * self._page_size
+        return 3 * self._get_effective_page_size()
 
     def _compute_raw_count(self) -> int:
         """Get total count of matching agencies/offices.

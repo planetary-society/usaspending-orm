@@ -186,7 +186,11 @@ class USASpendingClient:
 
     @property
     def references(self) -> ReferencesResource:
-        """Access USAspending reference-data endpoints."""
+        """Access USAspending reference-data endpoints.
+
+        Returns:
+            ReferencesResource: The lazily created reference-data resource.
+        """
         if "references" not in self._resources:
             from .resources.references_resource import ReferencesResource
 

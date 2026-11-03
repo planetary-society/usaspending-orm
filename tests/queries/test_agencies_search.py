@@ -429,6 +429,35 @@ class TestAgenciesSearchSizingAndCollectionBehavior:
         with pytest.raises(IndexError):
             _ = query[4]
 
+    def test_limit_above_page_size_sizes_the_single_request(
+        self, mock_usa_client, agency_autocomplete_fixture
+    ):
+        """No later page can make up a clipped request, so limit() sizes it."""
+        endpoint = MockUSASpendingClient.Endpoints.AGENCY_AUTOCOMPLETE
+        mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
+
+        mock_usa_client.agencies.search().name("NASA").page_size(2).limit(250).all()
+
+        mock_usa_client.assert_called_with(
+            endpoint, "POST", json={"search_text": "NASA", "limit": 250}
+        )
+
+    def test_default_result_limit_does_not_bound_the_single_response(
+        self, mock_usa_client, agency_autocomplete_fixture, client_config
+    ):
+        """all(), len() and indexing agree under a configured default limit."""
+        endpoint = MockUSASpendingClient.Endpoints.AGENCY_AUTOCOMPLETE
+        mock_usa_client.set_response(
+            endpoint,
+            self._six_result_response(agency_autocomplete_fixture),
+        )
+        client_config(default_result_limit=2)
+        query = mock_usa_client.agencies.search().name("NASA")
+        items = query.all()
+
+        assert len(items) == len(query) == 6
+        assert query[5].raw == items[5].raw
+
 
 # Non-parametrized tests for class-specific behavior
 class TestFundingAgenciesSearchSpecific:

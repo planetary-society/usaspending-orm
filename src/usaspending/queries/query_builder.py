@@ -44,6 +44,7 @@ from .filters import (
     TieredCodeFilter,
     TimePeriodFilter,
     TreasuryAccountComponentsFilter,
+    _copy_filter_paths,
     _validate_filter_tree,
     _validate_total_code_count,
     parse_agency_spec,
@@ -82,6 +83,11 @@ class QueryBuilder(BaseQuery[T], ABC):
     #: query parameters; POST sends a JSON body.
     _http_method: ClassVar[Literal["GET", "POST"]] = "POST"
 
+    #: Whether iteration falls back to ``config.default_result_limit``. That
+    #: default guards against unbounded paging; a single-request endpoint is
+    #: already bounded and opts out, so its ``all()``, ``len()`` and indexing agree.
+    _applies_default_result_limit: ClassVar[bool] = True
+
     def __init__(self, client: USASpendingClient) -> None:
         super().__init__()
         self._client = client
@@ -105,7 +111,11 @@ class QueryBuilder(BaseQuery[T], ABC):
 
         # Apply default limit if no explicit limit was set
         effective_limit = self._total_limit
-        if effective_limit is None and config.default_result_limit is not None:
+        if (
+            effective_limit is None
+            and self._applies_default_result_limit
+            and config.default_result_limit is not None
+        ):
             effective_limit = config.default_result_limit
             logger.info(
                 f"No limit set. Using default limit of {effective_limit}. "
@@ -1693,8 +1703,8 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             )
 
         simple_codes = list(codes)
-        required_paths = [list(path) for path in require] if require else []
-        excluded_paths = [list(path) for path in exclude] if exclude else []
+        required_paths = _copy_filter_paths("psc_codes", require)
+        excluded_paths = _copy_filter_paths("psc_codes", exclude)
         if simple_codes:
             _validate_total_code_count("psc_codes", simple_codes)
         else:
@@ -1925,8 +1935,8 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         As reviewed on 2026-08-25, the API currently accepts at most 100
         paths per side, 200 combined paths, and 10 levels per path.
         """
-        required_paths = [list(path) for path in require] if require else []
-        excluded_paths = [list(path) for path in exclude] if exclude else []
+        required_paths = _copy_filter_paths("tas_codes", require)
+        excluded_paths = _copy_filter_paths("tas_codes", exclude)
         _validate_filter_tree("tas_codes", required_paths, excluded_paths)
 
         return self._with_filter(

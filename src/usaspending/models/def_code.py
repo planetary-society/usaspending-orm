@@ -8,7 +8,15 @@ from typing import Any
 
 @dataclass
 class DefCode:
-    """Legislative and reference information for one DEF code."""
+    """Legislative and reference information for one DEF code.
+
+    Attributes:
+        code: The DEF code identifier.
+        public_law: Associated public law reference.
+        title: Optional descriptive title of the fund.
+        urls: Optional list of related URLs for additional information.
+        disaster: Optional disaster category or description.
+    """
 
     code: str
     public_law: str
@@ -18,7 +26,14 @@ class DefCode:
 
     @classmethod
     def _from_api_data(cls, data: dict[str, Any]) -> DefCode:
-        """Build a DEF code while normalizing historical URL response shapes."""
+        """Build a DEF code while normalizing historical URL response shapes.
+
+        Args:
+            data: One DEF code row from an API response.
+
+        Returns:
+            DefCode: The parsed code, with ``urls`` coerced to a list or None.
+        """
         raw_urls = data.get("urls")
         if isinstance(raw_urls, str):
             urls = [raw_urls] if raw_urls else None

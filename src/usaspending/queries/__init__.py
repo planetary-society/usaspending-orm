@@ -57,6 +57,7 @@ from .awarding_agencies_search import AwardingAgenciesSearch
 from .awards_search import AwardsSearch
 from .base_query import BaseQuery
 from .client_side_query_builder import ClientSideQueryBuilder
+from .def_codes_query import DefCodesQuery
 from .federal_accounts_query import FederalAccountsQuery
 from .funding_agencies_search import FundingAgenciesSearch
 from .funding_search import FundingSearch
@@ -85,6 +86,7 @@ __all__ = [
     "BaseQuery",
     "ClientSideQueryBuilder",
     "ConfigurationError",
+    "DefCodesQuery",
     "FederalAccountsQuery",
     "FundingAgenciesSearch",
     "FundingSearch",

@@ -6,6 +6,7 @@ from tests.mocks.mock_client import MockUSASpendingClient
 from usaspending.exceptions import APIError
 from usaspending.models import DefCode
 from usaspending.models.agency import DefCode as LegacyDefCode
+from usaspending.queries import DefCodesQuery
 from usaspending.resources import ReferencesResource
 
 
@@ -48,7 +49,7 @@ def test_def_codes_returns_empty_for_a_missing_or_non_list_collection(mock_usa_c
     endpoint = MockUSASpendingClient.Endpoints.DEF_CODES
     mock_usa_client.set_response(endpoint, response)
 
-    assert mock_usa_client.references.def_codes() == []
+    assert mock_usa_client.references.def_codes().all() == []
 
 
 def test_def_codes_skips_non_dictionary_rows(mock_usa_client):
@@ -71,8 +72,28 @@ def test_def_codes_skips_non_dictionary_rows(mock_usa_client):
     assert codes[0].urls == []
 
 
+def test_def_codes_is_lazy_until_evaluated(mock_usa_client):
+    """Building the query, or filtering it, makes no request."""
+    mock_usa_client.forbid_requests()
+
+    assert isinstance(mock_usa_client.references.def_codes().code("L"), DefCodesQuery)
+
+
+def test_def_codes_filters_one_fetched_list(mock_usa_client, load_fixture):
+    """Filters and repeated reads reuse a query's single request."""
+    endpoint = MockUSASpendingClient.Endpoints.DEF_CODES
+    mock_usa_client.set_fixture_response(endpoint, "def_codes")
+    rows = load_fixture("def_codes.json")["codes"]
+    target = rows[1]
+    query = mock_usa_client.references.def_codes()
+
+    assert len(query) == len(rows)
+    assert [code.code for code in query.code(target["code"])] == [target["code"]]
+    assert mock_usa_client.get_request_count(endpoint) == 1
+
+
 def test_def_codes_uses_client_caching_policy_not_resource_memoization(mock_usa_client):
-    """Each method call delegates to the client's configured request layer."""
+    """Each method call returns a new query with its own request."""
     endpoint = MockUSASpendingClient.Endpoints.DEF_CODES
     mock_usa_client.set_fixture_response(endpoint, "def_codes")
 
@@ -80,6 +101,7 @@ def test_def_codes_uses_client_caching_policy_not_resource_memoization(mock_usa_
     second = mock_usa_client.references.def_codes()
 
     assert first is not second
+    assert first.all() is not second.all()
     assert mock_usa_client.get_request_count(endpoint) == 2
 
 
@@ -89,4 +111,4 @@ def test_def_codes_propagates_api_errors(mock_usa_client):
     mock_usa_client.set_error_response(endpoint, 400, detail="Reference lookup failed")
 
     with pytest.raises(APIError, match="Reference lookup failed"):
-        mock_usa_client.references.def_codes()
+        mock_usa_client.references.def_codes().all()

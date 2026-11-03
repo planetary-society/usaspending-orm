@@ -34,8 +34,39 @@ _PSC_TIER_ONE_EXPANSION_COUNTS = {
 }
 
 
+def _copy_filter_paths(filter_name: str, paths: list[list[str]] | None) -> list[list[str]]:
+    """Copy hierarchical filter paths so later caller mutation cannot alter the filter.
+
+    Args:
+        filter_name: Filter name used in error messages.
+        paths: Code paths, each a list of codes from the top of the hierarchy.
+
+    Returns:
+        list[list[str]]: A copy of every path, or an empty list for None.
+
+    Raises:
+        ValidationError: If a path is a bare string, which ``list()`` would
+            otherwise split into one path level per character.
+    """
+    if not paths:
+        return []
+    if any(isinstance(path, str) for path in paths):
+        raise ValidationError(
+            f"{filter_name} paths must be lists of codes, e.g. [['091']], not strings"
+        )
+    return [list(path) for path in paths]
+
+
 def _validate_total_code_count(filter_name: str, *groups: list[Any]) -> None:
-    """Reject code filters that exceed the API's combined item bound."""
+    """Reject code filters that exceed the API's combined item bound.
+
+    Args:
+        filter_name: Filter name used in error messages.
+        *groups: Code collections whose combined length is bounded.
+
+    Raises:
+        ValidationError: If the groups hold more than 200 items in total.
+    """
     total = sum(len(group) for group in groups)
     if total > _MAX_CODE_FILTER_ITEMS:
         raise ValidationError(
@@ -44,7 +75,15 @@ def _validate_total_code_count(filter_name: str, *groups: list[Any]) -> None:
 
 
 def _normalize_psc_paths_for_complexity(paths: list[list[str]]) -> list[list[str]]:
-    """Mirror upstream Tier-1 handling for PSC complexity measurements."""
+    """Mirror upstream Tier-1 handling for PSC complexity measurements.
+
+    Args:
+        paths: PSC code paths as the caller supplied them.
+
+    Returns:
+        list[list[str]]: Paths as upstream measures them, with a bare Tier-1
+        group expanded to its child count and a leading Tier-1 name removed.
+    """
     normalized: list[list[str]] = []
     for path in paths:
         tier_one = path[0] if path and isinstance(path[0], str) else None
@@ -66,7 +105,19 @@ def _validate_filter_tree(
     *,
     normalize_psc_tier_one: bool = False,
 ) -> None:
-    """Reject hierarchical filters that exceed the API's size or depth bounds."""
+    """Reject hierarchical filters that exceed the API's size or depth bounds.
+
+    Args:
+        filter_name: Filter name used in error messages.
+        require: Code paths to require.
+        exclude: Code paths to exclude.
+        normalize_psc_tier_one: Measure combined size and depth after PSC
+            Tier-1 group expansion, as upstream does.
+
+    Raises:
+        ValidationError: If a side exceeds 100 paths, the sides combined
+            exceed 200, or a path is deeper than 10 levels.
+    """
     for side_name, paths in (("require", require), ("exclude", exclude)):
         count = len(paths)
         if count > _MAX_FILTER_TREE_ITEMS_PER_SIDE:

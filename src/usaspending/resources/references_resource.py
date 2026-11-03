@@ -2,20 +2,27 @@
 
 from __future__ import annotations
 
-from ..models.def_code import DefCode
+from ..queries.def_codes_query import DefCodesQuery
 from .base_resource import BaseResource
 
 
 class ReferencesResource(BaseResource):
     """Resource for USAspending reference-data endpoints."""
 
-    _DEF_CODES_ENDPOINT = "/references/def_codes/"
+    def def_codes(self) -> DefCodesQuery:
+        """Return a query over the API's current Disaster Emergency Fund Codes.
 
-    def def_codes(self) -> list[DefCode]:
-        """Return the API's current Disaster Emergency Fund Code reference data."""
-        response = self._client._make_request("GET", self._DEF_CODES_ENDPOINT)
-        code_rows = response.get("codes", [])
-        if not isinstance(code_rows, list):
-            return []
+        The query is lazy: it makes one GET request to ``/references/def_codes/``
+        when first evaluated and reuses those rows for filtering and repeated
+        reads. Each call returns a new, unfetched query.
 
-        return [DefCode._from_api_data(row) for row in code_rows if isinstance(row, dict)]
+        Returns:
+            DefCodesQuery: Query supporting ``code()``, ``codes()``,
+            ``description()``, iteration, ``len()``, indexing and ``all()``.
+
+        Example:
+            >>> for def_code in client.references.def_codes():
+            ...     print(def_code.code, def_code.title)
+            >>> covid = client.references.def_codes().description("covid").all()
+        """
+        return DefCodesQuery(self._client)

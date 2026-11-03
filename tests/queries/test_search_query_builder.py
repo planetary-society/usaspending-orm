@@ -650,6 +650,12 @@ class TestClassificationCodeFilters:
         with pytest.raises(ValidationError, match=r"tas_codes.*11.*10"):
             search_builder.tas_codes(require=[[f"T{i}" for i in range(11)]])
 
+    @pytest.mark.parametrize("method", ["tas_codes", "psc_codes"])
+    def test_hierarchical_paths_reject_bare_strings(self, search_builder, method):
+        """A string path is rejected rather than split into single characters."""
+        with pytest.raises(ValidationError, match=rf"{method} paths must be lists"):
+            getattr(search_builder, method)(require=["091"])
+
     def test_treasury_account_components(self, search_builder):
         """Test treasury_account_components filter."""
         result = search_builder.treasury_account_components({"aid": "012", "main": "0100"})
