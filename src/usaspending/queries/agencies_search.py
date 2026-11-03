@@ -8,7 +8,7 @@ from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
 from ..models.agency import Agency
 from ..models.subtier_agency import SubTierAgency
-from ..utils.validations import validate_agency_type
+from ..utils.validations import validate_agency_type, validate_non_empty_string
 from .mixins import MaterializedIndexingQuery
 from .query_builder import QueryBuilder
 
@@ -193,16 +193,20 @@ class AgenciesSearch(
         return count
 
     def search_text(self, search_text: str) -> AgenciesSearch:
-        """Set the search text for the query.
+        """Set the search text, stripping surrounding whitespace.
 
         Args:
             search_text: Text to search for in agency names
 
         Returns:
             New AgenciesSearch instance with search text set
+
+        Raises:
+            ValidationError: If the value is not a nonempty string.
         """
+        validated_text = validate_non_empty_string(search_text, "search_text")
         clone = self._clone()
-        clone._search_text = search_text
+        clone._search_text = validated_text
         return clone
 
     def name(self, name: str) -> AgenciesSearch:

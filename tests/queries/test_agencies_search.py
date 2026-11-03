@@ -59,6 +59,26 @@ SEARCH_CLASS_PARAMS = [
 ]
 
 
+@pytest.mark.parametrize("method", ["search_text", "name"])
+@pytest.mark.parametrize("value", ["", " \t\n", None, 123, False])
+def test_search_text_rejects_invalid_values_without_requests(mock_usa_client, method, value):
+    query = mock_usa_client.agencies.search()
+    mock_usa_client.forbid_requests()
+    with pytest.raises(ValidationError, match="search_text cannot be empty"):
+        getattr(query, method)(value)
+
+
+@pytest.mark.parametrize("method", ["search_text", "name"])
+def test_search_text_strips_whitespace_without_mutating_query(mock_usa_client, method):
+    original = mock_usa_client.agencies.search().name("NSF")
+    mock_usa_client.forbid_requests()
+
+    query = getattr(original, method)("  NASA\t")
+
+    assert query._build_payload(1)["search_text"] == "NASA"
+    assert original._build_payload(1)["search_text"] == "NSF"
+
+
 def init_search(search_class: type[T], mock_usa_client: MockUSASpendingClient) -> T:
     """Instantiate deprecated search classes with warning."""
     with pytest.warns(DeprecationWarning, match=f"{search_class.__name__} is deprecated"):
@@ -236,7 +256,7 @@ class TestAgenciesSearchExecution:
         """Test that payload is constructed correctly."""
         mock_usa_client.set_response(endpoint, agency_autocomplete_fixture)
 
-        search = init_search(search_class, mock_usa_client).search_text("NASA")
+        search = init_search(search_class, mock_usa_client).search_text("  NASA\t")
         list(search)  # Execute query
 
         # Check the request was made with correct payload

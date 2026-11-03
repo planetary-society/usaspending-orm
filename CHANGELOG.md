@@ -16,6 +16,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Agency autocomplete `search_text()` and `name()` strip surrounding
+  whitespace and reject blank or nonstring inputs with `ValidationError`
+  during query construction, before making a request. Previously text
+  validation occurred when the query was evaluated.
 - `client.agencies.search()`: a set `limit(n)` now sizes the single
   autocomplete request (capped at 500) instead of being clipped to
   `page_size`, so `limit(250)` can return 250 matches.
