@@ -4,6 +4,33 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Breaking changes
+
+- `client.references.def_codes()` now returns a lazy `DefCodesQuery` instead
+  of a list, matching `client.tas.agencies`. It requests on first evaluation
+  and supports in-memory `code()`, `codes()`, and `description()` filters.
+  Iteration, `len()`, and indexing remain supported. Call `.all()` when a
+  real list is needed, for example for list equality or `append()`.
+
+### Changed
+
+- `client.agencies.search()`: a set `limit(n)` now sizes the single
+  autocomplete request (capped at 500) instead of being clipped to
+  `page_size`, so `limit(250)` can return 250 matches.
+  `config.default_result_limit` no longer applies to this single-request
+  endpoint, keeping `all()`, `len()`, and indexing consistent.
+- A bare string passed as a `psc_codes()` or `tas_codes()` path, such as
+  `require=["091"]`, now raises `ValidationError` instead of being split
+  into one path level per character.
+
+### Fixed
+
+- `canonical_order()` preserves all iterator values when sorting fails
+  because the values are not mutually comparable. Previously the fallback
+  could return an empty list after sorting had consumed the iterator.
+
 ## [0.9.1] - 2026-08-27
 
 ### Added
@@ -22,7 +49,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   `naics_codes()` rejects more than 200 combined require/exclude codes.
   `psc_codes()` rejects more than 200 simple codes, more than 100 hierarchical
   paths per side, more than 200 combined paths after upstream's PSC Tier-1
-  group expansion, and paths deeper than 10 levels. `tas_codes()` enforces the
+  group expansion, and paths deeper than 10 levels after a leading PSC Tier-1
+  group name is removed. `tas_codes()` enforces the
   same per-side, combined, and depth bounds. Oversized filters now raise
   `ValidationError` at construction instead of failing at the API.
 - MkDocs documentation site (getting-started guides, API reference, and the
