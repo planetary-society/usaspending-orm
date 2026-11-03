@@ -38,6 +38,19 @@ for the behavioral model.
 
 ::: usaspending.SpendingSearch
 
+## Reference data
+
+These queries fetch one reference list and filter it in memory. Code matching
+uses `.code()` or `.codes()`; `.description()` searches country/state names and
+DEFC descriptions case-insensitively. See [Core concepts](../getting-started/core-concepts.md#reference-data)
+for a combined example.
+
+::: usaspending.queries.DefCodesQuery
+
+::: usaspending.queries.CountriesQuery
+
+::: usaspending.queries.StatesQuery
+
 ## Filter value objects
 
 ::: usaspending.AgencyFilter

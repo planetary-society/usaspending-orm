@@ -43,6 +43,8 @@ class MockUSASpendingClient(USASpendingClient):
         DOWNLOAD_STATUS = "/download/status"
 
         DEF_CODES = "/references/def_codes/"
+        COUNTRIES = "/references/countries/"
+        STATES = "/references/states/"
 
         SPENDING_BY_RECIPIENT = "/search/spending_by_category/recipient/"
         SPENDING_BY_DISTRICT = "/search/spending_by_category/district/"

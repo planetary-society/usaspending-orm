@@ -1,0 +1,12 @@
+{
+  "_source": {
+    "endpoint": "/api/v2/references/states/",
+    "recorded": "2026-11-03",
+    "note": "Three live rows retained in server order, covering a leading-zero FIPS code, the district, and a territory."
+  },
+  "results": [
+    {"fips": "02", "code": "AK", "name": "ALASKA"},
+    {"fips": "11", "code": "DC", "name": "DISTRICT OF COLUMBIA"},
+    {"fips": "72", "code": "PR", "name": "PUERTO RICO"}
+  ]
+}

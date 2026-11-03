@@ -28,6 +28,7 @@ from .award_types import (
 # Base classes
 from .base_model import BaseModel, ClientAwareModel
 from .contract import Contract
+from .country import Country
 from .def_code import DefCode
 from .district_spending import DistrictSpending
 from .federal_account import FederalAccount
@@ -43,6 +44,7 @@ from .recipient_spending import RecipientSpending
 
 # Spending models
 from .spending import Spending
+from .state import State
 from .state_spending import StateSpending
 from .subaward import SubAward
 from .subtier_agency import SubTierAgency
@@ -69,6 +71,7 @@ __all__ = [
     "BaseModel",
     "ClientAwareModel",
     "Contract",
+    "Country",
     "DefCode",
     "DistrictSpending",
     "FederalAccount",
@@ -82,6 +85,7 @@ __all__ = [
     "RecipientSpending",
     # Spending models
     "Spending",
+    "State",
     "StateSpending",
     "SubAward",
     "SubTierAgency",

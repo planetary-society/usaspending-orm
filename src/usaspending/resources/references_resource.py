@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from ..queries.countries_query import CountriesQuery
 from ..queries.def_codes_query import DefCodesQuery
+from ..queries.states_query import StatesQuery
 from .base_resource import BaseResource
 
 
@@ -26,3 +28,28 @@ class ReferencesResource(BaseResource):
             >>> covid = client.references.def_codes().description("covid").all()
         """
         return DefCodesQuery(self._client)
+
+    def countries(self) -> CountriesQuery:
+        """Return a lazy query over country and special-location reference data.
+
+        Each call returns a fresh query. Its first evaluation fetches the full
+        list; subsequent reads and filtering reuse those rows in memory.
+
+        Returns:
+            CountriesQuery: Query supporting ``code()``, ``codes()``,
+            ``description()``, iteration, indexing, and ``all()``.
+        """
+        return CountriesQuery(self._client)
+
+    def states(self) -> StatesQuery:
+        """Return a lazy query over U.S. states, districts, and territories.
+
+        Each call returns a fresh query. Its first evaluation fetches the full
+        list; subsequent reads and filtering reuse those rows in memory.
+        FIPS codes remain strings, preserving leading zeros.
+
+        Returns:
+            StatesQuery: Query supporting ``code()``, ``codes()``,
+            ``description()``, iteration, indexing, and ``all()``.
+        """
+        return StatesQuery(self._client)

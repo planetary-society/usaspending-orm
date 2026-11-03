@@ -1,0 +1,12 @@
+{
+  "_source": {
+    "endpoint": "/api/v2/references/countries/",
+    "recorded": "2026-11-03",
+    "note": "Three live rows retained in server order, including a special location code."
+  },
+  "results": [
+    {"code": "AX2", "name": "GUANTANAMO BAY NAVAL BASE"},
+    {"code": "CAN", "name": "CANADA"},
+    {"code": "USA", "name": "UNITED STATES"}
+  ]
+}

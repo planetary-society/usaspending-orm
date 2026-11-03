@@ -1,7 +1,8 @@
 # Models
 
 Models normalize upstream field names, parse common types, retain the source
-response in `.raw`, and expose selected relationships.
+response in `.raw`, and expose selected relationships. Reference records are
+simple dataclasses containing the API's reference fields.
 
 ## Awards
 
@@ -46,3 +47,11 @@ response in `.raw`, and expose selected relationships.
 ::: usaspending.StateSpending
 
 ::: usaspending.DistrictSpending
+
+## Reference data
+
+::: usaspending.models.DefCode
+
+::: usaspending.models.Country
+
+::: usaspending.models.State

@@ -57,6 +57,7 @@ from .awarding_agencies_search import AwardingAgenciesSearch
 from .awards_search import AwardsSearch
 from .base_query import BaseQuery
 from .client_side_query_builder import ClientSideQueryBuilder
+from .countries_query import CountriesQuery
 from .def_codes_query import DefCodesQuery
 from .federal_accounts_query import FederalAccountsQuery
 from .funding_agencies_search import FundingAgenciesSearch
@@ -66,6 +67,7 @@ from .query_builder import QueryBuilder
 from .recipient_query import RecipientQuery
 from .recipients_search import RecipientsSearch
 from .spending_search import SpendingSearch
+from .states_query import StatesQuery
 from .sub_agency_query import SubAgencyQuery
 from .subawards_search import SubAwardsSearch
 from .tas_agencies_query import TASAgenciesQuery
@@ -86,6 +88,7 @@ __all__ = [
     "BaseQuery",
     "ClientSideQueryBuilder",
     "ConfigurationError",
+    "CountriesQuery",
     "DefCodesQuery",
     "FederalAccountsQuery",
     "FundingAgenciesSearch",
@@ -97,6 +100,7 @@ __all__ = [
     "RecipientQuery",
     "RecipientsSearch",
     "SpendingSearch",
+    "StatesQuery",
     "SubAgencyQuery",
     "SubAwardsSearch",
     "TASAgenciesQuery",

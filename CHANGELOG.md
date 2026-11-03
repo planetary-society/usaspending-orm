@@ -6,6 +6,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `client.references.countries()` and `.states()` return fresh lazy
+  `CountriesQuery` and `StatesQuery` objects with in-memory `code()`, `codes()`,
+  and `description()` filtering. Their `Country` and `State` dataclasses
+  preserve API reference strings, including special country codes and
+  leading-zero state FIPS values. Call `.all()` for a plain list.
+
 ### Breaking changes
 
 - `client.references.def_codes()` now returns a lazy `DefCodesQuery` instead
