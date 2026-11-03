@@ -109,7 +109,7 @@ class SubTierAgency(BaseModel):
         Returns:
             List[SubTierAgency]: A list of SubTierAgency instances representing offices.
         """
-        children_data = self.get_value("children", default=[])
+        children_data = self.get_value(("children", "offices"), default=[])
         if not isinstance(children_data, list):
             return []
 

@@ -27,6 +27,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `SubTierAgency.offices` exposes the `offices` list returned by agency
+  autocomplete. Agency-profile `children` still takes precedence when present.
 - `canonical_order()` preserves all iterator values when sorting fails
   because the values are not mutually comparable. Previously the fallback
   could return an empty list after sorting had consumed the iterator.

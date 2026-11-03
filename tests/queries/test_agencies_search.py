@@ -15,6 +15,33 @@ from usaspending.queries.funding_agencies_search import FundingAgenciesSearch
 T = TypeVar("T", bound=AgenciesSearch)
 
 
+@pytest.mark.parametrize(
+    "shape", ["offices", "children", "both", "empty_children", "null_children"]
+)
+def test_subtier_offices_response_shapes(mock_usa_client, load_fixture, shape):
+    """Autocomplete offices are exposed without overriding profile children."""
+    response = load_fixture("agency_autocomplete_subtier_offices.json")
+    row = response["results"]["subtier_agency"][0]
+    expected = row["offices"]
+    if shape == "children":
+        row["children"] = row.pop("offices")
+    elif shape == "both":
+        row["children"] = expected[:1]
+        expected = row["children"]
+    elif shape == "empty_children":
+        row["children"] = []
+        expected = []
+    elif shape == "null_children":
+        row["children"] = None
+    mock_usa_client.set_response(MockUSASpendingClient.Endpoints.AGENCY_AUTOCOMPLETE, response)
+
+    subtier = mock_usa_client.agencies.search().name("National Park Service").subtier().first()
+
+    assert isinstance(subtier, SubTierAgency)
+    assert [office.code for office in subtier.offices] == [office["code"] for office in expected]
+    assert all(isinstance(office, SubTierAgency) for office in subtier.offices)
+
+
 # Test parameters for both search classes
 SEARCH_CLASS_PARAMS = [
     pytest.param(

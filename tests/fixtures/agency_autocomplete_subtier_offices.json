@@ -1,0 +1,28 @@
+{
+  "_source": {
+    "endpoint": "/api/v2/autocomplete/funding_agency_office/",
+    "request": {"search_text": "National Park Service", "limit": 3},
+    "recorded": "2026-11-03",
+    "note": "Subtier response retained with its first two offices; other buckets omitted."
+  },
+  "results": {
+    "toptier_agency": [],
+    "subtier_agency": [
+      {
+        "abbreviation": "NPS",
+        "code": "1443",
+        "name": "National Park Service",
+        "offices": [
+          {"code": "140P97", "name": "ALASKA REGIONAL OFFICE(97000)"},
+          {"code": "140P96", "name": "AMERICAN BATTLEFIELD PROTECTION"}
+        ],
+        "toptier_agency": {
+          "abbreviation": "DOI",
+          "code": "014",
+          "name": "Department of the Interior"
+        }
+      }
+    ],
+    "office": []
+  }
+}
