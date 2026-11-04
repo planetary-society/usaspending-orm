@@ -4,7 +4,20 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.10.0] - 2026-11-03
+
+Tracks upstream usaspending-api changes through November 3, 2026: adds grouped
+subaward summaries per prime award and lazy country and state reference
+queries, and makes `client.references.def_codes()` a lazy query like the other
+reference lookups.
+
+**Breaking changes**
+
+- `client.references.def_codes()` now returns a lazy `DefCodesQuery` instead
+  of a list, matching `client.tas.agencies`. It requests on first evaluation
+  and supports in-memory `code()`, `codes()`, and `description()` filters.
+  Iteration, `len()`, and indexing remain supported. Call `.all()` when a
+  real list is needed, for example for list equality or `append()`.
 
 ### Added
 
@@ -24,14 +37,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   and `description()` filtering. Their `Country` and `State` dataclasses
   preserve API reference strings, including special country codes and
   leading-zero state FIPS values. Call `.all()` for a plain list.
-
-### Breaking changes
-
-- `client.references.def_codes()` now returns a lazy `DefCodesQuery` instead
-  of a list, matching `client.tas.agencies`. It requests on first evaluation
-  and supports in-memory `code()`, `codes()`, and `description()` filters.
-  Iteration, `len()`, and indexing remain supported. Call `.all()` when a
-  real list is needed, for example for list equality or `append()`.
 
 ### Changed
 
