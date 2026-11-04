@@ -1350,9 +1350,9 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Note:
             AwardsSearch overrides this method to reject mixed award type
             categories (e.g., contracts and grants), whose fields and filters
-            differ per category in that endpoint. TransactionsSearch overrides
-            it to validate codes while explicitly allowing mixed categories,
-            which its endpoint supports.
+            differ per category in that endpoint. TransactionsSearch and
+            SubAwardSummarySearch override it to validate codes while explicitly
+            allowing mixed categories, which their endpoints support.
 
         Example:
             >>> # Search for specific contract types

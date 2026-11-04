@@ -180,6 +180,18 @@ class Award(LazyRecord):
         return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
     @property
+    def award_generated_internal_id(self) -> str | None:
+        """Alias for :attr:`generated_unique_award_id`.
+
+        Matches the name used by :class:`~usaspending.models.SubAwardSummary`
+        and the grouped subaward endpoint.
+
+        Returns:
+            Optional[str]: The generated unique award identifier.
+        """
+        return self.generated_unique_award_id
+
+    @property
     def award_identifier(self) -> str:
         """General-purpose award identifier, type-agnostic.
 

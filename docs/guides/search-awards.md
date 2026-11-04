@@ -178,10 +178,9 @@ with USASpendingClient() as client:
 Recipient, location, agency, and date filters select **prime awards**. The
 reported count and obligations cover each whole award; date filters do not
 recalculate totals for subawards in that period. For individual subaward rows,
-use `client.subawards.search()` instead. `program_activities()` and
-`object_classes()` raise `ValidationError` here because the grouped endpoint
-silently ignores them; accepting them could broaden results or make counts
-disagree with rows.
+use `client.subawards.search()` instead. `program_activities()` raises
+`ValidationError` here because the grouped endpoint silently ignores it;
+accepting it could broaden results or make counts disagree with rows.
 
 Each summary exposes `award_id` (display ID), `award_generated_internal_id`,
 `subaward_count`, `subaward_obligation`, `award_obligation`, and

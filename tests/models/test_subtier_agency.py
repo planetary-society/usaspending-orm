@@ -1,5 +1,7 @@
 """Tests for SubTierAgency model."""
 
+import pytest
+
 from tests.utils import assert_decimal_equal
 from usaspending.models.subtier_agency import SubTierAgency
 from usaspending.utils.textcase import titlecase_name
@@ -91,6 +93,21 @@ class TestSubTierAgency:
         offices = agency.offices
 
         assert offices == []
+
+    @pytest.mark.parametrize(
+        "children,expected",
+        [(None, ["OFFICE"]), ([], []), ([{"code": "CHILD"}], ["CHILD"])],
+        ids=["null_children_falls_back", "empty_children_wins", "children_win"],
+    )
+    def test_offices_prefers_children_over_autocomplete_offices(
+        self, mock_usa_client, children, expected
+    ):
+        """Profile children win, even when empty; null children fall back to offices."""
+        data = {"name": "Test Agency", "children": children, "offices": [{"code": "OFFICE"}]}
+
+        offices = SubTierAgency(data, mock_usa_client).offices
+
+        assert [office.code for office in offices] == expected
 
     def test_offices_invalid_children_data(self, mock_usa_client):
         """Test offices property with invalid children data."""

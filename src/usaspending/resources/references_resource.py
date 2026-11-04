@@ -38,6 +38,9 @@ class ReferencesResource(BaseResource):
         Returns:
             CountriesQuery: Query supporting ``code()``, ``codes()``,
             ``description()``, iteration, indexing, and ``all()``.
+
+        Example:
+            >>> canada = client.references.countries().code("CAN").first()
         """
         return CountriesQuery(self._client)
 
@@ -51,5 +54,8 @@ class ReferencesResource(BaseResource):
         Returns:
             StatesQuery: Query supporting ``code()``, ``codes()``,
             ``description()``, iteration, indexing, and ``all()``.
+
+        Example:
+            >>> alaska = client.references.states().description("alaska").first()
         """
         return StatesQuery(self._client)

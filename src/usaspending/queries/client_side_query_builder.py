@@ -245,8 +245,7 @@ class ClientSideQueryBuilder(MaterializedIndexingQuery[T], BaseQuery[T]):
         question for a paginated query. It is the expensive one here: ``first()``
         narrows onto a clone, and this hierarchy holds its rows rather than fetching
         them per page, so the clone sorts the whole collection when ``order_by`` is
-        set and, for a filter-tree level, caches the fetch on itself and leaves this
-        query to request the level again. Counting touches neither.
+        set. Counting does not sort.
 
         Since the count honors ``limit()``, a zero-limit query is falsy without a
         special case here, matching what it yields.

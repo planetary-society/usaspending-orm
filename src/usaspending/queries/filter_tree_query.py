@@ -28,7 +28,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
 
 from ..logging_config import USASpendingLogger
 from ..utils.validations import validate_non_empty_string
@@ -42,6 +43,18 @@ logger = USASpendingLogger.get_logger(__name__)
 
 T = TypeVar("T")
 FTQ = TypeVar("FTQ", bound="FilterTreeQuery[Any]")
+
+
+@dataclass
+class _Level(Generic[T]):
+    """One level's rows and where they come from, shared by a query and its clones.
+
+    Clones hold this rather than their parent query, so a long filter chain keeps
+    no ancestor alive and the first fetch from any of them is one call deep.
+    """
+
+    source: Callable[[], list[T]] | None = None
+    results: list[T] | None = None
 
 
 class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
@@ -75,8 +88,7 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
             client: USASpendingClient instance.
         """
         self._client = client
-        self._results: list[T] | None = None
-        self._results_source: Callable[[], list[T]] | None = None
+        self._level: _Level[T] = _Level()
         super().__init__(items=[], keyword_fields=self.KEYWORD_FIELDS)
 
     # ==========================================================================
@@ -128,14 +140,15 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         return self.ENDPOINT.format(**self._scope())
 
     def _fetch(self) -> list[T]:
-        """Return this level of the tree, loading it once per instance.
+        """Return this level of the tree, loading it once per query and its clones.
 
         Returns:
             list[T]: The models, cached for subsequent calls.
         """
-        if self._results is None:
-            self._results = (self._results_source or self._request_level)()
-        return self._results
+        level = self._level
+        if level.results is None:
+            level.results = (level.source or self._request_level)()
+        return level.results
 
     def _request_level(self) -> list[T]:
         """Request this level, or answer empty when the query has no scope.
@@ -174,14 +187,13 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         return list(self._fetch())
 
     def _clone(self: FTQ) -> FTQ:
-        """Copy the query, sharing anything already fetched.
+        """Copy the query, sharing its level so the rows are fetched once.
 
-        The fetched rows are shared rather than re-requested, since filtering is
-        what varies between clones, not the underlying data.
+        Filtering is what varies between clones, not the underlying data, so
+        whichever query in a chain is evaluated first fetches for all of them.
         """
         clone = super()._clone()
-        clone._results = self._results
-        clone._results_source = self._results_source
+        clone._level = self._level
         return clone
 
     def _seed(self: FTQ, source: Callable[[], list[T]]) -> FTQ:
@@ -207,11 +219,12 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         Raises:
             RuntimeError: If this query has already been seeded.
         """
-        if self._results_source is not None:
+        if self._level.source is not None:
             raise RuntimeError(
                 f"{type(self).__name__} is already seeded; seed a freshly built query instead."
             )
-        self._results_source = source
+        # A new level, so seeding never rewires a query this one was cloned from.
+        self._level = _Level(source=source)
         return self
 
     # ==========================================================================
@@ -261,5 +274,6 @@ class FilterTreeQuery(ClientSideQueryBuilder[T], ABC):
         The scope is omitted entirely when there is none, as at the root level.
         """
         scope = "/".join(str(value) for value in self._scope().values())
-        state = f"{len(self._results)} results" if self._results is not None else "not fetched"
+        results = self._level.results
+        state = f"{len(results)} results" if results is not None else "not fetched"
         return f"<{type(self).__name__}{' ' + scope if scope else ''} [{state}]>"

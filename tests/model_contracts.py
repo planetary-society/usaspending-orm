@@ -161,6 +161,11 @@ TRANSACTION_FIELDS: tuple[FieldContract, ...] = (
         ("generated_unique_award_id", "generated_internal_id"),
         str,
     ),
+    FieldContract(
+        "award_generated_internal_id",
+        ("generated_unique_award_id", "generated_internal_id"),
+        str,
+    ),
     FieldContract("award_identifier", ("Award ID",), str),
     FieldContract("award_id", ("Award ID",), str),
     FieldContract("action_date", ("action_date", "Action Date"), expected_date),

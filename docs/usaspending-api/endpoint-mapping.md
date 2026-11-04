@@ -61,7 +61,7 @@ Last reviewed against the upstream contracts: **November 3, 2026**.
 
 ## Reviewed upstream behavior
 
-The August 3–November 3, 2026 review also covered these server changes. They
+The August 3 to November 3, 2026 review also covered these server changes. They
 require no wrapper code:
 
 - Award funding and account endpoints omit submissions until their reveal

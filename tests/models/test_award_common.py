@@ -77,6 +77,7 @@ class AwardTestingMixin:
         award = self.AWARD_MODEL(fixture_data, mock_usa_client)
         assert award.id == fixture_data["id"]
         assert award.generated_unique_award_id == fixture_data["generated_unique_award_id"]
+        assert award.award_generated_internal_id == fixture_data["generated_unique_award_id"]
         assert award.description.lower() == fixture_data["description"].lower()
         assert_decimal_equal(award.total_obligation, fixture_data["total_obligation"])
 

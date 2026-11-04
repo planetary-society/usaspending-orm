@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytest
 
+from tests.utils import assert_decimal_equal
 from usaspending.models.subaward_summary import SubAwardSummary
 
 
@@ -11,12 +12,13 @@ def test_recorded_summary(load_fixture):
     row = load_fixture("spending_by_subaward_grouped.json")["results"][0]
     summary = SubAwardSummary(row)
 
-    assert summary.award_id == "80NSSC20M0027"
-    assert summary.award_generated_internal_id == "ASST_NON_80NSSC20M0027_080"
-    assert summary.subaward_count == 792
-    assert summary.subaward_obligation == Decimal("41584357.42")
-    assert summary.award_obligation == Decimal("6756953.00")
-    assert summary.subaward_to_award_ratio == Decimal("6.15430615")
+    assert summary.award_id == row["award_id"]
+    assert summary.award_generated_internal_id == row["award_generated_internal_id"]
+    assert summary.generated_unique_award_id == row["award_generated_internal_id"]
+    assert summary.subaward_count == row["subaward_count"]
+    assert_decimal_equal(summary.subaward_obligation, row["subaward_obligation"])
+    assert_decimal_equal(summary.award_obligation, row["award_obligation"])
+    assert_decimal_equal(summary.subaward_to_award_ratio, row["subaward_to_award_ratio"])
     assert summary.raw == row
 
 
@@ -54,19 +56,6 @@ def test_ratio_preserves_server_precision_without_recalculating():
 
 
 @pytest.mark.parametrize("value", [None, "not a number", {}])
-def test_malformed_manual_rows_keep_tolerant_numeric_coercion(value):
-    summary = SubAwardSummary(
-        dict.fromkeys(
-            [
-                "subaward_count",
-                "subaward_obligation",
-                "award_obligation",
-                "subaward_to_award_ratio",
-            ],
-            value,
-        )
-    )
-    assert summary.subaward_count is None
-    assert summary.subaward_obligation is None
-    assert summary.award_obligation is None
-    assert summary.subaward_to_award_ratio is None
+def test_malformed_ratio_is_none(value):
+    # The other fields use to_int/to_decimal, whose tolerance tests/utils covers.
+    assert SubAwardSummary({"subaward_to_award_ratio": value}).subaward_to_award_ratio is None

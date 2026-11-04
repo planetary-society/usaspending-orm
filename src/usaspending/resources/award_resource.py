@@ -113,6 +113,16 @@ class AwardResource(BaseResource):
             A fresh lazy query supporting prime-award filters and mixed award
             categories. Totals cover the whole award, including subawards
             outside the query's date range.
+
+        Example:
+            >>> summaries = (
+            ...     client.awards.subaward_summary()
+            ...     .grants()
+            ...     .agency("National Aeronautics and Space Administration")
+            ...     .fiscal_year(2024)
+            ...     .order_by("subaward_count")
+            ...     .limit(5)
+            ... )
         """
         from ..queries.subaward_summary_search import SubAwardSummarySearch
 

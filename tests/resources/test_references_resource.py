@@ -1,5 +1,7 @@
 """Tests for the USAspending reference-data resource."""
 
+import gc
+import weakref
 from dataclasses import asdict
 
 import pytest
@@ -127,6 +129,32 @@ def test_reference_query_filters_one_fetched_list(mock_usa_client, reference_que
     assert [record.code for record in query.description(description)] == [target["code"]]
     assert len(query.all()) == len(rows)
     assert mock_usa_client.get_request_count(query_type.ENDPOINT) == 1
+
+
+def test_filtered_queries_evaluated_first_share_one_fetch(mock_usa_client, reference_query):
+    """Filtering before the original query is read still requests the level once."""
+    lookup, query_type, _, rows = reference_query
+    query = lookup()
+    first, second = rows[0]["code"], rows[1]["code"]
+
+    assert [record.code for record in query.code(first)] == [first]
+    assert [record.code for record in query.codes(first, second).code(second)] == [second]
+    assert len(query) == len(rows)
+    assert mock_usa_client.get_request_count(query_type.ENDPOINT) == 1
+
+
+def test_filtered_query_does_not_keep_its_parent_alive(reference_query):
+    """A clone shares the fetched level, not a reference to the query it came from."""
+    lookup, _, _, rows = reference_query
+    parent = lookup()
+    child = parent.code(rows[0]["code"])
+    parent_ref = weakref.ref(parent)
+
+    del parent
+    gc.collect()
+
+    assert parent_ref() is None
+    assert [record.code for record in child] == [rows[0]["code"]]
 
 
 def test_reference_query_instances_fetch_independently(mock_usa_client, reference_query):

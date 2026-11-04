@@ -67,7 +67,7 @@ class TestTASCodesQueryBasics:
         assert query._client is mock_usa_client
         assert query._toptier_code == "080"
         assert query._federal_account == "080-0120"
-        assert query._results is None
+        assert query._level.results is None
 
     def test_repr_before_fetch(self, mock_usa_client):
         """Test repr before results are fetched."""
@@ -131,11 +131,11 @@ class TestTASCodesQueryFetch:
 
         # First access
         _ = list(query)
-        first_results = query._results
+        first_results = query._level.results
 
         # Second access
         _ = list(query)
-        second_results = query._results
+        second_results = query._level.results
 
         # Same object (cached)
         assert first_results is second_results

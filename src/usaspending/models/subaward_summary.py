@@ -28,6 +28,19 @@ class SubAwardSummary(BaseModel):
         return self.get_value("award_generated_internal_id")
 
     @property
+    def generated_unique_award_id(self) -> str | None:
+        """Alias for :attr:`award_generated_internal_id`.
+
+        Matches the name used by :class:`~usaspending.models.Award` and
+        :class:`~usaspending.models.Transaction`, so either model's ID can be
+        passed to ``.award_id()`` the same way.
+
+        Returns:
+            Optional[str]: The generated unique award ID, or None.
+        """
+        return self.award_generated_internal_id
+
+    @property
     def subaward_count(self) -> int | None:
         """Return the number of subawards recorded for this prime award."""
         return to_int(self.get_value("subaward_count"))

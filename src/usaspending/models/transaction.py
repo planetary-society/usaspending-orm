@@ -112,6 +112,18 @@ class Transaction(BaseModel):
         return self.get_value(["generated_unique_award_id", "generated_internal_id"])
 
     @property
+    def award_generated_internal_id(self) -> str | None:
+        """Alias for :attr:`generated_unique_award_id`.
+
+        Matches the name used by :class:`~usaspending.models.SubAwardSummary`
+        and the grouped subaward endpoint.
+
+        Returns:
+            Optional[str]: The generated unique award ID, or None.
+        """
+        return self.generated_unique_award_id
+
+    @property
     def award_identifier(self) -> str | None:
         """Human-facing parent award ID (PIID, FAIN or URI), from global rows.
 

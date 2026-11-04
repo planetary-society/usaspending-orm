@@ -13,9 +13,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   and ratios. Supports empty filters, mixed award categories, generated-ID
   lookup, and descending generated-ID ordering by default. Counts use one
   award-count request; pagination compensates for incorrect upstream
-  continuation metadata. Program activity and object class filters raise
-  `ValidationError` because this endpoint silently ignores them. Row retrieval
-  remains subject to the API's 50,000-row window.
+  continuation metadata. Program activity filters raise `ValidationError`
+  because this endpoint silently ignores them. Row retrieval remains subject
+  to the API's 50,000-row window.
+- `award_generated_internal_id` on `Award` and `Transaction`, and
+  `generated_unique_award_id` on `SubAwardSummary`: aliases, so the generated
+  unique award ID reads the same under either name on every model that has it.
 - `client.references.countries()` and `.states()` return fresh lazy
   `CountriesQuery` and `StatesQuery` objects with in-memory `code()`, `codes()`,
   and `description()` filtering. Their `Country` and `State` dataclasses
@@ -52,6 +55,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - `canonical_order()` preserves all iterator values when sorting fails
   because the values are not mutually comparable. Previously the fallback
   could return an empty list after sorting had consumed the iterator.
+- Filter-tree queries (`client.references.def_codes()`, `.countries()`,
+  `.states()`, `client.tas.agencies`, and federal account and TAS levels)
+  request a level once per query and the filters derived from it. Previously,
+  each filtered query evaluated before the original made its own request, so
+  `q.code("CA").all()` then `q.code("TX").all()` made two.
 
 ### Documentation
 
@@ -61,7 +69,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - Added a grants-only transaction export example for amount/recipient basis
   columns, including row identifiers. Clarified that custom columns replace
   defaults and unknown names may fail after queueing, during file generation.
-  Download limits remain server-validated in the current 1–500,000 range,
+  Download limits remain server-validated in the current 1 to 500,000 range,
   preserving numeric-string compatibility.
 - Corrected DEFC examples: COVID relief includes `V`; IIJA uses `1` and `Z`.
   Removed the incorrect IRA example. Filter construction remains network-free.

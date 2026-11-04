@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..exceptions import ValidationError
-from ..models.award_types import AWARD_CATEGORIES, validate_award_type_codes
+from ..models.award_types import ALL_AWARD_CODES, AWARD_CATEGORIES, validate_award_type_codes
 from ..models.subaward_summary import SubAwardSummary
 from ..utils.validations import validate_non_empty_string
 from .filters import SimpleStringFilter
@@ -55,6 +55,7 @@ class SubAwardSummarySearch(SortableQuery, SearchQueryBuilder[SubAwardSummary]):
         results = response.get("results", [])
         limit = self._get_effective_page_size()
         # shortcut: full final pages need an empty request until upstream fixes hasNext.
+        # The trim keeps pages disjoint if upstream adopts a limit+1 lookahead fix.
         return {
             **response,
             "results": results[:limit],
@@ -69,15 +70,33 @@ class SubAwardSummarySearch(SortableQuery, SearchQueryBuilder[SubAwardSummary]):
         return SubAwardSummary(result)
 
     def _compute_raw_count(self) -> int:
-        """Count matching prime awards in one request, without paging."""
+        """Count matching prime awards in one request, without paging.
+
+        The count endpoint rejects an empty ``filters`` object, so an unfiltered
+        query counts every award type instead. The buckets cover exactly those
+        types, so the total is unchanged.
+        """
+        filters = self._aggregate_filters() or {"award_type_codes": sorted(ALL_AWARD_CODES)}
         return self._count_via_bucketed_endpoint(
             "/search/spending_by_award_count/",
-            self._aggregate_filters(),
+            filters,
             (category.api_count_key for category in AWARD_CATEGORIES),
         )
 
     def award_id(self, award_id: str) -> SubAwardSummarySearch:
-        """Filter by an exact generated prime-award identifier."""
+        """Filter by an exact generated prime-award identifier.
+
+        Args:
+            award_id: Generated unique award ID, such as ``"ASST_NON_..._080"``.
+                Surrounding whitespace is stripped. This is not the display ID
+                that ``SubAwardSummary.award_id`` reports.
+
+        Returns:
+            SubAwardSummarySearch: A new query with the filter applied.
+
+        Raises:
+            ValidationError: If ``award_id`` is not a nonempty string.
+        """
         return self._with_filter(
             SimpleStringFilter(
                 key="award_unique_id", value=validate_non_empty_string(award_id, "award_id")
@@ -85,16 +104,29 @@ class SubAwardSummarySearch(SortableQuery, SearchQueryBuilder[SubAwardSummary]):
         )
 
     def award_type_codes(self, *award_codes: str) -> SubAwardSummarySearch:
-        """Select valid award codes, allowing multiple award categories."""
+        """Select valid award codes, allowing multiple award categories.
+
+        Args:
+            *award_codes: One or more award type codes, such as ``"A"`` or ``"02"``.
+
+        Returns:
+            SubAwardSummarySearch: A new query with the award type filter applied.
+
+        Raises:
+            ValidationError: If no code is supplied or any code is invalid.
+        """
         if not award_codes:
             raise ValidationError("At least one award type code is required")
         validate_award_type_codes(award_codes)
         return super().award_type_codes(*award_codes)
 
     def program_activities(self, *activities: dict[str, str]) -> SubAwardSummarySearch:
-        """Reject program activities, which grouped summaries silently ignore."""
-        raise ValidationError("program_activities is not supported for subaward summaries.")
+        """Reject program activities, which grouped summaries silently ignore.
 
-    def object_classes(self, *object_classes: str) -> SubAwardSummarySearch:
-        """Reject object classes, which grouped summaries silently ignore."""
-        raise ValidationError("object_classes is not supported for subaward summaries.")
+        Args:
+            *activities: Ignored.
+
+        Raises:
+            ValidationError: Always.
+        """
+        raise ValidationError("program_activities is not supported for subaward summaries.")

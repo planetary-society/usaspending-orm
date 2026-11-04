@@ -97,7 +97,7 @@ message for a failed job, `job.error_message` is `"API reported failure."`.
     not bound the export; pass `limit=` to `downloads.search()` for that, or
     narrow the filters before queueing a broad search.
 
-When supplied, `limit=` must be in the API's current range of **1–500,000**.
+When supplied, `limit=` must be in the API's current range of **1 to 500,000**.
 Validation remains server-side, including support for numeric strings such as
 `"100"`. Filenames reflect the requested `spending_level` values, and the server
 deduplicates repeated levels. Use the paths returned by the job rather than

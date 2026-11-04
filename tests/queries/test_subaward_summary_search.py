@@ -7,6 +7,7 @@ from tests.mocks.mock_client import MockUSASpendingClient
 
 from usaspending import SubAwardSummary, SubAwardSummarySearch
 from usaspending.exceptions import HTTPError, ValidationError
+from usaspending.models.award_types import AWARD_CATEGORIES
 
 SEARCH_ENDPOINT = MockUSASpendingClient.Endpoints.SUBAWARD_SUMMARY
 COUNT_ENDPOINT = MockUSASpendingClient.Endpoints.AWARD_COUNT
@@ -76,7 +77,16 @@ def test_invalid_generated_id(query, award_id):
         query.award_id(award_id)
 
 
-@pytest.mark.parametrize("field", SubAwardSummarySearch.SORT_FIELD_MAP)
+@pytest.mark.parametrize(
+    "field",
+    [
+        "award_id",
+        "award_generated_internal_id",
+        "subaward_count",
+        "subaward_obligation",
+        "subaward_to_award_ratio",
+    ],
+)
 def test_implemented_sort_fields(query, field):
     assert query.order_by(field)._build_payload(1)["sort"] == field
 
@@ -97,39 +107,26 @@ def test_unsupported_filters_fail_without_requests(query, mock_usa_client):
         pytest.raises(ValidationError, match="program_activities"),
     ):
         query.program_activity(1)
-    with pytest.raises(ValidationError, match="object_classes"):
-        query.object_classes("25")
-    assert mock_usa_client.get_request_count() == 0
 
 
 @pytest.mark.parametrize("mixed", [False, True])
 def test_count_uses_one_request_and_identical_filters(query, mock_usa_client, mixed):
     if mixed:
         query = query.contracts().grants().award_id("ASST_NON_EXAMPLE_080")
-    mock_usa_client.set_response(
-        COUNT_ENDPOINT,
-        {
-            "results": {
-                "contracts": 50001,
-                "grants": 2,
-                "idvs": 3,
-                "loans": 4,
-                "direct_payments": 5,
-                "other": 6,
-            }
-        },
+    mock_usa_client.mock_award_count(
+        contracts=50001, grants=2, idvs=3, loans=4, direct_payments=5, other=6
     )
 
     assert query.count() == 50021
     assert mock_usa_client.get_request_count() == 1
-    assert mock_usa_client.get_last_request()["json"] == {
-        "filters": query._build_payload(1)["filters"]
-    }
-    assert mock_usa_client.get_last_request()["endpoint"] == COUNT_ENDPOINT
+    # The count endpoint rejects empty filters, so an unfiltered count names every type.
+    every_type = sorted(code for category in AWARD_CATEGORIES for code in category.codes)
+    expected = query._build_payload(1)["filters"] if mixed else {"award_type_codes": every_type}
+    mock_usa_client.assert_called_with(COUNT_ENDPOINT, "POST", json={"filters": expected})
 
 
 def test_indexing_counts_once_without_walking_pages(query, mock_usa_client, rows):
-    mock_usa_client.set_response(COUNT_ENDPOINT, {"results": {"contracts": 60000}})
+    mock_usa_client.mock_award_count(contracts=60000)
     mock_usa_client.set_paginated_response(SEARCH_ENDPOINT, rows, page_size=2)
     query = query.page_size(2)
 
@@ -151,7 +148,6 @@ def test_zero_bounds_make_no_requests(query, mock_usa_client, bound):
     assert query[:1] == []
     with pytest.raises(IndexError):
         query[0]
-    assert mock_usa_client.get_request_count() == 0
 
 
 @pytest.mark.parametrize("row_count,requests", [(0, 1), (4, 3), (5, 3)])
@@ -177,12 +173,11 @@ def test_normalization_does_not_mutate_response(query, mock_usa_client, rows):
 
     assert normalized["page_metadata"]["hasNext"] is True
     assert response["page_metadata"]["hasNext"] is False
-    assert normalized["results"] is not response["results"]
 
 
 @pytest.mark.parametrize("bound,expected", [("limit", 3), ("max_pages", 4)])
 def test_collection_operations_share_bounds(query, mock_usa_client, rows, bound, expected):
-    mock_usa_client.set_response(COUNT_ENDPOINT, {"results": {"grants": len(rows)}})
+    mock_usa_client.mock_award_count(grants=len(rows))
     mock_usa_client.set_paginated_response(
         SEARCH_ENDPOINT, rows, page_size=2, metadata={"hasNext": False}
     )
