@@ -163,7 +163,7 @@ class TestSubAwardModel:
 
         # Verify the Recipient object has the correct mapped data
         assert recipient.raw["recipient_name"] == subaward_data["Sub-Awardee Name"]
-        assert recipient.raw["recipient_unique_id"] == subaward_data["sub_award_recipient_id"]
+        assert recipient.recipient_id == subaward_data["sub_award_recipient_id"]
         assert recipient.raw["recipient_uei"] == subaward_data["Sub-Recipient UEI"]
 
         # Check that location is attached if available
@@ -290,7 +290,7 @@ class TestSubAwardModel:
         recipient = subaward.recipient
         assert isinstance(recipient, Recipient)
         assert recipient.raw["recipient_name"] is None
-        assert recipient.raw["recipient_unique_id"] is None
+        assert recipient.recipient_id is None
         assert recipient.raw["recipient_uei"] is None
 
         # repr should handle None values

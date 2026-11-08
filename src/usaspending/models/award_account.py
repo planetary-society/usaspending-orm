@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..utils.numbers import to_decimal, to_int
 from .federal_account import FederalAccount
@@ -39,6 +39,11 @@ class AwardAccount(FederalAccount):
         ...     print(f"  Funded by: {account.funding_agency.name}")
     """
 
+    _REATTACH_INVALIDATES: ClassVar[tuple[str, ...]] = (
+        *FederalAccount._REATTACH_INVALIDATES,
+        "funding_agency",
+    )
+
     def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize AwardAccount.
 
@@ -60,29 +65,7 @@ class AwardAccount(FederalAccount):
         if "account_title" in normalized_data and "description" not in normalized_data:
             normalized_data["description"] = normalized_data["account_title"]
 
-        # Extract toptier_code from federal_account (e.g., "080-0131" -> "080")
-        toptier_code = self._extract_toptier_code(normalized_data.get("id"))
-
-        super().__init__(normalized_data, client, toptier_code=toptier_code)
-
-    @staticmethod
-    def _extract_toptier_code(federal_account: str | None) -> str | None:
-        """Extract toptier code from federal account code.
-
-        Args:
-            federal_account: Federal account code (e.g., "080-0131").
-
-        Returns:
-            The toptier code (e.g., "080"), or None if not parseable.
-        """
-        if not federal_account or not isinstance(federal_account, str):
-            return None
-
-        parts = federal_account.split("-")
-        if len(parts) >= 1 and parts[0]:
-            return parts[0]
-
-        return None
+        super().__init__(normalized_data, client)
 
     @property
     def account_title(self) -> str | None:
@@ -189,9 +172,8 @@ class AwardAccount(FederalAccount):
             "name": agency_name,
             "abbreviation": self.funding_agency_abbreviation,
             "agency_id": self.funding_agency_id,
-            "id": self.funding_toptier_agency_id,
+            "toptier_agency_id": self.funding_toptier_agency_id,
             "slug": self.funding_agency_slug,
-            "toptier_code": self.toptier_code,
         }
 
         return Agency(agency_data, self._client)

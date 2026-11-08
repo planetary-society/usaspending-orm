@@ -75,12 +75,9 @@ class Agency(LazyRecord):
                 such as a server error, a rate limit, or a closed client session.
             requests.RequestException: If the request never reached the API.
         """
-        # Try to get toptier_code from existing data
-        toptier_code = None
-        if "toptier_code" in self._data:
-            toptier_code = self._data["toptier_code"]
-        elif "code" in self._data:
-            toptier_code = self._data["code"]
+        toptier_code = self.toptier_code
+        if not toptier_code:
+            return None
 
         try:
             # Fetch full agency details using the toptier_code
@@ -117,8 +114,14 @@ class Agency(LazyRecord):
 
         Returns:
             Optional[Dict[str, Any]]: Award summary data dictionary containing
-            obligations, transaction counts, and other summary metrics, or
-            None if unable to fetch due to missing agency code or API error.
+            obligations, transaction counts, and other summary metrics, None
+            if the agency has no code, or an empty dict if the API reports no
+            such agency.
+
+        Raises:
+            USASpendingError: If the failure is not an answer about this agency,
+                such as a server error, a rate limit, or a closed client session.
+            requests.RequestException: If the request never reached the API.
         """
         # Get toptier code
         toptier_code = self.code
@@ -138,6 +141,8 @@ class Agency(LazyRecord):
                 award_type_codes=award_type_codes,
             )
         except Exception as e:
+            if not self._is_absent_record(e):
+                raise
             logger.error(f"Could not fetch award summary for {toptier_code}: {e}")
             return {}
 
@@ -163,7 +168,16 @@ class Agency(LazyRecord):
         Returns:
             Optional[str]: The toptier agency code, or None.
         """
-        return self._lazy_get("toptier_code", "code")
+        code = self.get_value(("toptier_code", "code"))
+        return self._crosswalk_code if code is None else code
+
+    @cached_property
+    def _crosswalk_code(self) -> str | None:
+        """Resolve the toptier code from the database ID once, remembering a miss too."""
+        agency_id = self.get_value("toptier_agency_id")
+        if agency_id is None:
+            return None
+        return self._client.agencies._toptier_code_for_id(agency_id)
 
     @property
     def code(self) -> str | None:
@@ -362,7 +376,7 @@ class Agency(LazyRecord):
             for the current fiscal year, or None.
         """
         obligations = self.get_value(["total_obligations", "obligations"])
-        if not obligations:
+        if obligations is None:
             # If not present, fetch from award summary
             return self.get_obligations()
         return to_decimal(obligations)
@@ -481,13 +495,25 @@ class Agency(LazyRecord):
             >>> for tas in account.tas_codes:
             ...     print(tas.id)
         """
-        return self._new_federal_accounts_query()._seed(lambda: self._federal_accounts_level)
+        # A seeded query never requests its own scope, so the ID crosswalk waits for iteration.
+        known_code = self.get_value(("toptier_code", "code"))
+        return self._new_federal_accounts_query(known_code)._seed(
+            lambda: self._federal_accounts_level
+        )
 
-    def _new_federal_accounts_query(self) -> FederalAccountsQuery:
-        """Build an unfetched query for this agency's federal accounts."""
+    def _new_federal_accounts_query(self, toptier_code: str | None) -> FederalAccountsQuery:
+        """Build an unfetched query for this agency's federal accounts.
+
+        Args:
+            toptier_code: Agency code to scope the query to. If missing, the
+                unscoped query yields no rows.
+
+        Returns:
+            FederalAccountsQuery: Unfetched query for this agency's accounts.
+        """
         from ..queries.federal_accounts_query import FederalAccountsQuery
 
-        return FederalAccountsQuery(self._client, self.code or "")
+        return FederalAccountsQuery(self._client, toptier_code or "")
 
     @cached_property
     def _federal_accounts_level(self) -> list[FederalAccount]:
@@ -496,7 +522,7 @@ class Agency(LazyRecord):
         See "Who caches what" in :mod:`usaspending.queries.filter_tree_query` for
         why a model caches the models where a resource may cache the query.
         """
-        return self._new_federal_accounts_query().all()
+        return self._new_federal_accounts_query(self.code).all()
 
     def get_obligations(
         self,
@@ -516,7 +542,12 @@ class Agency(LazyRecord):
 
         Returns:
             Optional[Decimal]: Total obligations amount as a Decimal,
-            or None if unavailable due to missing data or API error.
+            or None if the agency has no code or the API reports no data.
+
+        Raises:
+            USASpendingError: If the failure is not an answer about this agency,
+                such as a server error, a rate limit, or a closed client session.
+            requests.RequestException: If the request never reached the API.
         """
 
         # Fetch from award summary API
@@ -605,7 +636,12 @@ class Agency(LazyRecord):
 
         Returns:
             Optional[int]: Total transaction count as an integer,
-            or None if unavailable due to missing data or API error.
+            or None if the agency has no code or the API reports no data.
+
+        Raises:
+            USASpendingError: If the failure is not an answer about this agency,
+                such as a server error, a rate limit, or a closed client session.
+            requests.RequestException: If the request never reached the API.
         """
         # If no filters and we have existing data, return it
         if not any([fiscal_year, award_type_codes]) and agency_type == "awarding":

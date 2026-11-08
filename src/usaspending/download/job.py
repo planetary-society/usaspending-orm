@@ -142,18 +142,20 @@ class DownloadJob:
     ) -> list[str]:
         """
         Blocks until the download is complete, then downloads and unzips the file.
+
+        A timeout leaves the job available for subsequent polling or waiting.
         """
         logger.info(
             f"Waiting for download job {self.file_name}. Timeout: {timeout}s. Polling every {poll_interval}s."
         )
-        start_time = time.time()
+        start_time = time.monotonic()
 
         while True:
             current_state = self.refresh_status()
 
             if current_state == DownloadState.FINISHED:
                 logger.info(
-                    f"Download job finished. Total wait time: {time.time() - start_time:.2f}s. Proceeding to process."
+                    f"Download job finished. Total wait time: {time.monotonic() - start_time:.2f}s. Proceeding to process."
                 )
                 return self._process_download(cleanup_zip)
 
@@ -164,10 +166,12 @@ class DownloadJob:
                     status=DownloadState.FAILED.value,
                 )
 
-            if time.time() - start_time > timeout:
-                self._state = DownloadState.FAILED
-                self._error_message = f"Timeout waiting for download job after {timeout} seconds."
-                raise DownloadError(self._error_message, file_name=self.file_name, status="timeout")
+            if time.monotonic() - start_time > timeout:
+                raise DownloadError(
+                    f"Timeout waiting for download job after {timeout} seconds.",
+                    file_name=self.file_name,
+                    status="timeout",
+                )
 
             logger.info(f"Job status: {current_state.value}. Waiting...")
             time.sleep(poll_interval)
@@ -194,9 +198,7 @@ class DownloadJob:
 
         try:
             # Use the latest file_url from the status details if available, fallback to initial URL
-            final_url = (
-                self._status_details.file_url if self._status_details else self._initial_file_url
-            )
+            final_url = getattr(self._status_details, "file_url", None) or self._initial_file_url
 
             if not final_url:
                 raise DownloadError(

@@ -98,8 +98,14 @@ class FederalAccount(ClientAwareModel):
 
     @property
     def toptier_code(self) -> str | None:
-        """Parent agency toptier code."""
-        return self._toptier_code
+        """Parent agency code, resolved through the TAS tree when not supplied."""
+        return self._toptier_code or self._tree_parent_code
+
+    @cached_property
+    def _tree_parent_code(self) -> str | None:
+        """Look up the parent once, remembering a miss too."""
+        code = self.federal_account_code
+        return self._client.tas._parent_code_for_account(code) if code else None
 
     @property
     def tas_codes(self) -> TASCodesQuery:
@@ -129,19 +135,24 @@ class FederalAccount(ClientAwareModel):
             >>> no_year = account.tas_codes.availability_type_code("X").all()
             >>> fy2024 = account.tas_codes.fiscal_year(2024).all()
         """
-        return self._new_tas_codes_query()._seed(lambda: self._tas_codes_level)
+        # A seeded query never requests its own scope, so parent resolution waits for iteration.
+        return self._new_tas_codes_query(self._toptier_code)._seed(lambda: self._tas_codes_level)
 
-    def _new_tas_codes_query(self) -> TASCodesQuery:
+    def _new_tas_codes_query(self, toptier_code: str | None) -> TASCodesQuery:
         """Build an unfetched query for this account's TAS codes.
 
-        An account that does not know its own codes yields an unscoped query,
-        which the base answers with an empty result set and no request.
+        Args:
+            toptier_code: Parent agency code to scope the query to. If it or the
+                account code is missing, the unscoped query yields no rows.
+
+        Returns:
+            TASCodesQuery: Unfetched query for this account's TAS codes.
         """
         from ..queries.tas_codes_query import TASCodesQuery
 
         return TASCodesQuery(
             self._client,
-            self._toptier_code or "",
+            toptier_code or "",
             self.federal_account_code or "",
         )
 
@@ -152,7 +163,7 @@ class FederalAccount(ClientAwareModel):
         See "Who caches what" in :mod:`usaspending.queries.filter_tree_query` for
         why a model caches the models where a resource may cache the query.
         """
-        return self._new_tas_codes_query().all()
+        return self._new_tas_codes_query(self.toptier_code).all()
 
     def __repr__(self) -> str:
         """String representation of FederalAccount."""

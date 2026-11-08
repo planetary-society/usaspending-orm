@@ -5,10 +5,12 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from ..config import config
 from ..logging_config import USASpendingLogger
 from .base_resource import BaseResource
 
 if TYPE_CHECKING:
+    from ..client import USASpendingClient
     from ..queries.tas_agencies_query import TASAgenciesQuery
 
 logger = USASpendingLogger.get_logger(__name__)
@@ -32,6 +34,29 @@ class TASResource(BaseResource):
     """
 
     ENDPOINT = "/references/filter_tree/tas/"
+
+    def __init__(self, client: USASpendingClient):
+        """Initialize the resource with an empty account-parent cache.
+
+        Args:
+            client: USASpendingClient client instance.
+        """
+        super().__init__(client)
+        self._parent_codes: dict[str, dict[str, str | None]] = {}
+
+    def _parent_code_for_account(self, account_code: str) -> str | None:
+        """Read an account's actual parent; its prefix need not be that agency's code."""
+        parents = self._parent_codes.setdefault(config.base_url, {})
+        if account_code not in parents:
+            response = self._client._make_request(
+                "GET", self.ENDPOINT, params={"filter": account_code, "depth": 1}
+            )
+            # The text filter also returns neighboring accounts; remember them too.
+            for agency in response["results"]:
+                for account in agency.get("children") or []:
+                    parents.setdefault(account["id"], agency["id"])
+            parents.setdefault(account_code, None)
+        return parents[account_code]
 
     @cached_property
     def agencies(self) -> TASAgenciesQuery:

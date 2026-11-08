@@ -1276,7 +1276,7 @@
       "contract_pricing_type_codes": "contract_pricing_type_codes(self, *type_codes)",
       "contracts": "contracts(self)",
       "count": "count(self)",
-      "count_awards_by_type": "count_awards_by_type(self)",
+      "count_awards_by_type": "count_awards_by_type(self, filters=None)",
       "def_codes": "def_codes(self, *def_codes)",
       "description": "description(self, text)",
       "direct_payments": "direct_payments(self)",

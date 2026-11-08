@@ -68,6 +68,12 @@ except APIError as error:
 `ValidationError` indicates a caller error and is not retried. Transport and
 selected server failures use the configured retry policy.
 
+Each HTTP attempt, including retries and download redirects, consumes a
+rate-limit slot and counts toward session renewal. A reset takes effect on the
+next attempt. Exhausted connection errors and timeouts propagate as
+`requests.RequestException` subclasses; catch those alongside the library's
+exceptions when handling network failures.
+
 ## Long batch runs
 
 A job that sweeps many queries hits different limits from an interactive one.

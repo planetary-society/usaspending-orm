@@ -130,10 +130,11 @@ class ClientAwareModel(BaseModel):
     #: reattach rebinds them in place and keeps the cache instead, so an entry must
     #: hold models the walk can reach: a model, or a dict/list/tuple/set of them.
     #:
-    #: Two subclasses override it, one filter-tree level each. Growing that past a
-    #: couple is the signal to replace this with a descriptor that checks staleness
-    #: when the level is read, which would retire the tuple and the non-recursive
-    #: branch of :meth:`reattach` together, for under a microsecond per read.
+    #: Agency and FederalAccount override it for their filter-tree levels, Funding
+    #: and AwardAccount for their cached relationships. That is past the couple this
+    #: tuple was meant for, so the next cache added should instead replace it with a
+    #: descriptor that checks staleness when read, retiring the tuple and the
+    #: non-recursive branch of :meth:`reattach` together, for under a microsecond.
     _REATTACH_INVALIDATES: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, data: dict[str, Any], client: USASpendingClient):

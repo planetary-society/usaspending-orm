@@ -28,7 +28,7 @@ class TestSubAwardsResource:
 
         # Should return a SubAwardsSearch instance with award_id set
         assert query.__class__.__name__ == "SubAwardsSearch"
-        assert query._award_id == "CONT_AWD_123"
+        assert query.to_filters_payload()["award_unique_id"] == "CONT_AWD_123"
         assert query._client is mock_usa_client
 
     def test_for_award_strips_whitespace(self, mock_usa_client):
@@ -37,7 +37,7 @@ class TestSubAwardsResource:
 
         query = resource.award_id("  CONT_AWD_123  ")
 
-        assert query._award_id == "CONT_AWD_123"
+        assert query.to_filters_payload()["award_unique_id"] == "CONT_AWD_123"
 
     def test_for_award_with_empty_id_raises_error(self, mock_usa_client):
         """Test that for_award with empty award_id raises ValidationError."""
@@ -84,7 +84,7 @@ class TestSubAwardsResource:
             .page_size(25)
         )
 
-        assert query._award_id == "CONT_AWD_123"
+        assert query.to_filters_payload()["award_unique_id"] == "CONT_AWD_123"
         assert query._total_limit == 10
         assert query._page_size == 25
 
@@ -99,5 +99,5 @@ class TestSubAwardsResource:
         query2 = resource.search().award_id("CONT_AWD_123")
 
         # Both should have the same award_id set
-        assert query1._award_id == "CONT_AWD_123"
-        assert query2._award_id == "CONT_AWD_123"
+        assert query1.to_filters_payload()["award_unique_id"] == "CONT_AWD_123"
+        assert query2.to_filters_payload()["award_unique_id"] == "CONT_AWD_123"

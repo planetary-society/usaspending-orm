@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import warnings
+from itertools import chain
 from typing import TYPE_CHECKING
 
+from ..config import config
+from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
+from ..utils.validations import validate_toptier_code
 from .base_resource import BaseResource
 
 if TYPE_CHECKING:
+    from ..client import USASpendingClient
     from ..models.agency import Agency
     from ..queries.agencies_search import AgenciesSearch
     from ..queries.sub_agency_query import SubAgencyQuery
@@ -21,6 +26,36 @@ class AgencyResource(BaseResource):
 
     Provides access to agency overview and detail endpoints.
     """
+
+    def __init__(self, client: USASpendingClient):
+        """Initialize the resource with an empty agency-code crosswalk cache.
+
+        Args:
+            client: USASpendingClient client instance.
+        """
+        super().__init__(client)
+        self._toptier_codes: dict[str, dict[str, str]] = {}
+
+    def _toptier_code_for_id(self, agency_id: str | int) -> str | None:
+        """Resolve a top-tier database ID without confusing it with a Treasury code."""
+        codes = self._toptier_codes.get(config.base_url)
+        if codes is None:
+            codes = {}
+            for agency_type in ("award_agencies", "account_agencies"):
+                agencies = self._client._make_request(
+                    "POST", "/bulk_download/list_agencies/", json={"type": agency_type}
+                )["agencies"]
+                for agency in chain(agencies["cfo_agencies"], agencies["other_agencies"]):
+                    # One malformed upstream row must not make every ID unresolvable.
+                    try:
+                        code = validate_toptier_code(agency.get("toptier_code"))
+                    except ValidationError:
+                        logger.warning(f"Skipping agency with invalid toptier code: {agency}")
+                        continue
+                    codes[str(agency["toptier_agency_id"])] = code
+            # Publish only the complete crosswalk so a failed fetch remains retryable.
+            self._toptier_codes[config.base_url] = codes
+        return codes.get(str(agency_id))
 
     def search(self) -> AgenciesSearch:
         """Create a new agency autocomplete query builder.

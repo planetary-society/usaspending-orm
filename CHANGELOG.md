@@ -4,6 +4,63 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.1] - 2026-11-08
+
+Fixes from a reliability and safety review of downloads, the request path,
+chained filters, subaward queries, and relationship navigation, plus packaging
+metadata updates.
+
+### Changed
+
+- Agency summary properties and `get_obligations()`/`get_transaction_count()`
+  now raise server, rate-limit, session, and transport errors instead of caching
+  `None`, so a temporary outage can be retried. An API answer that the agency
+  does not exist still yields `None`.
+- Response cache keys now include the API base URL, so entries written by
+  earlier versions are not reused after upgrading.
+
+### Fixed
+
+- Downloads write to a temporary file and replace the destination only after a
+  complete transfer, so a failed retry no longer deletes an existing archive.
+  Every redirect is checked against the https and allowed-host rules before it
+  is followed. ZIP extraction rejects paths that escape through existing
+  symlinks. A missing status URL falls back to the queued URL, and local polling
+  timeouts can be resumed.
+- Retries use the current session after a session reset and count every HTTP
+  attempt toward rate and session limits. Concurrent rate-limit waiters recheck
+  capacity after waking. Transport failures no longer start a second request
+  through the cache fallback.
+- Chained NAICS, PSC, and TAS restrictions merge without dropping earlier
+  filters; incompatible PSC forms and combined filter-limit violations are
+  rejected.
+- Subaward searches, counts, and downloads keep the same prime-award scope.
+  `count()` respects every filter and makes one request to
+  `/search/spending_by_award_count/` instead of fetching every page, and
+  `count_awards_by_type()` returns the `subcontracts` and `subgrants` buckets
+  instead of an empty result.
+- Reverse slices such as `query[::-1]` return results, and stepped slices fetch
+  each page once.
+- Funding and award-account agencies report the real Treasury toptier code
+  instead of the internal database ID. The ID-to-code crosswalk costs two
+  requests per client and base URL. Federal accounts resolve their parent agency
+  through the TAS tree instead of the account prefix, with one request per
+  distinct account per client. Both lookups wait until a code is needed.
+- Subrecipient UUIDs populate `recipient_id` instead of the DUNS field, so
+  subrecipient details load lazily.
+- Agency totals keep supplied zero obligations instead of refetching them.
+  Fetching full award details refreshes a cached period of performance.
+  Funding relationships reuse their models and follow `reattach()`.
+
+### Packaging and documentation
+
+- README links to the changelog, license, and docs now use absolute GitHub
+  URLs so they resolve on the PyPI project page.
+- Updated the package summary, pointed the Documentation project URL at the
+  docs folder, and added a Changelog project URL.
+- Installation instructions now lead with `uv add`, with pip as the
+  alternative.
+
 ## [0.10.0] - 2026-11-03
 
 Tracks upstream usaspending-api changes through November 3, 2026: adds grouped

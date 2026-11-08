@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ..utils.numbers import round_to_millions, to_decimal, to_int
 from .base_model import ClientAwareModel
@@ -16,6 +17,12 @@ if TYPE_CHECKING:
 
 class Funding(ClientAwareModel):
     """Represents federal account funding data for an award."""
+
+    _REATTACH_INVALIDATES: ClassVar[tuple[str, ...]] = (
+        "federal_account",
+        "funding_agency",
+        "awarding_agency",
+    )
 
     def __init__(self, data: dict[str, Any], client: USASpendingClient):
         """Initialize Funding instance.
@@ -64,7 +71,7 @@ class Funding(ClientAwareModel):
         """
         return self.get_value("federal_account")
 
-    @property
+    @cached_property
     def federal_account(self) -> FederalAccount | None:
         """Retrieve the FederalAccount object for this funding record.
 
@@ -80,18 +87,9 @@ class Funding(ClientAwareModel):
         data = {
             "id": code,
             "description": self.get_value("account_title"),
-            "ancestors": [str(self.funding_toptier_agency_id)]
-            if self.funding_toptier_agency_id
-            else [],
         }
 
-        return FederalAccount(
-            data=data,
-            client=self._client,
-            toptier_code=str(self.funding_toptier_agency_id)
-            if self.funding_toptier_agency_id
-            else None,
-        )
+        return FederalAccount(data=data, client=self._client)
 
     @property
     def account_title(self) -> str | None:
@@ -139,7 +137,7 @@ class Funding(ClientAwareModel):
         """
         return self.get_value("funding_agency_slug")
 
-    @property
+    @cached_property
     def funding_agency(self) -> Agency | None:
         """Retrieve the Agency object for the funding agency.
 
@@ -149,20 +147,7 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[Agency]: The Agency object for the funding agency, or None.
         """
-        toptier_code = self.funding_toptier_agency_id
-        if not toptier_code:
-            return None
-
-        from .agency import Agency
-
-        data = {
-            "toptier_code": toptier_code,
-            "name": self.get_value("funding_agency_name"),
-            "agency_id": self.get_value("funding_agency_id"),
-            "slug": self.get_value("funding_agency_slug"),
-        }
-
-        return Agency(data=data, client=self._client)
+        return self._build_agency("funding")
 
     @property
     def awarding_agency_name(self) -> str | None:
@@ -201,7 +186,7 @@ class Funding(ClientAwareModel):
         """
         return self.get_value("awarding_agency_slug")
 
-    @property
+    @cached_property
     def awarding_agency(self) -> Agency | None:
         """Retrieve the Agency object for the awarding agency.
 
@@ -211,17 +196,21 @@ class Funding(ClientAwareModel):
         Returns:
             Optional[Agency]: The Agency object for the awarding agency, or None.
         """
-        toptier_code = self.awarding_toptier_agency_id
-        if not toptier_code:
+        return self._build_agency("awarding")
+
+    def _build_agency(self, agency_type: str) -> Agency | None:
+        """Build either award agency, keeping its database ID separate from its code."""
+        agency_id = self.get_value(f"{agency_type}_toptier_agency_id")
+        if agency_id is None:
             return None
 
         from .agency import Agency
 
         data = {
-            "toptier_code": toptier_code,
-            "name": self.get_value("awarding_agency_name"),
-            "agency_id": self.get_value("awarding_agency_id"),
-            "slug": self.get_value("awarding_agency_slug"),
+            "toptier_agency_id": agency_id,
+            "name": self.get_value(f"{agency_type}_agency_name"),
+            "agency_id": self.get_value(f"{agency_type}_agency_id"),
+            "slug": self.get_value(f"{agency_type}_agency_slug"),
         }
 
         return Agency(data=data, client=self._client)

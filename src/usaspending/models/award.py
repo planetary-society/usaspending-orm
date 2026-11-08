@@ -99,6 +99,13 @@ class Award(LazyRecord):
         )
         super().__init__(raw, client)
 
+    def _ensure_details(self) -> None:
+        """Discard the search date projection only after details load successfully."""
+        if self._details_fetched:
+            return
+        super()._ensure_details()
+        self.__dict__.pop("period_of_performance", None)
+
     def _fetch_details(self) -> dict[str, Any] | None:
         """Fetch full award details from the awards resource.
 

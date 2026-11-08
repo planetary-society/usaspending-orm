@@ -9,12 +9,63 @@ triggered when a property not present in the search result is accessed.
 
 from __future__ import annotations
 
+from datetime import date
 from unittest.mock import Mock
 
 import pytest
 
 from tests.utils import assert_decimal_equal
+from usaspending.exceptions import APIError
 from usaspending.models import Award, Location, PeriodOfPerformance, Recipient
+
+
+def test_detail_fetch_replaces_cached_search_dates(mock_usa_client, monkeypatch):
+    award = Award(
+        {"generated_unique_award_id": "CONT_AWD_TEST", "Start Date": "2020-01-01"}, mock_usa_client
+    )
+    original_period = award.period_of_performance
+    fetch = Mock(
+        return_value={
+            "period_of_performance": {
+                "start_date": "2020-01-01",
+                "end_date": "2025-09-30",
+                "potential_end_date": "2030-09-30",
+            }
+        }
+    )
+    monkeypatch.setattr(award, "_fetch_details", fetch)
+    award.fetch_all_details()
+    period = award.period_of_performance
+    assert period is not original_period
+    assert award.end_date == date(2025, 9, 30)
+    assert period.potential_end_date == date(2030, 9, 30)
+    award.fetch_all_details()
+    assert award.period_of_performance is period
+    assert fetch.call_count == 1
+    mock_usa_client.close()
+    assert award.end_date == date(2025, 9, 30)
+
+
+def test_failed_detail_fetch_keeps_dates_and_retries(mock_usa_client, monkeypatch):
+    award = Award(
+        {"generated_unique_award_id": "CONT_AWD_TEST", "Start Date": "2020-01-01"}, mock_usa_client
+    )
+    period = award.period_of_performance
+    monkeypatch.setattr(
+        award,
+        "_fetch_details",
+        Mock(
+            side_effect=[
+                APIError("Unavailable", 503),
+                {"period_of_performance": {"start_date": "2020-01-01", "end_date": "2025-09-30"}},
+            ]
+        ),
+    )
+    with pytest.raises(APIError):
+        award.fetch_all_details()
+    assert award.period_of_performance is period
+    award.fetch_all_details()
+    assert award.end_date == date(2025, 9, 30)
 
 
 class BaseTestAwardLazyLoading:

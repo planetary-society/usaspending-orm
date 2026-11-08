@@ -6,16 +6,16 @@
 - Network access to `api.usaspending.gov`
 - No USAspending API key
 
-Install the released package:
-
-```console
-python -m pip install usaspending-orm
-```
-
-Or add it to a uv-managed project:
+Add the released package to a uv-managed project:
 
 ```console
 uv add usaspending-orm
+```
+
+Or install it with pip:
+
+```console
+python -m pip install usaspending-orm
 ```
 
 Verify the installation:

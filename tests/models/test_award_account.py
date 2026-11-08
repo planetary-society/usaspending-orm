@@ -8,6 +8,19 @@ from usaspending.models.agency import Agency
 from usaspending.models.award_account import AwardAccount
 
 
+@pytest.fixture(autouse=True)
+def account_parent_response(mock_usa_client, load_fixture):
+    """Supply the recorded account hierarchy for lazy parent resolution."""
+    mock_usa_client.set_response(
+        "/references/filter_tree/tas/",
+        {
+            "results": [
+                {"id": "080", "children": load_fixture("tas_federal_accounts.json")["results"]}
+            ]
+        },
+    )
+
+
 class TestAwardAccountInitialization:
     """Tests for AwardAccount initialization and field mapping."""
 
@@ -22,19 +35,9 @@ class TestAwardAccountInitialization:
         return accounts_fixture["results"][0]
 
     @pytest.fixture
-    def second_account_data(self, accounts_fixture):
-        """Get second account data from fixture."""
-        return accounts_fixture["results"][1]
-
-    @pytest.fixture
     def first_account(self, first_account_data, mock_usa_client):
         """Create AwardAccount from first fixture record."""
         return AwardAccount(first_account_data, mock_usa_client)
-
-    @pytest.fixture
-    def second_account(self, second_account_data, mock_usa_client):
-        """Create AwardAccount from second fixture record."""
-        return AwardAccount(second_account_data, mock_usa_client)
 
     def test_initialization_from_api_response(self, first_account):
         """Test initialization with API response data."""
@@ -65,17 +68,11 @@ class TestAwardAccountInitialization:
         expected = first_account_data["account_title"]
         assert first_account.account_title == expected
 
-    def test_toptier_code_extraction(self, first_account, first_account_data):
-        """Test that toptier_code is extracted from federal_account."""
-        expected_toptier = first_account_data["federal_account"].split("-")[0]
-        assert first_account.toptier_code == expected_toptier
-
-    def test_toptier_code_extraction_second_account(self, second_account, second_account_data):
-        """Test toptier_code extraction from second fixture account."""
-        expected_id = second_account_data["federal_account"]
-        expected_toptier = expected_id.split("-")[0]
-        assert second_account.id == expected_id
-        assert second_account.toptier_code == expected_toptier
+    @pytest.mark.parametrize("account_index", [0, 1])
+    def test_toptier_code_resolution(self, accounts_fixture, account_index, mock_usa_client):
+        """The recorded TAS hierarchy supplies each account's parent code."""
+        account = AwardAccount(accounts_fixture["results"][account_index], mock_usa_client)
+        assert account.toptier_code == "080"
 
 
 class TestAwardAccountProperties:
@@ -188,43 +185,20 @@ class TestAwardAccountTASCodes:
         """Load accounts fixture data."""
         return load_fixture("awards/accounts.json")
 
-    @pytest.fixture
-    def first_account_data(self, accounts_fixture):
-        """Get first account data from fixture."""
-        return accounts_fixture["results"][0]
+    @pytest.mark.parametrize("account_index", [0, 1])
+    def test_tas_codes_use_the_parent_returned_by_the_hierarchy(
+        self, accounts_fixture, account_index, mock_usa_client
+    ):
+        """Test tas_codes resolves the parent on iteration, not on access."""
+        federal_account = accounts_fixture["results"][account_index]["federal_account"]
+        account = AwardAccount(accounts_fixture["results"][account_index], mock_usa_client)
+        endpoint = f"/references/filter_tree/tas/080/{federal_account}/"
+        mock_usa_client.set_response(endpoint, {"results": []})
 
-    @pytest.fixture
-    def second_account_data(self, accounts_fixture):
-        """Get second account data from fixture."""
-        return accounts_fixture["results"][1]
-
-    @pytest.fixture
-    def first_account(self, first_account_data, mock_usa_client):
-        """Create AwardAccount from first fixture record."""
-        return AwardAccount(first_account_data, mock_usa_client)
-
-    @pytest.fixture
-    def second_account(self, second_account_data, mock_usa_client):
-        """Create AwardAccount from second fixture record."""
-        return AwardAccount(second_account_data, mock_usa_client)
-
-    def test_tas_codes_has_correct_toptier_code(self, first_account, first_account_data):
-        """Test tas_codes uses toptier_code extracted from federal_account."""
-        federal_account = first_account_data["federal_account"]
-        expected_toptier = federal_account.split("-")[0]
-
-        tas_query = first_account.tas_codes
-        assert tas_query._toptier_code == expected_toptier
-        assert tas_query._federal_account == federal_account
-
-    def test_tas_codes_works_for_second_account(self, second_account, second_account_data):
-        """Test tas_codes for second fixture account."""
-        federal_account = second_account_data["federal_account"]
-        expected_toptier = federal_account.split("-")[0]
-
-        tas_query = second_account.tas_codes
-        assert tas_query._toptier_code == expected_toptier
-        assert tas_query._federal_account == federal_account
+        tas_query = account.tas_codes
+        assert mock_usa_client.get_request_count() == 0
+        assert tas_query.all() == []
+        assert mock_usa_client.get_request_count(endpoint) == 1
 
 
 class TestAwardAccountRepr:
@@ -257,20 +231,11 @@ class TestAwardAccountRepr:
 class TestAwardAccountEdgeCases:
     """Tests for edge cases and error handling."""
 
-    def test_extract_toptier_code_with_none(self):
-        """Test _extract_toptier_code with None input."""
-        result = AwardAccount._extract_toptier_code(None)
-        assert result is None
-
-    def test_extract_toptier_code_with_empty_string(self):
-        """Test _extract_toptier_code with empty string."""
-        result = AwardAccount._extract_toptier_code("")
-        assert result is None
-
-    def test_extract_toptier_code_with_no_hyphen(self):
-        """Test _extract_toptier_code with no hyphen."""
-        result = AwardAccount._extract_toptier_code("0800131")
-        assert result == "0800131"
+    @pytest.mark.parametrize("code", [None, ""])
+    def test_missing_code_does_not_resolve_parent(self, mock_usa_client, code):
+        account = AwardAccount({"federal_account": code}, mock_usa_client)
+        mock_usa_client.forbid_requests()
+        assert account.toptier_code is None
 
     def test_missing_obligated_amount_returns_none(self, mock_usa_client):
         """An absent amount is None, so callers can tell it from a reported zero."""

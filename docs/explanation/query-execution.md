@@ -34,6 +34,9 @@ they do not pre-load the entire result set.
 `.all()` materializes the bounded query into a list. Prefer iteration when
 streaming pages is sufficient.
 
+Slices support positive and negative steps. Within a stepped slice, each
+visited page is fetched once, even when several selected records share it.
+
 ## Count consistency
 
 `count()` uses a companion endpoint when USAspending provides one. Library
@@ -52,6 +55,10 @@ Some upstream search and count endpoints accept different filters. When a
 correct count cannot be requested, the library raises `ValidationError` rather
 than returning a misleading number.
 
+Subaward counts use the grouped count endpoint with the same filters as the
+search, including the prime-award restriction. Counting does not download all
+matching subaward rows.
+
 ## Immutable chaining
 
 Fluent methods return a clone with the new filter, sort, or bound. A partly
@@ -66,3 +73,8 @@ california = base.place_of_performance_locations(
 
 After this call, `base` remains unchanged and `california` carries the added
 location filter.
+
+Repeated NAICS, hierarchical PSC, and TAS calls combine their `require` and
+`exclude` lists. Combined size and depth limits are checked before execution.
+Mixing simple PSC codes with hierarchical PSC restrictions raises
+`ValidationError`, including when the formats appear in separate chained calls.

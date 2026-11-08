@@ -674,6 +674,84 @@ class TestClassificationCodeFilters:
         assert filter_dict == {"def_codes": ["L", "M", "N"]}
 
 
+class TestChainedCodeFilters:
+    @pytest.mark.parametrize(
+        ("method", "required", "excluded"),
+        [
+            ("naics_codes", "54", "5417"),
+            ("psc_codes", ["Service", "D"], ["Service", "D", "D301"]),
+            ("tas_codes", ["091"], ["091", "091-0800"]),
+        ],
+    )
+    def test_require_and_exclude_survive_chaining(self, search_builder, method, required, excluded):
+        original = getattr(search_builder, method)(require=[required])
+        query = getattr(original, method)(exclude=[excluded])
+        query = getattr(query, method)()
+        expected = {method: {"require": [required], "exclude": [excluded]}}
+
+        assert query.to_filters_payload() == expected
+        assert query.to_filters_payload() == expected
+        assert original.to_filters_payload() == {method: {"require": [required]}}
+
+    @pytest.mark.parametrize("method", ["naics_codes", "psc_codes", "tas_codes"])
+    def test_repeated_sides_accumulate_without_mutating_clones(self, search_builder, method):
+        first, second = ("54", "62") if method == "naics_codes" else (["091"], ["097"])
+        original = getattr(search_builder, method)(require=[first])
+        query = getattr(original, method)(require=[second])
+
+        assert query.to_filters_payload() == {method: {"require": [first, second]}}
+        assert original.to_filters_payload() == {method: {"require": [first]}}
+
+    @pytest.mark.parametrize("simple_first", [True, False])
+    def test_psc_formats_cannot_be_mixed_across_calls(
+        self, search_builder, mock_usa_client, simple_first
+    ):
+        mock_usa_client.forbid_requests()
+        if simple_first:
+            query = search_builder.psc_codes("1510").psc_codes(exclude=[["Service", "D"]])
+        else:
+            query = search_builder.psc_codes(exclude=[["Service", "D"]]).psc_codes("1510")
+
+        with pytest.raises(ValidationError, match="Cannot mix"):
+            query.contracts().first()
+
+    def test_empty_psc_call_preserves_simple_format(self, search_builder):
+        query = search_builder.psc_codes("1510").psc_codes().psc_codes("1520")
+        assert query.to_filters_payload() == {"psc_codes": ["1510", "1520"]}
+
+    @pytest.mark.parametrize("method", ["naics_codes", "psc_codes"])
+    def test_flat_codes_validate_combined_size(self, search_builder, mock_usa_client, method):
+        mock_usa_client.forbid_requests()
+        codes = [str(i) for i in range(200)]
+        if method == "naics_codes":
+            query = search_builder.naics_codes(require=codes).naics_codes(exclude=["999"])
+        else:
+            query = search_builder.psc_codes(*codes).psc_codes("999")
+
+        with pytest.raises(ValidationError, match=rf"{method}.*201.*200"):
+            query.contracts().first()
+
+    @pytest.mark.parametrize("method", ["psc_codes", "tas_codes"])
+    @pytest.mark.parametrize("side", ["require", "exclude"])
+    def test_hierarchical_sides_validate_combined_size(
+        self, search_builder, mock_usa_client, method, side
+    ):
+        mock_usa_client.forbid_requests()
+        original = getattr(search_builder, method)(**{side: [[str(i)] for i in range(100)]})
+        query = getattr(original, method)(**{side: [["999"]]})
+
+        with pytest.raises(ValidationError, match=rf"{method}\.{side}.*101.*100"):
+            query.contracts().first()
+
+    def test_psc_tier_one_expansion_validates_combined_size(self, search_builder, mock_usa_client):
+        mock_usa_client.forbid_requests()
+        query = search_builder.psc_codes(require=[["Service"] for _ in range(8)])
+        query = query.psc_codes(exclude=[["Service"]])
+
+        with pytest.raises(ValidationError, match=r"psc_codes.*225.*200"):
+            query.contracts().first()
+
+
 class TestMethodChaining:
     """Test that all filter methods support chaining and immutability."""
 

@@ -25,6 +25,17 @@ with USASpendingClient() as client:
 Relationships may use data already embedded in the award response or may issue
 another request. Access them while the client remains open.
 
+Funding relationships distinguish internal agency IDs from Treasury codes and
+account parents. Resolving an agency code or an unknown account parent can make
+an additional lookup; creating the relationship and reading an existing name
+does not. Missing mappings remain unresolved instead of guessing an identifier.
+Repeated funding relationship reads reuse the same models.
+
+After `fetch_all_details()`, the next period-of-performance read reflects the
+full award response. A period object saved before that fetch remains a snapshot
+of the earlier data. Agency summary properties preserve reported zero totals
+and propagate transient failures, allowing the next access to retry.
+
 ## Avoid accidental N+1 requests
 
 Reading a lazy property for every row can turn one search into many detail
@@ -59,3 +70,5 @@ with USASpendingClient() as new_client:
 ```
 
 `recursive=True` also rebinds related models already loaded from the award.
+For funding records, ordinary reattachment clears cached relationships so they
+are rebuilt with the new client; recursive reattachment rebinds them in place.

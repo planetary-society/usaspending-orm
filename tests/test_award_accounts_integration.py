@@ -108,15 +108,19 @@ class TestAwardAccountsDataAccess:
         assert agency.name == first_account_data["funding_agency_name"]
         assert agency.abbreviation == first_account_data["funding_agency_abbreviation"]
 
-    def test_account_tas_codes_query(self, first_account, first_account_data):
+    def test_account_tas_codes_query(self, first_account, first_account_data, mock_usa_client):
         """Test accessing tas_codes through award.accounts."""
         federal_account = first_account_data["federal_account"]
-        expected_toptier = federal_account.split("-")[0]
+        mock_usa_client.set_response(
+            "/references/filter_tree/tas/",
+            {"results": [{"id": "080", "children": [{"id": federal_account}]}]},
+        )
 
-        tas_query = first_account.tas_codes
+        endpoint = f"/references/filter_tree/tas/080/{federal_account}/"
+        mock_usa_client.set_response(endpoint, {"results": []})
 
-        assert tas_query._toptier_code == expected_toptier
-        assert tas_query._federal_account == federal_account
+        assert first_account.tas_codes.all() == []
+        assert mock_usa_client.get_request_count(endpoint) == 1
 
 
 class TestClientAwardAccountsAccess:

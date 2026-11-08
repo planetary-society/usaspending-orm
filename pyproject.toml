@@ -1,7 +1,7 @@
 [project]
 name = "usaspending-orm"
-version = "0.10.0"
-description = "A Python ORM wrapper for the USAspending.gov API with intuitive queries, automatic pagination, and smart caching"
+version = "0.10.1"
+description = "ORM-style Python interface to the USAspending.gov API with fluent query builders and navigable models for federal awards, recipients, agencies, and spending"
 authors = [
     {name = "Casey Dreier", email = "casey.dreier@planetary.org"}
 ]
@@ -36,7 +36,8 @@ dependencies = [
 Homepage = "https://github.com/planetary-society/usaspending-orm"
 Repository = "https://github.com/planetary-society/usaspending-orm"
 Issues = "https://github.com/planetary-society/usaspending-orm/issues"
-Documentation = "https://github.com/planetary-society/usaspending-orm/blob/main/README.md"
+Documentation = "https://github.com/planetary-society/usaspending-orm/tree/main/docs"
+Changelog = "https://github.com/planetary-society/usaspending-orm/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [

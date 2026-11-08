@@ -25,9 +25,9 @@ leaving clients on stale settings.
 ## What gets cached
 
 The unit of caching is one HTTP request, not one query. A cache entry is keyed
-on the endpoint and the full request payload, so two searches that differ in any
-filter, sort, or page are separate entries, and a repeat of the identical
-request is a hit.
+on the resolved URL, namespace, and full request payload, so two searches that
+differ in API server, filter, sort, or page are separate entries. A repeat of the
+identical request is a hit and consumes no rate-limit or session allowance.
 
 Because the unit is the request, caching covers everything the library sends:
 search pages, count calls, award detail lookups, and the follow-up requests
@@ -48,9 +48,9 @@ Reading from the cache is best-effort. If the store is unreadable, locked, or
 corrupt, the client logs a warning and issues the request normally. A broken
 cache degrades performance, never correctness.
 
-API errors are the exception to that fallback: `APIError`, `HTTPError`,
-`RateLimitError`, and `ValidationError` propagate to the caller rather than
-being retried uncached, because they describe the request rather than the cache.
+Library errors and transport errors such as `requests.Timeout` and
+`requests.ConnectionError` propagate to the caller after the configured retry
+policy. Cache fallback does not start another sequence of network retries.
 
 ## Backends
 

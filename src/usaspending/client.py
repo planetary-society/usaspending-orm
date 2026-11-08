@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import stat
 import time
+import uuid
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin, urlparse
@@ -12,7 +14,7 @@ import cachier
 import requests
 
 from .config import config, register_cache_settings_observer
-from .exceptions import APIError, DownloadError, HTTPError, RateLimitError, ValidationError
+from .exceptions import APIError, DownloadError, HTTPError, USASpendingError
 from .logging_config import USASpendingLogger, log_api_request, log_api_response
 
 if TYPE_CHECKING:
@@ -297,11 +299,11 @@ class USASpendingClient:
         **kwargs,
     ) -> dict[str, Any]:
         """A cacheable HTTP request method with fallback for cache failures."""
-        try:
-            # Try cached version first if caching is enabled
-            if config.cache_enabled:
+        if config.cache_enabled:
+            try:
                 cached_result = self._make_cached_request(
                     config.cache_namespace,
+                    config.base_url,
                     method,
                     endpoint,
                     params=params,
@@ -309,30 +311,26 @@ class USASpendingClient:
                     **kwargs,
                 )
                 # Validate that cache returned proper data
-                if cached_result is not None and isinstance(cached_result, dict):
+                if isinstance(cached_result, dict):
                     logger.debug(f"Cache hit for {method} {endpoint}")
                     return cached_result
-                else:
-                    logger.warning(
-                        f"Cache returned invalid data for {method} {endpoint}, falling back to uncached request"
-                    )
+                logger.warning(
+                    f"Cache returned invalid data for {method} {endpoint}, falling back to uncached request"
+                )
+            except (USASpendingError, requests.RequestException):
+                # A cache miss executes the request; its failures are not cache failures.
+                raise
+            except Exception as cache_error:
+                logger.warning(
+                    f"Cache operation failed for {method} {endpoint}: {cache_error}. Using uncached request."
+                )
 
-            # Fallback to uncached request if cache disabled or returned invalid data
-            return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
-        except (APIError, HTTPError, ValidationError, RateLimitError):
-            # These are normal API errors - let them propagate without fallback
-            # Cachier will re-execute on next call (doesn't cache exceptions)
-            raise
-        except Exception as cache_error:
-            # Only catch serious cache failures (file corruption, lock issues, etc.)
-            logger.warning(
-                f"Cache operation failed for {method} {endpoint}: {cache_error}. Using uncached request."
-            )
-            return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
+        return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
 
     def _make_cached_request_impl(
         self,
         cache_namespace: str,
+        base_url: str,
         method: str,
         endpoint: str,
         params: dict[str, Any] | None = None,
@@ -345,6 +343,8 @@ class USASpendingClient:
             cache_namespace: Per-client namespace for cache isolation.  Not
                 used in the method body -- it exists so cachier includes it
                 in the hash key, isolating caches across namespaces.
+            base_url: API base URL. Like ``cache_namespace``, it is only part of
+                the hash key, so switching servers never serves another's data.
             method: HTTP method (GET, POST, etc.)
             endpoint: API endpoint (without base URL)
             params: Query parameters
@@ -352,6 +352,19 @@ class USASpendingClient:
             **kwargs: Additional arguments for requests
         """
         return self._make_uncached_request(method, endpoint, params=params, json=json, **kwargs)
+
+    def _send_request(self, method: str, url: str, **kwargs) -> requests.Response:
+        """Throttle and count each attempt using the current session."""
+        self.rate_limiter.wait_if_needed()
+        self._count_attempt()
+        return self._session.request(method, url, **kwargs)
+
+    def _count_attempt(self) -> None:
+        """Count one request attempt, starting a fresh session once the limit is reached."""
+        if self._request_count >= config.session_request_limit:
+            logger.info(f"Proactively resetting session after {self._request_count} requests")
+            self.reset_session()
+        self._request_count += 1
 
     def _make_uncached_request(
         self,
@@ -378,15 +391,6 @@ class USASpendingClient:
             APIError: For API-reported errors
             RateLimitError: When rate limited
         """
-        # Apply rate limiting
-        self.rate_limiter.wait_if_needed()
-
-        # Increment request counter and check for proactive session reset
-        self._request_count += 1
-        if self._request_count >= config.session_request_limit:
-            logger.info(f"Proactively resetting session after {self._request_count} requests")
-            self.reset_session()
-
         # Build full URL
         url = urljoin(config.base_url, endpoint.lstrip("/"))
 
@@ -409,7 +413,7 @@ class USASpendingClient:
 
         try:
             # Make request with retry
-            response = self.retry_handler.execute(self._session.request, **request_kwargs)
+            response = self.retry_handler.execute(self._send_request, **request_kwargs)
 
             # Calculate duration
             duration = time.time() - start_time
@@ -551,47 +555,72 @@ class USASpendingClient:
         else:
             download_url = urljoin(config.base_url, file_url.lstrip("/"))
 
-        # Restrict downloads to the configured allow-list of hosts. The API
-        # returns absolute file_url values; allow-listing prevents SSRF if
-        # the response is tampered with (e.g., redirected to metadata
-        # endpoints or attacker-controlled hosts).
-        parsed_download = urlparse(download_url)
-        if parsed_download.scheme != "https":
-            raise DownloadError(
-                f"Refusing to download over non-https scheme: {parsed_download.scheme!r}",
-                file_name=os.path.basename(destination_path),
-            )
-        if parsed_download.hostname not in config.allowed_download_hosts:
-            raise DownloadError(
-                f"Download host {parsed_download.hostname!r} is not in "
-                f"config.allowed_download_hosts.",
-                file_name=os.path.basename(destination_path),
-            )
-
         logger.info(f"Downloading binary file from {download_url}")
-
-        # Use a longer timeout for file downloads
-        timeout = 600  # 10 minutes
+        destination_dir = os.path.dirname(os.path.abspath(destination_path))
+        file_name = os.path.basename(destination_path)
 
         def download_operation():
-            """Inner function for retry handler."""
-            response = self._session.get(download_url, stream=True, timeout=timeout)
-            if response.status_code >= 400:
-                raise HTTPError(
-                    f"HTTP {response.status_code}: {response.reason}",
-                    status_code=response.status_code,
-                )
-
+            current_url = download_url
+            temporary_path = None
             try:
-                with open(destination_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-            except OSError as e:
-                raise DownloadError(
-                    f"Error writing file to disk: {e}",
-                    file_name=os.path.basename(destination_path),
-                ) from e
+                # The final response may follow up to max_redirects redirects.
+                for _ in range(self._session.max_redirects + 1):
+                    parsed_download = urlparse(current_url)
+                    if parsed_download.scheme != "https":
+                        raise DownloadError(
+                            f"Refusing to download over non-https scheme: {parsed_download.scheme!r}",
+                            file_name=file_name,
+                        )
+                    if parsed_download.hostname not in config.allowed_download_hosts:
+                        raise DownloadError(
+                            f"Download host {parsed_download.hostname!r} is not in "
+                            "config.allowed_download_hosts.",
+                            file_name=file_name,
+                        )
+
+                    with self._send_request(
+                        "GET", current_url, stream=True, timeout=600, allow_redirects=False
+                    ) as response:
+                        if 300 <= response.status_code < 400:
+                            if not response.is_redirect:
+                                raise DownloadError(
+                                    "Invalid download redirects.", file_name=file_name
+                                )
+                            current_url = urljoin(current_url, response.headers["Location"])
+                            continue
+                        if response.status_code >= 400:
+                            raise HTTPError(
+                                f"HTTP {response.status_code}: {response.reason}",
+                                status_code=response.status_code,
+                            )
+
+                        # Keep the previous export intact until the complete replacement is ready.
+                        # Plain open() applies the live umask, unlike mkstemp's fixed 0600.
+                        partial_path = os.path.join(
+                            destination_dir, f".{file_name}.{uuid.uuid4().hex}"
+                        )
+                        with open(partial_path, "xb") as output:
+                            temporary_path = partial_path
+                            for chunk in response.iter_content(chunk_size=1024 * 1024):
+                                if chunk:
+                                    output.write(chunk)
+                        try:
+                            destination_stat = os.stat(destination_path, follow_symlinks=False)
+                        except FileNotFoundError:
+                            pass
+                        else:
+                            if stat.S_ISREG(destination_stat.st_mode):
+                                os.chmod(temporary_path, stat.S_IMODE(destination_stat.st_mode))
+                        os.replace(temporary_path, destination_path)
+                        temporary_path = None
+                        return
+                raise DownloadError("Too many download redirects.", file_name=file_name)
+            finally:
+                if temporary_path is not None:
+                    try:
+                        os.remove(temporary_path)
+                    except OSError as e:
+                        logger.warning(f"Could not remove partial download {temporary_path}: {e}")
 
         try:
             # Execute with retry handling
@@ -600,19 +629,11 @@ class USASpendingClient:
 
         except Exception as e:
             logger.error(f"Failed to download file: {e}")
-            # Clean up partial file if it exists
-            if os.path.exists(destination_path):
-                try:
-                    os.remove(destination_path)
-                    logger.debug(f"Cleaned up partial file: {destination_path}")
-                except OSError:
-                    pass
-
             # Re-raise as DownloadError if not already
             if not isinstance(e, DownloadError):
                 raise DownloadError(
                     f"Failed to download file from {download_url}",
-                    file_name=os.path.basename(destination_path),
+                    file_name=file_name,
                 ) from e
             raise
 

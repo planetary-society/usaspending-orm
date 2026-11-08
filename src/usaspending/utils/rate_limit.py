@@ -49,41 +49,22 @@ class RateLimiter:
         This method will block until it's safe to make another API call
         without exceeding the configured rate limit.
         """
-        with self._lock:
-            now = time.time()
+        while True:
+            with self._lock:
+                now = time.time()
+                cutoff_time = now - self.period
+                while self._call_times and self._call_times[0] <= cutoff_time:
+                    self._call_times.popleft()
 
-            # Remove timestamps outside the current window
-            cutoff_time = now - self.period
-            while self._call_times and self._call_times[0] <= cutoff_time:
-                self._call_times.popleft()
+                if len(self._call_times) < self.max_calls:
+                    self._call_times.append(now)
+                    return
 
-            # If we're at the limit, calculate how long to wait
-            if len(self._call_times) >= self.max_calls:
-                # Wait until the oldest call exits the window
-                oldest_call = self._call_times[0]
-                wait_time = (oldest_call + self.period) - now
+                wait_time = self._call_times[0] + self.period - now
 
-                if wait_time > 0:
-                    logger.info(f"Rate limit reached. Waiting {wait_time:.2f}s before next request")
-                    # Release lock while sleeping to allow other threads
-                    self._lock.release()
-                    try:
-                        time.sleep(wait_time)
-                    finally:
-                        self._lock.acquire()
-
-                    # Re-check and clean up after sleeping
-                    now = time.time()
-                    cutoff_time = now - self.period
-                    while self._call_times and self._call_times[0] <= cutoff_time:
-                        self._call_times.popleft()
-
-            # Record this call
-            self._call_times.append(now)
-
-            logger.debug(
-                f"Recorded API call at {now:.3f}. Current window has {len(self._call_times)} calls"
-            )
+            # Another waiter can claim the slot while we sleep, so check again.
+            logger.info(f"Rate limit reached. Waiting {wait_time:.2f}s before next request")
+            time.sleep(wait_time)
 
     def reset(self) -> None:
         """Reset the rate limiter, clearing all recorded calls."""

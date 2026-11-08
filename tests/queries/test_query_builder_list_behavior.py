@@ -288,6 +288,55 @@ class TestGetItemMethod:
         assert results[0]._data["Award ID"] == "AWARD-95"
         assert results[-1]._data["Award ID"] == "AWARD-99"
 
+    @pytest.mark.parametrize(
+        "key",
+        [
+            slice(None, None, -1),
+            slice(None, None, -3),
+            slice(220, 80, -2),
+            slice(95, 205, 3),
+            slice(-3, -150, -4),
+            slice(10, 20, -1),
+            slice(20, 10, 2),
+            slice(0, 100, 2),
+        ],
+    )
+    def test_stepped_slices_match_lists_and_fetch_each_page_once(
+        self, awards_search, mock_usa_client, key
+    ):
+        rows = [{"Award ID": f"AWARD-{i}"} for i in range(250)]
+        mock_usa_client.mock_award_search(rows)
+        expected_indices = list(range(250))[key]
+
+        result = awards_search[key]
+
+        assert [row._data["Award ID"] for row in result] == [f"AWARD-{i}" for i in expected_indices]
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == (
+            len({i // 100 for i in expected_indices})
+        )
+
+    def test_reverse_slice_respects_limit(self, awards_search, mock_usa_client):
+        mock_usa_client.mock_award_search([{"Award ID": f"AWARD-{i}"} for i in range(250)])
+
+        result = awards_search.limit(5)[::-1]
+
+        assert [row._data["Award ID"] for row in result] == [f"AWARD-{i}" for i in range(4, -1, -1)]
+        assert mock_usa_client.get_request_count(MockUSASpendingClient.Endpoints.AWARD_SEARCH) == 1
+
+    def test_slice_zero_step_still_raises(self, three_awards):
+        with pytest.raises(ValueError, match="slice step cannot be zero"):
+            three_awards[::0]
+
+    def test_stepped_slice_reports_missing_index(self, awards_search, mock_usa_client):
+        mock_usa_client.mock_award_count(contracts=10)
+        mock_usa_client.set_response(
+            MockUSASpendingClient.Endpoints.AWARD_SEARCH,
+            {"results": [{"Award ID": "AWARD-0"}], "page_metadata": {"hasNext": False}},
+        )
+
+        with pytest.raises(IndexError, match="Index 2 not found in results"):
+            awards_search[:10:2]
+
     def test_empty_slice(self, awards_search, mock_usa_client):
         """Test slice that returns empty list."""
         # Mock count

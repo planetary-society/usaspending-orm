@@ -263,7 +263,8 @@ class TestFundingFederalAccountProperty:
 
         assert federal_account.id == first_result.get("federal_account")
         assert federal_account.description == first_result.get("account_title")
-        assert federal_account.toptier_code == str(first_result.get("funding_toptier_agency_id"))
+        assert federal_account._toptier_code is None
+        assert federal_account.ancestors == []
 
     def test_federal_account_code_returns_string(self, load_fixture, mock_usa_client):
         """Test federal_account_code property returns raw string."""
@@ -300,7 +301,7 @@ class TestFundingFederalAccountProperty:
 
         assert federal_account is not None
         assert federal_account.id == first_result.get("federal_account")
-        assert federal_account.toptier_code is None
+        assert federal_account._toptier_code is None
 
 
 class TestFundingAgencyProperties:
@@ -328,7 +329,7 @@ class TestFundingAgencyProperties:
 
         agency = funding.funding_agency
 
-        assert agency.toptier_code == str(first_result.get("funding_toptier_agency_id"))
+        assert agency.raw["toptier_agency_id"] == first_result["funding_toptier_agency_id"]
         assert agency.name == first_result.get("funding_agency_name")
         assert agency.agency_id == first_result.get("funding_agency_id")
         assert agency.slug == first_result.get("funding_agency_slug")
@@ -355,7 +356,7 @@ class TestFundingAgencyProperties:
 
         agency = funding.awarding_agency
 
-        assert agency.toptier_code == str(first_result.get("awarding_toptier_agency_id"))
+        assert agency.raw["toptier_agency_id"] == first_result["awarding_toptier_agency_id"]
         assert agency.name == first_result.get("awarding_agency_name")
         assert agency.agency_id == first_result.get("awarding_agency_id")
         assert agency.slug == first_result.get("awarding_agency_slug")

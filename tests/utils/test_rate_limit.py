@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 import time
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -84,18 +85,12 @@ class TestRateLimiterBasicFunctionality:
     @patch("usaspending.utils.rate_limit.time.time")
     def test_sliding_window(self, mock_time, mock_sleep):
         """Test that the sliding window works correctly."""
-        # Simulate time progression: start at 1000.0
-        time_values = [
-            1000.0,  # Initial time for first call
-            1000.0,  # Record first call
-            1000.0015,  # After simulated wait, for second call
-            1000.0015,  # Record second call
-            1000.0015,  # Third call - need to wait
-            1000.0015,  # Calculate wait time
-            1000.003,  # After sleep, re-check
-            1000.003,  # Record third call
-        ]
-        mock_time.side_effect = time_values
+        mock_time.return_value = 1000.0
+
+        def advance(seconds):
+            mock_time.return_value += seconds
+
+        mock_sleep.side_effect = advance
 
         limiter = RateLimiter(max_calls=2, period=0.003)
 
@@ -103,6 +98,7 @@ class TestRateLimiterBasicFunctionality:
         limiter.wait_if_needed()
 
         # Make second call at t=1000.0015 (simulated half-period later)
+        mock_time.return_value = 1000.0015
         limiter.wait_if_needed()
 
         # Third call should wait for first call to expire
@@ -198,6 +194,47 @@ class TestRateLimiterProperties:
 class TestRateLimiterThreadSafety:
     """Test thread safety of the RateLimiter."""
 
+    def test_waiters_recheck_capacity_after_waking(self, monkeypatch):
+        """Only one of two waiters can take the slot in the next window."""
+        now = [0.0]
+        first_sleep = threading.Barrier(3)
+        first_window = threading.Event()
+        second_sleep = threading.Event()
+        second_window = threading.Event()
+        local = threading.local()
+
+        def sleep(_seconds):
+            if not getattr(local, "slept", False):
+                local.slept = True
+                first_sleep.wait(timeout=2)
+                assert first_window.wait(timeout=2)
+            else:
+                second_sleep.set()
+                assert second_window.wait(timeout=2)
+
+        monkeypatch.setattr(
+            "usaspending.utils.rate_limit.time", SimpleNamespace(time=lambda: now[0], sleep=sleep)
+        )
+        limiter = RateLimiter(max_calls=1, period=1)
+        limiter.wait_if_needed()
+        threads = [threading.Thread(target=limiter.wait_if_needed) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        try:
+            first_sleep.wait(timeout=2)
+            now[0] = 1.0
+            first_window.set()
+            assert second_sleep.wait(timeout=2)
+            assert list(limiter._call_times) == [1.0]
+        finally:
+            now[0] = 2.0
+            first_window.set()
+            second_window.set()
+            for thread in threads:
+                thread.join(timeout=2)
+        assert all(not thread.is_alive() for thread in threads)
+        assert list(limiter._call_times) == [2.0]
+
     def test_concurrent_calls_respect_limit(self):
         """Test that concurrent calls from multiple threads respect the limit."""
         limiter = RateLimiter(max_calls=5, period=0.01)
@@ -268,29 +305,14 @@ class TestRateLimiterEdgeCases:
     @patch("usaspending.utils.rate_limit.time.time")
     def test_fractional_period(self, mock_time, mock_sleep):
         """Test rate limiter with fractional second periods."""
-        # Simulate time progression with period expiring between iterations
-        time_values = []
-        base_time = 1000.0
-        for i in range(5):
-            # Two calls per iteration, then time advances past period
-            iteration_time = base_time + (i * 0.0015)
-            time_values.extend(
-                [
-                    iteration_time,  # First call check
-                    iteration_time,  # First call record
-                    iteration_time,  # Second call check
-                    iteration_time,  # Second call record
-                ]
-            )
-        mock_time.side_effect = time_values
-
         limiter = RateLimiter(max_calls=2, period=0.001)
 
         # Should be able to make rapid calls when period expires between iterations
-        for _ in range(5):
+        for i in range(5):
+            mock_time.return_value = 1000.0 + i * 0.0015
             limiter.wait_if_needed()
             limiter.wait_if_needed()
-            # Time advances automatically via mock
+        mock_sleep.assert_not_called()
 
     def test_high_frequency_calls(self):
         """Test with high frequency rate limit."""
@@ -323,6 +345,11 @@ class TestRateLimiterEdgeCases:
         # Mock time to control it precisely
         current_time = 1000.0
         mock_time.return_value = current_time
+
+        def advance(seconds):
+            mock_time.return_value += seconds
+
+        mock_sleep.side_effect = advance
 
         limiter = RateLimiter(max_calls=1, period=1.0)
 

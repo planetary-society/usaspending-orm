@@ -11,6 +11,7 @@ from __future__ import annotations
 import ntpath
 import os
 import posixpath
+import shutil
 import zipfile
 from typing import TYPE_CHECKING, Any
 
@@ -208,30 +209,35 @@ class DownloadManager:
 
         try:
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                # ZipSlip protection: reject absolute paths (POSIX or Windows,
-                # including drive letters and UNC prefixes) and any relative
-                # member that normalizes outside extract_dir. Because
-                # extract_dir was realpath'd above, normpath is sufficient
-                # and avoids per-member stat syscalls.
+                # Resolve every target before writing, including existing symlinks.
                 extract_prefix = extract_dir + os.sep
-                for member in zip_ref.namelist():
+                destinations = []
+                for info in zip_ref.infolist():
+                    member = info.filename
                     if posixpath.isabs(member) or ntpath.isabs(member):
                         raise DownloadError(
                             f"Refusing absolute path in ZIP archive: {member}",
                             file_name=os.path.basename(zip_path),
                         )
-                    member_path = os.path.normpath(os.path.join(extract_dir, member))
+                    member_path = os.path.realpath(os.path.join(extract_dir, member))
                     if member_path != extract_dir and not member_path.startswith(extract_prefix):
                         raise DownloadError(
                             f"Attempted path traversal in ZIP archive: {member}",
                             file_name=os.path.basename(zip_path),
                         )
+                    destinations.append((info, member_path))
 
-                extracted_files = zip_ref.namelist()
-                zip_ref.extractall(extract_dir)
+                # shortcut: callers control this directory; use descriptor-based traversal for hostile shared destinations.
+                for info, member_path in destinations:
+                    if info.is_dir():
+                        os.makedirs(member_path, exist_ok=True)
+                    else:
+                        os.makedirs(os.path.dirname(member_path), exist_ok=True)
+                        with zip_ref.open(info) as source, open(member_path, "wb") as destination:
+                            shutil.copyfileobj(source, destination)
 
-            logger.info(f"Successfully extracted {len(extracted_files)} files.")
-            return [os.path.join(extract_dir, f) for f in extracted_files]
+            logger.info(f"Successfully extracted {len(destinations)} files.")
+            return [member_path for _, member_path in destinations]
 
         except zipfile.BadZipFile:
             raise DownloadError(

@@ -126,7 +126,7 @@ class SubAward(ClientAwareModel):
         recipient = Recipient(
             {
                 "recipient_name": self.get_value(["Sub-Awardee Name"]),
-                "recipient_unique_id": self.get_value(["sub_award_recipient_id"]),
+                "recipient_id": self.get_value(["sub_award_recipient_id"]),
                 "recipient_uei": self.get_value(["Sub-Recipient UEI"]),
             },
             client=self._client,

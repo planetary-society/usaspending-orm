@@ -732,3 +732,25 @@ class TestDownloadJobRepresentation:
         assert "DownloadJob" in repr_str
         assert "pending" in repr_str.lower()
         assert job.file_name in repr_str
+
+
+def test_subaward_search_download_preserves_prime_award_scope(
+    mock_usa_client, download_search_fixture_data
+):
+    mock_usa_client.mock_search_download(download_search_fixture_data)
+    query = mock_usa_client.subawards.search().contracts().award_id("CONT_AWD_123")
+
+    mock_usa_client.downloads.search(query, spending_level=["subawards"])
+
+    mock_usa_client.assert_called_with(
+        MockUSASpendingClient.Endpoints.DOWNLOAD_SEARCH,
+        method="POST",
+        json={
+            "filters": {
+                "award_type_codes": ["A", "B", "C", "D"],
+                "award_unique_id": "CONT_AWD_123",
+            },
+            "file_format": "csv",
+            "spending_level": ["subawards"],
+        },
+    )

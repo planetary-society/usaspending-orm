@@ -84,6 +84,16 @@ archive and extracts it, returning the extracted file paths. It writes to
 `destination_dir`, or to the current working directory when that argument is
 omitted. The same paths remain available afterward as `job.result_files`.
 
+A failed transfer leaves any existing archive untouched; a successful transfer
+replaces it atomically. Every download redirect must use HTTPS and an allowed
+hostname. Extraction validates all destinations, including existing symlinks,
+before writing archive members. Use a destination directory you control.
+
+A local timeout raises `DownloadError` with `status="timeout"` while preserving
+the last known server state. Call `refresh_status()` or `wait_for_completion()`
+again to resume the same job. A failure reported by the server remains terminal.
+If a finished status omits its URL, the job uses the URL supplied when queued.
+
 To poll without blocking, call `job.refresh_status()` and read `job.state` and
 `job.is_complete`. Treat `job.status_details.message` and `job.error_message`
 as opaque server text: a failure message may be generic, may change without
@@ -96,6 +106,10 @@ message for a failed job, `job.error_message` is `"API reported failure."`.
     Only the query's filters are forwarded. A `.limit()` set on the query does
     not bound the export; pass `limit=` to `downloads.search()` for that, or
     narrow the filters before queueing a broad search.
+
+For subaward search queries, the prime-award restriction is forwarded with the
+other filters. The explicit `spending_level` download argument still determines
+which datasets are exported.
 
 When supplied, `limit=` must be in the API's current range of **1 to 500,000**.
 Validation remains server-side, including support for numeric strings such as

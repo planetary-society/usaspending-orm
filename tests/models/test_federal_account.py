@@ -56,6 +56,7 @@ class TestFederalAccountBasicProperties:
 
     def test_empty_ancestors(self, mock_usa_client):
         """Test handling of empty ancestors."""
+        mock_usa_client.set_response("/references/filter_tree/tas/", {"results": []})
         data = {
             "id": "080-0120",
             "ancestors": [],
@@ -96,7 +97,8 @@ class TestFederalAccountTASCodesProperty:
         assert tas_codes._federal_account == "080-0120"
 
     def test_tas_codes_without_toptier_code(self, mock_usa_client):
-        """Test tas_codes with missing toptier_code returns empty query."""
+        """An account absent from the tree returns an empty query."""
+        mock_usa_client.set_response("/references/filter_tree/tas/", {"results": []})
         data = {
             "id": "080-0120",
             "ancestors": [],
@@ -238,7 +240,7 @@ class TestTASCodesFetchedOnce:
 
     def test_an_unscoped_account_yields_nothing_without_a_request(self, mock_usa_client):
         """An account that does not know its codes must not call the API."""
-        account = FederalAccount({"id": "080-0120"}, mock_usa_client, toptier_code=None)
+        account = FederalAccount({}, mock_usa_client, toptier_code=None)
         before = mock_usa_client.get_request_count()
 
         assert account.tas_codes.all() == []

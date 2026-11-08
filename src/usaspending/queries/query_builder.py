@@ -193,6 +193,29 @@ class QueryBuilder(BaseQuery[T], ABC):
             self._cached_count = self.count()
         return self._cached_count
 
+    def _item_at(self, index: int, pages: dict[int, list[dict[str, Any]]]) -> T:
+        """Fetch the item at a non-negative index, reusing pages already in `pages`.
+
+        Args:
+            index: Zero-based position in the full result set.
+            pages: Raw results by page number, filled in as pages are fetched.
+
+        Returns:
+            T: The transformed item.
+
+        Raises:
+            IndexError: If the page holding `index` returns too few results.
+        """
+        page_num, offset = divmod(index, self._page_size)
+        page_num += 1
+        if page_num not in pages:
+            logger.debug(f"Fetching page {page_num} to get item at index {index}")
+            pages[page_num] = self._execute_query(page_num).get("results", [])
+        results = pages[page_num]
+        if offset >= len(results):
+            raise IndexError(f"Index {index} not found in results")
+        return self._transform_result(results[offset])
+
     def __getitem__(self, key: int | slice) -> T | list[T]:
         """Support list-like indexing and slicing.
 
@@ -218,19 +241,7 @@ class QueryBuilder(BaseQuery[T], ABC):
             if key < 0 or key >= total_count:
                 raise IndexError(f"Index {key} out of range for query with {total_count} items")
 
-            # Calculate which page contains this item
-            page_num = (key // self._page_size) + 1
-            offset_in_page = key % self._page_size
-
-            # Fetch just the page we need
-            logger.debug(f"Fetching page {page_num} to get item at index {key}")
-            response = self._execute_query(page_num)
-            results = response.get("results", [])
-
-            if offset_in_page < len(results):
-                return self._transform_result(results[offset_in_page])
-            else:
-                raise IndexError(f"Index {key} not found in results")
+            return self._item_at(key, {})
 
         elif isinstance(key, slice):
             # Handle slice
@@ -239,14 +250,9 @@ class QueryBuilder(BaseQuery[T], ABC):
             # Convert slice indices
             start, stop, step = key.indices(total_count)
 
-            # If step is not 1, we need to fetch more data
             if step != 1:
-                # For non-unit steps, fetch all items in range and then slice
-                items = []
-                for i in range(start, stop):
-                    if (i - start) % step == 0:
-                        items.append(self[i])  # Recursive call
-                return items
+                pages: dict[int, list[dict[str, Any]]] = {}
+                return [self._item_at(i, pages) for i in range(start, stop, step)]
 
             # For contiguous slices, optimize by fetching only needed pages
             if start >= stop:
@@ -317,15 +323,49 @@ class QueryBuilder(BaseQuery[T], ABC):
         for f in self._filter_objects:
             f_dict = f.to_dict()
             for key, value in f_dict.items():
-                if isinstance(value, list):
-                    # Copy: filters hand back their internal list and _clone()
-                    # shares filter objects between a query and its clones.
-                    value = list(value)
-                if isinstance(final_filters.get(key), list):
-                    final_filters[key] += value
-                # Skip keys with empty values to keep payload clean
-                elif value:
+                if not value:
+                    continue
+                previous = final_filters.get(key)
+                if (
+                    key == "psc_codes"
+                    and previous is not None
+                    and isinstance(previous, list) != isinstance(value, list)
+                ):
+                    raise ValidationError(
+                        "Cannot mix simple PSC codes with require/exclude format."
+                    )
+                # Build fresh collections: clones share their filter objects.
+                if isinstance(value, dict):
+                    previous = previous or {}
+                    final_filters[key] = {
+                        side: previous.get(side, []) + value.get(side, [])
+                        for side in ("require", "exclude")
+                        if side in previous or side in value
+                    }
+                elif isinstance(value, list):
+                    if isinstance(previous, list):
+                        previous.extend(value)
+                    else:
+                        final_filters[key] = list(value)
+                else:
                     final_filters[key] = value
+
+        # Per-call validation alone cannot bound filters assembled by chaining.
+        for key in ("naics_codes", "psc_codes", "tas_codes"):
+            value = final_filters.get(key)
+            if not value:
+                continue
+            if isinstance(value, list):
+                _validate_total_code_count(key, value)
+            elif key == "naics_codes":
+                _validate_total_code_count(key, value.get("require", []), value.get("exclude", []))
+            else:
+                _validate_filter_tree(
+                    key,
+                    value.get("require", []),
+                    value.get("exclude", []),
+                    normalize_psc_tier_one=key == "psc_codes",
+                )
 
         logger.debug(f"Applied {len(self._filter_objects)} filters to query")
 

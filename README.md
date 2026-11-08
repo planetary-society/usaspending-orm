@@ -25,11 +25,13 @@ No API key is required.
 
 ## Installation
 
+In a uv-managed project:
+
 ```console
-python -m pip install usaspending-orm
+uv add usaspending-orm
 ```
 
-Requires Python 3.9 or newer.
+Or with pip: `python -m pip install usaspending-orm`. Requires Python 3.9 or newer.
 
 ## Quickstart
 
@@ -60,12 +62,12 @@ the appropriate USAspending operation.
 
 The full documentation covers:
 
-- [installation and core concepts](docs/getting-started/installation.md);
-- [award and transaction searches](docs/guides/search-awards.md);
-- [sessions, lazy loading, caching, and production use](docs/guides/production.md);
-- [generated Python API reference](docs/reference/client.md);
-- [mappings to canonical USAspending endpoints](docs/usaspending-api/endpoint-mapping.md);
-- [known upstream limits and contract differences](docs/usaspending-api/limitations.md).
+- [installation and core concepts](https://github.com/planetary-society/usaspending-orm/blob/main/docs/getting-started/installation.md);
+- [award and transaction searches](https://github.com/planetary-society/usaspending-orm/blob/main/docs/guides/search-awards.md);
+- [sessions, lazy loading, caching, and production use](https://github.com/planetary-society/usaspending-orm/blob/main/docs/guides/production.md);
+- [generated Python API reference](https://github.com/planetary-society/usaspending-orm/blob/main/docs/reference/client.md);
+- [mappings to canonical USAspending endpoints](https://github.com/planetary-society/usaspending-orm/blob/main/docs/usaspending-api/endpoint-mapping.md);
+- [known upstream limits and contract differences](https://github.com/planetary-society/usaspending-orm/blob/main/docs/usaspending-api/limitations.md).
 
 The repository includes Read the Docs configuration for the published site.
 
@@ -117,8 +119,8 @@ The project is in beta. USAspending itself changes over time, and live federal
 data is revised as agencies submit corrections. Counts and values shown in
 examples should not be treated as permanent fixtures.
 
-See [CHANGELOG.md](CHANGELOG.md) for release history and compatibility notes.
+See [CHANGELOG.md](https://github.com/planetary-society/usaspending-orm/blob/main/CHANGELOG.md) for release history and compatibility notes.
 
 ## License
 
-USASpending ORM is released under the [MIT License](LICENSE).
+USASpending ORM is released under the [MIT License](https://github.com/planetary-society/usaspending-orm/blob/main/LICENSE).

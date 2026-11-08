@@ -6,7 +6,11 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import Mock
 
+import pytest
+import requests
+
 from tests.utils import assert_decimal_equal
+from usaspending.exceptions import APIError, DetachedInstanceError, ValidationError
 from usaspending.models.agency import Agency
 
 
@@ -290,15 +294,44 @@ class TestAgencyErrorHandling:
         data = {"id": 862}  # No code
         agency = Agency(data, mock_usa_client)
 
-        # The implementation does try to call _get_award_summary which logs an error
-        # and then returns None
         assert agency.contract_obligations is None
-        # One API call is attempted, the lazy detail load looking for the missing
-        # code, and it is the only one: the summary fetch gives up before asking.
-        # known: the codeless detail load builds /agency/None/, which is not a
-        # shape worth pinning, so the check is that the summary was not requested.
-        assert mock_usa_client.get_request_count() == 1
-        assert not mock_usa_client.get_last_request()["endpoint"].endswith("/awards/")
+        assert mock_usa_client.get_request_count() == 0
+
+    @pytest.mark.parametrize("value", [0, Decimal("0"), "0"])
+    def test_zero_obligations_do_not_fetch(self, mock_usa_client, value):
+        agency = Agency({"code": "080", "obligations": value}, mock_usa_client)
+        mock_usa_client.forbid_requests()
+        assert agency.total_obligations == Decimal("0.00")
+
+    @pytest.mark.parametrize(
+        "error", [APIError("Unavailable", 503), requests.ConnectionError("offline")]
+    )
+    def test_summary_failure_can_be_retried(self, mock_usa_client, monkeypatch, error):
+        fetch = Mock(side_effect=[error, {"obligations": 100}])
+        monkeypatch.setattr(mock_usa_client, "_make_request", fetch)
+        agency = Agency({"code": "080"}, mock_usa_client)
+        with pytest.raises(type(error)):
+            _ = agency.total_obligations
+        assert "total_obligations" not in agency.__dict__
+        assert agency.total_obligations == Decimal("100.00")
+        assert fetch.call_count == 2
+
+    def test_closed_client_summary_recovers_after_reattach(self, mock_usa_client):
+        from tests.mocks import MockUSASpendingClient
+
+        agency = Agency({"code": "080"}, mock_usa_client)
+        mock_usa_client.close()
+        with pytest.raises(DetachedInstanceError):
+            _ = agency.total_obligations
+        with MockUSASpendingClient() as replacement:
+            replacement.set_response("/agency/080/awards/", {"obligations": 100})
+            agency.reattach(replacement)
+            assert agency.total_obligations == Decimal("100.00")
+
+    def test_invalid_summary_filters_propagate(self, mock_usa_client):
+        agency = Agency({"code": "080"}, mock_usa_client)
+        with pytest.raises(ValidationError):
+            agency.get_obligations(agency_type="invalid")
 
 
 class TestAgencyIntegrationWithFixtures:

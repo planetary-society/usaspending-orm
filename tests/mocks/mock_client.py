@@ -29,7 +29,6 @@ class MockUSASpendingClient(USASpendingClient):
         SUBAWARD_SUMMARY = "/search/spending_by_subaward_grouped/"
         AWARD_DETAIL = "/awards/{award_id}/"
         AWARD_FUNDING = "/awards/funding/"
-        SUBWARD_COUNT = "/awards/count/subaward/{award_id}/"
         TRANSACTION_COUNT = "/awards/count/transaction/{award_id}/"
         TRANSACTIONS = "/transactions/"
 
@@ -581,12 +580,7 @@ class MockUSASpendingClient(USASpendingClient):
         **kwargs,
     ) -> dict[str, Any]:
         """Pass through to _make_request with request counter logic."""
-        # Increment request counter and check for proactive session reset
-        # (Same logic as parent class)
-        self._request_count += 1
-        if self._request_count >= config.session_request_limit:
-            self.reset_session()
-
+        self._count_attempt()
         return self._make_request(method, endpoint, json=json, params=params, **kwargs)
 
     def _download_binary_file(self, file_url: str, destination_path: str) -> None:

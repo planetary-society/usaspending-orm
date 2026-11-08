@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any, ClassVar
 
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger
@@ -11,9 +11,7 @@ from ..models.award_types import get_award_group
 from ..models.subaward import SubAward
 from ..utils.validations import validate_non_empty_string
 from .awards_search import AwardsSearch
-
-if TYPE_CHECKING:
-    from ..client import USASpendingClient
+from .filters import SimpleStringFilter
 
 logger = USASpendingLogger.get_logger(__name__)
 
@@ -25,41 +23,10 @@ class SubAwardsSearch(AwardsSearch):
     filter logic while specializing for subawards.
     """
 
-    def __init__(self, client: USASpendingClient):
-        """
-        Initializes the SubAwardsSearch query builder.
-
-        Args:
-            client: The USASpending client instance.
-        """
-        super().__init__(client)
-        self._award_id: str | None = None
-
-    def _clone(self) -> SubAwardsSearch:
-        """Creates an immutable copy of the query builder."""
-        clone = super()._clone()
-        clone._award_id = self._award_id
-        return clone
-
-    def _build_payload(self, page: int) -> dict[str, Any]:
-        """
-        Constructs the final API request payload for subawards.
-
-        Overrides parent to always include subawards=true and spending_level=subawards.
-        """
-        payload = super()._build_payload(page)
-
-        # Always search for subawards
-        payload["subawards"] = True
-        payload["spending_level"] = "subawards"
-
-        # If filtering by specific award, add to filters
-        if self._award_id:
-            if "filters" not in payload:
-                payload["filters"] = {}
-            payload["filters"]["award_unique_id"] = self._award_id
-
-        return payload
+    _SPENDING_LEVEL_PAYLOAD: ClassVar[dict[str, Any]] = {
+        "subawards": True,
+        "spending_level": "subawards",
+    }
 
     def _transform_result(self, result: dict[str, Any]) -> SubAward:
         """Transforms a single API result item into a SubAward model."""
@@ -100,51 +67,13 @@ class SubAwardsSearch(AwardsSearch):
             return list(fields)
 
     def _compute_raw_count(self) -> int:
-        """
-        Get the total count of subawards.
-
-        If filtering by a specific award, uses the efficient count endpoint.
-        Otherwise falls back to parent implementation.
-        """
-        # Scoped to one award there is a dedicated count endpoint; a general
-        # subaward search has none, so iteration is the only option.
-        if self._award_id:
-            return self._count_via_endpoint(
-                f"/awards/count/subaward/{self._award_id}/", "subawards"
-            )
-
-        return self._count_via_paging()
-
-    def count_awards_by_type(self) -> dict[str, int]:
-        """
-        Override parent method to use subawards-specific count endpoint.
-
-        Returns:
-            A dictionary mapping award type categories to their subaward counts.
-        """
-        endpoint = "/search/spending_by_award_count/"
-        final_filters = self._aggregate_filters()
-
-        payload = {
-            "filters": final_filters,
-            "subawards": True,  # Always count subawards
-            "spending_level": "subawards",
-        }
-
-        from ..logging_config import log_query_execution
-
-        log_query_execution(
-            logger,
-            "SubAwardsSearch.count_awards_by_type",
-            self._filter_objects,
-            endpoint,
-        )
-
-        # Send the request to the count endpoint
-        response = self._client._make_request("POST", endpoint, json=payload)
-
-        # Extract and return aggregations
-        return response.get("aggregations", {})
+        """Count matching subawards in one request, including every filter."""
+        filters = self._aggregate_filters()
+        # One prime award implies its type; only then may the type filter be absent.
+        if "award_unique_id" not in filters and "award_type_codes" not in filters:
+            self._require_award_type_filters()  # raises the shared missing-type error
+        counts = self.count_awards_by_type(filters=filters)
+        return counts.get("subcontracts", 0) + counts.get("subgrants", 0)
 
     def award_id(self, award_id: str) -> SubAwardsSearch:
         """
@@ -161,11 +90,11 @@ class SubAwardsSearch(AwardsSearch):
             >>> for sub in subawards:
             ...     print(f"{sub.sub_awardee_name}: ${sub.sub_award_amount or 0:,.2f}")
         """
-        validated_id = validate_non_empty_string(award_id, "award_id")
-
-        clone = self._clone()
-        clone._award_id = validated_id
-        return clone
+        return self._with_filter(
+            SimpleStringFilter(
+                key="award_unique_id", value=validate_non_empty_string(award_id, "award_id")
+            )
+        )
 
     def time_period(
         self,

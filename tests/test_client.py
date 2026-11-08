@@ -384,23 +384,3 @@ class TestClientSessionManagement:
         assert client._request_count == 0
         # Should not be closed
         assert not client._closed
-
-    def test_proactive_session_reset(self, mock_usa_client):
-        """Test that session resets proactively when hitting request limit."""
-        from usaspending import config
-
-        # Set counter just below limit
-        mock_usa_client._request_count = config.session_request_limit - 1
-        original_session = mock_usa_client._session
-
-        # Mock successful response
-        mock_usa_client.set_response("/test", {"result": "success"})
-
-        # This request should trigger proactive reset
-        mock_usa_client._make_uncached_request("GET", "/test")
-
-        # Session should be reset
-        assert mock_usa_client._session is not original_session
-        # Counter was incremented to trigger reset, then reset to 0
-        # The current request doesn't increment again since it already incremented before reset
-        assert mock_usa_client._request_count == 0

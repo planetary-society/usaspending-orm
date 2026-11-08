@@ -116,7 +116,7 @@ The same filtering limitations and requirements that apply to the USAspending.go
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from ..exceptions import ValidationError
 from ..logging_config import USASpendingLogger, log_query_execution
@@ -156,6 +156,10 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
     See module docstring for detailed usage examples.
     """
 
+    #: Extra keys selecting the spending level, sent with both search and count
+    #: requests. Prime awards need none; SubAwardsSearch sets the subaward level.
+    _SPENDING_LEVEL_PAYLOAD: ClassVar[dict[str, Any]] = {}
+
     @property
     def _endpoint(self) -> str:
         """
@@ -187,6 +191,7 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             "fields": self._get_fields(),
             "limit": self._get_effective_page_size(),
             "page": page,
+            **self._SPENDING_LEVEL_PAYLOAD,
         }
 
         # Add sorting parameters if specified
@@ -312,22 +317,18 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         endpoint = "/search/spending_by_award_count/"
         final_filters = self._aggregate_filters() if filters is None else filters
 
-        payload = {
-            "filters": final_filters,
-        }
+        payload = {"filters": final_filters, **self._SPENDING_LEVEL_PAYLOAD}
 
         log_query_execution(
             logger,
-            "AwardsSearch._count_awards_by_type",
+            f"{type(self).__name__}.count_awards_by_type",
             self._filter_objects,
             endpoint,
         )
 
         # Send the request to the count endpoint
         response = self._client._make_request("POST", endpoint, json=payload)
-        results = response.get("results", {})
-
-        return results
+        return response.get("results", {})
 
     def _get_award_type_category(self, award_type_codes: set[str]) -> str:
         """
