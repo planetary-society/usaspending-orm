@@ -4,6 +4,16 @@ All notable changes to the USASpending ORM library are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Award-type docstrings and the award search guide now list the F001 through
+  F010 assistance codes alongside the two-digit codes, and warn that agencies
+  began moving to the F-codes in FY2026. The filters already included both
+  series; only the documentation and examples showed the two-digit codes
+  alone, which undercount any period from FY2026 on.
+
 ## [0.10.1] - 2026-11-08
 
 Fixes from a reliability and safety review of downloads, the request path,

@@ -29,10 +29,14 @@ must include one of the following award types:
 
 - **Contracts**: Types A, B, C, D - Procurement contracts
 - **IDVs**: Types IDV_A through IDV_E - Indefinite Delivery Vehicles
-- **Grants**: Types 02, 03, 04, 05 - Grant awards
-- **Loans**: Types 07, 08 - Loan awards
-- **Direct Payments**: Types 06, 10 - Direct payment awards
-- **Other**: Types 09, 11, -1 - Other assistance awards
+- **Grants**: Types 02, 03, 04, 05, F001, F002 - Grant awards
+- **Loans**: Types 07, 08, F003, F004 - Loan awards
+- **Direct Payments**: Types 06, 10, F006, F007 - Direct payment awards
+- **Other**: Types 09, 11, -1, F005, F008, F009, F010 - Other assistance awards
+
+Agencies began moving assistance reporting from the two-digit codes to the
+F-codes in FY2026. The convenience methods such as ``.grants()`` include both
+series; a hand-written list of only the two-digit codes undercounts from FY2026.
 
 ## Basic Usage Examples
 
@@ -357,7 +361,8 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         The API returns different fields depending on the award type:
         - Contracts (A, B, C, D): Include contract-specific fields like PSC, NAICS
         - IDVs (IDV_*): Include IDV-specific fields like Last Date to Order
-        - Loans (07, 08): Include loan-specific fields like Loan Value, Subsidy Cost
+        - Loans (07, 08, F003, F004): Include loan-specific fields like Loan Value,
+          Subsidy Cost
         - Grants/Assistance: Include assistance fields like CFDA Number, SAI Number
 
         Returns:
@@ -462,10 +467,10 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
         Award type codes include:
         - Contracts: A, B, C, D
         - IDVs: IDV_A, IDV_B, IDV_B_A, IDV_B_B, IDV_B_C, IDV_C, IDV_D, IDV_E
-        - Grants: 02, 03, 04, 05
-        - Loans: 07, 08
-        - Direct Payments: 06, 10
-        - Other: 09, 11, -1
+        - Grants: 02, 03, 04, 05, F001, F002
+        - Loans: 07, 08, F003, F004
+        - Direct Payments: 06, 10, F006, F007
+        - Other: 09, 11, -1, F005, F008, F009, F010
 
         Args:
             *award_codes: A sequence of award type codes.
@@ -482,8 +487,8 @@ class AwardsSearch(SearchQueryBuilder["Award"]):
             >>> # Search for specific contract types
             >>> contracts = client.awards.search().award_type_codes("A", "B", "C", "D")
 
-            >>> # Search for grants only
-            >>> grants = client.awards.search().award_type_codes("02", "03", "04", "05")
+            >>> # Project grants and cooperative agreements, in both code series
+            >>> grants = client.awards.search().award_type_codes("04", "05", "F001", "F002")
 
             >>> # This will raise ValidationError (mixing categories):
             >>> # client.awards.search().award_type_codes("A", "02")  # Contract + Grant

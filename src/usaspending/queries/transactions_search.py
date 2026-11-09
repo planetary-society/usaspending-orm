@@ -188,7 +188,7 @@ class TransactionsSearch(SortableQuery, SearchQueryBuilder["Transaction"]):
         Example:
             >>> # Contracts and grants together, which award search cannot do
             >>> mixed = client.transactions.search().award_type_codes(
-            ...     "A", "B", "C", "D", "02", "03", "04", "05"
+            ...     "A", "B", "C", "D", "02", "03", "04", "05", "F001", "F002"
             ... )
         """
         if not award_codes:

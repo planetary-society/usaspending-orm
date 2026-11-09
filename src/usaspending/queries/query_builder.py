@@ -1365,24 +1365,38 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
                 "IDV_D": BOA (Basic Ordering Agreement)
                 "IDV_E": BPA (Blanket Purchase Agreement)
 
+            Assistance codes come in two series. Agencies began moving from
+            the two-digit codes to the F-codes in FY2026, so a filter on one
+            series alone undercounts any period after that changeover.
+
             Grants (Assistance):
                 "02": Block Grant
                 "03": Formula Grant
                 "04": Project Grant
                 "05": Cooperative Agreement
+                "F001": Grant
+                "F002": Cooperative Agreement
 
             Loans:
                 "07": Direct Loan
                 "08": Guaranteed/Insured Loan
+                "F003": Direct Loan
+                "F004": Loan Guarantee
 
             Direct Payments:
                 "06": Direct Payment for Specified Use
                 "10": Direct Payment with Unrestricted Use
+                "F006": Direct Payment for Specified Use
+                "F007": Direct Payment with Unrestricted Use
 
             Other Financial Assistance:
                 "09": Insurance
                 "11": Other Financial Assistance
                 "-1": Not Specified (unknown/legacy data)
+                "F005": Indemnity / Insurance (non-loan)
+                "F008": Asset Forfeiture / Equitable Sharing
+                "F009": Sale, Exchange, or Donation of Property and Goods
+                "F010": Other Financial Assistance
 
         Returns:
             T: A new instance with the award type filter applied.
@@ -1398,8 +1412,8 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
             >>> # Search for specific contract types
             >>> contracts = client.awards.search().award_type_codes("A", "B", "C", "D")
 
-            >>> # Search for grants only
-            >>> grants = client.awards.search().award_type_codes("02", "03", "04", "05")
+            >>> # Project grants and cooperative agreements, in both code series
+            >>> grants = client.awards.search().award_type_codes("04", "05", "F001", "F002")
 
         Reference:
             https://api.usaspending.gov/api/v2/references/filter_tree/psc/
@@ -1441,7 +1455,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         Filter to search for loan awards only.
 
-        This applies award type codes 07 and 08 for loan awards.
+        This applies award type codes 07, 08, F003, and F004.
 
         Returns:
             T: A new instance configured for loan awards.
@@ -1461,7 +1475,10 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         """
         Filter to search for grant awards only.
 
-        This applies award type codes 02, 03, 04, 05 for various grant types.
+        This applies award type codes 02, 03, 04, 05, F001, and F002. Agencies
+        began reporting grants and cooperative agreements as F001 and F002 in
+        FY2026, so filtering on 02 through 05 alone shows a false decline in
+        any series that crosses FY2026.
 
         Returns:
             T: A new instance configured for grant awards.
@@ -1479,7 +1496,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter to search for direct payment awards only.
 
         Direct payments include benefits to individuals and other direct
-        assistance. This applies award type codes 06 and 10.
+        assistance. This applies award type codes 06, 10, F006, and F007.
 
         Returns:
             T: A new instance configured for direct payment awards.
@@ -1495,7 +1512,7 @@ class SearchQueryBuilder(QueryBuilder[T], ABC):
         Filter to search for other assistance awards.
 
         This includes insurance programs and other miscellaneous assistance.
-        Applies award type codes 09, 11, and -1.
+        Applies award type codes 09, 11, -1, F005, F008, F009, and F010.
 
         Returns:
             T: A new instance configured for other assistance awards.

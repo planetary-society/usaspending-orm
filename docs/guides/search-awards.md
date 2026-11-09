@@ -78,6 +78,14 @@ Award search accepts only one category at a time because the upstream endpoint
 offers different fields for different categories. Use
 `.award_type_codes(...)` when exact subtypes matter.
 
+Assistance awards use two code series. Starting in FY2026, agencies moved
+grant and other assistance reporting from the two-digit codes (`02` through
+`11`) to the F-codes (`F001` through `F010`). The convenience methods include
+both series. If you list codes by hand, include the F-codes too. For example,
+project grants and cooperative agreements are
+`.award_type_codes("04", "05", "F001", "F002")`. Without the F-codes, any
+series that crosses FY2026 shows a false decline.
+
 ## Count before fetching
 
 ```python
